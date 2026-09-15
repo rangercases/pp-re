@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Cấu hình Web App cho iPhone (PWA Standalone) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PP Review">
+  
+  <!-- Icon hiển thị ngoài màn hình chính iPhone (thay URL ảnh nếu muốn) -->
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
+  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
+  
+  <!-- PDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- Cropper.js Library -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card: #ffffff;
+      --border: #e2e4e8;
+      --border-light: #f0f2f5;
+      --text: #1a1916;
+      --muted: #6b7280;
+      --accent: #1a3a2a;
+      --accent2: #2d5a3d;
+      --accent-light: #f3f7f4;
+      --red: #8b2020;
+      --red-bg: #fdf0f0;
+      --r: 10px;
+      --rs: 6px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 4px 12px rgba(0, 0, 0, .03);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    /* NAV */
+    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; }
+    .topbar-title { font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
+    .topbar-btn { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2); color: #fff; border-radius: var(--rs); padding: 5px 11px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 500; }
+    .topbar-btn.pri { background: rgba(255, 255, 255, .88); color: var(--accent); font-weight: 600; }
+    .topbar-actions { display: flex; gap: 6px; padding: 0 10px; align-items: center; }
+
+    /* TABS */
+    .tabs-wrap { background: var(--accent); border-top: 1px solid rgba(255, 255, 255, .1); overflow-x: auto; scrollbar-width: none; }
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+    .tabs { display: flex; min-width: max-content; }
+    .tab { padding: 9px 18px; font-size: 12px; color: rgba(255, 255, 255, .65); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
+    .tab.active { color: #fff; font-weight: 600; border-bottom-color: #7dcea0; }
+
+    /* SCREENS */
+    .screen { display: none; padding: 14px; max-width: 760px; margin: 0 auto; padding-bottom: 85px; }
+    .screen.active { display: block; }
+
+    /* HOME */
+    .home-hero { text-align: center; padding: 26px 16px 18px; }
+    .home-hero h1 { font-size: 17px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; color: var(--accent); }
+    .home-hero p { font-size: 12px; color: var(--muted); }
+    .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+    .report-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: var(--shadow); }
+    .rc-title { font-size: 13px; font-weight: 600; }
+    .rc-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .rc-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+    .badge-done { background: var(--accent-light); color: var(--accent2); }
+    .badge-wip { background: #fef9e7; color: #7a5c00; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
+
+    /* CARDS & FORMS */
+    .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
+    .sec-head { background: var(--accent); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
+    .fcell:nth-child(even) { border-right: none; }
+    .fcell:last-child, .fcell:nth-last-child(2) { border-bottom: none; }
+    .flabel { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+    .fcell input, .fcell textarea, .fcell select { width: 100%; border: none; background: transparent; font-size: 13px; color: var(--text); outline: none; font-family: inherit; font-weight: 500;}
+    .fcell textarea { resize: none; min-height: 54px; }
+    
+    /* CHECKBOXES */
+    .check-row { padding: 9px 12px; border-bottom: 1px solid var(--border-light); display: flex; gap: 10px; flex-wrap: wrap; }
+    .check-row-label { font-size: 10px; color: var(--muted); min-width: 64px; text-transform: uppercase; padding-top: 2px;}
+    .checks { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chk { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
+    .chkbox { width: 15px; height: 15px; border: 1.5px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; background: #fff; }
+    .chkbox.on { background: var(--accent); border-color: var(--accent); }
+    .chkbox.on::after { content: '✓'; color: #fff; font-size: 9px; font-weight: bold; }
+
+    /* PHOTO GRID - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
+    .photo-slot { 
+      background: #ffffff; 
+      border: 1px solid var(--border); 
+      border-radius: 8px; 
+      overflow: hidden; 
+      aspect-ratio: 4/3; 
+      position: relative; 
+    }
+    .photo-slot .pimg { 
+      width: 100%; 
+      height: calc(100% - 26px); 
+      object-fit: contain; 
+      background: #ffffff; 
+      display: block; 
+    }
+    .photo-slot .pempty { 
+      width: 100%; 
+      height: calc(100% - 26px); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 6px; 
+      cursor: pointer;
+      background: #ffffff;
+    }
+    .photo-slot .pempty span { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+    .photo-slot .pbar { 
+      height: 26px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 9px; 
+      color: var(--muted); 
+      border-top: 1px solid var(--border-light); 
+      background: #ffffff; 
+      text-transform: uppercase;
+    }
+    .pactions { position: absolute; top: 5px; right: 5px; display: flex; gap: 3px; z-index: 2; }
+    .pact { width: 26px; height: 26px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
+    .pact.cam { background: rgba(45, 90, 61, .85); }
+    .pact.del { background: rgba(139, 32, 32, .82); }
+
+    /* FREE PHOTOS - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .add-photo-btn { 
+      aspect-ratio: 4/3; 
+      border: 1.5px dashed var(--border); 
+      border-radius: 8px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      background: #ffffff; 
+      cursor: pointer; 
+      gap: 6px;
+    }
+    .free-photo-item { 
+      aspect-ratio: 4/3; 
+      position: relative; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      border: 1px solid var(--border); 
+      background: #ffffff; 
+    }
+    .free-photo-item img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain; 
+      background: #ffffff; 
+    }
+    .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
+    .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
+    .free-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; }
+
+    /* DIMENSIONS - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
+    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .dim-photo { 
+      aspect-ratio: 4/3; 
+      position: relative; 
+      background: #ffffff; 
+      cursor: pointer; 
+    }
+    .dim-photo img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain; 
+      background: #ffffff;
+    }
+    .dim-photo .dp-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #ffffff; }
+    .dim-photo .pactions { top: 3px; right: 3px; }
+    .dim-photo .pact { width: 22px; height: 22px; }
+    .dim-fields { padding: 6px 7px; }
+    .dim-name { font-size: 9px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+    .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+    .dim-row label { font-size: 9px; color: var(--muted); }
+    .dim-row input { width: 64px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
+    .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
+    .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
+    .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
+
+    /* TABLES & NOTES */
+    .note-area { padding: 10px 12px; }
+    .note-area textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 64px; background: #ffffff; }
+    .bv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .bv-table th { background: var(--accent); color: #fff; padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
+    .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); }
+    .bv-table td input[type=text] { width: 100%; border: none; background: transparent; font-size: 11px; outline: none; }
+    .result-sel { display: flex; gap: 5px; }
+    .result-btn { padding: 3px 8px; border-radius: 10px; font-size: 10px; border: 1px solid var(--border); cursor: pointer; background: #fff; }
+    .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; }
+    .result-btn.fail.on { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .result-btn.na.on { background: #f0eeea; border-color: #888; color: #555; }
+    .add-row-btn { padding: 6px 12px; border: 1.5px dashed var(--border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; margin: 8px 10px; width: calc(100% - 20px); }
+
+    /* SAVE BAR */
+    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px 12px; z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
+    .sbar-btn { flex: 1; padding: 12px; border-radius: var(--r); font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
+    .sbar-btn.sec { background: #ffffff; border: 1px solid var(--border); color: var(--text); }
+    .sbar-btn.pri { background: var(--accent); color: #fff; }
+    .sbar-btn.danger { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
+    .modal-overlay.hidden, .hidden { display: none !important; }
+    .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+    .modal-head { background: var(--accent); color: #fff; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-head h3 { font-size: 13px; font-weight: 500; }
+    .modal-close { background: rgba(255,255,255,.15); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; background: #000; }
+    .modal-foot { padding: 9px 12px; border-top: 1px solid var(--border-light); display: flex; gap: 8px; justify-content: flex-end; background: #fff; }
+    .mbtn { padding: 7px 15px; border-radius: var(--rs); font-size: 12px; font-weight: 500; cursor: pointer; border: none; }
+    .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
+    .mbtn.pri { background: var(--accent); color: #fff; }
+
+    #videoEl { width: 100%; border-radius: 8px; background: #000; max-height: 48vh; object-fit: contain; }
+    
+    /* CROPPER WRAPPER */
+    .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
+    .cropper-wrapper img { display: block; max-width: 100%; }
+
+    /* CROPPER TOOLBAR & ADVANCED TOOLS */
+    .cropper-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; background: #000; }
+    .tools-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .tool-btn { 
+      background: rgba(255,255,255,0.15); 
+      color: #fff; 
+      border: 1px solid rgba(255,255,255,0.25); 
+      padding: 6px 10px; 
+      border-radius: 6px; 
+      font-size: 11.5px; 
+      cursor: pointer; 
+      flex: 1; 
+      min-width: 52px;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .tool-btn.active {
+      background: #7dcea0;
+      color: #1a3a2a;
+      border-color: #7dcea0;
+      font-weight: 700;
+    }
+    .tool-btn:active { background: rgba(255,255,255,0.35); }
+
+    /* STRAIGHTEN SLIDER BAR */
+    .straighten-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px 2px;
+      color: #fff;
+      font-size: 11.5px;
+    }
+    .straighten-box span.title {
+      color: #bbb;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .straighten-slider {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      accent-color: #7dcea0;
+    }
+    .straighten-val {
+      min-width: 44px;
+      text-align: right;
+      font-weight: 600;
+      font-family: monospace;
+      color: #7dcea0;
+    }
+
+    .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: rgba(26,58,42,0.95); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
+    .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
+
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .free-del, .add-photo-btn { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+  </style>
+</head>
+
+<body>
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">SOFACOMPANY</div>
+    <div class="topbar-title" id="topTitle">PP Sample Review (Lite)</div>
+    <div class="autosave-indicator" id="saveIndicator" style="display:none"><span>●</span> <span id="saveText">Synced</span></div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" id="btnHome" onclick="goHome()" style="display:none">← Reports</button>
+      <button class="topbar-btn" id="btnShare" onclick="shareReport()" style="display:none">Share</button>
+      <button class="topbar-btn pri" id="btnExport" onclick="exportPDF()" style="display:none">PDF</button>
+    </div>
+  </div>
+  <div id="tabsWrap" class="tabs-wrap" style="display:none"><div class="tabs" id="tabsRow"></div></div>
+  <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="homeScreen">
+    <div class="home-hero">
+      <div style="font-size:26px;margin-bottom:6px">📋</div>
+      <h1>PP Sample Review (Lite)</h1>
+      <p>Cover · Photos · Dimensions · BV Test</p>
+    </div>
+    <button class="new-btn" onclick="newReport()">+ New Report</button>
+    <div id="reportsList"></div>
+    <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
+  </div>
+
+  <!-- EDIT SCREEN -->
+  <div class="screen" id="editScreen">
+    <!-- S0: COVER / INFO -->
+    <div id="sec0" class="sec-block">
+      <div class="sec-card">
+        <div class="sec-head">Product Information</div>
+        <div class="form-grid">
+          <div class="fcell"><div class="flabel">Model No.</div><input id="fModel" placeholder="MD 2741" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Description</div><input id="fDesc" placeholder="Swivel Chair (Skylar)" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Dimension (cm)</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Date</div><input id="fDate" placeholder="13-Mar-26" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Customer</div><input id="fCustomer" placeholder="SOFACOMPANY" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Factory</div><input id="fFactory" placeholder="NHAN HOANG" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Reviewed by</div><input id="fReviewer" placeholder="Your name" oninput="as()"></div>
+          <div class="fcell">
+            <div class="flabel">Number Sample / Review</div>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <input id="fNumS" type="number" value="1" style="width:44px;border:1px solid var(--border);border-radius:4px;text-align:center" oninput="as()">
+              <span style="color:var(--muted)">/</span>
+              <input id="fNumR" type="number" value="1" style="width:44px;border:1px solid var(--border);border-radius:4px;text-align:center" oninput="as()">
+            </div>
+          </div>
+        </div>
+        <div class="check-row"><div class="check-row-label">Stage</div><div class="checks" id="ck_stage"></div></div>
+        <div class="check-row"><div class="check-row-label">Sample</div><div class="checks" id="ck_sample"></div></div>
+        <div class="check-row"><div class="check-row-label">Comfort</div><div class="checks" id="ck_comfort"></div></div>
+        <div class="check-row"><div class="check-row-label">Rating</div><div class="checks" id="ck_rating"></div></div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-head">OVERLOOK <span> </span></div>
+        <div class="photo-grid-2" id="coverPhotos"></div>
+      </div>
+    </div>
+
+    <!-- S1: PRODUCT PHOTOS -->
+    <div id="sec1" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Product Photos <span>Tap + to add more</span></div>
+        <div class="free-photos" id="prodPhotos"></div>
+      </div>
+    </div>
+
+    <!-- S2: DIMENSION -->
+    <div id="sec2" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Product Dimension & Details</div>
+        <div class="legend-row">
+          <div class="legend-item"><div class="color-dot color-red"></div><span>Not acceptable</span></div>
+          <div class="legend-item"><div class="color-dot color-blue"></div><span>Within tolerance</span></div>
+          <div class="legend-item"><div class="color-dot color-orange"></div><span>Drawing to update</span></div>
+        </div>
+        <div class="dim-grid" id="dimGrid"></div>
+      </div>
+      <div class="sec-card"><div class="sec-head">Notes</div><div class="note-area"><textarea id="dimNotes" placeholder="Additional dimension notes..." oninput="as()"></textarea></div></div>
+    </div>
+
+    <!-- S3: BV TEST -->
+    <div id="sec3" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">In-House Quality Test (BV)</div>
+        <table class="bv-table" id="bvTable"><thead><tr><th style="width:48%">Test Property</th><th>Result</th><th style="width:27%">Remark</th></tr></thead><tbody id="bvBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
+      </div>
+      <div class="sec-card">
+        <div class="sec-head">Quality Watch Out & Comments</div>
+        <div class="free-photos" id="watchoutPhotos"></div>
+        <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, quality notes..." oninput="as()"></textarea></div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-head">Final Approval / Green Label</div>
+        <div class="photo-grid-2" id="approvalPhotos"></div>
+        <div class="form-grid">
+          <div class="fcell"><div class="flabel">Approval Date</div><input id="approvalDate" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Approved By</div><input id="approvalBy" oninput="as()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE BAR -->
+  <div class="save-bar" id="saveBar" style="display:none">
+    <button class="sbar-btn danger" onclick="deleteReport()">Delete</button>
+    <button class="sbar-btn sec" onclick="prevSection()">← Back</button>
+    <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
+  </div>
+
+  <!-- CAMERA MODAL WITH ADVANCED IPHONE PHOTO TOOLS -->
+  <div class="modal-overlay hidden" id="camModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="camTitle">📷 Take Photo</h3><button class="modal-close" onclick="closeCamera()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <video id="videoEl" autoplay playsinline muted></video>
+        
+        <div id="cropperWrapper" class="cropper-wrapper hidden">
+            <img id="cropperImage" src="">
+        </div>
+        
+        <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
+        <div id="editorToolbar" class="cropper-tools hidden">
+            <!-- Hàng tỷ lệ khung hình -->
+            <div class="tools-row">
+                <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
+                <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
+                <button class="tool-btn" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
+                <button class="tool-btn" id="ratio_16_9" onclick="setCropRatio(16/9, this)">16:9</button>
+            </div>
+
+            <!-- Hàng lệnh Xoay 90° & Lật ảnh (Flip) -->
+            <div class="tools-row">
+                <button class="tool-btn" onclick="rotate90()">🔄 Xoay 90°</button>
+                <button class="tool-btn" onclick="flipImage('x')">⇄ Lật ngang</button>
+                <button class="tool-btn" onclick="flipImage('y')">⇅ Lật dọc</button>
+                <button class="tool-btn" onclick="resetTransforms()">↺ Đặt lại</button>
+            </div>
+
+            <!-- Thanh trượt Căn thẳng ảnh (Straighten Slider) -->
+            <div class="straighten-box">
+                <span class="title">📐 Căn thẳng:</span>
+                <input type="range" class="straighten-slider" id="straightenRange" min="-45" max="45" step="0.5" value="0" oninput="applyStraighten(this.value)">
+                <span class="straighten-val" id="straightenVal">0.0°</span>
+            </div>
+        </div>
+        <div class="crop-hint" id="cropHint"></div>
+      </div>
+      
+      <div class="modal-foot">
+        <button class="mbtn sec" onclick="closeCamera()">Cancel</button>
+        <button class="mbtn sec" id="btnUpload" onclick="triggerFileInput()">📁 Chọn ảnh</button>
+        <button class="mbtn danger hidden" id="btnRetake" onclick="retake()">Retake</button>
+        <button class="mbtn pri" id="btnSnap" onclick="snap()">📷 Capture</button>
+        <button class="mbtn pri hidden" id="btnUse" onclick="usePhoto()">✓ Use Photo</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ═══════════════ INDEXED DB STORAGE ═══════════════
+    const DB_NAME = 'SofaCompanyPP_DB_Lite';
+    const STORE_NAME = 'reports';
+    let db = null;
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = e => {
+          if (!e.target.result.objectStoreNames.contains(STORE_NAME)) {
+            e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = e => { db = e.target.result; resolve(db); };
+        req.onerror = e => reject(e);
+      });
+    }
+    function dbGetAll() { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll(); req.onsuccess = () => res(req.result || []); req.onerror = () => rej(req.error); }); }
+    function dbPut(report) { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(report); req.onsuccess = () => res(); req.onerror = () => rej(req.error); }); }
+    function dbDelete(id) { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete(id); req.onsuccess = () => res(); req.onerror = () => rej(req.error); }); }
+
+    // ═══════════════ DATA CONSTANTS ═══════════════
+    const TABS = ['Overall', 'Photos', 'Dimensions', 'BV Test'];
+    const COVER_SLOTS = ['FRONT VIEW', 'SIDE VIEW', 'ANGLE VIEW', 'BOTTOM VIEW'];
+    const APPROVAL_SLOTS = ['FINAL SAMPLE', 'GREEN LABEL'];
+    const CHECK_OPTS = {
+      stage: ['Frame', 'Foam', 'Upholstery'], sample: ['Initial', 'Repaired', 'Final'],
+      comfort: ['Normal', 'Soft', 'Super Soft', 'Luxury Comfort'], rating: ['Repair', 'New Sample', 'To send for final approval', 'Approved']
+    };
+    const DIM_FIELDS = [
+      { name: 'Overall Width', key: 'ow' }, { name: 'Overall Depth', key: 'od' }, { name: 'Overall Height', key: 'oh' },
+      { name: 'Seat Width', key: 'sw' }, { name: 'Seat Depth', key: 'sd' }, { name: 'Seat Height', key: 'sh' },
+      { name: 'Arm Height', key: 'ah' }, { name: 'Back Height', key: 'bh' }, { name: 'Middle Height', key: 'mh' },
+      { name: 'Arm Thickness', key: 'at' }, { name: 'Back Thickness', key: 'bt' }, { name: 'Arm to Seat', key: 'as2' },
+      { name: 'Back to Seat', key: 'bs' }, { name: 'Net Weight', key: 'nw' }
+    ];
+    const DEFAULT_BV = [
+      { test: 'ANSI/BIFMA X5.1 Sec. 12', result: '', remark: '' }, { test: 'ANSI/BIFMA X5.1 Sec. 13', result: '', remark: '' },
+      { test: 'ANSI/BIFMA X5.4 Sec. 15', result: '', remark: '' }, { test: 'BS EN 12520:2024', result: '', remark: '' },
+      { test: 'BS EN 1022:2023', result: '', remark: '' }, { test: 'EN 16139:2013 Level 1', result: '', remark: '' }
+    ];
+
+    let reports = [];
+    let currentId = null, curSec = 0;
+    let D = {}; 
+    let stream = null;
+    let camTarget = null;
+    let saveTimeout = null;
+
+    // CROPPER & TRANSFORMATION STATES
+    let cropper = null;
+    let baseRotateAngle = 0; // Luân chuyển 0, 90, 180, 270
+    let straightenAngle = 0; // Dao động -45 đến +45
+    let scaleX = 1;
+    let scaleY = 1;
+
+    // ═══════════════ CAMERA & CROPPER.JS FLOW ═══════════════
+    async function openCam(target) {
+      camTarget = target;
+      if(cropper) { cropper.destroy(); cropper = null; }
+
+      const title = target.type === 'dim' ? target.key.replace(/_/g, ' ').toUpperCase() :
+        target.type === 'free' ? '📷 Add Photo' : target.key.replace(/_/g, ' ');
+
+      document.getElementById('camTitle').textContent = '📷 ' + title;
+      document.getElementById('camModal').classList.remove('hidden');
+
+      const video = document.getElementById('videoEl');
+      video.style.display = 'block'; 
+      document.getElementById('cropperWrapper').classList.add('hidden');
+      document.getElementById('editorToolbar').classList.add('hidden');
+
+      document.getElementById('btnSnap').classList.remove('hidden');
+      document.getElementById('btnUpload').classList.remove('hidden');
+      document.getElementById('btnUse').classList.add('hidden');
+      document.getElementById('btnRetake').classList.add('hidden');
+      document.getElementById('cropHint').textContent = '';
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        promptManualUpload('Trình duyệt không hỗ trợ Camera trực tiếp.');
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+        });
+        video.srcObject = stream;
+      } catch (e) {
+        promptManualUpload('Không thể kết nối Camera (chưa cấp quyền hoặc mở file nội bộ).');
+      }
+    }
+
+    function promptManualUpload(msg) {
+      stopStream();
+      document.getElementById('videoEl').style.display = 'none';
+      document.getElementById('btnSnap').classList.add('hidden');
+      document.getElementById('cropHint').innerHTML = `
+        <span style="color:var(--red);font-weight:600">${msg}</span><br>
+        Vui lòng bấm nút bên dưới để chọn ảnh từ máy:
+        <div style="margin-top:10px">
+          <button class="mbtn pri" style="margin:auto" onclick="triggerFileInput()">📁 Chọn ảnh từ máy / Album</button>
+        </div>
+      `;
+    }
+
+    function triggerFileInput() { document.getElementById('fileInput').click(); }
+
+    function snap() {
+      const video = document.getElementById('videoEl');
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = video.videoWidth || 640; 
+      tempCanvas.height = video.videoHeight || 480;
+      tempCanvas.getContext('2d').drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+      const dataUrl = tempCanvas.toDataURL('image/jpeg', 1.0);
+      stopStream();
+      initCropper(dataUrl);
+    }
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file || !camTarget) return;
+      const reader = new FileReader();
+      reader.onload = ev => { initCropper(ev.target.result); };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    function initCropper(imgSrc) {
+        document.getElementById('videoEl').style.display = 'none';
+        document.getElementById('cropperWrapper').classList.remove('hidden');
+        
+        document.getElementById('btnSnap').classList.add('hidden');
+        document.getElementById('btnUpload').classList.add('hidden');
+        document.getElementById('btnRetake').classList.remove('hidden');
+        document.getElementById('btnUse').classList.remove('hidden');
+        document.getElementById('editorToolbar').classList.remove('hidden');
+        document.getElementById('cropHint').textContent = 'Cuộn chuột để zoom. Kéo góc để cắt ảnh.';
+
+        // Đặt lại tỷ lệ khung mặc định 4:3
+        document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
+        const btn43 = document.getElementById('ratio_4_3');
+        if(btn43) btn43.classList.add('active');
+
+        // Reset trạng thái transform
+        baseRotateAngle = 0;
+        straightenAngle = 0;
+        scaleX = 1;
+        scaleY = 1;
+        const slider = document.getElementById('straightenRange');
+        if(slider) slider.value = 0;
+        const valText = document.getElementById('straightenVal');
+        if(valText) valText.textContent = '0.0°';
+
+        const image = document.getElementById('cropperImage');
+        image.src = imgSrc;
+
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(image, {
+            aspectRatio: 4 / 3,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.95,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+            zoomOnWheel: true, // Cho phép lăn chuột để zoom
+            background: false
+        });
+    }
+
+    function setCropRatio(ratio, btnEl) {
+        if (!cropper) return;
+        cropper.setAspectRatio(ratio);
+        document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+    }
+
+    // Lệnh xoay 90 độ (kết hợp cả góc căn thẳng straighten)
+    function rotate90() {
+        if (!cropper) return;
+        baseRotateAngle = (baseRotateAngle + 90) % 360;
+        cropper.rotateTo(baseRotateAngle + straightenAngle);
+    }
+
+    // Lệnh lật ảnh ngang/dọc (Flip)
+    function flipImage(axis) {
+        if (!cropper) return;
+        if (axis === 'x') {
+            scaleX = -scaleX;
+            cropper.scaleX(scaleX);
+        } else if (axis === 'y') {
+            scaleY = -scaleY;
+            cropper.scaleY(scaleY);
+        }
+    }
+
+    // Lệnh căn thẳng (Straighten Slider)
+    function applyStraighten(val) {
+        if (!cropper) return;
+        straightenAngle = parseFloat(val);
+        document.getElementById('straightenVal').textContent = (straightenAngle > 0 ? '+' : '') + straightenAngle.toFixed(1) + '°';
+        cropper.rotateTo(baseRotateAngle + straightenAngle);
+    }
+
+    // Đặt lại các thao tác xoay / lật / căn thẳng
+    function resetTransforms() {
+        if (!cropper) return;
+        baseRotateAngle = 0;
+        straightenAngle = 0;
+        scaleX = 1;
+        scaleY = 1;
+        cropper.reset();
+        cropper.rotateTo(0);
+        cropper.scale(1, 1);
+        document.getElementById('straightenRange').value = 0;
+        document.getElementById('straightenVal').textContent = '0.0°';
+    }
+
+    function retake() {
+      if(cropper) { cropper.destroy(); cropper = null; }
+      const t = camTarget;
+      closeCamera();
+      setTimeout(() => openCam(t), 100);
+    }
+
+    function usePhoto() {
+      if (!cropper) {
+        showToast('Lỗi: Chưa có dữ liệu ảnh!');
+        return;
+      }
+      
+      const croppedCanvas = cropper.getCroppedCanvas({
+          maxWidth: 1280,
+          maxHeight: 1280,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+      });
+      
+      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.85);
+      savePhoto(finalDataUrl);
+      closeCamera();
+    }
+
+    function savePhoto(imgData) {
+      const t = camTarget;
+      if (!t) return;
+      if (t.type === 'slot') {
+        if (t.section === 'cover') { D.coverPhotos[t.key] = imgData; refreshSlot(t.containerId, t.key, 'cover'); } 
+        else if (t.section === 'approval') { D.approvalPhotos[t.key] = imgData; refreshSlot(t.containerId, t.key, 'approval'); }
+      } else if (t.type === 'free') {
+        if (!D[t.key]) D[t.key] = []; D[t.key].push({ img: imgData, caption: '' }); renderFreePhotos(t.key);
+      } else if (t.type === 'dim') {
+        if (!D.dimData) D.dimData = {}; if (!D.dimData[t.key]) D.dimData[t.key] = {};
+        D.dimData[t.key].img = imgData; buildDimGrid();
+      }
+      as();
+      showToast('✓ Photo saved');
+    }
+
+    function stopStream() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+    function closeCamera() { 
+        stopStream(); 
+        if(cropper) { cropper.destroy(); cropper = null; }
+        document.getElementById('camModal').classList.add('hidden'); 
+        document.getElementById('videoEl').srcObject = null; 
+    }
+
+    // ═══════════════ APP LOGIC ═══════════════
+    async function goHome() {
+      currentId = null; curSec = 0;
+      document.getElementById('homeScreen').classList.add('active');
+      document.getElementById('editScreen').classList.remove('active');
+      document.getElementById('tabsWrap').style.display = 'none';
+      document.getElementById('progressBar').style.display = 'none';
+      document.getElementById('saveBar').style.display = 'none';
+      document.getElementById('btnHome').style.display = 'none';
+      document.getElementById('btnExport').style.display = 'none';
+      document.getElementById('btnShare').style.display = 'none';
+      document.getElementById('saveIndicator').style.display = 'none';
+      document.getElementById('topTitle').textContent = 'PP Sample Review (Lite)';
+      await renderHome();
+    }
+
+    async function renderHome() {
+      reports = await dbGetAll();
+      const list = document.getElementById('reportsList');
+      const empty = document.getElementById('emptyState');
+      list.innerHTML = '';
+      if (!reports.length) { empty.style.display = 'block'; return }
+      empty.style.display = 'none';
+      [...reports].reverse().forEach(r => {
+        const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+        const done = photos >= 4;
+        const d = document.createElement('div');
+        d.className = 'report-card';
+        d.innerHTML = `<div><div class="rc-title">${r.model || 'Untitled'}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div><div class="rc-sub">${r.desc || ''} · ${r.date || ''} · ${r.factory || ''}</div></div><div class="rc-arrow">›</div>`;
+        d.onclick = () => openReport(r.id);
+        list.appendChild(d);
+      });
+    }
+
+    function buildUI() {
+      const tabsRow = document.getElementById('tabsRow');
+      tabsRow.innerHTML = '';
+      TABS.forEach((t, i) => {
+        const d = document.createElement('div');
+        d.className = 'tab'; d.id = `tab${i}`; d.innerHTML = `${t}`;
+        d.onclick = () => showSection(i); tabsRow.appendChild(d);
+      });
+      buildSlotGrid('coverPhotos', COVER_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'cover');
+      buildSlotGrid('approvalPhotos', APPROVAL_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'approval');
+      Object.entries(CHECK_OPTS).forEach(([g, opts]) => {
+        const el = document.getElementById('ck_' + g); if (!el) return; el.innerHTML = '';
+        opts.forEach(o => el.appendChild(makeCheck(g, o)));
+      });
+      buildDimGrid(); 
+      renderBVTable();
+      ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
+    }
+
+    function makeCheck(group, opt) {
+      const label = document.createElement('label'); label.className = 'chk';
+      const box = document.createElement('div'); box.className = 'chkbox'; box.id = `ck_${group}_${opt}`;
+      label.appendChild(box); label.appendChild(document.createTextNode(opt));
+      label.onclick = () => toggleCheck(group, opt); return label;
+    }
+
+    function buildSlotGrid(containerId, slots, type, section) {
+      const el = document.getElementById(containerId); if (!el) return; el.innerHTML = '';
+      slots.forEach(s => {
+        const div = document.createElement('div'); div.className = 'photo-slot'; div.id = `ps_${containerId}_${s.key}`;
+        div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section); el.appendChild(div);
+      });
+    }
+
+    function renderSlotHTML(containerId, key, label, type, section) {
+      const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
+      const img = store && store[key];
+      let inner = '';
+      if (img) {
+        inner = `<img class="pimg" src="${img}">
+        <div class="pactions">
+          <button class="pact cam" onclick="openCam({type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'});event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <button class="pact del" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>`;
+      } else {
+        inner = `<div class="pempty" onclick="openCam({type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'})">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Tap to shoot</span>
+        </div>`;
+      }
+      inner += `<div class="pbar">${label}</div>`; return inner;
+    }
+
+    function refreshSlot(containerId, key, section) {
+      const slots = COVER_SLOTS.map(s => s.replace(/ /g, '_')), approvalSlots = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_'));
+      const label = COVER_SLOTS[slots.indexOf(key)] || APPROVAL_SLOTS[approvalSlots.indexOf(key)] || key.replace(/_/g, ' ');
+      const el = document.getElementById(`ps_${containerId}_${key}`);
+      if (el) el.innerHTML = renderSlotHTML(containerId, key, label, 'slot', section);
+    }
+
+    function delSlotPhoto(containerId, key, section) {
+      if (!confirm('Bạn có chắc muốn xóa ảnh này không?')) return;
+      if (section === 'cover') delete D.coverPhotos[key]; else delete D.approvalPhotos[key];
+      refreshSlot(containerId, key, section); as();
+    }
+
+    function buildDimGrid() {
+      const grid = document.getElementById('dimGrid'); if (!grid) return; grid.innerHTML = '';
+      DIM_FIELDS.forEach(f => {
+        const div = document.createElement('div'); div.className = 'dim-slot';
+        const store = D.dimData && D.dimData[f.key] ? D.dimData[f.key] : {};
+        div.innerHTML = `
+        <div class="dim-photo" id="dph_${f.key}" onclick="openCam({type:'dim',key:'${f.key}'})">
+          ${store.img ? `<img src="${store.img}">` : `<div class="dp-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`}
+          ${store.img ? `<div class="pactions"><button class="pact cam" onclick="openCam({type:'dim',key:'${f.key}'});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button><button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>` : ''}
+        </div>
+        <div class="dim-fields">
+          <div class="dim-name">${f.name}</div>
+          <div class="dim-row"><label>Actual</label><input value="${store.actual || ''}" oninput="saveDim('${f.key}','actual',this.value)"> <div class="color-dot ${store.color || 'color-blue'}"></div></div>
+          <div class="dim-row"><label>Drawing</label><input value="${store.drawing || ''}" oninput="saveDim('${f.key}','drawing',this.value)"></div>
+          <div class="dim-row"><label>Status</label>
+            <select onchange="saveDim('${f.key}','color',this.value)">
+              <option value="color-blue" ${(store.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
+              <option value="color-red" ${store.color === 'color-red' ? 'selected' : ''}>✗ Not OK</option>
+              <option value="color-orange" ${store.color === 'color-orange' ? 'selected' : ''}>~ Update Dwg</option>
+            </select>
+          </div>
+        </div>`;
+        grid.appendChild(div);
+      });
+    }
+
+    function saveDim(key, field, val) {
+      if (!D.dimData) D.dimData = {}; if (!D.dimData[key]) D.dimData[key] = {}; D.dimData[key][field] = val;
+      if (field === 'color') { const dot = document.querySelector(`#dph_${key}`).closest('.dim-slot').querySelector('.color-dot'); if (dot) dot.className = 'color-dot ' + val; }
+      as();
+    }
+    function delDimPhoto(key) { if (!confirm('Xóa ảnh kích thước này?')) return; if (D.dimData && D.dimData[key]) delete D.dimData[key].img; buildDimGrid(); as(); }
+
+    function renderFreePhotos(key) {
+      const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
+      const arr = D[key] || [];
+      arr.forEach((p, i) => {
+        const div = document.createElement('div'); div.className = 'free-photo-item';
+        div.innerHTML = `<img src="${p.img}"><div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div><button class="free-del" onclick="delFreePhoto('${key}',${i})">✕</button>`;
+        el.appendChild(div);
+      });
+      const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn';
+      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span>`;
+      addBtn.onclick = () => openCam({ type: 'free', key }); el.appendChild(addBtn);
+    }
+    function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
+    function delFreePhoto(key, i) { if (!confirm('Xóa ảnh này không?')) return; if (!D[key]) return; D[key].splice(i, 1); renderFreePhotos(key); as(); }
+
+    function renderBVTable() {
+      const tbody = document.getElementById('bvBody'); if (!tbody) return; tbody.innerHTML = '';
+      (D.bvRows || []).forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" value="${row.test || ''}" oninput="saveBV(${i},'test',this.value)"></td>
+        <td><div class="result-sel">
+          <button class="result-btn pass ${row.result === 'pass' ? 'on' : ''}" onclick="setBVResult(${i},'pass')">PASS</button>
+          <button class="result-btn fail ${row.result === 'fail' ? 'on' : ''}" onclick="setBVResult(${i},'fail')">FAIL</button>
+          <button class="result-btn na ${row.result === 'na' ? 'on' : ''}" onclick="setBVResult(${i},'na')">N/A</button>
+        </div></td>
+        <td><input type="text" value="${row.remark || ''}" oninput="saveBV(${i},'remark',this.value)"></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    function addBVRow() { if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
+    function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
+    function setBVResult(i, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
+
+    function loadData() {
+      const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fCustomer', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+      const keys = ['model', 'desc', 'dim', 'date', 'customer', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+      fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
+      document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
+      Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
+      buildDimGrid(); renderBVTable();
+      ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
+      refreshAllSlots();
+    }
+    function refreshAllSlots() { COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); APPROVAL_SLOTS.forEach(s => refreshSlot('approvalPhotos', s.replace(/ /g, '_'), 'approval')); }
+
+    function showSection(i) {
+      curSec = i; document.querySelectorAll('.sec-block').forEach((b, idx) => b.style.display = idx === i ? 'block' : 'none');
+      document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+      const tab = document.getElementById(`tab${i}`); if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+      document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / TABS.length) * 100) + '%';
+      window.scrollTo(0, 0);
+    }
+    function prevSection() { if (curSec > 0) showSection(curSec - 1); }
+    function nextSection() { if (curSec < TABS.length - 1) showSection(curSec + 1); }
+
+    function updateTopbar() { document.getElementById('topTitle').textContent = (D.model || 'New Report') + (D.desc ? ' — ' + D.desc : ''); }
+    function toggleCheck(group, key) {
+      if (!D.checks) D.checks = {}; if (!D.checks[group]) D.checks[group] = {}; D.checks[group][key] = !D.checks[group][key]; const el = document.getElementById(`ck_${group}_${key}`); if (el) el.classList.toggle('on', !!D.checks[group][key]);
+      as();
+    }
+
+    function as() {
+      if (!currentId) return;
+      const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
+      const map = { fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fCustomer: 'customer', fFactory: 'factory', fReviewer: 'reviewer', watchoutNotes: 'watchoutNotes', approvalDate: 'approvalDate', approvalBy: 'approvalBy', dimNotes: 'dimNotes' };
+      Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
+      D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => { await dbPut(D); if (saveText) saveText.textContent = 'Saved'; updateTopbar(); }, 400);
+    }
+
+    async function openReport(id) {
+      currentId = id; reports = await dbGetAll(); D = reports.find(r => r.id === id); curSec = 0;
+      buildUI(); loadData(); showSection(0);
+      document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
+      ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'saveIndicator'].forEach(id => document.getElementById(id).style.display = id==='tabsWrap'||id==='progressBar'?'block':'inline-flex');
+      document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); window.scrollTo(0, 0);
+    }
+
+    async function newReport() {
+      const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
+      const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
+      await dbPut(r); openReport(id);
+    }
+
+    function shareReport() {
+      as(); const data = JSON.stringify(D, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `PP_${D.model || 'report'}_${D.date || 'draft'}.json`; a.click(); URL.revokeObjectURL(url); showToast('✓ JSON file downloaded');
+    }
+    async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
+
+    // ═══════════════ PDF EXPORT (CHỈ 4 PHẦN) ═══════════════
+    async function exportPDF() {
+      as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
+      const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210, M = 14, BOTTOM_LIMIT = 268; let y = 0;
+
+      const addHeader = (title, subtitle = '') => {
+        doc.addPage(); doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 20, 'F'); doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text('SOFACOMPANY', M, 7);
+        doc.text(`${D.model || '—'} | ${D.desc || '—'} | ${D.reviewer || '—'}`, W - M, 7, { align: 'right' });
+        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title, W / 2, 13, { align: 'center' });
+        if (subtitle) { doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(200, 230, 210); doc.text(subtitle, W / 2, 17, { align: 'center' }); }
+        y = 25; doc.setTextColor(30, 30, 30);
+      };
+
+      const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
+        let ty = curY;
+        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader('Details (cont.)'); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5; }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40);
+        const lines = doc.splitTextToSize(text || '—', maxW);
+        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title ? title + ' (cont.)' : 'Notes (cont.)'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.2; }
+        return ty + 3;
+      };
+
+      const addText = (label, val, x, ty, w = 80) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(label + ':', x, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(val || '—'), x + w * 0.38, ty); };
+      const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { } };
+
+      // 1. COVER
+      doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.text('SOFACOMPANY', M, 9);
+      doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 28;
+
+      const infoRows = [['Model No.', D.model], ['Description', D.desc], ['Dimension', D.dim], ['Date', D.date], ['Customer', D.customer || 'SOFACOMPANY'], ['Factory', D.factory]]; const hw = (W - M * 2) / 2 - 2;
+      for (let i = 0; i < infoRows.length; i += 2) {
+        const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
+        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90);
+        doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20);
+        doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2);
+        y += 9;
+      } y += 2;
+
+      const chkLine = (label, group) => {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
+        CHECK_OPTS[group].forEach(k => {
+          if (!!((D.checks || {})[group]?.[k])) { doc.setFillColor(26, 58, 42); doc.rect(cx, y + 1, 3, 3, 'F'); } else { doc.setDrawColor(180, 175, 170); doc.rect(cx, y + 1, 3, 3, 'S'); }
+          doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
+        }); y += 7;
+      };
+      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 3;
+
+      const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); const pw = (W - M * 2 - 4) / 2, ph = pw * 0.75;
+      [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
+        const img = cp[ckeys[i]]; doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
+        if (img) { addImg(img, px, py, pw, ph); } else { doc.setFillColor(245, 242, 237); doc.rect(px, py, pw, ph, 'F'); doc.setTextColor(170, 165, 158); doc.setFontSize(7); doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); }
+        doc.setFillColor(245, 242, 237); doc.rect(px, py + ph, pw, 5, 'F'); doc.setTextColor(80, 75, 70); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.text(COVER_SLOTS[i], px + pw / 2, py + ph + 3.5, { align: 'center' });
+      });
+
+      // 2. PHOTOS
+      if ((D.prodPhotos || []).length) {
+        addHeader('Product Photos'); const gw = (W - M * 2 - 4) / 2, gh = gw * 0.75;
+        D.prodPhotos.forEach((p, i) => {
+          const col = i % 2, row = Math.floor(i / 2), px = M + (col * (gw + 4)), py = y + (row * (gh + 14));
+          if (py + gh > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); y = 24; }
+          addImg(p.img, px, py, gw, gh);
+          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, py + gh + 4, { align: 'center' }); }
+        });
+      }
+
+      // 3. DIMENSIONS
+      addHeader('Product Dimension & Details', 'Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing');
+      const dimCols = 3, dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols, dimSlotH = dimSlotW * 0.75 + 18;
+      DIM_FIELDS.forEach((f, i) => {
+        const col = i % dimCols, row = Math.floor(i / dimCols), px = M + col * (dimSlotW + 2), py = y + row * dimSlotH;
+        if (py + dimSlotH > BOTTOM_LIMIT) { addHeader('Product Dimension & Details (cont.)'); y = 24; }
+        const dd = (D.dimData || {})[f.key] || {}, imgH = dimSlotW * 0.62;
+        doc.setDrawColor(220, 217, 210); doc.rect(px, py, dimSlotW, dimSlotH, 'S');
+        if (dd.img) { addImg(dd.img, px, py, dimSlotW, imgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, py, dimSlotW, imgH, 'F'); }
+        const fy = py + imgH + 3; doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); doc.text(f.name, px + 2, fy + 3);
+        const color = dd.color === 'color-red' ? [226, 75, 74] : dd.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(px + dimSlotW - 4, fy + 2, 2, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
+        doc.text(`Actual: ${dd.actual || '—'}`, px + 2, fy + 8); doc.text(`Drawing: ${dd.drawing || '—'}`, px + 2, fy + 13);
+      });
+      if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y + 8);
+
+      // 4. BV TEST & APPROVAL
+      addHeader('In-House Quality Assurance Test');
+      doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
+      doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
+      (D.bvRows || []).forEach(row => {
+        const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
+        const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
+        if (y + rowH > BOTTOM_LIMIT) { addHeader('BV Quality Tests (cont.)'); y = 22; }
+        doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
+      }); y += 6;
+      if ((D.watchoutPhotos || []).length) {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); doc.text('Quality Watch Out', M, y); y += 6; const gw5 = (W - M * 2 - 4) / 2, gh5 = gw5 * 0.75;
+        D.watchoutPhotos.forEach((p, i) => {
+          const px = M + (i % 2) * (gw5 + 4), py = y + (Math.floor(i / 2)) * (gh5 + 10);
+          if (py + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); y = 22; }
+          addImg(p.img, px, py, gw5, gh5);
+          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, py + gh5 + 4, { align: 'center' }); }
+        }); y += Math.ceil(D.watchoutPhotos.length / 2) * (gw5 * 0.75 + 10) + 4;
+      }
+      if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
+
+      addHeader('Final Approval / Green Label');
+      const ap = D.approvalPhotos || {}, apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')), apW = (W - M * 2 - 4) / 2, apH = apW * 0.75;
+      apKeys.forEach((k, i) => {
+        const px = M + i * (apW + 4); doc.setDrawColor(210, 205, 195); doc.rect(px, y, apW, apH + 5, 'S');
+        if (ap[k]) { addImg(ap[k], px, y, apW, apH); } else { doc.setFillColor(245, 242, 237); doc.rect(px, y, apW, apH, 'F'); }
+        doc.setFillColor(245, 242, 237); doc.rect(px, y + apH, apW, 5, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70); doc.text(APPROVAL_SLOTS[i], px + apW / 2, y + apH + 3.5, { align: 'center' });
+      }); y += apH + 12;
+      addText('Approval Date', D.approvalDate, M, y); addText('Approved By', D.approvalBy, M + (W - M * 2) / 2, y); y += 12;
+
+      // Đánh số trang
+      const totalPages = doc.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p); doc.setFillColor(26, 58, 42); doc.rect(0, 285, W, 12, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        doc.text(`${D.model || ''} PPS — ${D.desc || ''} — Sofacompany`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
+      }
+
+      doc.save(`PP_Report_Lite_${D.model || 'draft'}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
+    }
+
+    initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
+  </script>
+</body>
+
+</html>
