@@ -63,7 +63,7 @@
     .tabs-wrap { background: var(--accent); border-top: 1px solid rgba(255, 255, 255, .1); overflow-x: auto; scrollbar-width: none; }
     .tabs-wrap::-webkit-scrollbar { display: none; }
     .tabs { display: flex; min-width: max-content; }
-    .tab { padding: 9px 18px; font-size: 12px; color: rgba(255, 255, 255, .65); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
+    .tab { padding: 9px 16px; font-size: 12px; color: rgba(255, 255, 255, .65); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
     .tab.active { color: #fff; font-weight: 600; border-bottom-color: #7dcea0; }
 
     /* SCREENS */
@@ -83,17 +83,7 @@
     .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
     
     /* REPORT CARD & SELECTION */
-    #reportsList { 
-      user-select: none; 
-      -webkit-user-select: none; 
-      position: relative;
-    }
-    
-    /* KHÓA CUỘN KHI ĐANG Ở CHẾ ĐỘ CHỌN ĐỂ VUỐT CHỌN KHÔNG BỊ TRƯỢT TRANG */
-    #reportsList.select-mode-active {
-      touch-action: none;
-    }
-
+    #reportsList { user-select: none; -webkit-user-select: none; }
     .report-card { 
       background: var(--card); border: 1px solid var(--border); border-radius: var(--r); 
       padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; 
@@ -105,7 +95,6 @@
     }
     .rc-left { display: flex; align-items: center; gap: 12px; flex: 1; }
     
-    /* Vòng tròn check kiểu iOS */
     .rc-select-circle {
       width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #bbb;
       display: none; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;
@@ -124,17 +113,6 @@
     .badge-done { background: var(--accent-light); color: var(--accent2); }
     .badge-wip { background: #fef9e7; color: #7a5c00; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
-
-    /* KHUNG VUÔNG QUÉT CHỌN TRỰC QUAN (MARQUEE SELECTION BOX) */
-    .selection-marquee {
-      position: absolute;
-      border: 1.5px solid #007aff;
-      background: rgba(0, 122, 255, 0.12);
-      pointer-events: none;
-      z-index: 999;
-      display: none;
-      border-radius: 4px;
-    }
 
     /* BATCH ACTION BAR DƯỚI ĐÁY */
     .batch-bar {
@@ -203,20 +181,33 @@
     }
     .add-photo-btn:active { background: #d0e4d8; }
 
-    /* DIMENSIONS */
+    /* DIMENSIONS STYLING */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
-    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: border-color 0.2s, background 0.2s;}
-    .dim-slot.dim-selecting { cursor: pointer; }
-    .dim-slot.dim-selected { border-color: #007aff; background: #f0f7ff; }
+    .dim-slot { 
+      background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; 
+      overflow: hidden; position: relative; transition: all 0.2s ease; 
+    }
+    .dim-slot.dim-selecting { 
+      cursor: pointer; 
+      border-color: #c7d2fe;
+    }
+    .dim-slot.dim-selecting * {
+      pointer-events: none !important;
+    }
+    .dim-slot.dim-selected { 
+      border-color: #007aff !important; 
+      background: #f0f7ff !important; 
+      box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.25);
+    }
     
     .dim-select-circle {
       position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border-radius: 50%;
       border: 1.5px solid #bbb; background: #fff; z-index: 10; display: none; align-items: center; justify-content: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25); pointer-events: none;
     }
     .dim-slot.dim-selecting .dim-select-circle { display: flex; }
     .dim-slot.dim-selected .dim-select-circle { background: #007aff; border-color: #007aff; }
-    .dim-slot.dim-selected .dim-select-circle::after { content: '✓'; color: #fff; font-size: 11px; font-weight: bold; }
+    .dim-slot.dim-selected .dim-select-circle::after { content: '✓'; color: #fff; font-size: 12px; font-weight: bold; }
 
     .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
     .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
@@ -238,12 +229,12 @@
 
     .dim-head-btn {
       background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4);
-      color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 8px; border-radius: 4px;
+      color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 10px; border-radius: 4px;
     }
 
     .dim-batch-bar {
       display: none; align-items: center; justify-content: space-between;
-      background: #f8faf9; border-top: 1px solid var(--border); padding: 8px 12px;
+      background: #f8faf9; border-top: 1px solid var(--border); padding: 10px 14px;
     }
 
     .add-dim-btn { 
@@ -302,7 +293,7 @@
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
 
-    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
 </head>
 
@@ -327,16 +318,13 @@
       <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Chọn</button>
       <div style="font-size:26px;margin-bottom:6px">📋</div>
       <h1>PP Sample Review (Lite)</h1>
-      <p>Cover · Photos · Dimensions · BV Test</p>
+      <p>Cover · Photos · Dimensions · Assembly · Watch Out · Testing · Checklist</p>
     </div>
     
     <button class="new-btn" id="btnNewReport" onclick="newReport()">+ New Report</button>
     <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     
-    <!-- KHUNG CHỮ NHẬT QUÉT VÙNG -->
-    <div id="selectionMarquee" class="selection-marquee"></div>
-
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
@@ -350,6 +338,8 @@
 
   <!-- EDIT SCREEN -->
   <div class="screen" id="editScreen">
+    
+    <!-- S0: OVERALL -->
     <div id="sec0" class="sec-block">
       <div class="sec-card">
         <div class="sec-head">Product Information</div>
@@ -380,7 +370,7 @@
       </div>
     </div>
 
-    <!-- S1: PRODUCT PHOTOS -->
+    <!-- S1: PHOTOS -->
     <div id="sec1" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
@@ -388,7 +378,7 @@
       </div>
     </div>
 
-    <!-- S2: DIMENSION -->
+    <!-- S2: DIMENSIONS -->
     <div id="sec2" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">
@@ -413,27 +403,47 @@
       <div class="sec-card"><div class="sec-head">Notes</div><div class="note-area"><textarea id="dimNotes" placeholder="Additional dimension notes..." oninput="as()"></textarea></div></div>
     </div>
 
-    <!-- S3: BV TEST -->
+    <!-- S3: PRODUCT ASSEMBLY -->
     <div id="sec3" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">In-House Quality Test (BV)</div>
+        <div class="sec-head">Product Assembly <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="assemblyPhotos"></div>
+        <div class="note-area"><textarea id="assemblyNotes" placeholder="Product assembly steps, notes..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S4: QUALITY WATCH OUT -->
+    <div id="sec4" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="watchoutPhotos"></div>
+        <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, critical quality points..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S5: TESTING (ĐÃ ĐỔI TÊN & BỎ FINAL APPROVAL) -->
+    <div id="sec5" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Testing</div>
         <table class="bv-table" id="bvTable"><thead><tr><th style="width:48%">Test Property</th><th>Result</th><th style="width:27%">Remark</th></tr></thead><tbody id="bvBody"></tbody></table>
         <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
       </div>
       <div class="sec-card">
-        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
-        <div class="free-photos" id="watchoutPhotos"></div>
-        <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, quality notes..." oninput="as()"></textarea></div>
-      </div>
-      <div class="sec-card">
-        <div class="sec-head">Final Approval / Green Label</div>
-        <div class="photo-grid-2" id="approvalPhotos"></div>
-        <div class="form-grid">
-          <div class="fcell"><div class="flabel">Approval Date</div><input id="approvalDate" oninput="as()"></div>
-          <div class="fcell"><div class="flabel">Approved By</div><input id="approvalBy" oninput="as()"></div>
-        </div>
+        <div class="sec-head">Testing Photo <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="testingPhotos"></div>
+        <div class="note-area"><textarea id="testingNotes" placeholder="Testing photos notes, test remarks..." oninput="as()"></textarea></div>
       </div>
     </div>
+
+    <!-- S6: CHECKLIST -->
+    <div id="sec6" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Check List <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="checklistPhotos"></div>
+        <div class="note-area"><textarea id="checklistNotes" placeholder="Checklist remarks, final inspections..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- SAVE BAR -->
@@ -538,10 +548,9 @@
       }); 
     }
 
-    // ═══════════════ DATA CONSTANTS ═══════════════
-    const TABS = ['Overall', 'Photos', 'Dimensions', 'BV Test'];
+    // ═══════════════ DATA CONSTANTS (QUY TRÌNH 7 TABS) ═══════════════
+    const TABS = ['Overall', 'Photo', 'Dimensions', 'Product Assembly', 'Quality watch out', 'Testing', 'Checklist'];
     const COVER_SLOTS = ['FRONT VIEW', 'SIDE VIEW', 'ANGLE VIEW', 'BOTTOM VIEW'];
-    const APPROVAL_SLOTS = ['FINAL SAMPLE', 'GREEN LABEL'];
     const CHECK_OPTS = {
       stage: ['Frame', 'Foam', 'Upholstery'], sample: ['Initial', 'Repaired', 'Final'],
       comfort: ['Normal', 'Soft', 'Super Soft', 'Luxury Comfort'], rating: ['Repair', 'New Sample', 'To send for final approval', 'Approved']
@@ -562,6 +571,8 @@
       { test: 'BS EN 1022:2023', result: '', remark: '' }, { test: 'EN 16139:2013 Level 1', result: '', remark: '' }
     ];
 
+    const FREE_PHOTO_KEYS = ['prodPhotos', 'assemblyPhotos', 'watchoutPhotos', 'testingPhotos', 'checklistPhotos'];
+
     let reports = [];
     let currentId = null, curSec = 0;
     let D = {}; 
@@ -578,8 +589,6 @@
     // BATCH SELECT MODE CHO REPORT
     let isSelectMode = false;
     let selectedReportIds = new Set();
-    let isDragging = false;
-    let dragStartX = 0, dragStartY = 0;
 
     // BATCH SELECT MODE CHO DIMENSIONS
     let isDimSelectMode = false;
@@ -610,6 +619,7 @@
 
     // ═══════════════ CAMERA & ALBUM FLOW ═══════════════
     function triggerNativeCamera(target) {
+      if (isDimSelectMode) return;
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
       document.getElementById('btnRetakeCam').classList.remove('hidden');
@@ -618,6 +628,7 @@
     }
 
     function triggerPickLibrary(target) {
+      if (isDimSelectMode) return;
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
       document.getElementById('btnRetakeCam').classList.add('hidden');
@@ -638,7 +649,7 @@
     }
 
     function editSlotPhoto(containerId, key, section) {
-      const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
+      const store = D.coverPhotos;
       const data = store[key];
       if (!data) return;
       const imgSrc = typeof data === 'string' ? data : (data.original || data.img);
@@ -650,6 +661,7 @@
     }
 
     function editDimPhoto(index) {
+      if (isDimSelectMode) return;
       const data = D.dimensions[index];
       if (!data || !data.img) return;
       const imgSrc = typeof data.img === 'string' ? data.img : (data.original || data.img);
@@ -749,8 +761,7 @@
       if (!t) return;
       if (t.type === 'slot') {
         const payload = { img: imgData, original: originalData };
-        if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); } 
-        else if (t.section === 'approval') { D.approvalPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'approval'); }
+        if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
            if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '' }; 
@@ -777,14 +788,13 @@
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
-    // ═══════════════ BATCH SELECT & DRAG-TO-SELECT ĐÃ NÂNG CẤP ═══════════════
+    // ═══════════════ BATCH SELECT CHO REPORT ═══════════════
     function toggleSelectMode() {
       isSelectMode = !isSelectMode;
       const btn = document.getElementById('btnSelectMode');
       const batchBar = document.getElementById('batchBar');
       const btnNew = document.getElementById('btnNewReport');
       const btnImp = document.getElementById('btnImport');
-      const reportsList = document.getElementById('reportsList');
       
       selectedReportIds.clear();
       
@@ -793,15 +803,14 @@
         batchBar.style.display = 'flex';
         btnNew.style.display = 'none';
         btnImp.style.display = 'none';
-        reportsList.classList.add('select-mode-active');
       } else {
         btn.textContent = 'Chọn';
         batchBar.style.display = 'none';
         btnNew.style.display = 'block';
         btnImp.style.display = 'block';
-        reportsList.classList.remove('select-mode-active');
       }
       updateBatchUI();
+      renderHome();
     }
 
     function updateBatchUI() {
@@ -835,122 +844,6 @@
       showToast(`✓ Đã xóa ${selectedReportIds.size} báo cáo`);
       toggleSelectMode();
       renderHome();
-    }
-
-    // Thuật toán kiểm tra 2 hình chữ nhật có giao nhau không
-    function isIntersecting(r1, r2) {
-      return !(r2.left > r1.right || 
-               r2.right < r1.left || 
-               r2.top > r1.bottom || 
-               r2.bottom < r1.top);
-    }
-
-    // QUÉT VÙNG BẰNG NGÓN TAY VÀ CHUỘT (CÓ HỘP CHỮ NHẬT TRỰC QUAN)
-    function setupDragToSelect(container) {
-      const marquee = document.getElementById('selectionMarquee');
-      let initialSelectedState = new Map();
-
-      const onStart = (clientX, clientY, e) => {
-        if (!isSelectMode) return;
-        isDragging = true;
-        dragStartX = clientX;
-        dragStartY = clientY;
-
-        // Lưu lại trạng thái chọn trước khi bắt đầu kéo
-        initialSelectedState.clear();
-        document.querySelectorAll('.report-card').forEach(c => {
-          initialSelectedState.set(c.dataset.id, selectedReportIds.has(c.dataset.id));
-        });
-
-        const rect = container.getBoundingClientRect();
-        marquee.style.left = `${clientX - rect.left}px`;
-        marquee.style.top = `${clientY - rect.top}px`;
-        marquee.style.width = '0px';
-        marquee.style.height = '0px';
-        marquee.style.display = 'block';
-
-        if (e && e.cancelable) e.preventDefault();
-      };
-
-      const onMove = (clientX, clientY, e) => {
-        if (!isDragging || !isSelectMode) return;
-        if (e && e.cancelable) e.preventDefault();
-
-        const rect = container.getBoundingClientRect();
-        const curX = clientX - rect.left;
-        const curY = clientY - rect.top;
-        const startX = dragStartX - rect.left;
-        const startY = dragStartY - rect.top;
-
-        const left = Math.min(startX, curX);
-        const top = Math.min(startY, curY);
-        const width = Math.abs(curX - startX);
-        const height = Math.abs(curY - startY);
-
-        marquee.style.left = `${left}px`;
-        marquee.style.top = `${top}px`;
-        marquee.style.width = `${width}px`;
-        marquee.style.height = `${height}px`;
-
-        const marqueeRect = {
-          left: Math.min(dragStartX, clientX),
-          top: Math.min(dragStartY, clientY),
-          right: Math.max(dragStartX, clientX),
-          bottom: Math.max(dragStartY, clientY)
-        };
-
-        // Quét tất cả thẻ và cập nhật trạng thái nếu nằm trong vùng quét
-        document.querySelectorAll('.report-card').forEach(card => {
-          const cardRect = card.getBoundingClientRect();
-          const id = card.dataset.id;
-          const originallySelected = initialSelectedState.get(id) || false;
-
-          if (isIntersecting(marqueeRect, cardRect)) {
-            selectedReportIds.add(id);
-          } else {
-            if (!originallySelected) {
-              selectedReportIds.delete(id);
-            }
-          }
-        });
-
-        updateBatchUI();
-      };
-
-      const onEnd = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        marquee.style.display = 'none';
-      };
-
-      // Sự kiện Cảm ứng (Touch cho Điện thoại/iPad)
-      container.addEventListener('touchstart', e => {
-        if (!isSelectMode) return;
-        const t = e.touches[0];
-        onStart(t.clientX, t.clientY, e);
-      }, { passive: false });
-
-      window.addEventListener('touchmove', e => {
-        if (!isDragging || !isSelectMode) return;
-        const t = e.touches[0];
-        onMove(t.clientX, t.clientY, e);
-      }, { passive: false });
-
-      window.addEventListener('touchend', onEnd);
-
-      // Sự kiện Chuột (PC / Laptop)
-      container.addEventListener('mousedown', e => {
-        if (!isSelectMode) return;
-        if (e.target.closest('.rc-arrow')) return;
-        onStart(e.clientX, e.clientY, e);
-      });
-
-      window.addEventListener('mousemove', e => {
-        if (!isDragging || !isSelectMode) return;
-        onMove(e.clientX, e.clientY, e);
-      });
-
-      window.addEventListener('mouseup', onEnd);
     }
 
     // ═══════════════ BATCH SELECT CHO DIMENSIONS ═══════════════
@@ -1103,8 +996,6 @@
           
           list.appendChild(d);
         });
-
-        setupDragToSelect(list);
       } catch (err) {
           alert("Lỗi tải màn hình chính: " + err.message);
       }
@@ -1119,14 +1010,13 @@
         d.onclick = () => showSection(i); tabsRow.appendChild(d);
       });
       buildSlotGrid('coverPhotos', COVER_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'cover');
-      buildSlotGrid('approvalPhotos', APPROVAL_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'approval');
       Object.entries(CHECK_OPTS).forEach(([g, opts]) => {
         const el = document.getElementById('ck_' + g); if (!el) return; el.innerHTML = '';
         opts.forEach(o => el.appendChild(makeCheck(g, o)));
       });
       buildDimGrid(); 
       renderBVTable();
-      ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
+      FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
     }
 
     function makeCheck(group, opt) {
@@ -1145,7 +1035,7 @@
     }
 
     function renderSlotHTML(containerId, key, label, type, section) {
-      const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
+      const store = D.coverPhotos;
       const data = store && store[key];
       const displayImg = data ? (typeof data === 'string' ? data : data.img) : null;
       const targetObj = `{type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'}`;
@@ -1184,15 +1074,15 @@
     }
 
     function refreshSlot(containerId, key, section) {
-      const slots = COVER_SLOTS.map(s => s.replace(/ /g, '_')), approvalSlots = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_'));
-      const label = COVER_SLOTS[slots.indexOf(key)] || APPROVAL_SLOTS[approvalSlots.indexOf(key)] || key.replace(/_/g, ' ');
+      const slots = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+      const label = COVER_SLOTS[slots.indexOf(key)] || key.replace(/_/g, ' ');
       const el = document.getElementById(`ps_${containerId}_${key}`);
       if (el) el.innerHTML = renderSlotHTML(containerId, key, label, 'slot', section);
     }
 
     function delSlotPhoto(containerId, key, section) {
       if (!confirm('Bạn có chắc muốn xóa ảnh này không?')) return;
-      if (section === 'cover') delete D.coverPhotos[key]; else delete D.approvalPhotos[key];
+      delete D.coverPhotos[key];
       refreshSlot(containerId, key, section); as();
     }
 
@@ -1248,6 +1138,7 @@
 
         div.onclick = (e) => {
           if (isDimSelectMode) {
+            e.preventDefault();
             e.stopPropagation();
             toggleSelectDimIndex(i);
           }
@@ -1283,6 +1174,7 @@
       buildDimGrid(); as(); 
     }
 
+    // ═══════════════ FREE PHOTOS UNIVERSAL HANDLER ═══════════════
     function renderFreePhotos(key) {
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
@@ -1358,13 +1250,12 @@
 
     function refreshAllSlots() { 
       COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); 
-      APPROVAL_SLOTS.forEach(s => refreshSlot('approvalPhotos', s.replace(/ /g, '_'), 'approval')); 
     }
 
     function loadData() {
       try {
-        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
-        const keys = ['model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
+        const keys = ['model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
         fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
         document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
         Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
@@ -1399,8 +1290,9 @@
             }
         }
 
-        buildDimGrid(); renderBVTable();
-        ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
+        buildDimGrid(); 
+        renderBVTable();
+        FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
         refreshAllSlots();
       } catch (err) {
         alert("Lỗi tải dữ liệu: " + err.message);
@@ -1429,7 +1321,10 @@
     function as() {
       if (!currentId) return;
       const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
-      const map = { fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', watchoutNotes: 'watchoutNotes', approvalDate: 'approvalDate', approvalBy: 'approvalBy', dimNotes: 'dimNotes' };
+      const map = { 
+        fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', 
+        dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes' 
+      };
       Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
       D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
       clearTimeout(saveTimeout);
@@ -1462,7 +1357,17 @@
     async function newReport() {
       try {
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
-        const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
+        const r = { 
+          id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: '', numS: 1, numR: 1, 
+          checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, 
+          coverPhotos: {}, 
+          prodPhotos: [], 
+          dimensions: null, dimNotes: '', 
+          assemblyPhotos: [], assemblyNotes: '',
+          watchoutPhotos: [], watchoutNotes: '', 
+          bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), testingPhotos: [], testingNotes: '',
+          checklistPhotos: [], checklistNotes: ''
+        };
         
         await dbPut(r); 
         await renderHome(); 
@@ -1481,7 +1386,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT ═══════════════
+    // ═══════════════ PDF EXPORT (7 TRANG CHUẨN HOÀN CHỈNH) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -1506,10 +1411,30 @@
         return ty + 4;
       };
 
-      const addText = (label, val, x, ty, w = 80) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(label + ':', x, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(val || '—'), x + w * 0.38, ty); };
       const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { console.error(e); } };
 
-      // ================= 1. COVER =================
+      const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle) => {
+        const validPhotos = (photoArray || []).filter(p => p && p.img);
+        if (validPhotos.length === 0 && (!notesText || !notesText.trim())) return;
+
+        addHeader(sectionTitle);
+        const gw = (W - M * 2 - 4) / 2; const gh = gw;
+        if (validPhotos.length > 0) {
+          validPhotos.forEach((p, i) => {
+            const col = i % 2;
+            if (col === 0 && i > 0) y += gh + 12;
+            if (y + gh + 12 > BOTTOM_LIMIT) { addHeader(sectionTitle + ' (cont.)'); }
+            const px = M + (col * (gw + 4));
+            doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw, gh, 'S');
+            addImg(p.img, px, y, gw, gh);
+            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, y + gh + 4, { align: 'center', maxWidth: gw }); }
+          });
+          y += gh + 14;
+        }
+        if (notesText) y = addSafeTextBlock(notesTitle || (sectionTitle + ' Comments'), notesText, y);
+      };
+
+      // ================= 1. OVERALL =================
       doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
       doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
       doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 30;
@@ -1548,27 +1473,12 @@
       });
       y += (ph + 6) * 2 + 4;
 
-      // ================= 2. PRODUCT PHOTOS =================
-      const validProd = (D.prodPhotos || []).filter(p => p && p.img);
-      if (validProd.length > 0) {
-        addHeader('Product Photos'); 
-        const gw = (W - M * 2 - 4) / 2; const gh = gw; 
-        validProd.forEach((p, i) => {
-          const col = i % 2; 
-          if(col === 0 && i > 0) y += gh + 12;
-          if (y + gh + 12 > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); }
-          const px = M + (col * (gw + 4));
-          doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw, gh, 'S');
-          addImg(p.img, px, y, gw, gh);
-          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, y + gh + 4, { align: 'center', maxWidth: gw }); }
-        });
-        y += gh + 14;
-      }
+      // ================= 2. PHOTO =================
+      renderPhotoSection('Product Photos', D.prodPhotos, null, null);
 
-      // ================= 3. DIMENSIONS DYNAMIC =================
+      // ================= 3. DIMENSIONS =================
       const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing || (d.name && d.name !== 'DIMENSION NAME'));
-
-      if(validDims.length > 0) {
+      if(validDims.length > 0 || (D.dimNotes && D.dimNotes.trim())) {
         addHeader('Product Dimension & Details');
         doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
         doc.text('Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing', M, y); y += 6;
@@ -1606,55 +1516,50 @@
         });
         if (validDims.length % dimCols !== 0) dy += dimSlotH + 4;
         y = dy;
+        if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
       }
-      if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
 
-      // ================= 4. BV TEST & APPROVAL =================
+      // ================= 4. PRODUCT ASSEMBLY =================
+      renderPhotoSection('Product Assembly', D.assemblyPhotos, D.assemblyNotes, 'Assembly Notes');
+
+      // ================= 5. QUALITY WATCH OUT =================
+      renderPhotoSection('Quality Watch Out', D.watchoutPhotos, D.watchoutNotes, 'Quality Watch Out Notes');
+
+      // ================= 6. TESTING =================
       const validBV = (D.bvRows || []).filter(r => r.test || r.result || r.remark);
-      if(validBV.length > 0 || (D.watchoutPhotos && D.watchoutPhotos.filter(p=>p&&p.img).length > 0) || D.watchoutNotes) {
-          addHeader('Quality Assurance Test');
-          if(validBV.length > 0) {
-              doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
-              doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
-              validBV.forEach(row => {
-                const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
-                const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
-                if (y + rowH > BOTTOM_LIMIT) { addHeader('Quality Assurance Test (cont.)'); }
-                doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
-              }); y += 6;
-          }
+      const validTestingPhotos = (D.testingPhotos || []).filter(p => p && p.img);
+      if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
+        addHeader('Testing');
+        if(validBV.length > 0) {
+            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
+            doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
+            validBV.forEach(row => {
+              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
+              const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
+              if (y + rowH > BOTTOM_LIMIT) { addHeader('Testing (cont.)'); }
+              doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
+            }); y += 6;
+        }
 
-          const validWatchouts = (D.watchoutPhotos || []).filter(p => p && p.img);
-          if (validWatchouts.length > 0) {
-            if(y + 30 > BOTTOM_LIMIT) addHeader('Quality Watch Out');
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Quality Watch Out', M, y); y += 6; 
-            const gw5 = (W - M * 2 - 4) / 2; const gh5 = gw5; 
-            validWatchouts.forEach((p, i) => {
-              const col = i % 2;
-              if(col === 0 && i > 0) y += gh5 + 10;
-              if (y + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); }
-              const px = M + col * (gw5 + 4);
-              doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw5, gh5, 'S');
-              addImg(p.img, px, y, gw5, gh5);
-              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, y + gh5 + 4, { align: 'center', maxWidth: gw5 }); }
-            }); y += Math.ceil(validWatchouts.length / 2) * (gw5 * 0.75 + 10) + 4;
-          }
-          if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
+        if (validTestingPhotos.length > 0) {
+          if(y + 30 > BOTTOM_LIMIT) addHeader('Testing Photos');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
+          const gwT = (W - M * 2 - 4) / 2; const ghT = gwT; 
+          validTestingPhotos.forEach((p, i) => {
+            const col = i % 2;
+            if(col === 0 && i > 0) y += ghT + 10;
+            if (y + ghT > BOTTOM_LIMIT) { addHeader('Testing Photos (cont.)'); }
+            const px = M + col * (gwT + 4);
+            doc.setDrawColor(210, 205, 195); doc.rect(px, y, gwT, ghT, 'S');
+            addImg(p.img, px, y, gwT, ghT);
+            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gwT / 2, y + ghT + 4, { align: 'center', maxWidth: gwT }); }
+          }); y += Math.ceil(validTestingPhotos.length / 2) * (gwT + 10) + 4;
+        }
+        if (D.testingNotes) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
       }
 
-      // ================= FINAL APPROVAL =================
-      if(y + 80 > BOTTOM_LIMIT) addHeader('Final Approval / Green Label');
-      else { y += 6; doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Final Approval / Green Label', M, y); y += 4; }
-      
-      const ap = D.approvalPhotos || {}; const apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')); 
-      const apW = (W - M * 2 - 4) / 2; const apH = apW;
-      apKeys.forEach((k, i) => {
-        const dataObj = ap[k]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
-        const px = M + i * (apW + 4); doc.setDrawColor(210, 205, 195); doc.rect(px, y, apW, apH + 5, 'S');
-        if (img) { addImg(img, px, y, apW, apH); } else { doc.setFillColor(245, 242, 237); doc.rect(px, y, apW, apH, 'F'); }
-        doc.setFillColor(245, 242, 237); doc.rect(px, y + apH, apW, 5, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70); doc.text(APPROVAL_SLOTS[i], px + apW / 2, y + apH + 3.5, { align: 'center' });
-      }); y += apH + 12;
-      addText('Approval Date', D.approvalDate, M, y); addText('Approved By', D.approvalBy, M + (W - M * 2) / 2, y); y += 12;
+      // ================= 7. CHECKLIST =================
+      renderPhotoSection('Check List', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
 
       // Đánh số trang
       const totalPages = doc.getNumberOfPages();
