@@ -11,7 +11,7 @@
   
   <!-- Icon hiển thị ngoài màn hình chính iPhone -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition</title>
+  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -227,7 +227,67 @@
     .sbar-btn.pri { background: var(--accent); color: #fff; }
     .sbar-btn.danger { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; }
 
-    /* MODAL */
+    /* ACTION SHEET (MENU LỰA CHỌN CHỤP HOẶC TẢI ẢNH) */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 110;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .sheet-overlay.hidden { display: none !important; }
+    .sheet-box {
+      width: 100%;
+      max-width: 440px;
+      padding: 12px;
+      animation: slideUp 0.22s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-group {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(15px);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .sheet-btn {
+      width: 100%;
+      padding: 15px;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: #007aff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-bottom: 1px solid #e2e4e8;
+      font-family: inherit;
+    }
+    .sheet-btn:active { background: rgba(0, 0, 0, 0.05); }
+    .sheet-btn:last-child { border-bottom: none; }
+    .sheet-cancel {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 14px;
+      border: none;
+      background: #fff;
+      color: #007aff;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* MODAL CHỈNH SỬA CROPPER */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
@@ -426,6 +486,23 @@
     <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
   </div>
 
+  <!-- POPUP ACTION SHEET (LỰA CHỌN CHỤP HAY CHỌN ẢNH) -->
+  <div class="sheet-overlay hidden" id="actionSheet" onclick="closeSheet()">
+    <div class="sheet-box" onclick="event.stopPropagation()">
+      <div class="sheet-group">
+        <button class="sheet-btn" onclick="triggerNativeCamera()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Chụp ảnh mới
+        </button>
+        <button class="sheet-btn" onclick="triggerNativeLibrary()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Chọn từ thư viện ảnh
+        </button>
+      </div>
+      <button class="sheet-cancel" onclick="closeSheet()">Hủy</button>
+    </div>
+  </div>
+
   <!-- CROPPER MODAL WITH ADVANCED IPHONE PHOTO TOOLS -->
   <div class="modal-overlay hidden" id="camModal">
     <div class="modal-box">
@@ -469,8 +546,8 @@
       
       <div class="modal-foot">
         <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
-        <button class="mbtn sec" id="btnUpload" onclick="triggerFileInput()">📁 Chọn ảnh khác</button>
-        <button class="mbtn pri" id="btnRetake" onclick="retake()">📷 Chụp lại</button>
+        <button class="mbtn sec" onclick="triggerNativeLibrary()">📁 Đổi ảnh</button>
+        <button class="mbtn pri" onclick="triggerNativeCamera()">📷 Chụp lại</button>
         <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
@@ -538,16 +615,25 @@
     let scaleX = 1;
     let scaleY = 1;
 
-    // ═══════════════ MỞ TRỰC TIẾP CAMERA IPHONE ═══════════════
+    // ═══════════════ BƯỚC CHỌN NGUỒN ẢNH (ACTION SHEET) ═══════════════
     function openCam(target) {
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; }
-      // Kích hoạt thẳng Camera gốc của iPhone
+      document.getElementById('actionSheet').classList.remove('hidden');
+    }
+
+    function closeSheet() {
+      document.getElementById('actionSheet').classList.add('hidden');
+    }
+
+    function triggerNativeCamera() {
+      closeSheet();
       document.getElementById('cameraInput').click();
     }
 
-    function triggerFileInput() { 
-      document.getElementById('fileInput').click(); 
+    function triggerNativeLibrary() {
+      closeSheet();
+      document.getElementById('fileInput').click();
     }
 
     function handleFile(e) {
@@ -611,14 +697,12 @@
         if (btnEl) btnEl.classList.add('active');
     }
 
-    // Lệnh xoay 90 độ
     function rotate90() {
         if (!cropper) return;
         cropper.rotate(90);
         baseRotateAngle = (baseRotateAngle + 90) % 360;
     }
 
-    // Lệnh lật ảnh ngang/dọc (Flip)
     function flipImage(axis) {
         if (!cropper) return;
         if (axis === 'x') {
@@ -630,7 +714,6 @@
         }
     }
 
-    // FIX LỖI XOAY: Căn thẳng tương đối bằng delta
     function applyStraighten(val) {
         if (!cropper) return;
         const newAngle = parseFloat(val);
@@ -642,7 +725,6 @@
         document.getElementById('straightenVal').textContent = (newAngle > 0 ? '+' : '') + newAngle.toFixed(1) + '°';
     }
 
-    // Đặt lại các thao tác xoay / lật / căn thẳng
     function resetTransforms() {
         if (!cropper) return;
         baseRotateAngle = 0;
@@ -653,12 +735,6 @@
         document.getElementById('straightenRange').value = 0;
         document.getElementById('straightenVal').textContent = '0.0°';
         setCropRatio(1, document.getElementById('ratio_1_1'));
-    }
-
-    function retake() {
-      if(cropper) { cropper.destroy(); cropper = null; }
-      closeCamera();
-      document.getElementById('cameraInput').click();
     }
 
     function usePhoto() {
