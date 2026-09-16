@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- Cấu hình Web App cho iPhone (PWA Standalone) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
@@ -12,14 +11,14 @@
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
   <title>PP Sample Review — Lite Edition</title>
   
-  <!-- Thư viện PDF -->
+  <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
-  <!-- Thư viện Cắt ảnh -->
+  <!-- Cropper.js Library -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-  <!-- Thư viện Kéo thả (Drag & Drop) -->
+  <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
   <style>
@@ -125,51 +124,53 @@
     .pact.gal { background: rgba(26, 58, 106, .95); }
     .pact.del { background: rgba(139, 32, 32, .95); }
 
-    /* FREE PHOTOS CÓ HỖ TRỢ KÉO THẢ */
+    /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .free-photo-item { 
-      aspect-ratio: 4/3; 
-      position: relative; 
-      border-radius: 8px; 
-      overflow: hidden; 
-      border: 1px solid var(--border); 
-      background: #ffffff; 
-      touch-action: none; /* Rất quan trọng để Sortable hoạt động tốt trên mobile */
-    }
+    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; touch-action: none; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; pointer-events: none;}
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
-    
-    /* Hiệu ứng khi kéo thả */
     .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
     
-    /* Nút [+ Thêm Ảnh] Bự */
     .add-photo-btn { 
-      aspect-ratio: 4/3; 
-      border: 2px dashed var(--accent); 
-      border-radius: 8px; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      background: var(--accent-light); 
-      cursor: pointer; 
-      gap: 6px;
+      aspect-ratio: 4/3; border: 2px dashed var(--accent); border-radius: 8px; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      background: var(--accent-light); cursor: pointer; gap: 6px;
     }
     .add-photo-btn:active { background: #d0e4d8; }
 
     /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
-    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative;}
     .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
     .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
     .dim-fields { padding: 6px 7px; }
-    .dim-name { font-size: 9px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+    
+    .dim-name-input { 
+      width: calc(100% - 4px); font-size: 10px; text-transform: uppercase; color: var(--text); 
+      margin-bottom: 4px; font-weight: 700; border: none; background: transparent; 
+      border-bottom: 1px dashed var(--border); outline: none; padding-bottom: 2px; 
+    }
+    .dim-name-input:focus { border-bottom-color: var(--accent); }
+
     .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
     .dim-row label { font-size: 9px; color: var(--muted); }
     .dim-row input { width: 64px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
+    
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
+    .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
+
+    .dim-del-slot { 
+      position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; 
+      background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; 
+      display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .add-dim-btn { 
+      min-height: 180px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      background: var(--accent-light); cursor: pointer; gap: 6px;
+    }
 
     /* TABLES & NOTES */
     .note-area { padding: 10px 12px; }
@@ -216,13 +217,12 @@
     .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
-    /* TOAST */
     .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: rgba(26,58,42,0.95); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
 
-    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .dim-del-slot { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
 </head>
 
@@ -230,7 +230,7 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-brand">SOFACOMPANY</div>
-    <div class="topbar-title" id="topTitle">PP Sample Review</div>
+    <div class="topbar-title" id="topTitle">PP Sample Review (Lite)</div>
     <div class="autosave-indicator" id="saveIndicator" style="display:none"><span>●</span> <span id="saveText">Synced</span></div>
     <div class="topbar-actions">
       <button class="topbar-btn" id="btnHome" onclick="goHome()" style="display:none">← Reports</button>
@@ -249,6 +249,10 @@
       <p>Cover · Photos · Dimensions · BV Test</p>
     </div>
     <button class="new-btn" onclick="newReport()">+ New Report</button>
+    <!-- THÊM CHỨC NĂNG IMPORT JSON TẠI ĐÂY -->
+    <button class="new-btn" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
+    
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
@@ -421,12 +425,14 @@
       stage: ['Frame', 'Foam', 'Upholstery'], sample: ['Initial', 'Repaired', 'Final'],
       comfort: ['Normal', 'Soft', 'Super Soft', 'Luxury Comfort'], rating: ['Repair', 'New Sample', 'To send for final approval', 'Approved']
     };
-    const DIM_FIELDS = [
-      { name: 'Overall Width', key: 'ow' }, { name: 'Overall Depth', key: 'od' }, { name: 'Overall Height', key: 'oh' },
-      { name: 'Seat Width', key: 'sw' }, { name: 'Seat Depth', key: 'sd' }, { name: 'Seat Height', key: 'sh' },
-      { name: 'Arm Height', key: 'ah' }, { name: 'Back Height', key: 'bh' }, { name: 'Middle Height', key: 'mh' },
-      { name: 'Arm Thickness', key: 'at' }, { name: 'Back Thickness', key: 'bt' }, { name: 'Arm to Seat', key: 'as2' },
-      { name: 'Back to Seat', key: 'bs' }, { name: 'Net Weight', key: 'nw' }
+    
+    // Mảng gốc dùng để khởi tạo
+    const DEFAULT_DIM_FIELDS = [
+      { name: 'Overall Width'}, { name: 'Overall Depth'}, { name: 'Overall Height'},
+      { name: 'Seat Width'}, { name: 'Seat Depth'}, { name: 'Seat Height'},
+      { name: 'Arm Height'}, { name: 'Back Height'}, { name: 'Middle Height'},
+      { name: 'Arm Thickness'}, { name: 'Back Thickness'}, { name: 'Arm to Seat'},
+      { name: 'Back to Seat'}, { name: 'Net Weight'}
     ];
     const DEFAULT_BV = [
       { test: 'ANSI/BIFMA X5.1 Sec. 12', result: '', remark: '' }, { test: 'ANSI/BIFMA X5.1 Sec. 13', result: '', remark: '' },
@@ -506,11 +512,11 @@
       initCropper(imgSrc);
     }
 
-    function editDimPhoto(key) {
-      const data = D.dimData[key];
+    function editDimPhoto(index) {
+      const data = D.dimensions[index];
       if (!data || !data.img) return;
       const imgSrc = typeof data.img === 'string' ? data.img : (data.original || data.img);
-      camTarget = {type: 'dim', key};
+      camTarget = {type: 'dim', index};
       currentOriginalImg = imgSrc;
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
@@ -529,7 +535,7 @@
     }
 
     function initCropper(imgSrc) {
-        const title = camTarget.type === 'dim' ? camTarget.key.replace(/_/g, ' ').toUpperCase() :
+        const title = camTarget.type === 'dim' ? 'KÍCH THƯỚC' :
           camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : camTarget.key.replace(/_/g, ' ');
 
         document.getElementById('camTitle').textContent = '✏️ ' + title;
@@ -601,7 +607,7 @@
       closeCamera();
     }
 
- function savePhoto(imgData, originalData) {
+    function savePhoto(imgData, originalData) {
       const t = camTarget;
       if (!t) return;
       if (t.type === 'slot') {
@@ -610,7 +616,6 @@
         else if (t.section === 'approval') { D.approvalPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'approval'); }
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
-           // THÊM DÒNG NÀY ĐỂ FIX LỖI: Khởi tạo object nếu ô đang là null
            if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '' }; 
            D[t.key][t.index].img = imgData; 
            D[t.key][t.index].original = originalData;
@@ -620,11 +625,13 @@
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
-        if (!D.dimData) D.dimData = {}; if (!D.dimData[t.key]) D.dimData[t.key] = {};
-        D.dimData[t.key].img = imgData; D.dimData[t.key].original = originalData; buildDimGrid();
+        if (!D.dimensions) D.dimensions = [];
+        if (!D.dimensions[t.index]) D.dimensions[t.index] = {};
+        D.dimensions[t.index].img = imgData; 
+        D.dimensions[t.index].original = originalData;
+        buildDimGrid();
       }
-      as();
-      showToast('✓ Đã lưu ảnh');
+      as(); showToast('✓ Đã lưu ảnh');
     }
 
     function closeCamera() { 
@@ -633,7 +640,27 @@
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
-    // ═══════════════ APP LOGIC & UI ═══════════════
+    // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
+    function importReport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!data.id) data.id = Date.now().toString();
+          await dbPut(data);
+          showToast('✓ Nhập báo cáo thành công!');
+          await renderHome();
+          openReport(data.id);
+        } catch (err) {
+          alert('File JSON không hợp lệ!');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
     async function goHome() {
       currentId = null; curSec = 0;
       document.getElementById('homeScreen').classList.add('active');
@@ -714,6 +741,12 @@
           <button class="pact edit" title="Chỉnh sửa" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           </button>
+          <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <button class="pact gal" title="Đổi từ Album" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
           <button class="pact del" title="Xóa" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
@@ -747,16 +780,21 @@
       refreshSlot(containerId, key, section); as();
     }
 
+    // ═══════════════ DYNAMIC DIMENSIONS ═══════════════
     function buildDimGrid() {
       const grid = document.getElementById('dimGrid'); if (!grid) return; grid.innerHTML = '';
-      DIM_FIELDS.forEach(f => {
+      
+      (D.dimensions || []).forEach((d, i) => {
         const div = document.createElement('div'); div.className = 'dim-slot';
-        const store = D.dimData && D.dimData[f.key] ? D.dimData[f.key] : {};
-        const targetObj = `{type:'dim',key:'${f.key}'}`;
-        const displayImg = store.img ? (typeof store.img === 'string' ? store.img : store.img) : null;
+        const targetObj = `{type:'dim', index:${i}}`;
+        const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
         
         div.innerHTML = `
-        <div class="dim-photo" id="dph_${f.key}">
+        <button class="dim-del-slot" title="Xóa kích thước này" onclick="deleteDimSlot(${i}); event.stopPropagation();">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+
+        <div class="dim-photo" id="dph_${d.id}">
           ${displayImg ? `<img src="${displayImg}">` : `
           <div class="dual-tap-box" style="height:100%;">
             <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
@@ -768,33 +806,59 @@
               <span>Album</span>
             </div>
           </div>`}
-          ${displayImg ? `<div class="pactions">
-            <button class="pact edit" onclick="editDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-            <button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          ${displayImg ? `<div class="pactions" style="right: 4px;">
+            <button class="pact edit" onclick="editDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+            <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+            <button class="pact del" onclick="delDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>` : ''}
         </div>
         <div class="dim-fields">
-          <div class="dim-name">${f.name}</div>
-          <div class="dim-row"><label>Actual</label><input value="${store.actual || ''}" oninput="saveDim('${f.key}','actual',this.value)"> <div class="color-dot ${store.color || 'color-blue'}"></div></div>
-          <div class="dim-row"><label>Drawing</label><input value="${store.drawing || ''}" oninput="saveDim('${f.key}','drawing',this.value)"></div>
+          <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)">
+          <div class="dim-row"><label>Actual</label><input value="${d.actual || ''}" oninput="updateDimField(${i},'actual',this.value)"> <div class="color-dot ${d.color || 'color-blue'}"></div></div>
+          <div class="dim-row"><label>Drawing</label><input value="${d.drawing || ''}" oninput="updateDimField(${i},'drawing',this.value)"></div>
           <div class="dim-row"><label>Status</label>
-            <select onchange="saveDim('${f.key}','color',this.value)">
-              <option value="color-blue" ${(store.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
-              <option value="color-red" ${store.color === 'color-red' ? 'selected' : ''}>✗ Not OK</option>
-              <option value="color-orange" ${store.color === 'color-orange' ? 'selected' : ''}>~ Update Dwg</option>
+            <select onchange="updateDimField(${i},'color',this.value)">
+              <option value="color-blue" ${(d.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
+              <option value="color-red" ${d.color === 'color-red' ? 'selected' : ''}>✗ Not OK</option>
+              <option value="color-orange" ${d.color === 'color-orange' ? 'selected' : ''}>~ Update Dwg</option>
             </select>
           </div>
         </div>`;
         grid.appendChild(div);
       });
+
+      const addBtn = document.createElement('div'); addBtn.className = 'dim-slot add-dim-btn';
+      addBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:4px;">THÊM ĐO ĐẠC</span>`;
+      addBtn.onclick = () => addDimSlot();
+      grid.appendChild(addBtn);
     }
 
-    function saveDim(key, field, val) {
-      if (!D.dimData) D.dimData = {}; if (!D.dimData[key]) D.dimData[key] = {}; D.dimData[key][field] = val;
-      if (field === 'color') { const dot = document.querySelector(`#dph_${key}`).closest('.dim-slot').querySelector('.color-dot'); if (dot) dot.className = 'color-dot ' + val; }
+    function updateDimField(index, field, val) {
+      D.dimensions[index][field] = val;
+      if (field === 'color') buildDimGrid();
       as();
     }
-    function delDimPhoto(key) { if (!confirm('Xóa ảnh kích thước này?')) return; if (D.dimData && D.dimData[key]) delete D.dimData[key].img; buildDimGrid(); as(); }
+
+    function addDimSlot() {
+      if(!D.dimensions) D.dimensions = [];
+      D.dimensions.push({ id: 'dim_' + Math.random().toString(36).substr(2, 9), name: 'DIMENSION NAME', actual: '', drawing: '', color: 'color-blue', img: null, original: null });
+      buildDimGrid(); as();
+    }
+
+    function deleteDimSlot(index) {
+      if (confirm('Bạn có chắc muốn xóa toàn bộ ô kích thước này?')) {
+        D.dimensions.splice(index, 1);
+        buildDimGrid(); as();
+      }
+    }
+
+    function delDimPhoto(index) { 
+      if (!confirm('Xóa ảnh kích thước này?')) return; 
+      D.dimensions[index].img = null; 
+      D.dimensions[index].original = null; 
+      buildDimGrid(); as(); 
+    }
 
     function renderFreePhotos(key) {
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
@@ -834,22 +898,22 @@
       addBtn.onclick = () => { if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
       el.appendChild(addBtn);
 
-      if(el._sortable) el._sortable.destroy();
-      el._sortable = new Sortable(el, {
-         animation: 150, delay: 250, delayOnTouchOnly: true, filter: '.ignore-drag', ghostClass: 'sortable-ghost',
-         onEnd: function (evt) {
-            if (evt.oldIndex === evt.newIndex) return;
-            const array = D[key]; const movedItem = array.splice(evt.oldIndex, 1)[0]; array.splice(evt.newIndex, 0, movedItem);
-            as(); renderFreePhotos(key);
-         }
-      });
+      // BẢO VỆ SORTABLE KHỎI LỖI LOAD THƯ VIỆN
+      if(typeof Sortable !== 'undefined') {
+          if(el._sortable) el._sortable.destroy();
+          el._sortable = new Sortable(el, {
+             animation: 150, delay: 250, delayOnTouchOnly: true, filter: '.ignore-drag', ghostClass: 'sortable-ghost',
+             onEnd: function (evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+                const array = D[key]; const movedItem = array.splice(evt.oldIndex, 1)[0]; array.splice(evt.newIndex, 0, movedItem);
+                as(); renderFreePhotos(key);
+             }
+          });
+      }
     }
 
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
-    
-    // Xóa ảnh sẽ để lại ô trống.
     function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; D[key][i] = null; renderFreePhotos(key); as(); }
-    // Xóa hẳn ô trống
     function delFreeSlot(key, i) { D[key].splice(i, 1); renderFreePhotos(key); as(); }
 
     function renderBVTable() {
@@ -876,11 +940,22 @@
       fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
       document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
       Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
+      
+      if (!D.dimensions) {
+          D.dimensions = DEFAULT_DIM_FIELDS.map(f => {
+              const oldData = D.dimData ? (D.dimData[f.name]) : null; 
+              return {
+                  id: 'dim_' + Math.random().toString(36).substr(2, 9),
+                  name: f.name, actual: oldData?.actual || '', drawing: oldData?.drawing || '',
+                  color: oldData?.color || 'color-blue', img: oldData?.img || null, original: oldData?.original || null
+              };
+          });
+      }
+
       buildDimGrid(); renderBVTable();
       ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
       refreshAllSlots();
     }
-    function refreshAllSlots() { COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); APPROVAL_SLOTS.forEach(s => refreshSlot('approvalPhotos', s.replace(/ /g, '_'), 'approval')); }
 
     function showSection(i) {
       curSec = i; document.querySelectorAll('.sec-block').forEach((b, idx) => b.style.display = idx === i ? 'block' : 'none');
@@ -918,7 +993,7 @@
 
     async function newReport() {
       const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
-      const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
+      const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
       await dbPut(r); openReport(id);
     }
 
@@ -929,7 +1004,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-// ═══════════════ PDF EXPORT (SMART LAYOUT & 1:1 RATIO) ═══════════════
+    // ═══════════════ PDF EXPORT ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -938,17 +1013,14 @@
       const addHeader = (title) => {
         doc.addPage(); doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 20, 'F'); doc.setTextColor(255, 255, 255);
         doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
-        
-        // FIX: Xử lý chuỗi "- | - | -" (chỉ in khi có dữ liệu)
         const topInfo = [D.model, D.desc, D.reviewer].filter(Boolean).join('  |  ');
         if(topInfo) { doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' }); }
-        
         doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 14, { align: 'center' });
         y = 28; doc.setTextColor(30, 30, 30);
       };
 
       const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
-        if (!text || !text.trim()) return curY; // Bỏ qua nếu không có dữ liệu
+        if (!text || !text.trim()) return curY; 
         let ty = curY;
         if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5; }
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40);
@@ -984,7 +1056,7 @@
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
       const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
-      const pw = (W - M * 2 - 4) / 2; const ph = pw; // ĐỔI TỶ LỆ VẼ LÊN PDF LÀ 1:1
+      const pw = (W - M * 2 - 4) / 2; const ph = pw; // 1:1
       [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
         const dataObj = cp[ckeys[i]]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
@@ -993,14 +1065,14 @@
       });
       y += (ph + 6) * 2 + 4;
 
-      // ================= 2. PRODUCT PHOTOS (CHỈ IN ẢNH CÓ DỮ LIỆU) =================
+      // ================= 2. PRODUCT PHOTOS =================
       const validProd = (D.prodPhotos || []).filter(p => p && p.img);
       if (validProd.length > 0) {
         addHeader('Product Photos'); 
-        const gw = (W - M * 2 - 4) / 2; const gh = gw; // 1:1
+        const gw = (W - M * 2 - 4) / 2; const gh = gw; 
         validProd.forEach((p, i) => {
           const col = i % 2; 
-          if(col === 0 && i > 0) y += gh + 12; // Xuống dòng mới nếu hết cột
+          if(col === 0 && i > 0) y += gh + 12;
           if (y + gh + 12 > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); }
           const px = M + (col * (gw + 4));
           doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw, gh, 'S');
@@ -1010,40 +1082,47 @@
         y += gh + 14;
       }
 
-      // ================= 3. DIMENSIONS (CHỈ IN KHI CÓ DỮ LIỆU) =================
-      const validDims = DIM_FIELDS.filter(f => {
-         const dd = D.dimData?.[f.key];
-         return dd && (dd.img || dd.actual || dd.drawing);
-      });
+      // ================= 3. DIMENSIONS DYNAMIC =================
+      const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing || (d.name && d.name !== 'DIMENSION NAME'));
 
       if(validDims.length > 0) {
         addHeader('Product Dimension & Details');
         doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
         doc.text('Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing', M, y); y += 6;
         
-        const dimCols = 3; const dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols; 
-        const dimImgH = dimSlotW; // Tỷ lệ 1:1
-        const dimSlotH = dimImgH + 16; 
+        let dx = M, dy = y;
+        const dimCols = 3, dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols; 
+        const dimImgH = dimSlotW; 
+        const dimSlotH = dimImgH + 18; 
         
-        validDims.forEach((f, i) => {
-          const col = i % dimCols;
-          if (col === 0 && i > 0) y += dimSlotH + 4;
-          if (y + dimSlotH > BOTTOM_LIMIT) { addHeader('Product Dimension & Details (cont.)'); }
+        validDims.forEach((d, i) => {
+          if (dy + dimSlotH > BOTTOM_LIMIT) { 
+              addHeader('Product Dimension & Details (cont.)'); 
+              dy = y; 
+              dx = M; 
+          }
           
-          const px = M + col * (dimSlotW + 2);
-          const dd = D.dimData[f.key];
-          const displayImg = dd.img ? (typeof dd.img === 'string' ? dd.img : dd.img) : null;
+          const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
           
-          doc.setDrawColor(220, 217, 210); doc.rect(px, y, dimSlotW, dimSlotH, 'S');
-          if (displayImg) { addImg(displayImg, px, y, dimSlotW, dimImgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, y, dimSlotW, dimImgH, 'F'); }
+          doc.setDrawColor(220, 217, 210); doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
+          if (displayImg) { addImg(displayImg, dx, dy, dimSlotW, dimImgH); } else { doc.setFillColor(248, 245, 240); doc.rect(dx, dy, dimSlotW, dimImgH, 'F'); }
           
-          const fy = y + dimImgH + 3; 
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); doc.text(f.name, px + 2, fy + 3);
-          const color = dd.color === 'color-red' ? [226, 75, 74] : dd.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(px + dimSlotW - 4, fy + 2, 2, 'F');
+          const fy = dy + dimImgH + 3; 
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); 
+          doc.text(d.name || 'DIMENSION', dx + 2, fy + 3);
+          
+          const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(dx + dimSlotW - 4, fy + 2, 2, 'F');
           doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
-          doc.text(`Actual: ${dd.actual || '—'}`, px + 2, fy + 8); doc.text(`Drawing: ${dd.drawing || '—'}`, px + 2, fy + 13);
+          doc.text(`Actual: ${d.actual || '—'}`, dx + 2, fy + 8); doc.text(`Drawing: ${d.drawing || '—'}`, dx + 2, fy + 13);
+          
+          dx += dimSlotW + 2;
+          if ((i + 1) % dimCols === 0) {
+              dx = M;
+              dy += dimSlotH + 4;
+          }
         });
-        y += dimSlotH + 8;
+        if (validDims.length % dimCols !== 0) dy += dimSlotH + 4;
+        y = dy;
       }
       if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
 
@@ -1066,7 +1145,7 @@
           if (validWatchouts.length > 0) {
             if(y + 30 > BOTTOM_LIMIT) addHeader('Quality Watch Out');
             doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Quality Watch Out', M, y); y += 6; 
-            const gw5 = (W - M * 2 - 4) / 2; const gh5 = gw5; // 1:1
+            const gw5 = (W - M * 2 - 4) / 2; const gh5 = gw5; 
             validWatchouts.forEach((p, i) => {
               const col = i % 2;
               if(col === 0 && i > 0) y += gh5 + 10;
@@ -1085,7 +1164,7 @@
       else { y += 6; doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Final Approval / Green Label', M, y); y += 4; }
       
       const ap = D.approvalPhotos || {}; const apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')); 
-      const apW = (W - M * 2 - 4) / 2; const apH = apW; // 1:1
+      const apW = (W - M * 2 - 4) / 2; const apH = apW;
       apKeys.forEach((k, i) => {
         const dataObj = ap[k]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         const px = M + i * (apW + 4); doc.setDrawColor(210, 205, 195); doc.rect(px, y, apW, apH + 5, 'S');
@@ -1107,5 +1186,4 @@
     initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
   </script>
 </body>
-
 </html>
