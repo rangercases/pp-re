@@ -10,14 +10,17 @@
   <meta name="apple-mobile-web-app-title" content="PP Review">
   
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition (Edit History)</title>
+  <title>PP Sample Review — Lite Edition</title>
   
-  <!-- PDF Library -->
+  <!-- Thư viện PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
-  <!-- Cropper.js Library -->
+  <!-- Thư viện Cắt ảnh -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+  <!-- Thư viện Kéo thả (Drag & Drop) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
   <style>
     :root {
@@ -106,7 +109,6 @@
     .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; }
     .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
     
-    /* NÚT CHỌN CỦA Ô TRỐNG */
     .dual-tap-box { width: 100%; height: calc(100% - 26px); display: flex; }
     .tap-option { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; background: #fafbfc; transition: background 0.15s; }
     .tap-option:first-child { border-right: 1px dashed var(--border-light); }
@@ -115,21 +117,46 @@
 
     .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border-light); background: #ffffff; text-transform: uppercase; }
     
-    /* NÚT ACTION GÓC TRÊN */
     .pactions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 2; }
     .pact { width: 24px; height: 24px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
     .pact:active { transform: scale(0.9); }
-    .pact.edit { background: rgba(232, 144, 32, .95); } /* Nút sửa màu Cam */
+    .pact.edit { background: rgba(232, 144, 32, .95); }
     .pact.cam { background: rgba(45, 90, 61, .95); }
     .pact.gal { background: rgba(26, 58, 106, .95); }
     .pact.del { background: rgba(139, 32, 32, .95); }
 
-    /* FREE PHOTOS */
+    /* FREE PHOTOS CÓ HỖ TRỢ KÉO THẢ */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; }
-    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
+    .free-photo-item { 
+      aspect-ratio: 4/3; 
+      position: relative; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      border: 1px solid var(--border); 
+      background: #ffffff; 
+      touch-action: none; /* Rất quan trọng để Sortable hoạt động tốt trên mobile */
+    }
+    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; pointer-events: none;}
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
+    
+    /* Hiệu ứng khi kéo thả */
+    .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
+    
+    /* Nút [+ Thêm Ảnh] Bự */
+    .add-photo-btn { 
+      aspect-ratio: 4/3; 
+      border: 2px dashed var(--accent); 
+      border-radius: 8px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      background: var(--accent-light); 
+      cursor: pointer; 
+      gap: 6px;
+    }
+    .add-photo-btn:active { background: #d0e4d8; }
 
     /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
@@ -143,7 +170,6 @@
     .dim-row input { width: 64px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
-    .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
 
     /* TABLES & NOTES */
     .note-area { padding: 10px 12px; }
@@ -196,7 +222,7 @@
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
 
-    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .free-del, .add-photo-btn { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
 </head>
 
@@ -204,7 +230,7 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-brand">SOFACOMPANY</div>
-    <div class="topbar-title" id="topTitle">PP Sample Review (Lite)</div>
+    <div class="topbar-title" id="topTitle">PP Sample Review</div>
     <div class="autosave-indicator" id="saveIndicator" style="display:none"><span>●</span> <span id="saveText">Synced</span></div>
     <div class="topbar-actions">
       <button class="topbar-btn" id="btnHome" onclick="goHome()" style="display:none">← Reports</button>
@@ -264,7 +290,7 @@
     <!-- S1: PRODUCT PHOTOS -->
     <div id="sec1" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Product Photos <span>Tap + to add more</span></div>
+        <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="prodPhotos"></div>
       </div>
     </div>
@@ -291,7 +317,7 @@
         <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
       </div>
       <div class="sec-card">
-        <div class="sec-head">Quality Watch Out & Comments</div>
+        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="watchoutPhotos"></div>
         <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, quality notes..." oninput="as()"></textarea></div>
       </div>
@@ -352,10 +378,8 @@
       
       <div class="modal-foot">
         <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
-        <!-- HAI NÚT RETAKE ĐƯỢC ẨN/HIỆN LINH HOẠT THEO NGUỒN VÀO -->
         <button class="mbtn pri hidden" id="btnRetakeCam" onclick="triggerNativeCamera(camTarget)">📷 Chụp lại</button>
         <button class="mbtn pri hidden" id="btnRetakeLib" onclick="triggerPickLibrary(camTarget)">🖼️ Chọn lại</button>
-        
         <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
@@ -416,15 +440,13 @@
     let camTarget = null;
     let saveTimeout = null;
 
-    // CROPPER & ORIGINAL IMAGE STATE
     let cropper = null;
-    let currentOriginalImg = null; // LƯU TRỮ ẢNH GỐC
+    let currentOriginalImg = null; 
     let baseRotateAngle = 0;
     let lastStraightenAngle = 0;
     let scaleX = 1;
     let scaleY = 1;
 
-    // RESIZE TRƯỚC KHI LƯU ẢNH GỐC ĐỂ TRÁNH TRÀN BỘ NHỚ
     function resizeImage(dataUrl, maxDimension = 1280, quality = 0.85) {
       return new Promise(resolve => {
         const img = new Image();
@@ -465,28 +487,22 @@
       if (!file || !camTarget) return;
       const reader = new FileReader();
       reader.onload = ev => { 
-        currentOriginalImg = ev.target.result; // Lưu file gốc
+        currentOriginalImg = ev.target.result; 
         initCropper(ev.target.result); 
       };
       reader.readAsDataURL(file);
       e.target.value = '';
     }
 
-    // MỞ TÍNH NĂNG EDIT ẢNH CŨ
     function editSlotPhoto(containerId, key, section) {
       const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
       const data = store[key];
       if (!data) return;
-      
-      // Khôi phục ảnh gốc nếu có, nếu chưa có (file cũ) thì lấy ảnh crop hiện tại
       const imgSrc = typeof data === 'string' ? data : (data.original || data.img);
       camTarget = {type: 'slot', key, containerId, section};
       currentOriginalImg = imgSrc;
-      
-      // Khi edit, không cần hiện nút Retake
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
-      
       initCropper(imgSrc);
     }
 
@@ -494,13 +510,10 @@
       const data = D.dimData[key];
       if (!data || !data.img) return;
       const imgSrc = typeof data.img === 'string' ? data.img : (data.original || data.img);
-      
       camTarget = {type: 'dim', key};
       currentOriginalImg = imgSrc;
-      
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
-      
       initCropper(imgSrc);
     }
 
@@ -508,13 +521,10 @@
       const data = D[key][index];
       if (!data || !data.img) return;
       const imgSrc = data.original || data.img;
-      
       camTarget = {type: 'free', key, index};
       currentOriginalImg = imgSrc;
-      
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
-      
       initCropper(imgSrc);
     }
 
@@ -529,14 +539,9 @@
         const btn11 = document.getElementById('ratio_1_1');
         if(btn11) btn11.classList.add('active');
 
-        baseRotateAngle = 0;
-        lastStraightenAngle = 0;
-        scaleX = 1;
-        scaleY = 1;
-        const slider = document.getElementById('straightenRange');
-        if(slider) slider.value = 0;
-        const valText = document.getElementById('straightenVal');
-        if(valText) valText.textContent = '0.0°';
+        baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
+        const slider = document.getElementById('straightenRange'); if(slider) slider.value = 0;
+        const valText = document.getElementById('straightenVal'); if(valText) valText.textContent = '0.0°';
 
         const image = document.getElementById('cropperImage');
         image.src = imgSrc;
@@ -544,18 +549,9 @@
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
             aspectRatio: 1, 
-            viewMode: 1,
-            dragMode: 'move',
-            autoCropArea: 0.95,
-            restore: false,
-            guides: true,
-            center: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-            zoomOnWheel: true,
-            background: false
+            viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false,
+            guides: true, center: true, highlight: false, cropBoxMovable: true,
+            cropBoxResizable: true, toggleDragModeOnDblclick: false, zoomOnWheel: true, background: false
         });
     }
 
@@ -598,13 +594,9 @@
 
     async function usePhoto() {
       if (!cropper) { showToast('Lỗi: Chưa có dữ liệu ảnh!'); return; }
-      
       const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
       const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.85);
-      
-      // Nén ảnh gốc lại trước khi lưu DB để tiết kiệm dung lượng
       const compressedOriginal = await resizeImage(currentOriginalImg, 1280, 0.85);
-      
       savePhoto(finalDataUrl, compressedOriginal);
       closeCamera();
     }
@@ -618,23 +610,16 @@
         else if (t.section === 'approval') { D.approvalPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'approval'); }
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
-           // Đang ở chế độ Edit -> cập nhật ảnh
-           D[t.key][t.index].img = imgData;
-           D[t.key][t.index].original = originalData;
+           D[t.key][t.index].img = imgData; D[t.key][t.index].original = originalData;
         } else {
-           // Thêm mới
-           if (!D[t.key]) D[t.key] = []; 
-           D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
+           if (!D[t.key]) D[t.key] = []; D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
         if (!D.dimData) D.dimData = {}; if (!D.dimData[t.key]) D.dimData[t.key] = {};
-        D.dimData[t.key].img = imgData; 
-        D.dimData[t.key].original = originalData;
-        buildDimGrid();
+        D.dimData[t.key].img = imgData; D.dimData[t.key].original = originalData; buildDimGrid();
       }
-      as();
-      showToast('✓ Đã lưu ảnh');
+      as(); showToast('✓ Đã lưu ảnh');
     }
 
     function closeCamera() { 
@@ -711,7 +696,6 @@
       });
     }
 
-    // BỔ SUNG NÚT EDIT (BÚT CHÌ) CHO Ô CỐ ĐỊNH
     function renderSlotHTML(containerId, key, label, type, section) {
       const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
       const data = store && store[key];
@@ -724,12 +708,6 @@
         <div class="pactions">
           <button class="pact edit" title="Chỉnh sửa" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          </button>
-          <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </button>
-          <button class="pact gal" title="Đổi từ Album" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </button>
           <button class="pact del" title="Xóa" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -787,7 +765,6 @@
           </div>`}
           ${displayImg ? `<div class="pactions">
             <button class="pact edit" onclick="editDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-            <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
             <button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>` : ''}
         </div>
@@ -817,33 +794,58 @@
     function renderFreePhotos(key) {
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
-      const targetObj = `{type:'free',key:'${key}'}`;
+      
       arr.forEach((p, i) => {
         const div = document.createElement('div'); div.className = 'free-photo-item';
-        div.innerHTML = `<img src="${p.img}">
-        <div class="pactions">
-          <button class="pact edit" onclick="editFreePhoto('${key}', ${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-          <button class="pact del" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-        </div>
-        <div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
+        const targetObj = `{type:'free',key:'${key}',index:${i}}`;
+        
+        if (p && p.img) {
+            div.innerHTML = `<img src="${p.img}">
+            <div class="pactions">
+              <button class="pact edit" onclick="editFreePhoto('${key}', ${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact del" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>
+            <div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
+        } else {
+            div.innerHTML = `
+              <div class="dual-tap-box" style="height:100%;">
+                <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span>Chụp mới</span>
+                </div>
+                <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Album</span>
+                </div>
+              </div>
+              <button class="pact del" style="position:absolute; top:4px; right:4px;" onclick="delFreeSlot('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            `;
+        }
         el.appendChild(div);
       });
-      const addBtn = document.createElement('div'); addBtn.className = 'photo-slot';
-      addBtn.innerHTML = `
-      <div class="dual-tap-box" style="height:100%;">
-        <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Chụp mới</span>
-        </div>
-        <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span>Album</span>
-        </div>
-      </div>`;
+      
+      const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn ignore-drag';
+      addBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:4px;">THÊM ẢNH</span>`;
+      addBtn.onclick = () => { if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
       el.appendChild(addBtn);
+
+      if(el._sortable) el._sortable.destroy();
+      el._sortable = new Sortable(el, {
+         animation: 150, delay: 250, delayOnTouchOnly: true, filter: '.ignore-drag', ghostClass: 'sortable-ghost',
+         onEnd: function (evt) {
+            if (evt.oldIndex === evt.newIndex) return;
+            const array = D[key]; const movedItem = array.splice(evt.oldIndex, 1)[0]; array.splice(evt.newIndex, 0, movedItem);
+            as(); renderFreePhotos(key);
+         }
+      });
     }
+
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
-    function delFreePhoto(key, i) { if (!confirm('Xóa ảnh này không?')) return; if (!D[key]) return; D[key].splice(i, 1); renderFreePhotos(key); as(); }
+    
+    // Xóa ảnh sẽ để lại ô trống.
+    function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; D[key][i] = null; renderFreePhotos(key); as(); }
+    // Xóa hẳn ô trống
+    function delFreeSlot(key, i) { D[key].splice(i, 1); renderFreePhotos(key); as(); }
 
     function renderBVTable() {
       const tbody = document.getElementById('bvBody'); if (!tbody) return; tbody.innerHTML = '';
@@ -985,13 +987,16 @@
 
       // 2. PHOTOS
       if ((D.prodPhotos || []).length) {
-        addHeader('Product Photos'); const gw = (W - M * 2 - 4) / 2, gh = gw * 0.75;
-        D.prodPhotos.forEach((p, i) => {
-          const col = i % 2, row = Math.floor(i / 2), px = M + (col * (gw + 4)), py = y + (row * (gh + 14));
-          if (py + gh > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); y = 24; }
-          addImg(p.img, px, py, gw, gh);
-          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, py + gh + 4, { align: 'center' }); }
-        });
+        const validPhotos = D.prodPhotos.filter(p => p && p.img);
+        if(validPhotos.length > 0) {
+            addHeader('Product Photos'); const gw = (W - M * 2 - 4) / 2, gh = gw * 0.75;
+            validPhotos.forEach((p, i) => {
+              const col = i % 2, row = Math.floor(i / 2), px = M + (col * (gw + 4)), py = y + (row * (gh + 14));
+              if (py + gh > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); y = 24; }
+              addImg(p.img, px, py, gw, gh);
+              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, py + gh + 4, { align: 'center' }); }
+            });
+        }
       }
 
       // 3. DIMENSIONS
@@ -1023,13 +1028,16 @@
         doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
       }); y += 6;
       if ((D.watchoutPhotos || []).length) {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); doc.text('Quality Watch Out', M, y); y += 6; const gw5 = (W - M * 2 - 4) / 2, gh5 = gw5 * 0.75;
-        D.watchoutPhotos.forEach((p, i) => {
-          const px = M + (i % 2) * (gw5 + 4), py = y + (Math.floor(i / 2)) * (gh5 + 10);
-          if (py + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); y = 22; }
-          addImg(p.img, px, py, gw5, gh5);
-          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, py + gh5 + 4, { align: 'center' }); }
-        }); y += Math.ceil(D.watchoutPhotos.length / 2) * (gw5 * 0.75 + 10) + 4;
+        const validPhotos = D.watchoutPhotos.filter(p => p && p.img);
+        if(validPhotos.length > 0) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); doc.text('Quality Watch Out', M, y); y += 6; const gw5 = (W - M * 2 - 4) / 2, gh5 = gw5 * 0.75;
+            validPhotos.forEach((p, i) => {
+              const px = M + (i % 2) * (gw5 + 4), py = y + (Math.floor(i / 2)) * (gh5 + 10);
+              if (py + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); y = 22; }
+              addImg(p.img, px, py, gw5, gh5);
+              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, py + gh5 + 4, { align: 'center' }); }
+            }); y += Math.ceil(validPhotos.length / 2) * (gw5 * 0.75 + 10) + 4;
+        }
       }
       if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
 
