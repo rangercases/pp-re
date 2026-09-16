@@ -929,48 +929,49 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT (CHỈ 4 PHẦN VỚI ẢNH CROP) ═══════════════
+// ═══════════════ PDF EXPORT (SMART LAYOUT & 1:1 RATIO) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const W = 210, M = 14, BOTTOM_LIMIT = 268; let y = 0;
+      const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
 
-      const addHeader = (title, subtitle = '') => {
+      const addHeader = (title) => {
         doc.addPage(); doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 20, 'F'); doc.setTextColor(255, 255, 255);
-        doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text('SOFACOMPANY', M, 7);
-        doc.text(`${D.model || '—'} | ${D.desc || '—'} | ${D.reviewer || '—'}`, W - M, 7, { align: 'right' });
-        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title, W / 2, 13, { align: 'center' });
-        if (subtitle) { doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(200, 230, 210); doc.text(subtitle, W / 2, 17, { align: 'center' }); }
-        y = 25; doc.setTextColor(30, 30, 30);
+        doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
+        
+        // FIX: Xử lý chuỗi "- | - | -" (chỉ in khi có dữ liệu)
+        const topInfo = [D.model, D.desc, D.reviewer].filter(Boolean).join('  |  ');
+        if(topInfo) { doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' }); }
+        
+        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 14, { align: 'center' });
+        y = 28; doc.setTextColor(30, 30, 30);
       };
 
       const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
+        if (!text || !text.trim()) return curY; // Bỏ qua nếu không có dữ liệu
         let ty = curY;
-        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader('Details (cont.)'); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5; }
+        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5; }
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40);
-        const lines = doc.splitTextToSize(text || '—', maxW);
-        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title ? title + ' (cont.)' : 'Notes (cont.)'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.2; }
-        return ty + 3;
+        const lines = doc.splitTextToSize(text, maxW);
+        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title ? title + ' (cont.)' : 'Notes'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.2; }
+        return ty + 4;
       };
 
       const addText = (label, val, x, ty, w = 80) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(label + ':', x, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(val || '—'), x + w * 0.38, ty); };
-      const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { } };
+      const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { console.error(e); } };
 
-      // 1. OVERLOOK
-      doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.text('SOFACOMPANY', M, 9);
-      doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 28;
+      // ================= 1. COVER =================
+      doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+      doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 30;
 
       const infoRows = [['Model No.', D.model], ['Description', D.desc], ['Dimension', D.dim], ['Date', D.date], ['Customer', D.customer || 'SOFACOMPANY'], ['Factory', D.factory]]; const hw = (W - M * 2) / 2 - 2;
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
         doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90);
-        doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20);
-        doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2);
-        y += 9;
-      } y += 2;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
+      } y += 4;
 
       const chkLine = (label, group) => {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
@@ -979,79 +980,114 @@
           doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 7;
       };
-      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 3;
+      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
 
-      const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); const pw = (W - M * 2 - 4) / 2, ph = pw * 0.75;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
+      const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
+      const pw = (W - M * 2 - 4) / 2; const ph = pw; // ĐỔI TỶ LỆ VẼ LÊN PDF LÀ 1:1
       [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
-        const dataObj = cp[ckeys[i]]; 
-        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+        const dataObj = cp[ckeys[i]]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
         if (img) { addImg(img, px, py, pw, ph); } else { doc.setFillColor(245, 242, 237); doc.rect(px, py, pw, ph, 'F'); doc.setTextColor(170, 165, 158); doc.setFontSize(7); doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); }
         doc.setFillColor(245, 242, 237); doc.rect(px, py + ph, pw, 5, 'F'); doc.setTextColor(80, 75, 70); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.text(COVER_SLOTS[i], px + pw / 2, py + ph + 3.5, { align: 'center' });
       });
+      y += (ph + 6) * 2 + 4;
 
-      // 2. PHOTOS
-      if ((D.prodPhotos || []).length) {
-        const validPhotos = D.prodPhotos.filter(p => p && p.img);
-        if(validPhotos.length > 0) {
-            addHeader('Product Photos'); const gw = (W - M * 2 - 4) / 2, gh = gw * 0.75;
-            validPhotos.forEach((p, i) => {
-              const col = i % 2, row = Math.floor(i / 2), px = M + (col * (gw + 4)), py = y + (row * (gh + 14));
-              if (py + gh > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); y = 24; }
-              addImg(p.img, px, py, gw, gh);
-              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, py + gh + 4, { align: 'center' }); }
-            });
-        }
+      // ================= 2. PRODUCT PHOTOS (CHỈ IN ẢNH CÓ DỮ LIỆU) =================
+      const validProd = (D.prodPhotos || []).filter(p => p && p.img);
+      if (validProd.length > 0) {
+        addHeader('Product Photos'); 
+        const gw = (W - M * 2 - 4) / 2; const gh = gw; // 1:1
+        validProd.forEach((p, i) => {
+          const col = i % 2; 
+          if(col === 0 && i > 0) y += gh + 12; // Xuống dòng mới nếu hết cột
+          if (y + gh + 12 > BOTTOM_LIMIT) { addHeader('Product Photos (cont.)'); }
+          const px = M + (col * (gw + 4));
+          doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw, gh, 'S');
+          addImg(p.img, px, y, gw, gh);
+          if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, y + gh + 4, { align: 'center', maxWidth: gw }); }
+        });
+        y += gh + 14;
       }
 
-      // 3. DIMENSIONS
-      addHeader('Product Dimension & Details', 'Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing');
-      const dimCols = 3, dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols, dimSlotH = dimSlotW * 0.75 + 18;
-      DIM_FIELDS.forEach((f, i) => {
-        const col = i % dimCols, row = Math.floor(i / dimCols), px = M + col * (dimSlotW + 2), py = y + row * dimSlotH;
-        if (py + dimSlotH > BOTTOM_LIMIT) { addHeader('Product Dimension & Details (cont.)'); y = 24; }
-        const dd = (D.dimData || {})[f.key] || {}, imgH = dimSlotW * 0.62;
-        const displayImg = dd.img ? (typeof dd.img === 'string' ? dd.img : dd.img) : null;
-        
-        doc.setDrawColor(220, 217, 210); doc.rect(px, py, dimSlotW, dimSlotH, 'S');
-        if (displayImg) { addImg(displayImg, px, py, dimSlotW, imgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, py, dimSlotW, imgH, 'F'); }
-        const fy = py + imgH + 3; doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); doc.text(f.name, px + 2, fy + 3);
-        const color = dd.color === 'color-red' ? [226, 75, 74] : dd.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(px + dimSlotW - 4, fy + 2, 2, 'F');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
-        doc.text(`Actual: ${dd.actual || '—'}`, px + 2, fy + 8); doc.text(`Drawing: ${dd.drawing || '—'}`, px + 2, fy + 13);
+      // ================= 3. DIMENSIONS (CHỈ IN KHI CÓ DỮ LIỆU) =================
+      const validDims = DIM_FIELDS.filter(f => {
+         const dd = D.dimData?.[f.key];
+         return dd && (dd.img || dd.actual || dd.drawing);
       });
-      if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y + 8);
 
-      // 4. BV TEST & APPROVAL
-      addHeader('In-House Quality Assurance Test');
-      doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
-      doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
-      (D.bvRows || []).forEach(row => {
-        const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
-        const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
-        if (y + rowH > BOTTOM_LIMIT) { addHeader('BV Quality Tests (cont.)'); y = 22; }
-        doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
-      }); y += 6;
-      if ((D.watchoutPhotos || []).length) {
-        const validPhotos = D.watchoutPhotos.filter(p => p && p.img);
-        if(validPhotos.length > 0) {
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); doc.text('Quality Watch Out', M, y); y += 6; const gw5 = (W - M * 2 - 4) / 2, gh5 = gw5 * 0.75;
-            validPhotos.forEach((p, i) => {
-              const px = M + (i % 2) * (gw5 + 4), py = y + (Math.floor(i / 2)) * (gh5 + 10);
-              if (py + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); y = 22; }
-              addImg(p.img, px, py, gw5, gh5);
-              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, py + gh5 + 4, { align: 'center' }); }
-            }); y += Math.ceil(validPhotos.length / 2) * (gw5 * 0.75 + 10) + 4;
-        }
-      }
-      if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
-
-      addHeader('Final Approval / Green Label');
-      const ap = D.approvalPhotos || {}, apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')), apW = (W - M * 2 - 4) / 2, apH = apW * 0.75;
-      apKeys.forEach((k, i) => {
-        const dataObj = ap[k];
-        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+      if(validDims.length > 0) {
+        addHeader('Product Dimension & Details');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
+        doc.text('Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing', M, y); y += 6;
         
+        const dimCols = 3; const dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols; 
+        const dimImgH = dimSlotW; // Tỷ lệ 1:1
+        const dimSlotH = dimImgH + 16; 
+        
+        validDims.forEach((f, i) => {
+          const col = i % dimCols;
+          if (col === 0 && i > 0) y += dimSlotH + 4;
+          if (y + dimSlotH > BOTTOM_LIMIT) { addHeader('Product Dimension & Details (cont.)'); }
+          
+          const px = M + col * (dimSlotW + 2);
+          const dd = D.dimData[f.key];
+          const displayImg = dd.img ? (typeof dd.img === 'string' ? dd.img : dd.img) : null;
+          
+          doc.setDrawColor(220, 217, 210); doc.rect(px, y, dimSlotW, dimSlotH, 'S');
+          if (displayImg) { addImg(displayImg, px, y, dimSlotW, dimImgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, y, dimSlotW, dimImgH, 'F'); }
+          
+          const fy = y + dimImgH + 3; 
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); doc.text(f.name, px + 2, fy + 3);
+          const color = dd.color === 'color-red' ? [226, 75, 74] : dd.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(px + dimSlotW - 4, fy + 2, 2, 'F');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
+          doc.text(`Actual: ${dd.actual || '—'}`, px + 2, fy + 8); doc.text(`Drawing: ${dd.drawing || '—'}`, px + 2, fy + 13);
+        });
+        y += dimSlotH + 8;
+      }
+      if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
+
+      // ================= 4. BV TEST & APPROVAL =================
+      const validBV = (D.bvRows || []).filter(r => r.test || r.result || r.remark);
+      if(validBV.length > 0 || (D.watchoutPhotos && D.watchoutPhotos.filter(p=>p&&p.img).length > 0) || D.watchoutNotes) {
+          addHeader('Quality Assurance Test');
+          if(validBV.length > 0) {
+              doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
+              doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
+              validBV.forEach(row => {
+                const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
+                const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
+                if (y + rowH > BOTTOM_LIMIT) { addHeader('Quality Assurance Test (cont.)'); }
+                doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
+              }); y += 6;
+          }
+
+          const validWatchouts = (D.watchoutPhotos || []).filter(p => p && p.img);
+          if (validWatchouts.length > 0) {
+            if(y + 30 > BOTTOM_LIMIT) addHeader('Quality Watch Out');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Quality Watch Out', M, y); y += 6; 
+            const gw5 = (W - M * 2 - 4) / 2; const gh5 = gw5; // 1:1
+            validWatchouts.forEach((p, i) => {
+              const col = i % 2;
+              if(col === 0 && i > 0) y += gh5 + 10;
+              if (y + gh5 > BOTTOM_LIMIT) { addHeader('Quality Watch Out (cont.)'); }
+              const px = M + col * (gw5 + 4);
+              doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw5, gh5, 'S');
+              addImg(p.img, px, y, gw5, gh5);
+              if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, y + gh5 + 4, { align: 'center', maxWidth: gw5 }); }
+            }); y += gh5 + 10;
+          }
+          if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
+      }
+
+      // ================= FINAL APPROVAL =================
+      if(y + 80 > BOTTOM_LIMIT) addHeader('Final Approval / Green Label');
+      else { y += 6; doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Final Approval / Green Label', M, y); y += 4; }
+      
+      const ap = D.approvalPhotos || {}; const apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')); 
+      const apW = (W - M * 2 - 4) / 2; const apH = apW; // 1:1
+      apKeys.forEach((k, i) => {
+        const dataObj = ap[k]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         const px = M + i * (apW + 4); doc.setDrawColor(210, 205, 195); doc.rect(px, y, apW, apH + 5, 'S');
         if (img) { addImg(img, px, y, apW, apH); } else { doc.setFillColor(245, 242, 237); doc.rect(px, y, apW, apH, 'F'); }
         doc.setFillColor(245, 242, 237); doc.rect(px, y + apH, apW, 5, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70); doc.text(APPROVAL_SLOTS[i], px + apW / 2, y + apH + 3.5, { align: 'center' });
