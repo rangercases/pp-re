@@ -83,7 +83,17 @@
     .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
     
     /* REPORT CARD & SELECTION */
-    #reportsList { user-select: none; -webkit-user-select: none; }
+    #reportsList { 
+      user-select: none; 
+      -webkit-user-select: none; 
+      position: relative;
+    }
+    
+    /* KHÓA CUỘN KHI ĐANG Ở CHẾ ĐỘ CHỌN ĐỂ VUỐT CHỌN KHÔNG BỊ TRƯỢT TRANG */
+    #reportsList.select-mode-active {
+      touch-action: none;
+    }
+
     .report-card { 
       background: var(--card); border: 1px solid var(--border); border-radius: var(--r); 
       padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; 
@@ -115,6 +125,17 @@
     .badge-wip { background: #fef9e7; color: #7a5c00; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
 
+    /* KHUNG VUÔNG QUÉT CHỌN TRỰC QUAN (MARQUEE SELECTION BOX) */
+    .selection-marquee {
+      position: absolute;
+      border: 1.5px solid #007aff;
+      background: rgba(0, 122, 255, 0.12);
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+      border-radius: 4px;
+    }
+
     /* BATCH ACTION BAR DƯỚI ĐÁY */
     .batch-bar {
       position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95);
@@ -128,7 +149,7 @@
 
     /* CARDS & FORMS */
     .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
-    .sec-head { background: var(--accent); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; }
+    .sec-head { background: var(--accent); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
     .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
     .fcell:nth-child(even) { border-right: none; }
@@ -184,7 +205,19 @@
 
     /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
-    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative;}
+    .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: border-color 0.2s, background 0.2s;}
+    .dim-slot.dim-selecting { cursor: pointer; }
+    .dim-slot.dim-selected { border-color: #007aff; background: #f0f7ff; }
+    
+    .dim-select-circle {
+      position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid #bbb; background: #fff; z-index: 10; display: none; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .dim-slot.dim-selecting .dim-select-circle { display: flex; }
+    .dim-slot.dim-selected .dim-select-circle { background: #007aff; border-color: #007aff; }
+    .dim-slot.dim-selected .dim-select-circle::after { content: '✓'; color: #fff; font-size: 11px; font-weight: bold; }
+
     .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
     .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
     .dim-fields { padding: 6px 7px; }
@@ -203,11 +236,16 @@
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
     .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
 
-    .dim-del-slot { 
-      position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; 
-      background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; 
-      display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    .dim-head-btn {
+      background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 8px; border-radius: 4px;
     }
+
+    .dim-batch-bar {
+      display: none; align-items: center; justify-content: space-between;
+      background: #f8faf9; border-top: 1px solid var(--border); padding: 8px 12px;
+    }
+
     .add-dim-btn { 
       min-height: 180px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -264,7 +302,7 @@
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
 
-    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .dim-del-slot, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
 </head>
 
@@ -296,12 +334,14 @@
     <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     
-    <!-- DANH SÁCH BÁO CÁO CÓ HỖ TRỢ VUỐT CHỌN HÀNG LOẠT -->
+    <!-- KHUNG CHỮ NHẬT QUÉT VÙNG -->
+    <div id="selectionMarquee" class="selection-marquee"></div>
+
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
 
-  <!-- THANH BOTTOM XỬ LÝ CHỌN HÀNG LOẠT -->
+  <!-- THANH BOTTOM XỬ LÝ CHỌN BÁO CÁO HÀNG LOẠT -->
   <div class="batch-bar" id="batchBar">
     <button class="batch-btn pri" onclick="selectAllReports()">Chọn tất cả</button>
     <span style="font-size:12px; font-weight:600; color:var(--muted);" id="selectedCountText">Đã chọn: 0</span>
@@ -318,10 +358,9 @@
           <div class="fcell"><div class="flabel">Description</div><input id="fDesc" placeholder="Swivel Chair (Skylar)" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Dimension (cm)</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Date</div><input id="fDate" placeholder="13-Mar-26" oninput="as()"></div>
-          <div class="fcell"><div class="flabel">Customer</div><input id="fCustomer" placeholder="SOFACOMPANY" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Factory</div><input id="fFactory" placeholder="NHAN HOANG" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Reviewed by</div><input id="fReviewer" placeholder="Your name" oninput="as()"></div>
-          <div class="fcell">
+          <div class="fcell" style="grid-column: span 2;">
             <div class="flabel">Number Sample / Review</div>
             <div style="display:flex;gap:8px;padding-top:4px">
               <input id="fNumS" type="number" value="1" style="width:44px;border:1px solid var(--border);border-radius:4px;text-align:center" oninput="as()">
@@ -352,13 +391,24 @@
     <!-- S2: DIMENSION -->
     <div id="sec2" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Product Dimension & Details</div>
+        <div class="sec-head">
+          <span>Product Dimension & Details</span>
+          <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
+        </div>
+        
         <div class="legend-row">
           <div class="legend-item"><div class="color-dot color-red"></div><span>Not acceptable</span></div>
           <div class="legend-item"><div class="color-dot color-blue"></div><span>Within tolerance</span></div>
           <div class="legend-item"><div class="color-dot color-orange"></div><span>Drawing to update</span></div>
         </div>
+
         <div class="dim-grid" id="dimGrid"></div>
+
+        <div class="dim-batch-bar" id="dimBatchBar">
+          <button class="batch-btn pri" onclick="selectAllDims()">Chọn tất cả</button>
+          <span style="font-size:12px; font-weight:600; color:var(--muted);" id="dimSelectedCountText">Đã chọn: 0</span>
+          <button class="batch-btn danger" onclick="deleteSelectedDims()">Xóa các ô đã chọn</button>
+        </div>
       </div>
       <div class="sec-card"><div class="sec-head">Notes</div><div class="note-area"><textarea id="dimNotes" placeholder="Additional dimension notes..." oninput="as()"></textarea></div></div>
     </div>
@@ -525,11 +575,20 @@
     let scaleX = 1;
     let scaleY = 1;
 
-    // BATCH SELECT MODE STATES
+    // BATCH SELECT MODE CHO REPORT
     let isSelectMode = false;
     let selectedReportIds = new Set();
     let isDragging = false;
-    let dragStartMode = true; // true = chọn, false = bỏ chọn
+    let dragStartX = 0, dragStartY = 0;
+
+    // BATCH SELECT MODE CHO DIMENSIONS
+    let isDimSelectMode = false;
+    let selectedDimIndices = new Set();
+
+    function getReportTitle(r) {
+      const parts = [r.model, r.desc].filter(Boolean);
+      return parts.length ? parts.join(' ') : 'Untitled Report';
+    }
 
     function resizeImage(dataUrl, maxDimension = 1280, quality = 0.85) {
       return new Promise(resolve => {
@@ -718,13 +777,14 @@
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
-    // ═══════════════ BATCH SELECT & DRAG-TO-SELECT (IPHONE STYLE) ═══════════════
+    // ═══════════════ BATCH SELECT & DRAG-TO-SELECT ĐÃ NÂNG CẤP ═══════════════
     function toggleSelectMode() {
       isSelectMode = !isSelectMode;
       const btn = document.getElementById('btnSelectMode');
       const batchBar = document.getElementById('batchBar');
       const btnNew = document.getElementById('btnNewReport');
       const btnImp = document.getElementById('btnImport');
+      const reportsList = document.getElementById('reportsList');
       
       selectedReportIds.clear();
       
@@ -733,14 +793,15 @@
         batchBar.style.display = 'flex';
         btnNew.style.display = 'none';
         btnImp.style.display = 'none';
+        reportsList.classList.add('select-mode-active');
       } else {
         btn.textContent = 'Chọn';
         batchBar.style.display = 'none';
         btnNew.style.display = 'block';
         btnImp.style.display = 'block';
+        reportsList.classList.remove('select-mode-active');
       }
       updateBatchUI();
-      renderHome();
     }
 
     function updateBatchUI() {
@@ -750,12 +811,6 @@
         card.classList.toggle('selecting', isSelectMode);
         card.classList.toggle('selected', selectedReportIds.has(id));
       });
-    }
-
-    function setItemSelection(id, selectState) {
-      if (selectState) selectedReportIds.add(id);
-      else selectedReportIds.delete(id);
-      updateBatchUI();
     }
 
     function selectAllReports() {
@@ -778,62 +833,188 @@
         await dbDelete(id);
       }
       showToast(`✓ Đã xóa ${selectedReportIds.size} báo cáo`);
-      toggleSelectMode(); // Tắt chế độ chọn sau khi xóa xong
+      toggleSelectMode();
+      renderHome();
     }
 
-    // Gán sự kiện Vuốt / Quét chọn ngón tay (Drag-to-Select)
+    // Thuật toán kiểm tra 2 hình chữ nhật có giao nhau không
+    function isIntersecting(r1, r2) {
+      return !(r2.left > r1.right || 
+               r2.right < r1.left || 
+               r2.top > r1.bottom || 
+               r2.bottom < r1.top);
+    }
+
+    // QUÉT VÙNG BẰNG NGÓN TAY VÀ CHUỘT (CÓ HỘP CHỮ NHẬT TRỰC QUAN)
     function setupDragToSelect(container) {
-      const getTargetId = (clientX, clientY) => {
-        const el = document.elementFromPoint(clientX, clientY);
-        const card = el ? el.closest('.report-card') : null;
-        return card ? card.dataset.id : null;
-      };
+      const marquee = document.getElementById('selectionMarquee');
+      let initialSelectedState = new Map();
 
-      const start = (clientX, clientY) => {
+      const onStart = (clientX, clientY, e) => {
         if (!isSelectMode) return;
-        const id = getTargetId(clientX, clientY);
-        if (id) {
-          isDragging = true;
-          dragStartMode = !selectedReportIds.has(id); // Nếu chạm vào ô chưa chọn -> chuyển thành chế độ Chọn
-          setItemSelection(id, dragStartMode);
-        }
+        isDragging = true;
+        dragStartX = clientX;
+        dragStartY = clientY;
+
+        // Lưu lại trạng thái chọn trước khi bắt đầu kéo
+        initialSelectedState.clear();
+        document.querySelectorAll('.report-card').forEach(c => {
+          initialSelectedState.set(c.dataset.id, selectedReportIds.has(c.dataset.id));
+        });
+
+        const rect = container.getBoundingClientRect();
+        marquee.style.left = `${clientX - rect.left}px`;
+        marquee.style.top = `${clientY - rect.top}px`;
+        marquee.style.width = '0px';
+        marquee.style.height = '0px';
+        marquee.style.display = 'block';
+
+        if (e && e.cancelable) e.preventDefault();
       };
 
-      const move = (clientX, clientY) => {
+      const onMove = (clientX, clientY, e) => {
         if (!isDragging || !isSelectMode) return;
-        const id = getTargetId(clientX, clientY);
-        if (id) {
-          setItemSelection(id, dragStartMode);
-        }
+        if (e && e.cancelable) e.preventDefault();
+
+        const rect = container.getBoundingClientRect();
+        const curX = clientX - rect.left;
+        const curY = clientY - rect.top;
+        const startX = dragStartX - rect.left;
+        const startY = dragStartY - rect.top;
+
+        const left = Math.min(startX, curX);
+        const top = Math.min(startY, curY);
+        const width = Math.abs(curX - startX);
+        const height = Math.abs(curY - startY);
+
+        marquee.style.left = `${left}px`;
+        marquee.style.top = `${top}px`;
+        marquee.style.width = `${width}px`;
+        marquee.style.height = `${height}px`;
+
+        const marqueeRect = {
+          left: Math.min(dragStartX, clientX),
+          top: Math.min(dragStartY, clientY),
+          right: Math.max(dragStartX, clientX),
+          bottom: Math.max(dragStartY, clientY)
+        };
+
+        // Quét tất cả thẻ và cập nhật trạng thái nếu nằm trong vùng quét
+        document.querySelectorAll('.report-card').forEach(card => {
+          const cardRect = card.getBoundingClientRect();
+          const id = card.dataset.id;
+          const originallySelected = initialSelectedState.get(id) || false;
+
+          if (isIntersecting(marqueeRect, cardRect)) {
+            selectedReportIds.add(id);
+          } else {
+            if (!originallySelected) {
+              selectedReportIds.delete(id);
+            }
+          }
+        });
+
+        updateBatchUI();
       };
 
-      const end = () => { isDragging = false; };
+      const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        marquee.style.display = 'none';
+      };
 
-      // Hỗ trợ cảm ứng điện thoại
+      // Sự kiện Cảm ứng (Touch cho Điện thoại/iPad)
       container.addEventListener('touchstart', e => {
         if (!isSelectMode) return;
-        const touch = e.touches[0];
-        start(touch.clientX, touch.clientY);
-      }, { passive: true });
+        const t = e.touches[0];
+        onStart(t.clientX, t.clientY, e);
+      }, { passive: false });
 
-      container.addEventListener('touchmove', e => {
-        if (!isSelectMode) return;
-        const touch = e.touches[0];
-        move(touch.clientX, touch.clientY);
-      }, { passive: true });
+      window.addEventListener('touchmove', e => {
+        if (!isDragging || !isSelectMode) return;
+        const t = e.touches[0];
+        onMove(t.clientX, t.clientY, e);
+      }, { passive: false });
 
-      window.addEventListener('touchend', end);
+      window.addEventListener('touchend', onEnd);
 
-      // Hỗ trợ chuột máy tính
+      // Sự kiện Chuột (PC / Laptop)
       container.addEventListener('mousedown', e => {
         if (!isSelectMode) return;
-        start(e.clientX, e.clientY);
+        if (e.target.closest('.rc-arrow')) return;
+        onStart(e.clientX, e.clientY, e);
       });
-      container.addEventListener('mousemove', e => {
-        if (!isSelectMode) return;
-        move(e.clientX, e.clientY);
+
+      window.addEventListener('mousemove', e => {
+        if (!isDragging || !isSelectMode) return;
+        onMove(e.clientX, e.clientY, e);
       });
-      window.addEventListener('mouseup', end);
+
+      window.addEventListener('mouseup', onEnd);
+    }
+
+    // ═══════════════ BATCH SELECT CHO DIMENSIONS ═══════════════
+    function toggleDimSelectMode() {
+      isDimSelectMode = !isDimSelectMode;
+      const btn = document.getElementById('btnDimSelectMode');
+      const bar = document.getElementById('dimBatchBar');
+      selectedDimIndices.clear();
+
+      if (isDimSelectMode) {
+        btn.textContent = 'Xong';
+        bar.style.display = 'flex';
+      } else {
+        btn.textContent = 'Chọn';
+        bar.style.display = 'none';
+      }
+      buildDimGrid();
+      updateDimBatchUI();
+    }
+
+    function updateDimBatchUI() {
+      const counter = document.getElementById('dimSelectedCountText');
+      if (counter) counter.textContent = `Đã chọn: ${selectedDimIndices.size}`;
+      document.querySelectorAll('.dim-slot').forEach(slot => {
+        const idx = parseInt(slot.dataset.dimIndex, 10);
+        if (!isNaN(idx)) {
+          slot.classList.toggle('dim-selecting', isDimSelectMode);
+          slot.classList.toggle('dim-selected', selectedDimIndices.has(idx));
+        }
+      });
+    }
+
+    function toggleSelectDimIndex(index) {
+      if (selectedDimIndices.has(index)) selectedDimIndices.delete(index);
+      else selectedDimIndices.add(index);
+      updateDimBatchUI();
+    }
+
+    function selectAllDims() {
+      const total = (D.dimensions || []).length;
+      if (selectedDimIndices.size === total) {
+        selectedDimIndices.clear();
+      } else {
+        for (let i = 0; i < total; i++) selectedDimIndices.add(i);
+      }
+      updateDimBatchUI();
+    }
+
+    function deleteSelectedDims() {
+      if (selectedDimIndices.size === 0) {
+        showToast('Chưa chọn ô kích thước nào!');
+        return;
+      }
+      if (!confirm(`Bạn có chắc muốn xóa ${selectedDimIndices.size} ô kích thước đã chọn?`)) return;
+      
+      const sorted = Array.from(selectedDimIndices).sort((a, b) => b - a);
+      sorted.forEach(idx => {
+        D.dimensions.splice(idx, 1);
+      });
+
+      selectedDimIndices.clear();
+      toggleDimSelectMode();
+      as();
+      showToast('✓ Đã xóa các kích thước đã chọn');
     }
 
     // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
@@ -896,12 +1077,14 @@
           if (isSelectMode) d.classList.add('selecting');
           if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
 
+          const reportTitle = getReportTitle(r);
+
           d.innerHTML = `
             <div class="rc-left">
               <div class="rc-select-circle"></div>
               <div>
-                <div class="rc-title">${r.model || 'Untitled'}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
-                <div class="rc-sub">${r.desc || ''} · ${r.date || ''} · ${r.factory || ''}</div>
+                <div class="rc-title">${reportTitle}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
+                <div class="rc-sub">${r.date || ''} · ${r.factory || ''} · ${r.reviewer || ''}</div>
               </div>
             </div>
             <div class="rc-arrow" style="${isSelectMode ? 'display:none' : ''}">›</div>
@@ -910,7 +1093,9 @@
           d.onclick = (e) => {
             if (isSelectMode) {
               const id = String(r.id);
-              setItemSelection(id, !selectedReportIds.has(id));
+              if (selectedReportIds.has(id)) selectedReportIds.delete(id);
+              else selectedReportIds.add(id);
+              updateBatchUI();
             } else {
               openReport(r.id);
             }
@@ -1016,14 +1201,18 @@
       const grid = document.getElementById('dimGrid'); if (!grid) return; grid.innerHTML = '';
       
       (D.dimensions || []).forEach((d, i) => {
-        const div = document.createElement('div'); div.className = 'dim-slot';
+        const div = document.createElement('div');
+        div.className = 'dim-slot';
+        div.dataset.dimIndex = String(i);
+
+        if (isDimSelectMode) div.classList.add('dim-selecting');
+        if (selectedDimIndices.has(i)) div.classList.add('dim-selected');
+
         const targetObj = `{type:'dim', index:${i}}`;
         const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
         
         div.innerHTML = `
-        <button class="dim-del-slot" title="Xóa kích thước này" onclick="deleteDimSlot(${i}); event.stopPropagation();">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
+        <div class="dim-select-circle"></div>
 
         <div class="dim-photo" id="dph_${d.id}">
           ${displayImg ? `<img src="${displayImg}">` : `
@@ -1040,7 +1229,7 @@
           ${displayImg ? `<div class="pactions" style="right: 4px;">
             <button class="pact edit" onclick="editDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
             <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
             <button class="pact del" onclick="delDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>` : ''}
         </div>
@@ -1056,13 +1245,23 @@
             </select>
           </div>
         </div>`;
+
+        div.onclick = (e) => {
+          if (isDimSelectMode) {
+            e.stopPropagation();
+            toggleSelectDimIndex(i);
+          }
+        };
+
         grid.appendChild(div);
       });
 
-      const addBtn = document.createElement('div'); addBtn.className = 'dim-slot add-dim-btn';
-      addBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:4px;">THÊM ĐO ĐẠC</span>`;
-      addBtn.onclick = () => addDimSlot();
-      grid.appendChild(addBtn);
+      if (!isDimSelectMode) {
+        const addBtn = document.createElement('div'); addBtn.className = 'dim-slot add-dim-btn';
+        addBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:4px;">THÊM ĐO ĐẠC</span>`;
+        addBtn.onclick = () => addDimSlot();
+        grid.appendChild(addBtn);
+      }
     }
 
     function updateDimField(index, field, val) {
@@ -1075,13 +1274,6 @@
       if(!D.dimensions) D.dimensions = [];
       D.dimensions.push({ id: 'dim_' + Math.random().toString(36).substr(2, 9), name: 'DIMENSION NAME', actual: '', drawing: '', color: 'color-blue', img: null, original: null });
       buildDimGrid(); as();
-    }
-
-    function deleteDimSlot(index) {
-      if (confirm('Bạn có chắc muốn xóa toàn bộ ô kích thước này?')) {
-        D.dimensions.splice(index, 1);
-        buildDimGrid(); as();
-      }
     }
 
     function delDimPhoto(index) { 
@@ -1171,13 +1363,12 @@
 
     function loadData() {
       try {
-        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fCustomer', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
-        const keys = ['model', 'desc', 'dim', 'date', 'customer', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+        const keys = ['model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
         fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
         document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
         Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
         
-        // CHUYỂN ĐỔI DATA AN TOÀN TUYỆT ĐỐI
         if (!D.dimensions) {
             D.dimensions = [];
             for (let i = 0; i < DEFAULT_DIM_FIELDS.length; i++) {
@@ -1226,7 +1417,10 @@
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }
     function nextSection() { if (curSec < TABS.length - 1) showSection(curSec + 1); }
 
-    function updateTopbar() { document.getElementById('topTitle').textContent = (D.model || 'New Report') + (D.desc ? ' — ' + D.desc : ''); }
+    function updateTopbar() { 
+      document.getElementById('topTitle').textContent = getReportTitle(D); 
+    }
+
     function toggleCheck(group, key) {
       if (!D.checks) D.checks = {}; if (!D.checks[group]) D.checks[group] = {}; D.checks[group][key] = !D.checks[group][key]; const el = document.getElementById(`ck_${group}_${key}`); if (el) el.classList.toggle('on', !!D.checks[group][key]);
       as();
@@ -1235,7 +1429,7 @@
     function as() {
       if (!currentId) return;
       const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
-      const map = { fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fCustomer: 'customer', fFactory: 'factory', fReviewer: 'reviewer', watchoutNotes: 'watchoutNotes', approvalDate: 'approvalDate', approvalBy: 'approvalBy', dimNotes: 'dimNotes' };
+      const map = { fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', watchoutNotes: 'watchoutNotes', approvalDate: 'approvalDate', approvalBy: 'approvalBy', dimNotes: 'dimNotes' };
       Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
       D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
       clearTimeout(saveTimeout);
@@ -1254,6 +1448,8 @@
         }
         
         curSec = 0;
+        isDimSelectMode = false;
+        selectedDimIndices.clear();
         buildUI(); loadData(); showSection(0);
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
         ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'saveIndicator'].forEach(elemId => document.getElementById(elemId).style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':'inline-flex');
@@ -1266,7 +1462,7 @@
     async function newReport() {
       try {
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
-        const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
+        const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
         
         await dbPut(r); 
         await renderHome(); 
@@ -1277,8 +1473,10 @@
     }
 
     function shareReport() {
-      as(); const data = JSON.stringify(D, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `PP_${D.model || 'report'}_${D.date || 'draft'}.json`; a.click(); URL.revokeObjectURL(url); showToast('✓ JSON file downloaded');
+      as(); 
+      const fileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
+      const data = JSON.stringify(D, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `PP_${fileName}_${D.date || 'draft'}.json`; a.click(); URL.revokeObjectURL(url); showToast('✓ JSON file downloaded');
     }
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
@@ -1292,7 +1490,7 @@
       const addHeader = (title) => {
         doc.addPage(); doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 20, 'F'); doc.setTextColor(255, 255, 255);
         doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
-        const topInfo = [D.model, D.desc, D.reviewer].filter(Boolean).join('  |  ');
+        const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
         if(topInfo) { doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' }); }
         doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 14, { align: 'center' });
         y = 28; doc.setTextColor(30, 30, 30);
@@ -1316,12 +1514,18 @@
       doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
       doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 30;
 
-      const infoRows = [['Model No.', D.model], ['Description', D.desc], ['Dimension', D.dim], ['Date', D.date], ['Customer', D.customer || 'SOFACOMPANY'], ['Factory', D.factory]]; const hw = (W - M * 2) / 2 - 2;
+      const infoRows = [
+        ['Model No.', D.model], ['Description', D.desc], 
+        ['Dimension', D.dim], ['Date', D.date], 
+        ['Factory', D.factory], ['Reviewed by', D.reviewer]
+      ]; 
+      
+      const hw = (W - M * 2) / 2 - 2;
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
         doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
       } y += 4;
 
       const chkLine = (label, group) => {
@@ -1335,7 +1539,7 @@
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
       const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
-      const pw = (W - M * 2 - 4) / 2; const ph = pw; // 1:1
+      const pw = (W - M * 2 - 4) / 2; const ph = pw;
       [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
         const dataObj = cp[ckeys[i]]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
@@ -1454,12 +1658,14 @@
 
       // Đánh số trang
       const totalPages = doc.getNumberOfPages();
+      const reportName = getReportTitle(D);
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p); doc.setFillColor(26, 58, 42); doc.rect(0, 285, W, 12, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-        doc.text(`${D.model || ''} PPS — ${D.desc || ''} — Sofacompany`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
+        doc.text(`${reportName} — Sofacompany`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
       }
 
-      doc.save(`PP_Report_Lite_${D.model || 'draft'}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
+      const outFileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
+      doc.save(`PP_Report_${outFileName}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
     }
 
     initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
