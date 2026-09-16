@@ -11,7 +11,7 @@
   
   <!-- Icon hiển thị ngoài màn hình chính iPhone -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
+  <title>PP Sample Review — Lite Edition</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -147,7 +147,7 @@
     .pact.cam { background: rgba(45, 90, 61, .85); }
     .pact.del { background: rgba(139, 32, 32, .82); }
 
-    /* FREE PHOTOS - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .add-photo-btn { 
       aspect-ratio: 4/3; 
@@ -179,7 +179,7 @@
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
     .free-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; }
 
-    /* DIMENSIONS - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
     .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .dim-photo { 
@@ -240,8 +240,6 @@
     .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
     .mbtn.pri { background: var(--accent); color: #fff; }
 
-    #videoEl { width: 100%; border-radius: 8px; background: #000; max-height: 48vh; object-fit: contain; }
-    
     /* CROPPER WRAPPER */
     .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
     .cropper-wrapper img { display: block; max-width: 100%; }
@@ -428,22 +426,20 @@
     <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
   </div>
 
-  <!-- CAMERA MODAL WITH ADVANCED IPHONE PHOTO TOOLS -->
+  <!-- CROPPER MODAL WITH ADVANCED IPHONE PHOTO TOOLS -->
   <div class="modal-overlay hidden" id="camModal">
     <div class="modal-box">
       <div class="modal-head">
-        <h3 id="camTitle">📷 Take Photo</h3><button class="modal-close" onclick="closeCamera()">✕</button>
+        <h3 id="camTitle">Chỉnh sửa ảnh</h3><button class="modal-close" onclick="closeCamera()">✕</button>
       </div>
       
       <div class="modal-body">
-        <video id="videoEl" autoplay playsinline muted></video>
-        
-        <div id="cropperWrapper" class="cropper-wrapper hidden">
+        <div id="cropperWrapper" class="cropper-wrapper">
             <img id="cropperImage" src="">
         </div>
         
         <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
-        <div id="editorToolbar" class="cropper-tools hidden">
+        <div id="editorToolbar" class="cropper-tools">
             <!-- Hàng tỷ lệ khung hình (Mặc định 1:1) -->
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
@@ -468,19 +464,21 @@
                 <span class="straighten-val" id="straightenVal">0.0°</span>
             </div>
         </div>
-        <div class="crop-hint" id="cropHint"></div>
+        <div class="crop-hint" id="cropHint">Cuộn chuột để zoom. Kéo góc để cắt ảnh.</div>
       </div>
       
       <div class="modal-foot">
-        <button class="mbtn sec" onclick="closeCamera()">Cancel</button>
-        <button class="mbtn sec" id="btnUpload" onclick="triggerFileInput()">📁 Chọn ảnh</button>
-        <button class="mbtn danger hidden" id="btnRetake" onclick="retake()">Retake</button>
-        <button class="mbtn pri" id="btnSnap" onclick="snap()">📷 Capture</button>
-        <button class="mbtn pri hidden" id="btnUse" onclick="usePhoto()">✓ Use Photo</button>
+        <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
+        <button class="mbtn sec" id="btnUpload" onclick="triggerFileInput()">📁 Chọn ảnh khác</button>
+        <button class="mbtn pri" id="btnRetake" onclick="retake()">📷 Chụp lại</button>
+        <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
   </div>
 
+  <!-- INPUT CHỤP TRỰC TIẾP TỪ CAMERA IPHONE -->
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
+  <!-- INPUT CHỌN TỪ THƯ VIỆN ẢNH -->
   <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
   <div class="toast" id="toast"></div>
 
@@ -530,99 +528,45 @@
     let reports = [];
     let currentId = null, curSec = 0;
     let D = {}; 
-    let stream = null;
     let camTarget = null;
     let saveTimeout = null;
 
     // CROPPER & TRANSFORMATION STATES
     let cropper = null;
     let baseRotateAngle = 0;
-    let lastStraightenAngle = 0; // Lưu góc căn thẳng trước đó để tính delta
+    let lastStraightenAngle = 0;
     let scaleX = 1;
     let scaleY = 1;
 
-    // ═══════════════ CAMERA & CROPPER.JS FLOW ═══════════════
-    async function openCam(target) {
+    // ═══════════════ MỞ TRỰC TIẾP CAMERA IPHONE ═══════════════
+    function openCam(target) {
       camTarget = target;
-      if(cropper) { cropper.destroy(); cropper = null; }
-
-      const title = target.type === 'dim' ? target.key.replace(/_/g, ' ').toUpperCase() :
-        target.type === 'free' ? '📷 Add Photo' : target.key.replace(/_/g, ' ');
-
-      document.getElementById('camTitle').textContent = '📷 ' + title;
-      document.getElementById('camModal').classList.remove('hidden');
-
-      const video = document.getElementById('videoEl');
-      video.style.display = 'block'; 
-      document.getElementById('cropperWrapper').classList.add('hidden');
-      document.getElementById('editorToolbar').classList.add('hidden');
-
-      document.getElementById('btnSnap').classList.remove('hidden');
-      document.getElementById('btnUpload').classList.remove('hidden');
-      document.getElementById('btnUse').classList.add('hidden');
-      document.getElementById('btnRetake').classList.add('hidden');
-      document.getElementById('cropHint').textContent = '';
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        promptManualUpload('Trình duyệt không hỗ trợ Camera trực tiếp.');
-        return;
-      }
-
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
-        });
-        video.srcObject = stream;
-      } catch (e) {
-        promptManualUpload('Không thể kết nối Camera (chưa cấp quyền hoặc mở file nội bộ).');
-      }
+      if (cropper) { cropper.destroy(); cropper = null; }
+      // Kích hoạt thẳng Camera gốc của iPhone
+      document.getElementById('cameraInput').click();
     }
 
-    function promptManualUpload(msg) {
-      stopStream();
-      document.getElementById('videoEl').style.display = 'none';
-      document.getElementById('btnSnap').classList.add('hidden');
-      document.getElementById('cropHint').innerHTML = `
-        <span style="color:var(--red);font-weight:600">${msg}</span><br>
-        Vui lòng bấm nút bên dưới để chọn ảnh từ máy:
-        <div style="margin-top:10px">
-          <button class="mbtn pri" style="margin:auto" onclick="triggerFileInput()">📁 Chọn ảnh từ máy / Album</button>
-        </div>
-      `;
-    }
-
-    function triggerFileInput() { document.getElementById('fileInput').click(); }
-
-    function snap() {
-      const video = document.getElementById('videoEl');
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = video.videoWidth || 640; 
-      tempCanvas.height = video.videoHeight || 480;
-      tempCanvas.getContext('2d').drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-      const dataUrl = tempCanvas.toDataURL('image/jpeg', 1.0);
-      stopStream();
-      initCropper(dataUrl);
+    function triggerFileInput() { 
+      document.getElementById('fileInput').click(); 
     }
 
     function handleFile(e) {
       const file = e.target.files[0];
       if (!file || !camTarget) return;
       const reader = new FileReader();
-      reader.onload = ev => { initCropper(ev.target.result); };
+      reader.onload = ev => { 
+        initCropper(ev.target.result); 
+      };
       reader.readAsDataURL(file);
       e.target.value = '';
     }
 
     function initCropper(imgSrc) {
-        document.getElementById('videoEl').style.display = 'none';
-        document.getElementById('cropperWrapper').classList.remove('hidden');
-        
-        document.getElementById('btnSnap').classList.add('hidden');
-        document.getElementById('btnUpload').classList.add('hidden');
-        document.getElementById('btnRetake').classList.remove('hidden');
-        document.getElementById('btnUse').classList.remove('hidden');
-        document.getElementById('editorToolbar').classList.remove('hidden');
-        document.getElementById('cropHint').textContent = 'Cuộn chuột để zoom. Kéo góc để cắt ảnh.';
+        const title = camTarget.type === 'dim' ? camTarget.key.replace(/_/g, ' ').toUpperCase() :
+          camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : camTarget.key.replace(/_/g, ' ');
+
+        document.getElementById('camTitle').textContent = '📷 ' + title;
+        document.getElementById('camModal').classList.remove('hidden');
 
         // Đặt nút ratio 1:1 làm MẶC ĐỊNH
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
@@ -644,7 +588,7 @@
 
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
-            aspectRatio: 1, // KHUNG 1:1 MẶC ĐỊNH
+            aspectRatio: 1, // MẶC ĐỊNH 1:1
             viewMode: 1,
             dragMode: 'move',
             autoCropArea: 0.95,
@@ -655,7 +599,7 @@
             cropBoxMovable: true,
             cropBoxResizable: true,
             toggleDragModeOnDblclick: false,
-            zoomOnWheel: true, // Cho phép lăn chuột để zoom
+            zoomOnWheel: true,
             background: false
         });
     }
@@ -667,7 +611,7 @@
         if (btnEl) btnEl.classList.add('active');
     }
 
-    // Lệnh xoay 90 độ tương đối
+    // Lệnh xoay 90 độ
     function rotate90() {
         if (!cropper) return;
         cropper.rotate(90);
@@ -686,13 +630,13 @@
         }
     }
 
-    // FIX TRIỆT ĐỂ: Căn thẳng tương đối bằng độ lệch (delta)
+    // FIX LỖI XOAY: Căn thẳng tương đối bằng delta
     function applyStraighten(val) {
         if (!cropper) return;
         const newAngle = parseFloat(val);
         const delta = newAngle - lastStraightenAngle;
         
-        cropper.rotate(delta); // Xoay thêm góc delta mượt mà, không bị giật 90 độ
+        cropper.rotate(delta);
         lastStraightenAngle = newAngle;
         
         document.getElementById('straightenVal').textContent = (newAngle > 0 ? '+' : '') + newAngle.toFixed(1) + '°';
@@ -713,9 +657,8 @@
 
     function retake() {
       if(cropper) { cropper.destroy(); cropper = null; }
-      const t = camTarget;
       closeCamera();
-      setTimeout(() => openCam(t), 100);
+      document.getElementById('cameraInput').click();
     }
 
     function usePhoto() {
@@ -749,15 +692,12 @@
         D.dimData[t.key].img = imgData; buildDimGrid();
       }
       as();
-      showToast('✓ Photo saved');
+      showToast('✓ Đã lưu ảnh');
     }
 
-    function stopStream() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
     function closeCamera() { 
-        stopStream(); 
         if(cropper) { cropper.destroy(); cropper = null; }
         document.getElementById('camModal').classList.add('hidden'); 
-        document.getElementById('videoEl').srcObject = null; 
     }
 
     // ═══════════════ APP LOGIC ═══════════════
@@ -906,7 +846,7 @@
         el.appendChild(div);
       });
       const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn';
-      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/><line x1="12" y1="1" x2="12" y2="7"/></svg><span>Add Photo</span>`;
+      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span>`;
       addBtn.onclick = () => openCam({ type: 'free', key }); el.appendChild(addBtn);
     }
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
@@ -1016,7 +956,7 @@
       const addText = (label, val, x, ty, w = 80) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(label + ':', x, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(val || '—'), x + w * 0.38, ty); };
       const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { } };
 
-      // 1. COVER
+      // 1. OVERLOOK
       doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.text('SOFACOMPANY', M, 9);
       doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
       doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 28;
