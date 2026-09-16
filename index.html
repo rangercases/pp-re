@@ -601,7 +601,7 @@
       closeCamera();
     }
 
-    function savePhoto(imgData, originalData) {
+ function savePhoto(imgData, originalData) {
       const t = camTarget;
       if (!t) return;
       if (t.type === 'slot') {
@@ -610,16 +610,21 @@
         else if (t.section === 'approval') { D.approvalPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'approval'); }
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
-           D[t.key][t.index].img = imgData; D[t.key][t.index].original = originalData;
+           // THÊM DÒNG NÀY ĐỂ FIX LỖI: Khởi tạo object nếu ô đang là null
+           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '' }; 
+           D[t.key][t.index].img = imgData; 
+           D[t.key][t.index].original = originalData;
         } else {
-           if (!D[t.key]) D[t.key] = []; D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
+           if (!D[t.key]) D[t.key] = []; 
+           D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
         if (!D.dimData) D.dimData = {}; if (!D.dimData[t.key]) D.dimData[t.key] = {};
         D.dimData[t.key].img = imgData; D.dimData[t.key].original = originalData; buildDimGrid();
       }
-      as(); showToast('✓ Đã lưu ảnh');
+      as();
+      showToast('✓ Đã lưu ảnh');
     }
 
     function closeCamera() { 
