@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="PP Review">
   
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
+  <title>PP Sample Review — Lite Edition (Edit History)</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -101,84 +101,41 @@
     .chkbox.on { background: var(--accent); border-color: var(--accent); }
     .chkbox.on::after { content: '✓'; color: #fff; font-size: 9px; font-weight: bold; }
 
-    /* PHOTO GRID - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
-    .photo-slot { 
-      background: #ffffff; 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-      overflow: hidden; 
-      aspect-ratio: 4/3; 
-      position: relative; 
-    }
-    .photo-slot .pimg { 
-      width: 100%; 
-      height: calc(100% - 26px); 
-      object-fit: contain; 
-      background: #ffffff; 
-      display: block; 
-    }
+    .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; }
+    .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
     
-    /* KHUNG CHỌN 1 CHẠM TRỰC TIẾP */
-    .dual-tap-box {
-      width: 100%;
-      height: calc(100% - 26px);
-      display: flex;
-    }
-    .tap-option {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      cursor: pointer;
-      background: #fafbfc;
-      transition: background 0.15s;
-    }
+    /* NÚT CHỌN CỦA Ô TRỐNG */
+    .dual-tap-box { width: 100%; height: calc(100% - 26px); display: flex; }
+    .tap-option { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; background: #fafbfc; transition: background 0.15s; }
     .tap-option:first-child { border-right: 1px dashed var(--border-light); }
     .tap-option:active { background: var(--accent-light); }
     .tap-option span { font-size: 10px; color: var(--muted); font-weight: 500; }
 
-    .photo-slot .pbar { 
-      height: 26px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      font-size: 9px; 
-      color: var(--muted); 
-      border-top: 1px solid var(--border-light); 
-      background: #ffffff; 
-      text-transform: uppercase;
-    }
-    .pactions { position: absolute; top: 5px; right: 5px; display: flex; gap: 4px; z-index: 2; }
-    .pact { width: 26px; height: 26px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
-    .pact.cam { background: rgba(45, 90, 61, .9); }
-    .pact.gal { background: rgba(26, 58, 106, .9); }
-    .pact.del { background: rgba(139, 32, 32, .85); }
+    .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border-light); background: #ffffff; text-transform: uppercase; }
+    
+    /* NÚT ACTION GÓC TRÊN */
+    .pactions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 2; }
+    .pact { width: 24px; height: 24px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
+    .pact:active { transform: scale(0.9); }
+    .pact.edit { background: rgba(232, 144, 32, .95); } /* Nút sửa màu Cam */
+    .pact.cam { background: rgba(45, 90, 61, .95); }
+    .pact.gal { background: rgba(26, 58, 106, .95); }
+    .pact.del { background: rgba(139, 32, 32, .95); }
 
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .free-photo-item { 
-      aspect-ratio: 4/3; 
-      position: relative; 
-      border-radius: 8px; 
-      overflow: hidden; 
-      border: 1px solid var(--border); 
-      background: #ffffff; 
-    }
+    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
-    .free-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; }
 
     /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
     .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
     .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
-    .dim-photo .pactions { top: 3px; right: 3px; }
-    .dim-photo .pact { width: 22px; height: 22px; }
     .dim-fields { padding: 6px 7px; }
     .dim-name { font-size: 9px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
     .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
@@ -209,7 +166,7 @@
     .sbar-btn.pri { background: var(--accent); color: #fff; }
     .sbar-btn.danger { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; }
 
-    /* MODAL CHỈNH SỬA CROPPER */
+    /* CROPPER MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
@@ -222,38 +179,14 @@
     .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
     .mbtn.pri { background: var(--accent); color: #fff; }
 
-    /* CROPPER WRAPPER */
     .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
     .cropper-wrapper img { display: block; max-width: 100%; }
-
-    /* CROPPER TOOLBAR & ADVANCED TOOLS */
     .cropper-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; background: #000; }
     .tools-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-    .tool-btn { 
-      background: rgba(255,255,255,0.15); 
-      color: #fff; 
-      border: 1px solid rgba(255,255,255,0.25); 
-      padding: 6px 10px; 
-      border-radius: 6px; 
-      font-size: 11.5px; 
-      cursor: pointer; 
-      flex: 1; 
-      min-width: 52px;
-      font-weight: 500;
-      transition: background 0.15s;
-    }
-    .tool-btn.active {
-      background: #7dcea0;
-      color: #1a3a2a;
-      border-color: #7dcea0;
-      font-weight: 700;
-    }
-    .tool-btn:active { background: rgba(255,255,255,0.35); }
-
-    /* STRAIGHTEN SLIDER BAR */
+    .tool-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); padding: 6px 10px; border-radius: 6px; font-size: 11.5px; cursor: pointer; flex: 1; min-width: 52px; font-weight: 500; }
+    .tool-btn.active { background: #7dcea0; color: #1a3a2a; border-color: #7dcea0; font-weight: 700; }
     .straighten-box { display: flex; align-items: center; gap: 10px; padding: 6px 4px 2px; color: #fff; font-size: 11.5px; }
-    .straighten-box span.title { color: #bbb; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
-    .straighten-slider { flex: 1; height: 4px; border-radius: 2px; outline: none; background: rgba(255, 255, 255, 0.3); cursor: pointer; accent-color: #7dcea0; }
+    .straighten-slider { flex: 1; height: 4px; border-radius: 2px; outline: none; background: rgba(255, 255, 255, 0.3); accent-color: #7dcea0; }
     .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
@@ -392,7 +325,6 @@
             <img id="cropperImage" src="">
         </div>
         
-        <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
         <div id="editorToolbar" class="cropper-tools">
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
@@ -429,9 +361,8 @@
     </div>
   </div>
 
-  <!-- 1. INPUT CHỤP TRỰC TIẾP TỪ CAMERA IPHONE -->
+  <!-- INPUTS -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-  <!-- 2. INPUT CHỌN TỪ THƯ VIỆN ẢNH -->
   <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/webp" style="display:none" onchange="handleFile(event)">
   
   <div class="toast" id="toast"></div>
@@ -485,33 +416,47 @@
     let camTarget = null;
     let saveTimeout = null;
 
-    // CROPPER STATES
+    // CROPPER & ORIGINAL IMAGE STATE
     let cropper = null;
+    let currentOriginalImg = null; // LƯU TRỮ ẢNH GỐC
     let baseRotateAngle = 0;
     let lastStraightenAngle = 0;
     let scaleX = 1;
     let scaleY = 1;
 
-    // ═══════════════ KÍCH HOẠT CAMERA & ALBUM (LINH HOẠT NÚT CHỤP LẠI) ═══════════════
+    // RESIZE TRƯỚC KHI LƯU ẢNH GỐC ĐỂ TRÁNH TRÀN BỘ NHỚ
+    function resizeImage(dataUrl, maxDimension = 1280, quality = 0.85) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxDimension || h > maxDimension) {
+            if (w > h) { h = Math.round((h * maxDimension) / w); w = maxDimension; } 
+            else { w = Math.round((w * maxDimension) / h); h = maxDimension; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    // ═══════════════ CAMERA & ALBUM FLOW ═══════════════
     function triggerNativeCamera(target) {
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
-      
-      // Mở bằng Camera -> Nút chụp lại là Camera
       document.getElementById('btnRetakeCam').classList.remove('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
-      
       document.getElementById('cameraInput').click();
     }
 
     function triggerPickLibrary(target) {
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
-      
-      // Mở bằng Thư viện -> Nút chụp lại là Chọn Album
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.remove('hidden');
-      
       document.getElementById('libraryInput').click();
     }
 
@@ -520,17 +465,64 @@
       if (!file || !camTarget) return;
       const reader = new FileReader();
       reader.onload = ev => { 
+        currentOriginalImg = ev.target.result; // Lưu file gốc
         initCropper(ev.target.result); 
       };
       reader.readAsDataURL(file);
       e.target.value = '';
     }
 
+    // MỞ TÍNH NĂNG EDIT ẢNH CŨ
+    function editSlotPhoto(containerId, key, section) {
+      const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
+      const data = store[key];
+      if (!data) return;
+      
+      // Khôi phục ảnh gốc nếu có, nếu chưa có (file cũ) thì lấy ảnh crop hiện tại
+      const imgSrc = typeof data === 'string' ? data : (data.original || data.img);
+      camTarget = {type: 'slot', key, containerId, section};
+      currentOriginalImg = imgSrc;
+      
+      // Khi edit, không cần hiện nút Retake
+      document.getElementById('btnRetakeCam').classList.add('hidden');
+      document.getElementById('btnRetakeLib').classList.add('hidden');
+      
+      initCropper(imgSrc);
+    }
+
+    function editDimPhoto(key) {
+      const data = D.dimData[key];
+      if (!data || !data.img) return;
+      const imgSrc = typeof data.img === 'string' ? data.img : (data.original || data.img);
+      
+      camTarget = {type: 'dim', key};
+      currentOriginalImg = imgSrc;
+      
+      document.getElementById('btnRetakeCam').classList.add('hidden');
+      document.getElementById('btnRetakeLib').classList.add('hidden');
+      
+      initCropper(imgSrc);
+    }
+
+    function editFreePhoto(key, index) {
+      const data = D[key][index];
+      if (!data || !data.img) return;
+      const imgSrc = data.original || data.img;
+      
+      camTarget = {type: 'free', key, index};
+      currentOriginalImg = imgSrc;
+      
+      document.getElementById('btnRetakeCam').classList.add('hidden');
+      document.getElementById('btnRetakeLib').classList.add('hidden');
+      
+      initCropper(imgSrc);
+    }
+
     function initCropper(imgSrc) {
         const title = camTarget.type === 'dim' ? camTarget.key.replace(/_/g, ' ').toUpperCase() :
           camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : camTarget.key.replace(/_/g, ' ');
 
-        document.getElementById('camTitle').textContent = '📷 ' + title;
+        document.getElementById('camTitle').textContent = '✏️ ' + title;
         document.getElementById('camModal').classList.remove('hidden');
 
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
@@ -582,13 +574,8 @@
 
     function flipImage(axis) {
         if (!cropper) return;
-        if (axis === 'x') {
-            scaleX = -scaleX;
-            cropper.scaleX(scaleX);
-        } else if (axis === 'y') {
-            scaleY = -scaleY;
-            cropper.scaleY(scaleY);
-        }
+        if (axis === 'x') { scaleX = -scaleX; cropper.scaleX(scaleX); } 
+        else if (axis === 'y') { scaleY = -scaleY; cropper.scaleY(scaleY); }
     }
 
     function applyStraighten(val) {
@@ -602,43 +589,49 @@
 
     function resetTransforms() {
         if (!cropper) return;
-        baseRotateAngle = 0;
-        lastStraightenAngle = 0;
-        scaleX = 1;
-        scaleY = 1;
+        baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
         cropper.reset();
         document.getElementById('straightenRange').value = 0;
         document.getElementById('straightenVal').textContent = '0.0°';
         setCropRatio(1, document.getElementById('ratio_1_1'));
     }
 
-    function usePhoto() {
-      if (!cropper) {
-        showToast('Lỗi: Chưa có dữ liệu ảnh!');
-        return;
-      }
-      const croppedCanvas = cropper.getCroppedCanvas({
-          maxWidth: 1280,
-          maxHeight: 1280,
-          imageSmoothingEnabled: true,
-          imageSmoothingQuality: 'high'
-      });
+    async function usePhoto() {
+      if (!cropper) { showToast('Lỗi: Chưa có dữ liệu ảnh!'); return; }
+      
+      const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
       const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.85);
-      savePhoto(finalDataUrl);
+      
+      // Nén ảnh gốc lại trước khi lưu DB để tiết kiệm dung lượng
+      const compressedOriginal = await resizeImage(currentOriginalImg, 1280, 0.85);
+      
+      savePhoto(finalDataUrl, compressedOriginal);
       closeCamera();
     }
 
-    function savePhoto(imgData) {
+    function savePhoto(imgData, originalData) {
       const t = camTarget;
       if (!t) return;
       if (t.type === 'slot') {
-        if (t.section === 'cover') { D.coverPhotos[t.key] = imgData; refreshSlot(t.containerId, t.key, 'cover'); } 
-        else if (t.section === 'approval') { D.approvalPhotos[t.key] = imgData; refreshSlot(t.containerId, t.key, 'approval'); }
+        const payload = { img: imgData, original: originalData };
+        if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); } 
+        else if (t.section === 'approval') { D.approvalPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'approval'); }
       } else if (t.type === 'free') {
-        if (!D[t.key]) D[t.key] = []; D[t.key].push({ img: imgData, caption: '' }); renderFreePhotos(t.key);
+        if (t.index !== undefined) {
+           // Đang ở chế độ Edit -> cập nhật ảnh
+           D[t.key][t.index].img = imgData;
+           D[t.key][t.index].original = originalData;
+        } else {
+           // Thêm mới
+           if (!D[t.key]) D[t.key] = []; 
+           D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
+        }
+        renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
         if (!D.dimData) D.dimData = {}; if (!D.dimData[t.key]) D.dimData[t.key] = {};
-        D.dimData[t.key].img = imgData; buildDimGrid();
+        D.dimData[t.key].img = imgData; 
+        D.dimData[t.key].original = originalData;
+        buildDimGrid();
       }
       as();
       showToast('✓ Đã lưu ảnh');
@@ -646,10 +639,11 @@
 
     function closeCamera() { 
         if(cropper) { cropper.destroy(); cropper = null; }
+        currentOriginalImg = null;
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
-    // ═══════════════ APP LOGIC ═══════════════
+    // ═══════════════ APP LOGIC & UI ═══════════════
     async function goHome() {
       currentId = null; curSec = 0;
       document.getElementById('homeScreen').classList.add('active');
@@ -717,19 +711,24 @@
       });
     }
 
-    // GIAO DIỆN CHỌN NGUỒN CỐ ĐỊNH TRÊN Ô
+    // BỔ SUNG NÚT EDIT (BÚT CHÌ) CHO Ô CỐ ĐỊNH
     function renderSlotHTML(containerId, key, label, type, section) {
       const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
-      const img = store && store[key];
+      const data = store && store[key];
+      const displayImg = data ? (typeof data === 'string' ? data : data.img) : null;
       const targetObj = `{type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'}`;
+      
       let inner = '';
-      if (img) {
-        inner = `<img class="pimg" src="${img}">
+      if (displayImg) {
+        inner = `<img class="pimg" src="${displayImg}">
         <div class="pactions">
-          <button class="pact cam" title="Chụp lại" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()">
+          <button class="pact edit" title="Chỉnh sửa" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+          <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
-          <button class="pact gal" title="Chọn từ Album" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()">
+          <button class="pact gal" title="Đổi từ Album" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </button>
           <button class="pact del" title="Xóa" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
@@ -771,9 +770,11 @@
         const div = document.createElement('div'); div.className = 'dim-slot';
         const store = D.dimData && D.dimData[f.key] ? D.dimData[f.key] : {};
         const targetObj = `{type:'dim',key:'${f.key}'}`;
+        const displayImg = store.img ? (typeof store.img === 'string' ? store.img : store.img) : null;
+        
         div.innerHTML = `
         <div class="dim-photo" id="dph_${f.key}">
-          ${store.img ? `<img src="${store.img}">` : `
+          ${displayImg ? `<img src="${displayImg}">` : `
           <div class="dual-tap-box" style="height:100%;">
             <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -784,9 +785,9 @@
               <span>Album</span>
             </div>
           </div>`}
-          ${store.img ? `<div class="pactions">
+          ${displayImg ? `<div class="pactions">
+            <button class="pact edit" onclick="editDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
             <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
             <button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>` : ''}
         </div>
@@ -819,7 +820,12 @@
       const targetObj = `{type:'free',key:'${key}'}`;
       arr.forEach((p, i) => {
         const div = document.createElement('div'); div.className = 'free-photo-item';
-        div.innerHTML = `<img src="${p.img}"><div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div><button class="free-del" onclick="delFreePhoto('${key}',${i})">✕</button>`;
+        div.innerHTML = `<img src="${p.img}">
+        <div class="pactions">
+          <button class="pact edit" onclick="editFreePhoto('${key}', ${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+          <button class="pact del" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+        </div>
+        <div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
         el.appendChild(div);
       });
       const addBtn = document.createElement('div'); addBtn.className = 'photo-slot';
@@ -916,7 +922,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT ═══════════════
+    // ═══════════════ PDF EXPORT (CHỈ 4 PHẦN VỚI ẢNH CROP) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -970,7 +976,9 @@
 
       const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); const pw = (W - M * 2 - 4) / 2, ph = pw * 0.75;
       [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
-        const img = cp[ckeys[i]]; doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
+        const dataObj = cp[ckeys[i]]; 
+        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+        doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
         if (img) { addImg(img, px, py, pw, ph); } else { doc.setFillColor(245, 242, 237); doc.rect(px, py, pw, ph, 'F'); doc.setTextColor(170, 165, 158); doc.setFontSize(7); doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); }
         doc.setFillColor(245, 242, 237); doc.rect(px, py + ph, pw, 5, 'F'); doc.setTextColor(80, 75, 70); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.text(COVER_SLOTS[i], px + pw / 2, py + ph + 3.5, { align: 'center' });
       });
@@ -993,8 +1001,10 @@
         const col = i % dimCols, row = Math.floor(i / dimCols), px = M + col * (dimSlotW + 2), py = y + row * dimSlotH;
         if (py + dimSlotH > BOTTOM_LIMIT) { addHeader('Product Dimension & Details (cont.)'); y = 24; }
         const dd = (D.dimData || {})[f.key] || {}, imgH = dimSlotW * 0.62;
+        const displayImg = dd.img ? (typeof dd.img === 'string' ? dd.img : dd.img) : null;
+        
         doc.setDrawColor(220, 217, 210); doc.rect(px, py, dimSlotW, dimSlotH, 'S');
-        if (dd.img) { addImg(dd.img, px, py, dimSlotW, imgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, py, dimSlotW, imgH, 'F'); }
+        if (displayImg) { addImg(displayImg, px, py, dimSlotW, imgH); } else { doc.setFillColor(248, 245, 240); doc.rect(px, py, dimSlotW, imgH, 'F'); }
         const fy = py + imgH + 3; doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); doc.text(f.name, px + 2, fy + 3);
         const color = dd.color === 'color-red' ? [226, 75, 74] : dd.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(px + dimSlotW - 4, fy + 2, 2, 'F');
         doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
@@ -1026,8 +1036,11 @@
       addHeader('Final Approval / Green Label');
       const ap = D.approvalPhotos || {}, apKeys = APPROVAL_SLOTS.map(s => s.replace(/ /g, '_')), apW = (W - M * 2 - 4) / 2, apH = apW * 0.75;
       apKeys.forEach((k, i) => {
+        const dataObj = ap[k];
+        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+        
         const px = M + i * (apW + 4); doc.setDrawColor(210, 205, 195); doc.rect(px, y, apW, apH + 5, 'S');
-        if (ap[k]) { addImg(ap[k], px, y, apW, apH); } else { doc.setFillColor(245, 242, 237); doc.rect(px, y, apW, apH, 'F'); }
+        if (img) { addImg(img, px, y, apW, apH); } else { doc.setFillColor(245, 242, 237); doc.rect(px, y, apW, apH, 'F'); }
         doc.setFillColor(245, 242, 237); doc.rect(px, y + apH, apW, 5, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70); doc.text(APPROVAL_SLOTS[i], px + apW / 2, y + apH + 3.5, { align: 'center' });
       }); y += apH + 12;
       addText('Approval Date', D.approvalDate, M, y); addText('Approved By', D.approvalBy, M + (W - M * 2) / 2, y); y += 12;
