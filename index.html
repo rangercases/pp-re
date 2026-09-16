@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
   
-  <!-- Icon hiển thị ngoài màn hình chính iPhone (thay URL ảnh nếu muốn) -->
+  <!-- Icon hiển thị ngoài màn hình chính iPhone -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
   <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
   
@@ -444,12 +444,12 @@
         
         <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
         <div id="editorToolbar" class="cropper-tools hidden">
-            <!-- Hàng tỷ lệ khung hình -->
+            <!-- Hàng tỷ lệ khung hình (Mặc định 1:1) -->
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
-                <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button class="tool-btn" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
                 <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
-                <button class="tool-btn" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
+                <button class="tool-btn active" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
                 <button class="tool-btn" id="ratio_16_9" onclick="setCropRatio(16/9, this)">16:9</button>
             </div>
 
@@ -536,8 +536,8 @@
 
     // CROPPER & TRANSFORMATION STATES
     let cropper = null;
-    let baseRotateAngle = 0; // Luân chuyển 0, 90, 180, 270
-    let straightenAngle = 0; // Dao động -45 đến +45
+    let baseRotateAngle = 0;
+    let lastStraightenAngle = 0; // Lưu góc căn thẳng trước đó để tính delta
     let scaleX = 1;
     let scaleY = 1;
 
@@ -624,14 +624,14 @@
         document.getElementById('editorToolbar').classList.remove('hidden');
         document.getElementById('cropHint').textContent = 'Cuộn chuột để zoom. Kéo góc để cắt ảnh.';
 
-        // Đặt lại tỷ lệ khung mặc định 4:3
+        // Đặt nút ratio 1:1 làm MẶC ĐỊNH
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
-        const btn43 = document.getElementById('ratio_4_3');
-        if(btn43) btn43.classList.add('active');
+        const btn11 = document.getElementById('ratio_1_1');
+        if(btn11) btn11.classList.add('active');
 
         // Reset trạng thái transform
         baseRotateAngle = 0;
-        straightenAngle = 0;
+        lastStraightenAngle = 0;
         scaleX = 1;
         scaleY = 1;
         const slider = document.getElementById('straightenRange');
@@ -644,7 +644,7 @@
 
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
-            aspectRatio: 4 / 3,
+            aspectRatio: 1, // KHUNG 1:1 MẶC ĐỊNH
             viewMode: 1,
             dragMode: 'move',
             autoCropArea: 0.95,
@@ -667,11 +667,11 @@
         if (btnEl) btnEl.classList.add('active');
     }
 
-    // Lệnh xoay 90 độ (kết hợp cả góc căn thẳng straighten)
+    // Lệnh xoay 90 độ tương đối
     function rotate90() {
         if (!cropper) return;
+        cropper.rotate(90);
         baseRotateAngle = (baseRotateAngle + 90) % 360;
-        cropper.rotateTo(baseRotateAngle + straightenAngle);
     }
 
     // Lệnh lật ảnh ngang/dọc (Flip)
@@ -686,26 +686,29 @@
         }
     }
 
-    // Lệnh căn thẳng (Straighten Slider)
+    // FIX TRIỆT ĐỂ: Căn thẳng tương đối bằng độ lệch (delta)
     function applyStraighten(val) {
         if (!cropper) return;
-        straightenAngle = parseFloat(val);
-        document.getElementById('straightenVal').textContent = (straightenAngle > 0 ? '+' : '') + straightenAngle.toFixed(1) + '°';
-        cropper.rotateTo(baseRotateAngle + straightenAngle);
+        const newAngle = parseFloat(val);
+        const delta = newAngle - lastStraightenAngle;
+        
+        cropper.rotate(delta); // Xoay thêm góc delta mượt mà, không bị giật 90 độ
+        lastStraightenAngle = newAngle;
+        
+        document.getElementById('straightenVal').textContent = (newAngle > 0 ? '+' : '') + newAngle.toFixed(1) + '°';
     }
 
     // Đặt lại các thao tác xoay / lật / căn thẳng
     function resetTransforms() {
         if (!cropper) return;
         baseRotateAngle = 0;
-        straightenAngle = 0;
+        lastStraightenAngle = 0;
         scaleX = 1;
         scaleY = 1;
         cropper.reset();
-        cropper.rotateTo(0);
-        cropper.scale(1, 1);
         document.getElementById('straightenRange').value = 0;
         document.getElementById('straightenVal').textContent = '0.0°';
+        setCropRatio(1, document.getElementById('ratio_1_1'));
     }
 
     function retake() {
@@ -903,7 +906,7 @@
         el.appendChild(div);
       });
       const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn';
-      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span>`;
+      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/><line x1="12" y1="1" x2="12" y2="7"/></svg><span>Add Photo</span>`;
       addBtn.onclick = () => openCam({ type: 'free', key }); el.appendChild(addBtn);
     }
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
@@ -1022,11 +1025,8 @@
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
         doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90);
-        doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20);
-        doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2);
-        y += 9;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
       } y += 2;
 
       const chkLine = (label, group) => {
