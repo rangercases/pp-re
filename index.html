@@ -70,18 +70,61 @@
     .screen { display: none; padding: 14px; max-width: 760px; margin: 0 auto; padding-bottom: 85px; }
     .screen.active { display: block; }
 
-    /* HOME */
-    .home-hero { text-align: center; padding: 26px 16px 18px; }
+    /* HOME HERO & BATCH ACTIONS */
+    .home-hero { text-align: center; padding: 22px 16px 14px; position: relative; }
     .home-hero h1 { font-size: 17px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; color: var(--accent); }
     .home-hero p { font-size: 12px; color: var(--muted); }
+    
+    .btn-select-mode {
+      position: absolute; right: 8px; top: 18px; background: none; border: none;
+      color: #007aff; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 8px;
+    }
+    
     .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
-    .report-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: var(--shadow); }
+    
+    /* REPORT CARD & SELECTION */
+    #reportsList { user-select: none; -webkit-user-select: none; }
+    .report-card { 
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--r); 
+      padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; 
+      justify-content: space-between; cursor: pointer; box-shadow: var(--shadow);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .report-card.selected {
+      background: #f0f7f3; border-color: #7dcea0;
+    }
+    .rc-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+    
+    /* Vòng tròn check kiểu iOS */
+    .rc-select-circle {
+      width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #bbb;
+      display: none; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;
+    }
+    .report-card.selecting .rc-select-circle { display: flex; }
+    .report-card.selected .rc-select-circle {
+      background: #007aff; border-color: #007aff;
+    }
+    .report-card.selected .rc-select-circle::after {
+      content: '✓'; color: #fff; font-size: 11px; font-weight: bold;
+    }
+
     .rc-title { font-size: 13px; font-weight: 600; }
     .rc-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
     .rc-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
     .badge-done { background: var(--accent-light); color: var(--accent2); }
     .badge-wip { background: #fef9e7; color: #7a5c00; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
+
+    /* BATCH ACTION BAR DƯỚI ĐÁY */
+    .batch-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(15px); border-top: 1px solid var(--border); padding: 12px 18px;
+      z-index: 70; display: none; align-items: center; justify-content: space-between;
+      max-width: 760px; margin: 0 auto; box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
+    }
+    .batch-btn { background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .batch-btn.danger { color: var(--red); }
+    .batch-btn.pri { color: #007aff; }
 
     /* CARDS & FORMS */
     .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
@@ -157,7 +200,6 @@
     .dim-row label { font-size: 9px; color: var(--muted); }
     .dim-row input { width: 64px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
-    
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
     .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
 
@@ -222,7 +264,7 @@
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
 
-    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .dim-del-slot { display: none !important; } .screen.active { display: block !important; padding: 0; } }
+    @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .free-del, .dim-del-slot, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
 </head>
 
@@ -244,22 +286,30 @@
   <!-- HOME SCREEN -->
   <div class="screen active" id="homeScreen">
     <div class="home-hero">
+      <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Chọn</button>
       <div style="font-size:26px;margin-bottom:6px">📋</div>
       <h1>PP Sample Review (Lite)</h1>
       <p>Cover · Photos · Dimensions · BV Test</p>
     </div>
-    <button class="new-btn" onclick="newReport()">+ New Report</button>
-    <!-- THÊM CHỨC NĂNG IMPORT JSON TẠI ĐÂY -->
-    <button class="new-btn" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
+    
+    <button class="new-btn" id="btnNewReport" onclick="newReport()">+ New Report</button>
+    <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     
+    <!-- DANH SÁCH BÁO CÁO CÓ HỖ TRỢ VUỐT CHỌN HÀNG LOẠT -->
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
 
+  <!-- THANH BOTTOM XỬ LÝ CHỌN HÀNG LOẠT -->
+  <div class="batch-bar" id="batchBar">
+    <button class="batch-btn pri" onclick="selectAllReports()">Chọn tất cả</button>
+    <span style="font-size:12px; font-weight:600; color:var(--muted);" id="selectedCountText">Đã chọn: 0</span>
+    <button class="batch-btn danger" onclick="deleteSelectedReports()">Xóa</button>
+  </div>
+
   <!-- EDIT SCREEN -->
   <div class="screen" id="editScreen">
-    <!-- S0: COVER / INFO -->
     <div id="sec0" class="sec-block">
       <div class="sec-card">
         <div class="sec-head">Product Information</div>
@@ -413,9 +463,30 @@
         req.onerror = e => reject(e);
       });
     }
-    function dbGetAll() { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll(); req.onsuccess = () => res(req.result || []); req.onerror = () => rej(req.error); }); }
-    function dbPut(report) { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(report); req.onsuccess = () => res(); req.onerror = () => rej(req.error); }); }
-    function dbDelete(id) { return new Promise((res, rej) => { const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete(id); req.onsuccess = () => res(); req.onerror = () => rej(req.error); }); }
+    
+    function dbGetAll() { 
+      return new Promise((res, rej) => { 
+        const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll(); 
+        req.onsuccess = () => res(req.result || []); 
+        req.onerror = () => rej(req.error); 
+      }); 
+    }
+    
+    function dbPut(report) { 
+      return new Promise((res, rej) => { 
+        const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(report); 
+        req.onsuccess = () => res(); 
+        req.onerror = () => rej(req.error); 
+      }); 
+    }
+    
+    function dbDelete(id) { 
+      return new Promise((res, rej) => { 
+        const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete(id); 
+        req.onsuccess = () => res(); 
+        req.onerror = () => rej(req.error); 
+      }); 
+    }
 
     // ═══════════════ DATA CONSTANTS ═══════════════
     const TABS = ['Overall', 'Photos', 'Dimensions', 'BV Test'];
@@ -426,14 +497,15 @@
       comfort: ['Normal', 'Soft', 'Super Soft', 'Luxury Comfort'], rating: ['Repair', 'New Sample', 'To send for final approval', 'Approved']
     };
     
-    // Mảng gốc dùng để khởi tạo
-    const DEFAULT_DIM_FIELDS = [
-      { name: 'Overall Width'}, { name: 'Overall Depth'}, { name: 'Overall Height'},
-      { name: 'Seat Width'}, { name: 'Seat Depth'}, { name: 'Seat Height'},
-      { name: 'Arm Height'}, { name: 'Back Height'}, { name: 'Middle Height'},
-      { name: 'Arm Thickness'}, { name: 'Back Thickness'}, { name: 'Arm to Seat'},
-      { name: 'Back to Seat'}, { name: 'Net Weight'}
-    ];
+    const DIM_MAPPING = {
+      'Overall Width': 'ow', 'Overall Depth': 'od', 'Overall Height': 'oh',
+      'Seat Width': 'sw', 'Seat Depth': 'sd', 'Seat Height': 'sh',
+      'Arm Height': 'ah', 'Back Height': 'bh', 'Middle Height': 'mh',
+      'Arm Thickness': 'at', 'Back Thickness': 'bt', 'Arm to Seat': 'as2',
+      'Back to Seat': 'bs', 'Net Weight': 'nw'
+    };
+    
+    const DEFAULT_DIM_FIELDS = Object.keys(DIM_MAPPING).map(function(k) { return { name: k }; });
     const DEFAULT_BV = [
       { test: 'ANSI/BIFMA X5.1 Sec. 12', result: '', remark: '' }, { test: 'ANSI/BIFMA X5.1 Sec. 13', result: '', remark: '' },
       { test: 'ANSI/BIFMA X5.4 Sec. 15', result: '', remark: '' }, { test: 'BS EN 12520:2024', result: '', remark: '' },
@@ -452,6 +524,12 @@
     let lastStraightenAngle = 0;
     let scaleX = 1;
     let scaleY = 1;
+
+    // BATCH SELECT MODE STATES
+    let isSelectMode = false;
+    let selectedReportIds = new Set();
+    let isDragging = false;
+    let dragStartMode = true; // true = chọn, false = bỏ chọn
 
     function resizeImage(dataUrl, maxDimension = 1280, quality = 0.85) {
       return new Promise(resolve => {
@@ -640,6 +718,124 @@
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
+    // ═══════════════ BATCH SELECT & DRAG-TO-SELECT (IPHONE STYLE) ═══════════════
+    function toggleSelectMode() {
+      isSelectMode = !isSelectMode;
+      const btn = document.getElementById('btnSelectMode');
+      const batchBar = document.getElementById('batchBar');
+      const btnNew = document.getElementById('btnNewReport');
+      const btnImp = document.getElementById('btnImport');
+      
+      selectedReportIds.clear();
+      
+      if (isSelectMode) {
+        btn.textContent = 'Xong';
+        batchBar.style.display = 'flex';
+        btnNew.style.display = 'none';
+        btnImp.style.display = 'none';
+      } else {
+        btn.textContent = 'Chọn';
+        batchBar.style.display = 'none';
+        btnNew.style.display = 'block';
+        btnImp.style.display = 'block';
+      }
+      updateBatchUI();
+      renderHome();
+    }
+
+    function updateBatchUI() {
+      document.getElementById('selectedCountText').textContent = `Đã chọn: ${selectedReportIds.size}`;
+      document.querySelectorAll('.report-card').forEach(card => {
+        const id = card.dataset.id;
+        card.classList.toggle('selecting', isSelectMode);
+        card.classList.toggle('selected', selectedReportIds.has(id));
+      });
+    }
+
+    function setItemSelection(id, selectState) {
+      if (selectState) selectedReportIds.add(id);
+      else selectedReportIds.delete(id);
+      updateBatchUI();
+    }
+
+    function selectAllReports() {
+      if (selectedReportIds.size === reports.length) {
+        selectedReportIds.clear();
+      } else {
+        reports.forEach(r => selectedReportIds.add(String(r.id)));
+      }
+      updateBatchUI();
+    }
+
+    async function deleteSelectedReports() {
+      if (selectedReportIds.size === 0) {
+        showToast('Chưa chọn report nào!');
+        return;
+      }
+      if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedReportIds.size} báo cáo đã chọn không?`)) return;
+      
+      for (const id of selectedReportIds) {
+        await dbDelete(id);
+      }
+      showToast(`✓ Đã xóa ${selectedReportIds.size} báo cáo`);
+      toggleSelectMode(); // Tắt chế độ chọn sau khi xóa xong
+    }
+
+    // Gán sự kiện Vuốt / Quét chọn ngón tay (Drag-to-Select)
+    function setupDragToSelect(container) {
+      const getTargetId = (clientX, clientY) => {
+        const el = document.elementFromPoint(clientX, clientY);
+        const card = el ? el.closest('.report-card') : null;
+        return card ? card.dataset.id : null;
+      };
+
+      const start = (clientX, clientY) => {
+        if (!isSelectMode) return;
+        const id = getTargetId(clientX, clientY);
+        if (id) {
+          isDragging = true;
+          dragStartMode = !selectedReportIds.has(id); // Nếu chạm vào ô chưa chọn -> chuyển thành chế độ Chọn
+          setItemSelection(id, dragStartMode);
+        }
+      };
+
+      const move = (clientX, clientY) => {
+        if (!isDragging || !isSelectMode) return;
+        const id = getTargetId(clientX, clientY);
+        if (id) {
+          setItemSelection(id, dragStartMode);
+        }
+      };
+
+      const end = () => { isDragging = false; };
+
+      // Hỗ trợ cảm ứng điện thoại
+      container.addEventListener('touchstart', e => {
+        if (!isSelectMode) return;
+        const touch = e.touches[0];
+        start(touch.clientX, touch.clientY);
+      }, { passive: true });
+
+      container.addEventListener('touchmove', e => {
+        if (!isSelectMode) return;
+        const touch = e.touches[0];
+        move(touch.clientX, touch.clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchend', end);
+
+      // Hỗ trợ chuột máy tính
+      container.addEventListener('mousedown', e => {
+        if (!isSelectMode) return;
+        start(e.clientX, e.clientY);
+      });
+      container.addEventListener('mousemove', e => {
+        if (!isSelectMode) return;
+        move(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', end);
+    }
+
     // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
     function importReport(e) {
       const file = e.target.files[0];
@@ -654,7 +850,7 @@
           await renderHome();
           openReport(data.id);
         } catch (err) {
-          alert('File JSON không hợp lệ!');
+          alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
         }
       };
       reader.readAsText(file);
@@ -677,21 +873,56 @@
     }
 
     async function renderHome() {
-      reports = await dbGetAll();
-      const list = document.getElementById('reportsList');
-      const empty = document.getElementById('emptyState');
-      list.innerHTML = '';
-      if (!reports.length) { empty.style.display = 'block'; return }
-      empty.style.display = 'none';
-      [...reports].reverse().forEach(r => {
-        const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
-        const done = photos >= 4;
-        const d = document.createElement('div');
-        d.className = 'report-card';
-        d.innerHTML = `<div><div class="rc-title">${r.model || 'Untitled'}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div><div class="rc-sub">${r.desc || ''} · ${r.date || ''} · ${r.factory || ''}</div></div><div class="rc-arrow">›</div>`;
-        d.onclick = () => openReport(r.id);
-        list.appendChild(d);
-      });
+      try {
+        reports = await dbGetAll();
+        const list = document.getElementById('reportsList');
+        const empty = document.getElementById('emptyState');
+        list.innerHTML = '';
+        if (!reports.length) { 
+          empty.style.display = 'block'; 
+          document.getElementById('btnSelectMode').style.display = 'none';
+          return; 
+        }
+        empty.style.display = 'none';
+        document.getElementById('btnSelectMode').style.display = 'block';
+        
+        [...reports].reverse().forEach(r => {
+          const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+          const done = photos >= 4;
+          const d = document.createElement('div');
+          d.className = 'report-card';
+          d.dataset.id = String(r.id);
+          
+          if (isSelectMode) d.classList.add('selecting');
+          if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
+
+          d.innerHTML = `
+            <div class="rc-left">
+              <div class="rc-select-circle"></div>
+              <div>
+                <div class="rc-title">${r.model || 'Untitled'}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
+                <div class="rc-sub">${r.desc || ''} · ${r.date || ''} · ${r.factory || ''}</div>
+              </div>
+            </div>
+            <div class="rc-arrow" style="${isSelectMode ? 'display:none' : ''}">›</div>
+          `;
+          
+          d.onclick = (e) => {
+            if (isSelectMode) {
+              const id = String(r.id);
+              setItemSelection(id, !selectedReportIds.has(id));
+            } else {
+              openReport(r.id);
+            }
+          };
+          
+          list.appendChild(d);
+        });
+
+        setupDragToSelect(list);
+      } catch (err) {
+          alert("Lỗi tải màn hình chính: " + err.message);
+      }
     }
 
     function buildUI() {
@@ -809,7 +1040,7 @@
           ${displayImg ? `<div class="pactions" style="right: 4px;">
             <button class="pact edit" onclick="editDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
             <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
             <button class="pact del" onclick="delDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>` : ''}
         </div>
@@ -898,7 +1129,6 @@
       addBtn.onclick = () => { if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
       el.appendChild(addBtn);
 
-      // BẢO VỆ SORTABLE KHỎI LỖI LOAD THƯ VIỆN
       if(typeof Sortable !== 'undefined') {
           if(el._sortable) el._sortable.destroy();
           el._sortable = new Sortable(el, {
@@ -934,27 +1164,56 @@
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
     function setBVResult(i, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
 
-    function loadData() {
-      const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fCustomer', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
-      const keys = ['model', 'desc', 'dim', 'date', 'customer', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
-      fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
-      document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
-      Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
-      
-      if (!D.dimensions) {
-          D.dimensions = DEFAULT_DIM_FIELDS.map(f => {
-              const oldData = D.dimData ? (D.dimData[f.name]) : null; 
-              return {
-                  id: 'dim_' + Math.random().toString(36).substr(2, 9),
-                  name: f.name, actual: oldData?.actual || '', drawing: oldData?.drawing || '',
-                  color: oldData?.color || 'color-blue', img: oldData?.img || null, original: oldData?.original || null
-              };
-          });
-      }
+    function refreshAllSlots() { 
+      COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); 
+      APPROVAL_SLOTS.forEach(s => refreshSlot('approvalPhotos', s.replace(/ /g, '_'), 'approval')); 
+    }
 
-      buildDimGrid(); renderBVTable();
-      ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
-      refreshAllSlots();
+    function loadData() {
+      try {
+        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fCustomer', 'fFactory', 'fReviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+        const keys = ['model', 'desc', 'dim', 'date', 'customer', 'factory', 'reviewer', 'watchoutNotes', 'approvalDate', 'approvalBy', 'dimNotes'];
+        fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
+        document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
+        Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
+        
+        // CHUYỂN ĐỔI DATA AN TOÀN TUYỆT ĐỐI
+        if (!D.dimensions) {
+            D.dimensions = [];
+            for (let i = 0; i < DEFAULT_DIM_FIELDS.length; i++) {
+                let f = DEFAULT_DIM_FIELDS[i];
+                let actualVal = '', drawingVal = '', colorVal = 'color-blue', imgVal = null, originalVal = null;
+                
+                if (D.dimData) {
+                    let oldKey = DIM_MAPPING[f.name] || f.name;
+                    let oldData = D.dimData[oldKey];
+                    if (oldData) {
+                        actualVal = oldData.actual || '';
+                        drawingVal = oldData.drawing || '';
+                        colorVal = oldData.color || 'color-blue';
+                        imgVal = oldData.img || null;
+                        originalVal = oldData.original || null;
+                    }
+                }
+                
+                D.dimensions.push({
+                    id: 'dim_' + Math.random().toString(36).substr(2, 9),
+                    name: f.name,
+                    actual: actualVal,
+                    drawing: drawingVal,
+                    color: colorVal,
+                    img: imgVal,
+                    original: originalVal
+                });
+            }
+        }
+
+        buildDimGrid(); renderBVTable();
+        ['prodPhotos', 'watchoutPhotos'].forEach(k => renderFreePhotos(k));
+        refreshAllSlots();
+      } catch (err) {
+        alert("Lỗi tải dữ liệu: " + err.message);
+      }
     }
 
     function showSection(i) {
@@ -984,17 +1243,37 @@
     }
 
     async function openReport(id) {
-      currentId = id; reports = await dbGetAll(); D = reports.find(r => r.id === id); curSec = 0;
-      buildUI(); loadData(); showSection(0);
-      document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-      ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'saveIndicator'].forEach(id => document.getElementById(id).style.display = id==='tabsWrap'||id==='progressBar'?'block':'inline-flex');
-      document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); window.scrollTo(0, 0);
+      try {
+        currentId = id; 
+        reports = await dbGetAll(); 
+        D = reports.find(r => String(r.id) === String(id)); 
+        
+        if (!D) {
+            alert('Lỗi: Không tìm thấy dữ liệu báo cáo!');
+            return;
+        }
+        
+        curSec = 0;
+        buildUI(); loadData(); showSection(0);
+        document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
+        ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'saveIndicator'].forEach(elemId => document.getElementById(elemId).style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':'inline-flex');
+        document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); window.scrollTo(0, 0);
+      } catch (err) {
+        alert("Lỗi khi mở báo cáo: " + err.message);
+      }
     }
 
     async function newReport() {
-      const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
-      const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
-      await dbPut(r); openReport(id);
+      try {
+        const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
+        const r = { id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, customer: 'SOFACOMPANY', factory: '', reviewer: '', numS: 1, numR: 1, checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, coverPhotos: {}, prodPhotos: [], dimData: {}, dimensions: null, dimNotes: '', bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), watchoutPhotos: [], watchoutNotes: '', approvalPhotos: {}, approvalDate: '', approvalBy: '' };
+        
+        await dbPut(r); 
+        await renderHome(); 
+        openReport(id);
+      } catch (err) {
+        alert("Lỗi tạo báo cáo mới: " + err.message);
+      }
     }
 
     function shareReport() {
@@ -1154,7 +1433,7 @@
               doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw5, gh5, 'S');
               addImg(p.img, px, y, gw5, gh5);
               if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw5 / 2, y + gh5 + 4, { align: 'center', maxWidth: gw5 }); }
-            }); y += gh5 + 10;
+            }); y += Math.ceil(validWatchouts.length / 2) * (gw5 * 0.75 + 10) + 4;
           }
           if (D.watchoutNotes) y = addSafeTextBlock('Watch Out Comments', D.watchoutNotes, y);
       }
@@ -1186,4 +1465,5 @@
     initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
   </script>
 </body>
+
 </html>
