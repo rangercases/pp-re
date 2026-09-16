@@ -4,11 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Cấu hình Web App cho iPhone (PWA Standalone) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
+  
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition</title>
+  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -47,7 +49,7 @@
     }
 
     /* NAV */
-    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; }
     .topbar-title { font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
@@ -99,7 +101,7 @@
     .chkbox.on { background: var(--accent); border-color: var(--accent); }
     .chkbox.on::after { content: '✓'; color: #fff; font-size: 9px; font-weight: bold; }
 
-    /* PHOTO GRID */
+    /* PHOTO GRID - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
     .photo-slot { 
       background: #ffffff; 
@@ -207,7 +209,7 @@
     .sbar-btn.pri { background: var(--accent); color: #fff; }
     .sbar-btn.danger { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; }
 
-    /* CROPPER MODAL */
+    /* MODAL CHỈNH SỬA CROPPER */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
@@ -220,9 +222,11 @@
     .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
     .mbtn.pri { background: var(--accent); color: #fff; }
 
+    /* CROPPER WRAPPER */
     .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
     .cropper-wrapper img { display: block; max-width: 100%; }
 
+    /* CROPPER TOOLBAR & ADVANCED TOOLS */
     .cropper-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; background: #000; }
     .tools-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
     .tool-btn { 
@@ -236,6 +240,7 @@
       flex: 1; 
       min-width: 52px;
       font-weight: 500;
+      transition: background 0.15s;
     }
     .tool-btn.active {
       background: #7dcea0;
@@ -243,7 +248,9 @@
       border-color: #7dcea0;
       font-weight: 700;
     }
+    .tool-btn:active { background: rgba(255,255,255,0.35); }
 
+    /* STRAIGHTEN SLIDER BAR */
     .straighten-box { display: flex; align-items: center; gap: 10px; padding: 6px 4px 2px; color: #fff; font-size: 11.5px; }
     .straighten-box span.title { color: #bbb; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
     .straighten-slider { flex: 1; height: 4px; border-radius: 2px; outline: none; background: rgba(255, 255, 255, 0.3); cursor: pointer; accent-color: #7dcea0; }
@@ -385,6 +392,7 @@
             <img id="cropperImage" src="">
         </div>
         
+        <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
         <div id="editorToolbar" class="cropper-tools">
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
@@ -412,8 +420,10 @@
       
       <div class="modal-foot">
         <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
-        <button class="mbtn sec" onclick="triggerPickLibrary(camTarget)">🖼️ Đổi ảnh</button>
-        <button class="mbtn pri" onclick="triggerNativeCamera(camTarget)">📷 Chụp lại</button>
+        <!-- HAI NÚT RETAKE ĐƯỢC ẨN/HIỆN LINH HOẠT THEO NGUỒN VÀO -->
+        <button class="mbtn pri hidden" id="btnRetakeCam" onclick="triggerNativeCamera(camTarget)">📷 Chụp lại</button>
+        <button class="mbtn pri hidden" id="btnRetakeLib" onclick="triggerPickLibrary(camTarget)">🖼️ Chọn lại</button>
+        
         <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
@@ -421,7 +431,7 @@
 
   <!-- 1. INPUT CHỤP TRỰC TIẾP TỪ CAMERA IPHONE -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-  <!-- 2. INPUT CHUYÊN DỤNG MỞ THẲNG THƯ VIỆN ẢNH IPHONE (ĐỊNH DANH ĐUÔI TỆP RÕ RÀNG) -->
+  <!-- 2. INPUT CHỌN TỪ THƯ VIỆN ẢNH -->
   <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/webp" style="display:none" onchange="handleFile(event)">
   
   <div class="toast" id="toast"></div>
@@ -475,23 +485,33 @@
     let camTarget = null;
     let saveTimeout = null;
 
-    // CROPPER & TRANSFORMATION STATES
+    // CROPPER STATES
     let cropper = null;
     let baseRotateAngle = 0;
     let lastStraightenAngle = 0;
     let scaleX = 1;
     let scaleY = 1;
 
-    // ═══════════════ KÍCH HOẠT TRỰC TIẾP CAMERA HOẶC ALBUM ═══════════════
+    // ═══════════════ KÍCH HOẠT CAMERA & ALBUM (LINH HOẠT NÚT CHỤP LẠI) ═══════════════
     function triggerNativeCamera(target) {
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
+      
+      // Mở bằng Camera -> Nút chụp lại là Camera
+      document.getElementById('btnRetakeCam').classList.remove('hidden');
+      document.getElementById('btnRetakeLib').classList.add('hidden');
+      
       document.getElementById('cameraInput').click();
     }
 
     function triggerPickLibrary(target) {
       camTarget = target;
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
+      
+      // Mở bằng Thư viện -> Nút chụp lại là Chọn Album
+      document.getElementById('btnRetakeCam').classList.add('hidden');
+      document.getElementById('btnRetakeLib').classList.remove('hidden');
+      
       document.getElementById('libraryInput').click();
     }
 
@@ -531,7 +551,7 @@
 
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
-            aspectRatio: 1, // Mặc định 1:1
+            aspectRatio: 1, 
             viewMode: 1,
             dragMode: 'move',
             autoCropArea: 0.95,
@@ -697,7 +717,7 @@
       });
     }
 
-    // RENDER Ô ẢNH VỚI 2 NÚT RIÊNG BIỆT: 📷 CHỤP HOẶC 🖼️ CHỌN ALBUM
+    // GIAO DIỆN CHỌN NGUỒN CỐ ĐỊNH TRÊN Ô
     function renderSlotHTML(containerId, key, label, type, section) {
       const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
       const img = store && store[key];
@@ -1012,6 +1032,7 @@
       }); y += apH + 12;
       addText('Approval Date', D.approvalDate, M, y); addText('Approved By', D.approvalBy, M + (W - M * 2) / 2, y); y += 12;
 
+      // Đánh số trang
       const totalPages = doc.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p); doc.setFillColor(26, 58, 42); doc.rect(0, 285, W, 12, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
