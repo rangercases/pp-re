@@ -4,14 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- Cấu hình Web App cho iPhone (PWA Standalone) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
-  
-  <!-- Icon hiển thị ngoài màn hình chính iPhone -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition (iPhone Tools)</title>
+  <title>PP Sample Review — Lite Edition</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -50,7 +47,7 @@
     }
 
     /* NAV */
-    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; }
     .topbar-title { font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
@@ -102,7 +99,7 @@
     .chkbox.on { background: var(--accent); border-color: var(--accent); }
     .chkbox.on::after { content: '✓'; color: #fff; font-size: 9px; font-weight: bold; }
 
-    /* PHOTO GRID - NỀN TRẮNG & OBJECT-FIT: CONTAIN */
+    /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
     .photo-slot { 
       background: #ffffff; 
@@ -119,18 +116,28 @@
       background: #ffffff; 
       display: block; 
     }
-    .photo-slot .pempty { 
-      width: 100%; 
-      height: calc(100% - 26px); 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      gap: 6px; 
-      cursor: pointer;
-      background: #ffffff;
+    
+    /* KHUNG CHỌN 1 CHẠM TRỰC TIẾP */
+    .dual-tap-box {
+      width: 100%;
+      height: calc(100% - 26px);
+      display: flex;
     }
-    .photo-slot .pempty span { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+    .tap-option {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      background: #fafbfc;
+      transition: background 0.15s;
+    }
+    .tap-option:first-child { border-right: 1px dashed var(--border-light); }
+    .tap-option:active { background: var(--accent-light); }
+    .tap-option span { font-size: 10px; color: var(--muted); font-weight: 500; }
+
     .photo-slot .pbar { 
       height: 26px; 
       display: flex; 
@@ -142,25 +149,14 @@
       background: #ffffff; 
       text-transform: uppercase;
     }
-    .pactions { position: absolute; top: 5px; right: 5px; display: flex; gap: 3px; z-index: 2; }
+    .pactions { position: absolute; top: 5px; right: 5px; display: flex; gap: 4px; z-index: 2; }
     .pact { width: 26px; height: 26px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
-    .pact.cam { background: rgba(45, 90, 61, .85); }
-    .pact.del { background: rgba(139, 32, 32, .82); }
+    .pact.cam { background: rgba(45, 90, 61, .9); }
+    .pact.gal { background: rgba(26, 58, 106, .9); }
+    .pact.del { background: rgba(139, 32, 32, .85); }
 
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .add-photo-btn { 
-      aspect-ratio: 4/3; 
-      border: 1.5px dashed var(--border); 
-      border-radius: 8px; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      background: #ffffff; 
-      cursor: pointer; 
-      gap: 6px;
-    }
     .free-photo-item { 
       aspect-ratio: 4/3; 
       position: relative; 
@@ -169,12 +165,7 @@
       border: 1px solid var(--border); 
       background: #ffffff; 
     }
-    .free-photo-item img { 
-      width: 100%; 
-      height: 100%; 
-      object-fit: contain; 
-      background: #ffffff; 
-    }
+    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
     .free-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(139, 32, 32, .85); color: #fff; border: none; cursor: pointer; }
@@ -182,19 +173,8 @@
     /* DIMENSIONS */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
     .dim-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    .dim-photo { 
-      aspect-ratio: 4/3; 
-      position: relative; 
-      background: #ffffff; 
-      cursor: pointer; 
-    }
-    .dim-photo img { 
-      width: 100%; 
-      height: 100%; 
-      object-fit: contain; 
-      background: #ffffff;
-    }
-    .dim-photo .dp-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #ffffff; }
+    .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
+    .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
     .dim-photo .pactions { top: 3px; right: 3px; }
     .dim-photo .pact { width: 22px; height: 22px; }
     .dim-fields { padding: 6px 7px; }
@@ -227,67 +207,7 @@
     .sbar-btn.pri { background: var(--accent); color: #fff; }
     .sbar-btn.danger { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0c0; }
 
-    /* ACTION SHEET (MENU LỰA CHỌN CHỤP HOẶC TẢI ẢNH) */
-    .sheet-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 110;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      transition: opacity 0.2s;
-    }
-    .sheet-overlay.hidden { display: none !important; }
-    .sheet-box {
-      width: 100%;
-      max-width: 440px;
-      padding: 12px;
-      animation: slideUp 0.22s ease-out;
-    }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-    .sheet-group {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(15px);
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-    .sheet-btn {
-      width: 100%;
-      padding: 15px;
-      font-size: 15px;
-      font-weight: 500;
-      border: none;
-      background: transparent;
-      color: #007aff;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border-bottom: 1px solid #e2e4e8;
-      font-family: inherit;
-    }
-    .sheet-btn:active { background: rgba(0, 0, 0, 0.05); }
-    .sheet-btn:last-child { border-bottom: none; }
-    .sheet-cancel {
-      width: 100%;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 14px;
-      border: none;
-      background: #fff;
-      color: #007aff;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    /* MODAL CHỈNH SỬA CROPPER */
+    /* CROPPER MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
@@ -300,11 +220,9 @@
     .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
     .mbtn.pri { background: var(--accent); color: #fff; }
 
-    /* CROPPER WRAPPER */
     .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
     .cropper-wrapper img { display: block; max-width: 100%; }
 
-    /* CROPPER TOOLBAR & ADVANCED TOOLS */
     .cropper-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; background: #000; }
     .tools-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
     .tool-btn { 
@@ -318,7 +236,6 @@
       flex: 1; 
       min-width: 52px;
       font-weight: 500;
-      transition: background 0.15s;
     }
     .tool-btn.active {
       background: #7dcea0;
@@ -326,41 +243,11 @@
       border-color: #7dcea0;
       font-weight: 700;
     }
-    .tool-btn:active { background: rgba(255,255,255,0.35); }
 
-    /* STRAIGHTEN SLIDER BAR */
-    .straighten-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 4px 2px;
-      color: #fff;
-      font-size: 11.5px;
-    }
-    .straighten-box span.title {
-      color: #bbb;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .straighten-slider {
-      flex: 1;
-      height: 4px;
-      border-radius: 2px;
-      outline: none;
-      background: rgba(255, 255, 255, 0.3);
-      cursor: pointer;
-      accent-color: #7dcea0;
-    }
-    .straighten-val {
-      min-width: 44px;
-      text-align: right;
-      font-weight: 600;
-      font-family: monospace;
-      color: #7dcea0;
-    }
-
+    .straighten-box { display: flex; align-items: center; gap: 10px; padding: 6px 4px 2px; color: #fff; font-size: 11.5px; }
+    .straighten-box span.title { color: #bbb; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+    .straighten-slider { flex: 1; height: 4px; border-radius: 2px; outline: none; background: rgba(255, 255, 255, 0.3); cursor: pointer; accent-color: #7dcea0; }
+    .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
     /* TOAST */
@@ -486,24 +373,7 @@
     <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
   </div>
 
-  <!-- POPUP ACTION SHEET (LỰA CHỌN CHỤP HAY CHỌN ẢNH) -->
-  <div class="sheet-overlay hidden" id="actionSheet" onclick="closeSheet()">
-    <div class="sheet-box" onclick="event.stopPropagation()">
-      <div class="sheet-group">
-        <button class="sheet-btn" onclick="triggerNativeCamera()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Chụp ảnh mới
-        </button>
-        <button class="sheet-btn" onclick="triggerNativeLibrary()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Chọn từ thư viện ảnh
-        </button>
-      </div>
-      <button class="sheet-cancel" onclick="closeSheet()">Hủy</button>
-    </div>
-  </div>
-
-  <!-- CROPPER MODAL WITH ADVANCED IPHONE PHOTO TOOLS -->
+  <!-- CROPPER MODAL -->
   <div class="modal-overlay hidden" id="camModal">
     <div class="modal-box">
       <div class="modal-head">
@@ -515,9 +385,7 @@
             <img id="cropperImage" src="">
         </div>
         
-        <!-- CROPPER TOOLBAR & ADVANCED TOOLS -->
         <div id="editorToolbar" class="cropper-tools">
-            <!-- Hàng tỷ lệ khung hình (Mặc định 1:1) -->
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
                 <button class="tool-btn" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
@@ -526,7 +394,6 @@
                 <button class="tool-btn" id="ratio_16_9" onclick="setCropRatio(16/9, this)">16:9</button>
             </div>
 
-            <!-- Hàng lệnh Xoay 90° & Lật ảnh (Flip) -->
             <div class="tools-row">
                 <button class="tool-btn" onclick="rotate90()">🔄 Xoay 90°</button>
                 <button class="tool-btn" onclick="flipImage('x')">⇄ Lật ngang</button>
@@ -534,7 +401,6 @@
                 <button class="tool-btn" onclick="resetTransforms()">↺ Đặt lại</button>
             </div>
 
-            <!-- Thanh trượt Căn thẳng ảnh (Straighten Slider) -->
             <div class="straighten-box">
                 <span class="title">📐 Căn thẳng:</span>
                 <input type="range" class="straighten-slider" id="straightenRange" min="-45" max="45" step="0.5" value="0" oninput="applyStraighten(this.value)">
@@ -546,17 +412,18 @@
       
       <div class="modal-foot">
         <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
-        <button class="mbtn sec" onclick="triggerNativeLibrary()">📁 Đổi ảnh</button>
-        <button class="mbtn pri" onclick="triggerNativeCamera()">📷 Chụp lại</button>
+        <button class="mbtn sec" onclick="triggerPickLibrary(camTarget)">🖼️ Đổi ảnh</button>
+        <button class="mbtn pri" onclick="triggerNativeCamera(camTarget)">📷 Chụp lại</button>
         <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
   </div>
 
-  <!-- INPUT CHỤP TRỰC TIẾP TỪ CAMERA IPHONE -->
+  <!-- 1. INPUT CHỤP TRỰC TIẾP TỪ CAMERA IPHONE -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-  <!-- INPUT CHỌN TỪ THƯ VIỆN ẢNH -->
-  <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+  <!-- 2. INPUT CHUYÊN DỤNG MỞ THẲNG THƯ VIỆN ẢNH IPHONE (ĐỊNH DANH ĐUÔI TỆP RÕ RÀNG) -->
+  <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/webp" style="display:none" onchange="handleFile(event)">
+  
   <div class="toast" id="toast"></div>
 
   <script>
@@ -615,25 +482,17 @@
     let scaleX = 1;
     let scaleY = 1;
 
-    // ═══════════════ BƯỚC CHỌN NGUỒN ẢNH (ACTION SHEET) ═══════════════
-    function openCam(target) {
+    // ═══════════════ KÍCH HOẠT TRỰC TIẾP CAMERA HOẶC ALBUM ═══════════════
+    function triggerNativeCamera(target) {
       camTarget = target;
-      if (cropper) { cropper.destroy(); cropper = null; }
-      document.getElementById('actionSheet').classList.remove('hidden');
-    }
-
-    function closeSheet() {
-      document.getElementById('actionSheet').classList.add('hidden');
-    }
-
-    function triggerNativeCamera() {
-      closeSheet();
+      if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
       document.getElementById('cameraInput').click();
     }
 
-    function triggerNativeLibrary() {
-      closeSheet();
-      document.getElementById('fileInput').click();
+    function triggerPickLibrary(target) {
+      camTarget = target;
+      if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
+      document.getElementById('libraryInput').click();
     }
 
     function handleFile(e) {
@@ -654,12 +513,10 @@
         document.getElementById('camTitle').textContent = '📷 ' + title;
         document.getElementById('camModal').classList.remove('hidden');
 
-        // Đặt nút ratio 1:1 làm MẶC ĐỊNH
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
         const btn11 = document.getElementById('ratio_1_1');
         if(btn11) btn11.classList.add('active');
 
-        // Reset trạng thái transform
         baseRotateAngle = 0;
         lastStraightenAngle = 0;
         scaleX = 1;
@@ -674,7 +531,7 @@
 
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
-            aspectRatio: 1, // MẶC ĐỊNH 1:1
+            aspectRatio: 1, // Mặc định 1:1
             viewMode: 1,
             dragMode: 'move',
             autoCropArea: 0.95,
@@ -718,10 +575,8 @@
         if (!cropper) return;
         const newAngle = parseFloat(val);
         const delta = newAngle - lastStraightenAngle;
-        
         cropper.rotate(delta);
         lastStraightenAngle = newAngle;
-        
         document.getElementById('straightenVal').textContent = (newAngle > 0 ? '+' : '') + newAngle.toFixed(1) + '°';
     }
 
@@ -742,14 +597,12 @@
         showToast('Lỗi: Chưa có dữ liệu ảnh!');
         return;
       }
-      
       const croppedCanvas = cropper.getCroppedCanvas({
           maxWidth: 1280,
           maxHeight: 1280,
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high'
       });
-      
       const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.85);
       savePhoto(finalDataUrl);
       closeCamera();
@@ -844,24 +697,36 @@
       });
     }
 
+    // RENDER Ô ẢNH VỚI 2 NÚT RIÊNG BIỆT: 📷 CHỤP HOẶC 🖼️ CHỌN ALBUM
     function renderSlotHTML(containerId, key, label, type, section) {
       const store = section === 'cover' ? D.coverPhotos : D.approvalPhotos;
       const img = store && store[key];
+      const targetObj = `{type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'}`;
       let inner = '';
       if (img) {
         inner = `<img class="pimg" src="${img}">
         <div class="pactions">
-          <button class="pact cam" onclick="openCam({type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'});event.stopPropagation()">
+          <button class="pact cam" title="Chụp lại" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
-          <button class="pact del" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
+          <button class="pact gal" title="Chọn từ Album" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="pact del" title="Xóa" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
         </div>`;
       } else {
-        inner = `<div class="pempty" onclick="openCam({type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'})">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Tap to shoot</span>
+        inner = `
+        <div class="dual-tap-box">
+          <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Chụp</span>
+          </div>
+          <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Album</span>
+          </div>
         </div>`;
       }
       inner += `<div class="pbar">${label}</div>`; return inner;
@@ -885,10 +750,25 @@
       DIM_FIELDS.forEach(f => {
         const div = document.createElement('div'); div.className = 'dim-slot';
         const store = D.dimData && D.dimData[f.key] ? D.dimData[f.key] : {};
+        const targetObj = `{type:'dim',key:'${f.key}'}`;
         div.innerHTML = `
-        <div class="dim-photo" id="dph_${f.key}" onclick="openCam({type:'dim',key:'${f.key}'})">
-          ${store.img ? `<img src="${store.img}">` : `<div class="dp-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`}
-          ${store.img ? `<div class="pactions"><button class="pact cam" onclick="openCam({type:'dim',key:'${f.key}'});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button><button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>` : ''}
+        <div class="dim-photo" id="dph_${f.key}">
+          ${store.img ? `<img src="${store.img}">` : `
+          <div class="dual-tap-box" style="height:100%;">
+            <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Chụp</span>
+            </div>
+            <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Album</span>
+            </div>
+          </div>`}
+          ${store.img ? `<div class="pactions">
+            <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+            <button class="pact del" onclick="delDimPhoto('${f.key}');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </div>` : ''}
         </div>
         <div class="dim-fields">
           <div class="dim-name">${f.name}</div>
@@ -916,14 +796,25 @@
     function renderFreePhotos(key) {
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
+      const targetObj = `{type:'free',key:'${key}'}`;
       arr.forEach((p, i) => {
         const div = document.createElement('div'); div.className = 'free-photo-item';
         div.innerHTML = `<img src="${p.img}"><div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div><button class="free-del" onclick="delFreePhoto('${key}',${i})">✕</button>`;
         el.appendChild(div);
       });
-      const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn';
-      addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span>`;
-      addBtn.onclick = () => openCam({ type: 'free', key }); el.appendChild(addBtn);
+      const addBtn = document.createElement('div'); addBtn.className = 'photo-slot';
+      addBtn.innerHTML = `
+      <div class="dual-tap-box" style="height:100%;">
+        <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Chụp mới</span>
+        </div>
+        <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Album</span>
+        </div>
+      </div>`;
+      el.appendChild(addBtn);
     }
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
     function delFreePhoto(key, i) { if (!confirm('Xóa ảnh này không?')) return; if (!D[key]) return; D[key].splice(i, 1); renderFreePhotos(key); as(); }
@@ -1005,7 +896,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT (CHỈ 4 PHẦN) ═══════════════
+    // ═══════════════ PDF EXPORT ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -1041,8 +932,11 @@
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
         doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90);
+        doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20);
+        doc.text(String(v1 || '—'), M + 22, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2);
+        y += 9;
       } y += 2;
 
       const chkLine = (label, group) => {
@@ -1118,7 +1012,6 @@
       }); y += apH + 12;
       addText('Approval Date', D.approvalDate, M, y); addText('Approved By', D.approvalBy, M + (W - M * 2) / 2, y); y += 12;
 
-      // Đánh số trang
       const totalPages = doc.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p); doc.setFillColor(26, 58, 42); doc.rect(0, 285, W, 12, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
