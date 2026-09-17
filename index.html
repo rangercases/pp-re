@@ -270,8 +270,12 @@
 
     .dim-batch-bar {
       display: none; align-items: center; justify-content: space-between;
-      background: #f8faf9; border-top: 1px solid var(--border); padding: 10px 14px;
+      position: sticky; top: calc(52px + env(safe-area-inset-top)); z-index: 20;
+      background: rgba(248, 250, 249, 0.96); border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); padding: 10px 14px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); backdrop-filter: blur(10px);
     }
+    .dimensions-card { overflow: visible; }
 
     .add-dim-btn { 
       min-height: 190px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
@@ -430,7 +434,7 @@
 
     <!-- S2: DIMENSIONS (2 CỘT) -->
     <div id="sec2" class="sec-block" style="display:none">
-      <div class="sec-card">
+      <div class="sec-card dimensions-card">
         <div class="sec-head">
           <span>Product Dimension & Details</span>
           <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
@@ -442,13 +446,13 @@
           <div class="legend-item"><div class="color-dot color-orange"></div><span>Drawing to update</span></div>
         </div>
 
-        <div class="dim-grid" id="dimGrid"></div>
-
         <div class="dim-batch-bar" id="dimBatchBar">
           <button class="batch-btn pri" onclick="selectAllDims()">Chọn tất cả</button>
           <span style="font-size:12px; font-weight:600; color:var(--muted);" id="dimSelectedCountText">Đã chọn: 0</span>
           <button class="batch-btn danger" onclick="deleteSelectedDims()">Xóa các ô đã chọn</button>
         </div>
+
+        <div class="dim-grid" id="dimGrid"></div>
       </div>
       <div class="sec-card"><div class="sec-head">Notes</div><div class="note-area"><textarea id="dimNotes" placeholder="Additional dimension notes..." oninput="as()"></textarea></div></div>
     </div>
@@ -498,7 +502,6 @@
 
   <!-- SAVE BAR -->
   <div class="save-bar" id="saveBar" style="display:none">
-    <button class="sbar-btn danger" onclick="deleteReport()">Delete</button>
     <button class="sbar-btn sec" onclick="prevSection()">← Back</button>
     <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
   </div>
@@ -1695,7 +1698,6 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       const data = JSON.stringify(D, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `PP_${fileName}_${D.date || 'draft'}.json`; a.click(); URL.revokeObjectURL(url); showToast('✓ JSON file downloaded');
     }
-    async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
