@@ -173,8 +173,14 @@
     .tap-option:active { background: var(--accent-light); }
     .tap-option span { font-size: 10px; color: var(--muted); font-weight: 500; }
 
-    .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border-light); background: #ffffff; text-transform: uppercase; }
-    
+    .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border-light); background: #ffffff; text-transform: uppercase; padding: 0 4px; }
+    .photo-slot .pbar input {
+      width: 100%; border: none; background: transparent; font-size: 9.5px; font-weight: 700;
+      color: var(--text); text-align: center; text-transform: uppercase; outline: none;
+      font-family: inherit; letter-spacing: 0.5px;
+    }
+    .photo-slot .pbar input:focus { background: var(--accent-light); color: var(--accent); }
+
     .pactions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 2; }
     .pact { width: 24px; height: 24px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
     .pact:active { transform: scale(0.9); }
@@ -781,8 +787,13 @@
     }
 
     function initCropper(imgSrc) {
-        const title = camTarget.type === 'dim' ? 'KÍCH THƯỚC' :
-          camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : (camTarget.key ? camTarget.key.replace(/_/g, ' ') : 'Ảnh');
+        let title = 'Chỉnh sửa ảnh';
+        if (camTarget.type === 'dim') {
+          title = 'KÍCH THƯỚC';
+        } else if (camTarget.type === 'slot') {
+          const customName = D.coverTitles && D.coverTitles[camTarget.key];
+          title = customName || camTarget.key.replace(/_/g, ' ');
+        }
 
         document.getElementById('camTitle').textContent = '✏️ ' + title;
         document.getElementById('camModal').classList.remove('hidden');
@@ -1133,11 +1144,18 @@
       });
     }
 
+    function updateCoverLabel(key, val) {
+      if (!D.coverTitles) D.coverTitles = {};
+      D.coverTitles[key] = val;
+      as();
+    }
+
     function renderSlotHTML(containerId, key, label, type, section) {
       const store = D.coverPhotos;
       const data = store && store[key];
       const displayImg = data ? (typeof data === 'string' ? data : data.img) : null;
       const targetObj = `{type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'}`;
+      const currentTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : label;
       
       let inner = '';
       if (displayImg) {
@@ -1169,7 +1187,11 @@
           </div>
         </div>`;
       }
-      inner += `<div class="pbar">${label}</div>`; return inner;
+      inner += `
+        <div class="pbar">
+          <input type="text" value="${currentTitle}" placeholder="TÊN GÓC CHỤP..." onclick="event.stopPropagation()" oninput="updateCoverLabel('${key}', this.value)">
+        </div>`; 
+      return inner;
     }
 
     function refreshSlot(containerId, key, section) {
@@ -1464,6 +1486,7 @@
           id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: '', numS: 1, numR: 1, 
           checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, 
           coverPhotos: {}, 
+          coverTitles: {},
           prodPhotos: [], 
           dimensions: null, dimNotes: '', 
           assemblyPhotos: [], assemblyNotes: '',
@@ -1489,7 +1512,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT (SMART FILTER & THEME COLOR) ═══════════════
+    // ═══════════════ PDF EXPORT ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -1573,24 +1596,60 @@
       ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
-      const cp = D.coverPhotos || {}; const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
-      const pw = (W - M * 2 - 4) / 2; const ph = pw;
-      [[M, y], [M + pw + 4, y], [M, y + ph + 6], [M + pw + 4, y + ph + 6]].forEach(([px, py], i) => {
-        const dataObj = cp[ckeys[i]]; const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
-        doc.setDrawColor(210, 205, 195); doc.rect(px, py, pw, ph + 5, 'S');
-        if (img) { addImg(img, px, py, pw, ph); } else { doc.setFillColor(245, 242, 237); doc.rect(px, py, pw, ph, 'F'); doc.setTextColor(170, 165, 158); doc.setFontSize(7); doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); }
-        doc.setFillColor(245, 242, 237); doc.rect(px, py + ph, pw, 5, 'F'); doc.setTextColor(80, 75, 70); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.text(COVER_SLOTS[i], px + pw / 2, py + ph + 3.5, { align: 'center' });
+      const cp = D.coverPhotos || {}; 
+      const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
+      
+      const gapX = 4;
+      const gapY = 5;
+      const barH = 5.5;
+      const pw = (W - M * 2 - gapX) / 2; 
+      const ph = 81;
+      
+      const gridCoords = [
+        [M, y], 
+        [M + pw + gapX, y], 
+        [M, y + ph + barH + gapY], 
+        [M + pw + gapX, y + ph + barH + gapY]
+      ];
+
+      gridCoords.forEach(([px, py], i) => {
+        const key = ckeys[i];
+        const dataObj = cp[key]; 
+        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+        const slotTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : COVER_SLOTS[i];
+        
+        doc.setDrawColor(210, 205, 195); 
+        doc.rect(px, py, pw, ph + barH, 'S');
+        
+        if (img) { 
+          addImg(img, px, py, pw, ph); 
+        } else { 
+          doc.setFillColor(245, 242, 237); 
+          doc.rect(px, py, pw, ph, 'F'); 
+          doc.setTextColor(170, 165, 158); 
+          doc.setFontSize(7); 
+          doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); 
+        }
+        
+        doc.setFillColor(245, 242, 237); 
+        doc.rect(px, py + ph, pw, barH, 'F'); 
+        doc.setTextColor(80, 75, 70); 
+        doc.setFont('helvetica', 'bold'); 
+        doc.setFontSize(6.5); 
+        doc.text(slotTitle.toUpperCase(), px + pw / 2, py + ph + (barH / 2) + 1, { align: 'center' });
       });
-      y += (ph + 6) * 2 + 4;
+      
+      y += (ph + barH) * 2 + gapY + 4;
 
       // ================= 2. PHOTO =================
       renderPhotoSection('Product Photos', D.prodPhotos, null, null);
 
-      // ================= 3. DIMENSIONS (ĐÃ SIẾT BỘ LỌC) =================
+      // ================= 3. DIMENSIONS =================
       const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing);
       if(validDims.length > 0 || (D.dimNotes && D.dimNotes.trim())) {
         addHeader('Product Dimension & Details');
-        // Vẽ Legend dạng hình tròn có màu sắc trực quan
+        
+        // Vẽ Legend dạng hình tròn màu trực quan
         let lx = M;
         const ly = y - 0.8;
         const legendItems = [
@@ -1603,15 +1662,10 @@
         doc.setFontSize(7);
         doc.setTextColor(80, 75, 70);
 
-        legendItems.forEach((item, idx) => {
-          // Vẽ chấm tròn màu
+        legendItems.forEach((item) => {
           doc.setFillColor(...item.color);
           doc.circle(lx + 1.5, ly, 1.6, 'F');
-          
-          // Viết chữ chú thích cạnh chấm tròn
           doc.text(item.label, lx + 4.5, ly + 1);
-          
-          // Tự động nhảy khoảng cách sang mục kế tiếp
           lx += doc.getTextWidth(item.label) + 12;
         });
 
@@ -1659,7 +1713,7 @@
       // ================= 5. QUALITY WATCH OUT =================
       renderPhotoSection('Quality Watch Out', D.watchoutPhotos, D.watchoutNotes, 'Quality Watch Out Notes');
 
-      // ================= 6. TESTING (ĐÃ SIẾT BỘ LỌC) =================
+      // ================= 6. TESTING =================
       const validBV = (D.bvRows || []).filter(r => r.result || r.remark);
       const validTestingPhotos = (D.testingPhotos || []).filter(p => p && p.img);
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
@@ -1695,7 +1749,7 @@
       // ================= 7. CHECKLIST =================
       renderPhotoSection('Check List', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
 
-      // Đánh số trang & Vẽ Footer
+      // Đánh số trang & Footer
       const totalPages = doc.getNumberOfPages();
       const reportName = getReportTitle(D);
       for (let p = 1; p <= totalPages; p++) {
