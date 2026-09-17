@@ -1718,27 +1718,27 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       const addHeader = (title) => {
         doc.addPage(); 
         doc.setFillColor(...themeRgb); 
-        doc.rect(0, 0, W, 20, 'F'); 
+        doc.rect(0, 0, W, 24, 'F'); 
         doc.setTextColor(...companyTextRgb);
-        doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 7);
         doc.setTextColor(...headerFooterTextRgb);
         const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
         if(topInfo) {
           setPdfTextOpacity(0.7);
-          doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' });
+          doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 7, { align: 'right' });
           setPdfTextOpacity(1);
         }
-        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 14, { align: 'center' });
-        y = 28; doc.setTextColor(30, 30, 30);
+        doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 17, { align: 'center' });
+        y = 32; doc.setTextColor(30, 30, 30);
       };
 
       const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
         if (!text || !text.trim()) return curY; 
         let ty = curY;
-        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5; }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40);
+        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5.5; }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40);
         const lines = doc.splitTextToSize(text, maxW);
-        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title ? title + ' (cont.)' : 'Notes'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.2; }
+        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title || 'Notes'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.8; }
         return ty + 4;
       };
 
@@ -1782,11 +1782,11 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           validPhotos.forEach((p, i) => {
             const col = i % 2;
             if (col === 0 && i > 0) y += gh + 12;
-            if (y + gh + 12 > BOTTOM_LIMIT) { addHeader(sectionTitle + ' (cont.)'); }
+            if (y + gh + 12 > BOTTOM_LIMIT) { addHeader(sectionTitle); }
             const px = M + (col * (gw + 4));
             doc.setDrawColor(210, 205, 195); doc.rect(px, y, gw, gh, 'S');
             addImg(p.img, px, y, gw, gh);
-            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, y + gh + 4, { align: 'center', maxWidth: gw }); }
+            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gw / 2, y + gh + 4, { align: 'center', maxWidth: gw }); }
           });
           y += gh + 14;
         }
@@ -1796,9 +1796,9 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       // ================= 1. OVERALL =================
       doc.setFillColor(...themeRgb); 
       doc.rect(0, 0, W, 24, 'F'); 
-      doc.setTextColor(...companyTextRgb); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+      doc.setTextColor(...companyTextRgb); doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
       doc.setTextColor(...headerFooterTextRgb);
-      doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
+      doc.setFontSize(16); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
       y = 30;
 
       const infoRows = [
@@ -1810,13 +1810,13 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       const hw = (W - M * 2) / 2 - 2;
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
-        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 8, 'FD'); doc.rect(M + hw + 4, y, hw, 8, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.2); doc.text(l2 + ':', M + hw + 6, y + 5.2);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.2); doc.text(String(v2 || '—'), M + hw + 26, y + 5.2); y += 9;
+        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 9, 'FD'); doc.rect(M + hw + 4, y, hw, 9, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9); doc.text(l2 + ':', M + hw + 6, y + 5.9);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9); y += 10;
       } y += 4;
 
       const chkLine = (label, group) => {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
         CHECK_OPTS[group].forEach(k => {
           if (!!((D.checks || {})[group]?.[k])) {
             doc.setFillColor(...themeRgb);
@@ -1830,12 +1830,12 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
             doc.setLineWidth(0.2);
             doc.rect(cx, y + 1, 3, 3, 'S');
           }
-          doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
-        }); y += 7;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
+        }); y += 8;
       };
       ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
 
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
       const cp = D.coverPhotos || {}; 
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
       
@@ -1867,7 +1867,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           doc.setFillColor(245, 242, 237); 
           doc.rect(px, py, pw, ph, 'F'); 
           doc.setTextColor(170, 165, 158); 
-          doc.setFontSize(7); 
+          doc.setFontSize(8); 
           doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); 
         }
         
@@ -1875,7 +1875,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
         doc.rect(px, py + ph, pw, barH, 'F'); 
         doc.setTextColor(80, 75, 70); 
         doc.setFont('helvetica', 'bold'); 
-        doc.setFontSize(6.5); 
+        doc.setFontSize(7.5); 
         doc.text(slotTitle.toUpperCase(), px + pw / 2, py + ph + (barH / 2) + 1, { align: 'center' });
       });
       
@@ -1886,29 +1886,32 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
 
       // ================= 3. DIMENSIONS (2 CỘT & ẢNH KÉP 3:1) =================
       const validDims = (D.dimensions || []).filter(d => d.img || d.imgSub || d.actual || d.drawing);
-      if(validDims.length > 0 || (D.dimNotes && D.dimNotes.trim())) {
+      if(validDims.length > 0) {
+        const addDimensionLegend = () => {
+          let lx = M;
+          const ly = y - 0.8;
+          const legendItems = [
+            { color: [226, 75, 74], label: 'Not OK' },
+            { color: [55, 138, 221], label: 'OK' },
+            { color: [210, 138, 20], label: 'Update Drawing' }
+          ];
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(80, 75, 70);
+
+          legendItems.forEach((item) => {
+            doc.setFillColor(...item.color);
+            doc.circle(lx + 1.5, ly, 1.6, 'F');
+            doc.text(item.label, lx + 4.5, ly + 1);
+            lx += doc.getTextWidth(item.label) + 12;
+          });
+
+          y += 6;
+        };
+
         addHeader('Product Dimension & Details');
-        
-        let lx = M;
-        const ly = y - 0.8;
-        const legendItems = [
-          { color: [226, 75, 74], label: 'Not OK' },
-          { color: [55, 138, 221], label: 'OK' },
-          { color: [210, 138, 20], label: 'Update Drawing' }
-        ];
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(80, 75, 70);
-
-        legendItems.forEach((item) => {
-          doc.setFillColor(...item.color);
-          doc.circle(lx + 1.5, ly, 1.6, 'F');
-          doc.text(item.label, lx + 4.5, ly + 1);
-          lx += doc.getTextWidth(item.label) + 12;
-        });
-
-        y += 6;
+        addDimensionLegend();
         
         let dx = M, dy = y;
         const dimCols = 2; 
@@ -1920,7 +1923,8 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
         
         validDims.forEach((d, i) => {
           if (dy + dimSlotH > BOTTOM_LIMIT) { 
-              addHeader('Product Dimension & Details (cont.)'); 
+              addHeader('Product Dimension & Details'); 
+              addDimensionLegend();
               dy = y; 
               dx = M; 
           }
@@ -1938,7 +1942,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           } else { 
             doc.setFillColor(248, 245, 240); 
             doc.rect(dx, dy, mainW, dimImgH, 'F'); 
-            doc.setFontSize(6); doc.setTextColor(170, 165, 158);
+            doc.setFontSize(7); doc.setTextColor(170, 165, 158);
             doc.text('Main View', dx + mainW/2, dy + dimImgH/2, { align: 'center' });
           }
 
@@ -1948,7 +1952,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           } else { 
             doc.setFillColor(244, 242, 238); 
             doc.rect(dx + mainW, dy, subW, dimImgH, 'F'); 
-            doc.setFontSize(5); doc.setTextColor(170, 165, 158);
+            doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
             doc.text('Detail', dx + mainW + subW/2, dy + dimImgH/2, { align: 'center' });
           }
 
@@ -1960,14 +1964,14 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           
           // KHỐI DỮ LIỆU ĐÁY
           const fy = dy + dimImgH + 2; 
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(50, 45, 40); 
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
           doc.text(d.name || 'DIMENSION', dx + 3, fy + 3);
           
           const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; 
           doc.setFillColor(...color); 
           doc.circle(dx + dimSlotW - 5, fy + 2, 2, 'F');
           
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
           doc.text(`Actual: ${formatDimensionMeasurement(d, 'actual')}`, dx + 3, fy + 9); 
           doc.text(`Drawing: ${formatDimensionMeasurement(d, 'drawing')}`, dx + 3, fy + 14);
           
@@ -1977,9 +1981,12 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
               dy += dimSlotH + 5;
           }
         });
-        if (validDims.length % dimCols !== 0) dy += dimSlotH + 5;
-        y = dy;
-        if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
+        if (validDims.length % dimCols !== 0) {
+          dy += dimSlotH;
+          y = dy;
+        } else {
+          y = Math.max(y, dy - 5);
+        }
       }
 
       // ================= 4. PRODUCT ASSEMBLY =================
@@ -1994,28 +2001,28 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
         if(validBV.length > 0) {
-            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 45, 40);
+            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 8, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
             doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
             validBV.forEach(row => {
-              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(40, 35, 30);
+              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
               const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
-              if (y + rowH > BOTTOM_LIMIT) { addHeader('Testing (cont.)'); }
+              if (y + rowH > BOTTOM_LIMIT) { addHeader('Testing'); }
               doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
             }); y += 6;
         }
 
         if (validTestingPhotos.length > 0) {
           if(y + 30 > BOTTOM_LIMIT) addHeader('Testing Photos');
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
           const gwT = (W - M * 2 - 4) / 2; const ghT = gwT; 
           validTestingPhotos.forEach((p, i) => {
             const col = i % 2;
             if(col === 0 && i > 0) y += ghT + 10;
-            if (y + ghT > BOTTOM_LIMIT) { addHeader('Testing Photos (cont.)'); }
+            if (y + ghT > BOTTOM_LIMIT) { addHeader('Testing Photos'); }
             const px = M + col * (gwT + 4);
             doc.setDrawColor(210, 205, 195); doc.rect(px, y, gwT, ghT, 'S');
             addImg(p.img, px, y, gwT, ghT);
-            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gwT / 2, y + ghT + 4, { align: 'center', maxWidth: gwT }); }
+            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gwT / 2, y + ghT + 4, { align: 'center', maxWidth: gwT }); }
           }); y += Math.ceil(validTestingPhotos.length / 2) * (gwT + 10) + 4;
         }
         if (D.testingNotes) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
