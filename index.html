@@ -23,15 +23,20 @@
 
   <style>
     :root {
+      /* ════════════════════════════════════════════════════════════════════════════
+         👉 CHỈNH DUY NHẤT 1 DÒNG NÀY: TOÀN BỘ APP & FILE PDF TỰ ĐỘNG ĐỔI MÀU THEO
+         ════════════════════════════════════════════════════════════════════════════ */
+      --brand-theme: #1a3a2a; 
+
       --bg: #ffffff;
       --card: #ffffff;
       --border: #e2e4e8;
       --border-light: #f0f2f5;
       --text: #1a1916;
       --muted: #6b7280;
-      --accent: #1a3a2a;
-      --accent2: #2d5a3d;
-      --accent-light: #f3f7f4;
+      --accent: var(--brand-theme);
+      --accent2: color-mix(in srgb, var(--brand-theme) 80%, #ffffff);
+      --accent-light: color-mix(in srgb, var(--brand-theme) 6%, #ffffff);
       --red: #8b2020;
       --red-bg: #fdf0f0;
       --r: 10px;
@@ -50,8 +55,20 @@
       line-height: 1.35;
     }
 
-    /* NAV */
-    .topbar { position: sticky; top: 0; z-index: 60; background: #364e3b; color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    /* DRAG & DROP HOVER EFFECT */
+    .drag-over {
+      border-color: #2d5a3d !important;
+      background: #e8f5ec !important;
+      box-shadow: 0 0 0 2.5px #7dcea0, 0 4px 14px rgba(45, 90, 61, 0.2) !important;
+      transform: scale(0.985);
+      transition: all 0.15s ease-in-out;
+    }
+    .drag-over * {
+      pointer-events: none !important;
+    }
+
+    /* NAV & HEADER */
+    .topbar { position: sticky; top: 0; z-index: 60; background: var(--brand-theme); color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; }
     .topbar-title { font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
@@ -60,7 +77,7 @@
     .topbar-actions { display: flex; gap: 6px; padding: 0 10px; align-items: center; }
 
     /* TABS */
-    .tabs-wrap { background: var(--accent); border-top: 1px solid rgba(255, 255, 255, .1); overflow-x: auto; scrollbar-width: none; }
+    .tabs-wrap { background: var(--brand-theme); border-top: 1px solid rgba(255, 255, 255, .1); overflow-x: auto; scrollbar-width: none; }
     .tabs-wrap::-webkit-scrollbar { display: none; }
     .tabs { display: flex; min-width: max-content; }
     .tab { padding: 9px 16px; font-size: 12px; color: rgba(255, 255, 255, .65); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
@@ -127,7 +144,7 @@
 
     /* CARDS & FORMS */
     .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
-    .sec-head { background: var(--accent); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .sec-head { background: var(--brand-theme); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
     .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
     .fcell:nth-child(even) { border-right: none; }
@@ -147,7 +164,7 @@
 
     /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
-    .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; }
+    .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; }
     .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
     
     .dual-tap-box { width: 100%; height: calc(100% - 26px); display: flex; }
@@ -162,13 +179,13 @@
     .pact { width: 24px; height: 24px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
     .pact:active { transform: scale(0.9); }
     .pact.edit { background: rgba(232, 144, 32, .95); }
-    .pact.cam { background: rgba(45, 90, 61, .95); }
+    .pact.cam { background: var(--brand-theme); }
     .pact.gal { background: rgba(26, 58, 106, .95); }
     .pact.del { background: rgba(139, 32, 32, .95); }
 
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; touch-action: none; }
+    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; pointer-events: none;}
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
@@ -177,7 +194,7 @@
     .add-photo-btn { 
       aspect-ratio: 4/3; border: 2px dashed var(--accent); border-radius: 8px; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; 
-      background: var(--accent-light); cursor: pointer; gap: 6px;
+      background: var(--accent-light); cursor: pointer; gap: 6px; transition: all 0.2s ease;
     }
     .add-photo-btn:active { background: #d0e4d8; }
 
@@ -247,7 +264,7 @@
     .note-area { padding: 10px 12px; }
     .note-area textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 64px; background: #ffffff; }
     .bv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .bv-table th { background: var(--accent); color: #fff; padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
+    .bv-table th { background: var(--brand-theme); color: #fff; padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
     .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); }
     .bv-table td input[type=text] { width: 100%; border: none; background: transparent; font-size: 11px; outline: none; }
     .result-sel { display: flex; gap: 5px; }
@@ -268,7 +285,7 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
-    .modal-head { background: var(--accent); color: #fff; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-head { background: var(--brand-theme); color: #fff; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
     .modal-head h3 { font-size: 13px; font-weight: 500; }
     .modal-close { background: rgba(255,255,255,.15); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
     .modal-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; background: #000; }
@@ -288,7 +305,7 @@
     .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
-    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: rgba(26,58,42,0.95); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
+    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--brand-theme); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
@@ -421,7 +438,7 @@
       </div>
     </div>
 
-    <!-- S5: TESTING (ĐÃ ĐỔI TÊN & BỎ FINAL APPROVAL) -->
+    <!-- S5: TESTING -->
     <div id="sec5" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Testing</div>
@@ -506,6 +523,22 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // ═══════════════ TỰ ĐỘNG CHUYỂN MÃ MÀU CSS CHO PDF ═══════════════
+    function getThemeRgb() {
+      const dummy = document.createElement('div');
+      dummy.style.color = 'var(--brand-theme)';
+      dummy.style.display = 'none';
+      document.body.appendChild(dummy);
+      const computed = window.getComputedStyle(dummy).color;
+      document.body.removeChild(dummy);
+
+      const match = computed.match(/\d+/g);
+      if (match && match.length >= 3) {
+        return [parseInt(match[0], 10), parseInt(match[1], 10), parseInt(match[2], 10)];
+      }
+      return [26, 58, 42];
+    }
+
     // ═══════════════ INDEXED DB STORAGE ═══════════════
     const DB_NAME = 'SofaCompanyPP_DB_Lite';
     const STORE_NAME = 'reports';
@@ -548,7 +581,7 @@
       }); 
     }
 
-    // ═══════════════ DATA CONSTANTS (QUY TRÌNH 7 TABS) ═══════════════
+    // ═══════════════ DATA CONSTANTS ═══════════════
     const TABS = ['Overall', 'Photo', 'Dimensions', 'Product Assembly', 'Quality watch out', 'Testing', 'Checklist'];
     const COVER_SLOTS = ['FRONT VIEW', 'SIDE VIEW', 'ANGLE VIEW', 'BOTTOM VIEW'];
     const CHECK_OPTS = {
@@ -615,6 +648,70 @@
         };
         img.src = dataUrl;
       });
+    }
+
+    // ═══════════════ XỬ LÝ KÉO THẢ TỪ THƯ MỤC / FOLDER ═══════════════
+    function attachDropZone(element, target, isMulti = false) {
+      if (!element) return;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        element.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          element.classList.add('drag-over');
+        }, false);
+      });
+
+      ['dragleave', 'dragend'].forEach(eventName => {
+        element.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          element.classList.remove('drag-over');
+        }, false);
+      });
+
+      element.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        element.classList.remove('drag-over');
+
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (!files.length) return;
+
+        if (isMulti) {
+          handleMultipleDroppedFiles(files, target.key);
+        } else {
+          camTarget = target;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            currentOriginalImg = ev.target.result;
+            initCropper(ev.target.result);
+          };
+          reader.readAsDataURL(files[0]);
+        }
+      }, false);
+    }
+
+    async function handleMultipleDroppedFiles(files, key) {
+      showToast(`Đang thêm ${files.length} ảnh...`);
+      if (!D[key]) D[key] = [];
+
+      for (const file of files) {
+        const dataUrl = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+        const compressed = await resizeImage(dataUrl, 1280, 0.85);
+        D[key].push({
+          img: compressed,
+          original: compressed,
+          caption: ''
+        });
+      }
+      renderFreePhotos(key);
+      as();
+      showToast(`✓ Đã thêm ${files.length} ảnh vào danh sách!`);
     }
 
     // ═══════════════ CAMERA & ALBUM FLOW ═══════════════
@@ -685,7 +782,7 @@
 
     function initCropper(imgSrc) {
         const title = camTarget.type === 'dim' ? 'KÍCH THƯỚC' :
-          camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : camTarget.key.replace(/_/g, ' ');
+          camTarget.type === 'free' ? 'Chỉnh sửa ảnh' : (camTarget.key ? camTarget.key.replace(/_/g, ' ') : 'Ảnh');
 
         document.getElementById('camTitle').textContent = '✏️ ' + title;
         document.getElementById('camModal').classList.remove('hidden');
@@ -1030,7 +1127,9 @@
       const el = document.getElementById(containerId); if (!el) return; el.innerHTML = '';
       slots.forEach(s => {
         const div = document.createElement('div'); div.className = 'photo-slot'; div.id = `ps_${containerId}_${s.key}`;
-        div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section); el.appendChild(div);
+        div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section);
+        attachDropZone(div, { type: 'slot', key: s.key, containerId, section });
+        el.appendChild(div);
       });
     }
 
@@ -1061,7 +1160,7 @@
         inner = `
         <div class="dual-tap-box">
           <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span>Chụp</span>
           </div>
           <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
@@ -1108,7 +1207,7 @@
           ${displayImg ? `<img src="${displayImg}">` : `
           <div class="dual-tap-box" style="height:100%;">
             <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span>Chụp</span>
             </div>
             <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
@@ -1144,6 +1243,7 @@
           }
         };
 
+        attachDropZone(div, { type: 'dim', index: i });
         grid.appendChild(div);
       });
 
@@ -1194,7 +1294,7 @@
             div.innerHTML = `
               <div class="dual-tap-box" style="height:100%;">
                 <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                   <span>Chụp mới</span>
                 </div>
                 <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
@@ -1205,12 +1305,15 @@
               <button class="pact del" style="position:absolute; top:4px; right:4px;" onclick="delFreeSlot('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             `;
         }
+        attachDropZone(div, { type: 'free', key, index: i });
         el.appendChild(div);
       });
       
       const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn ignore-drag';
       addBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:4px;">THÊM ẢNH</span>`;
       addBtn.onclick = () => { if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
+
+      attachDropZone(addBtn, { key }, true);
       el.appendChild(addBtn);
 
       if(typeof Sortable !== 'undefined') {
@@ -1386,14 +1489,19 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT (7 TRANG CHUẨN HOÀN CHỈNH) ═══════════════
+    // ═══════════════ PDF EXPORT (SMART FILTER & THEME COLOR) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
 
+      const themeRgb = getThemeRgb();
+
       const addHeader = (title) => {
-        doc.addPage(); doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 20, 'F'); doc.setTextColor(255, 255, 255);
+        doc.addPage(); 
+        doc.setFillColor(...themeRgb); 
+        doc.rect(0, 0, W, 20, 'F'); 
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
         const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
         if(topInfo) { doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' }); }
@@ -1435,7 +1543,9 @@
       };
 
       // ================= 1. OVERALL =================
-      doc.setFillColor(26, 58, 42); doc.rect(0, 0, W, 24, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+      doc.setFillColor(...themeRgb); 
+      doc.rect(0, 0, W, 24, 'F'); 
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
       doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
       doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 30;
 
@@ -1456,7 +1566,7 @@
       const chkLine = (label, group) => {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
         CHECK_OPTS[group].forEach(k => {
-          if (!!((D.checks || {})[group]?.[k])) { doc.setFillColor(26, 58, 42); doc.rect(cx, y + 1, 3, 3, 'F'); } else { doc.setDrawColor(180, 175, 170); doc.rect(cx, y + 1, 3, 3, 'S'); }
+          if (!!((D.checks || {})[group]?.[k])) { doc.setFillColor(...themeRgb); doc.rect(cx, y + 1, 3, 3, 'F'); } else { doc.setDrawColor(180, 175, 170); doc.rect(cx, y + 1, 3, 3, 'S'); }
           doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 7;
       };
@@ -1476,12 +1586,36 @@
       // ================= 2. PHOTO =================
       renderPhotoSection('Product Photos', D.prodPhotos, null, null);
 
-      // ================= 3. DIMENSIONS =================
-      const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing || (d.name && d.name !== 'DIMENSION NAME'));
+      // ================= 3. DIMENSIONS (ĐÃ SIẾT BỘ LỌC) =================
+      const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing);
       if(validDims.length > 0 || (D.dimNotes && D.dimNotes.trim())) {
         addHeader('Product Dimension & Details');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
-        doc.text('Color: Red = Not OK  |  Blue = OK  |  Orange = Update Drawing', M, y); y += 6;
+        // Vẽ Legend dạng hình tròn có màu sắc trực quan
+        let lx = M;
+        const ly = y - 0.8;
+        const legendItems = [
+          { color: [226, 75, 74], label: 'Not OK' },
+          { color: [55, 138, 221], label: 'OK' },
+          { color: [210, 138, 20], label: 'Update Drawing' }
+        ];
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(80, 75, 70);
+
+        legendItems.forEach((item, idx) => {
+          // Vẽ chấm tròn màu
+          doc.setFillColor(...item.color);
+          doc.circle(lx + 1.5, ly, 1.6, 'F');
+          
+          // Viết chữ chú thích cạnh chấm tròn
+          doc.text(item.label, lx + 4.5, ly + 1);
+          
+          // Tự động nhảy khoảng cách sang mục kế tiếp
+          lx += doc.getTextWidth(item.label) + 12;
+        });
+
+        y += 6;
         
         let dx = M, dy = y;
         const dimCols = 3, dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols; 
@@ -1525,8 +1659,8 @@
       // ================= 5. QUALITY WATCH OUT =================
       renderPhotoSection('Quality Watch Out', D.watchoutPhotos, D.watchoutNotes, 'Quality Watch Out Notes');
 
-      // ================= 6. TESTING =================
-      const validBV = (D.bvRows || []).filter(r => r.test || r.result || r.remark);
+      // ================= 6. TESTING (ĐÃ SIẾT BỘ LỌC) =================
+      const validBV = (D.bvRows || []).filter(r => r.result || r.remark);
       const validTestingPhotos = (D.testingPhotos || []).filter(p => p && p.img);
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
@@ -1561,11 +1695,14 @@
       // ================= 7. CHECKLIST =================
       renderPhotoSection('Check List', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
 
-      // Đánh số trang
+      // Đánh số trang & Vẽ Footer
       const totalPages = doc.getNumberOfPages();
       const reportName = getReportTitle(D);
       for (let p = 1; p <= totalPages; p++) {
-        doc.setPage(p); doc.setFillColor(26, 58, 42); doc.rect(0, 285, W, 12, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        doc.setPage(p); 
+        doc.setFillColor(...themeRgb); 
+        doc.rect(0, 285, W, 12, 'F'); 
+        doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
         doc.text(`${reportName} — Sofacompany`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
       }
 
