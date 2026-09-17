@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
@@ -71,7 +71,7 @@
     }
 
     /* NAV & HEADER */
-    .topbar { position: sticky; top: 0; z-index: 60; background: var(--brand-theme); color: var(--brand-header-footer-text); display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .topbar { position: sticky; top: 0; z-index: 60; background: var(--brand-theme); color: var(--brand-header-footer-text); display: flex; align-items: center; gap: 0; height: calc(52px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; color: var(--brand-company-text); }
     .topbar-title { color: var(--brand-header-footer-text); font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
@@ -87,7 +87,7 @@
     .tab.active { color: var(--brand-header-footer-text); font-weight: 600; border-bottom-color: #7dcea0; }
 
     /* SCREENS */
-    .screen { display: none; padding: 14px; max-width: 760px; margin: 0 auto; padding-bottom: 85px; }
+    .screen { display: none; padding: 14px; max-width: 760px; margin: 0 auto; padding-bottom: calc(85px + env(safe-area-inset-bottom)); }
     .screen.active { display: block; }
 
     /* HOME HERO & BATCH ACTIONS */
@@ -138,6 +138,7 @@
     .batch-bar {
       position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(15px); border-top: 1px solid var(--border); padding: 12px 18px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
       z-index: 70; display: none; align-items: center; justify-content: space-between;
       max-width: 760px; margin: 0 auto; box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
     }
@@ -292,7 +293,7 @@
     .add-row-btn { padding: 6px 12px; border: 1.5px dashed var(--border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; margin: 8px 10px; width: calc(100% - 20px); }
 
     /* SAVE BAR */
-    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px 12px; z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
+    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px calc(12px + env(safe-area-inset-bottom)); z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
     .sbar-btn { flex: 1; padding: 12px; border-radius: var(--r); font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
     .sbar-btn.sec { background: #ffffff; border: 1px solid var(--border); color: var(--text); }
     .sbar-btn.pri { background: var(--accent); color: #fff; }
@@ -322,7 +323,7 @@
     .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
-    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
+    .toast { position: fixed; bottom: calc(85px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
