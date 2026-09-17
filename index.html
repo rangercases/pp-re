@@ -138,7 +138,8 @@
     .batch-bar {
       position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(15px); border-top: 1px solid var(--border); padding: 12px 18px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      min-height: calc(52px + env(safe-area-inset-bottom));
       z-index: 70; display: none; align-items: center; justify-content: space-between;
       max-width: 760px; margin: 0 auto; box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
     }
@@ -293,7 +294,7 @@
     .add-row-btn { padding: 6px 12px; border: 1.5px dashed var(--border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; margin: 8px 10px; width: calc(100% - 20px); }
 
     /* SAVE BAR */
-    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px calc(12px + env(safe-area-inset-bottom)); z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
+    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px max(12px, env(safe-area-inset-bottom)); min-height: calc(64px + env(safe-area-inset-bottom)); z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
     .sbar-btn { flex: 1; padding: 12px; border-radius: var(--r); font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
     .sbar-btn.sec { background: #ffffff; border: 1px solid var(--border); color: var(--text); }
     .sbar-btn.pri { background: var(--accent); color: #fff; }
@@ -327,6 +328,20 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
+
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      .batch-bar {
+        padding-bottom: 30px;
+        min-height: 70px;
+      }
+      .save-bar {
+        padding-bottom: 30px;
+        min-height: 82px;
+      }
+      .screen {
+        padding-bottom: 105px;
+      }
+    }
 
     @media print { .topbar, .tabs-wrap, .save-bar, .pactions, .add-photo-btn, .batch-bar { display: none !important; } .screen.active { display: block !important; padding: 0; } }
   </style>
