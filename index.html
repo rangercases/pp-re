@@ -377,7 +377,7 @@
           <div class="fcell"><div class="flabel">Dimension (cm)</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Date</div><input id="fDate" placeholder="13-Mar-26" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Factory</div><input id="fFactory" placeholder="NHAN HOANG" oninput="as()"></div>
-          <div class="fcell"><div class="flabel">Reviewed by</div><input id="fReviewer" placeholder="Your name" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Reviewed by</div><input id="fReviewer" value="Quoc Hung" placeholder="Your name" oninput="as()"></div>
           <div class="fcell" style="grid-column: span 2;">
             <div class="flabel">Number Sample / Review</div>
             <div style="display:flex;gap:8px;padding-top:4px">
@@ -1335,8 +1335,31 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       }
     }
 
+    function getAutomaticDimensionColor(dimension) {
+      const actual = Number.parseFloat(dimension.actual);
+      const drawing = Number.parseFloat(dimension.drawing);
+      if (!Number.isFinite(actual) || !Number.isFinite(drawing)) return null;
+      return Math.abs(actual - drawing) > 10 ? 'color-red' : 'color-blue';
+    }
+
     function updateDimField(index, field, val) {
-      D.dimensions[index][field] = val;
+      const dimension = D.dimensions[index];
+      dimension[field] = val;
+
+      if (field === 'actual' || field === 'drawing') {
+        const automaticColor = getAutomaticDimensionColor(dimension);
+        if (automaticColor) {
+          dimension.color = automaticColor;
+          const colorDot = document.querySelector(`[data-dim-index="${index}"] .dim-fields .color-dot`);
+          if (colorDot) {
+            colorDot.classList.remove('color-red', 'color-blue', 'color-orange');
+            colorDot.classList.add(automaticColor);
+          }
+          const statusSelect = document.querySelector(`[data-dim-index="${index}"] .dim-fields select`);
+          if (statusSelect) statusSelect.value = automaticColor;
+        }
+      }
+
       if (field === 'color') buildDimGrid();
       as();
     }
@@ -1454,7 +1477,15 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       try {
         const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
         const keys = ['model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
-        fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = D[keys[i]] || ''; });
+        fields.forEach((id, i) => {
+          const el = document.getElementById(id);
+          if (el) {
+            if (keys[i] === 'reviewer' && !D[keys[i]]) {
+              D[keys[i]] = 'Quoc Hung';
+            }
+            el.value = D[keys[i]] || '';
+          }
+        });
         document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
         Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
         
@@ -1558,7 +1589,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       try {
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
         const r = { 
-          id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: '', numS: 1, numR: 1, 
+          id, model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: 'Quoc Hung', numS: 1, numR: 1, 
           checks: { stage: {}, sample: {}, comfort: {}, rating: {} }, 
           coverPhotos: {}, 
           coverTitles: {},
