@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="PP Review">
   
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>PP Sample Review — Lite Edition</title>
+  <title>PP Sample Review</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -26,7 +26,10 @@
       /* ════════════════════════════════════════════════════════════════════════════
          👉 CHỈNH DUY NHẤT 1 DÒNG NÀY: TOÀN BỘ APP & FILE PDF TỰ ĐỔI MÀU THEO
          ════════════════════════════════════════════════════════════════════════════ */
-      --brand-theme: #1a3a2a; 
+      --brand-theme: #1a3a2a;
+      --brand-header-footer-text: #ffffff;
+      --brand-company-text: #ffffff;
+      --app-brand-text: #1a1916;
 
       --bg: #ffffff;
       --card: #ffffff;
@@ -68,11 +71,11 @@
     }
 
     /* NAV & HEADER */
-    .topbar { position: sticky; top: 0; z-index: 60; background: var(--brand-theme); color: #fff; display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; }
-    .topbar-title { font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar { position: sticky; top: 0; z-index: 60; background: var(--brand-theme); color: var(--brand-header-footer-text); display: flex; align-items: center; gap: 0; height: 52px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .topbar-brand { padding: 0 14px; font-size: 11px; letter-spacing: 2px; opacity: .8; font-weight: 700; white-space: nowrap; color: var(--brand-company-text); }
+    .topbar-title { color: var(--brand-header-footer-text); font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
-    .topbar-btn { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2); color: #fff; border-radius: var(--rs); padding: 5px 11px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 500; }
+    .topbar-btn { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2); color: var(--brand-header-footer-text); border-radius: var(--rs); padding: 5px 11px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 500; }
     .topbar-btn.pri { background: rgba(255, 255, 255, .88); color: var(--accent); font-weight: 600; }
     .topbar-actions { display: flex; gap: 6px; padding: 0 10px; align-items: center; }
 
@@ -80,8 +83,8 @@
     .tabs-wrap { background: var(--brand-theme); border-top: 1px solid rgba(255, 255, 255, .1); overflow-x: auto; scrollbar-width: none; }
     .tabs-wrap::-webkit-scrollbar { display: none; }
     .tabs { display: flex; min-width: max-content; }
-    .tab { padding: 9px 16px; font-size: 12px; color: rgba(255, 255, 255, .65); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
-    .tab.active { color: #fff; font-weight: 600; border-bottom-color: #7dcea0; }
+    .tab { padding: 9px 16px; font-size: 12px; color: color-mix(in srgb, var(--brand-header-footer-text) 65%, transparent); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; font-weight: 500; }
+    .tab.active { color: var(--brand-header-footer-text); font-weight: 600; border-bottom-color: #7dcea0; }
 
     /* SCREENS */
     .screen { display: none; padding: 14px; max-width: 760px; margin: 0 auto; padding-bottom: 85px; }
@@ -89,7 +92,7 @@
 
     /* HOME HERO & BATCH ACTIONS */
     .home-hero { text-align: center; padding: 22px 16px 14px; position: relative; }
-    .home-hero h1 { font-size: 17px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; color: var(--accent); }
+    .home-hero h1 { font-size: 17px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; color: var(--app-brand-text); }
     .home-hero p { font-size: 12px; color: var(--muted); }
     
     .btn-select-mode {
@@ -97,7 +100,7 @@
       color: #007aff; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 8px;
     }
     
-    .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+    .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--app-brand-text); border-radius: var(--r); color: var(--app-brand-text); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
     
     /* REPORT CARD */
     #reportsList { user-select: none; -webkit-user-select: none; }
@@ -144,7 +147,7 @@
 
     /* CARDS & FORMS */
     .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
-    .sec-head { background: var(--brand-theme); color: #fff; padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .sec-head { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
     .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
     .fcell:nth-child(even) { border-right: none; }
@@ -260,7 +263,7 @@
 
     .dim-head-btn {
       background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4);
-      color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 10px; border-radius: 4px;
+      color: var(--brand-header-footer-text); font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 10px; border-radius: 4px;
     }
 
     .dim-batch-bar {
@@ -278,7 +281,7 @@
     .note-area { padding: 10px 12px; }
     .note-area textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 64px; background: #ffffff; }
     .bv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .bv-table th { background: var(--brand-theme); color: #fff; padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
+    .bv-table th { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
     .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); }
     .bv-table td input[type=text] { width: 100%; border: none; background: transparent; font-size: 11px; outline: none; }
     .result-sel { display: flex; gap: 5px; }
@@ -299,7 +302,7 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 12px; }
     .modal-overlay.hidden, .hidden { display: none !important; }
     .modal-box { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
-    .modal-head { background: var(--brand-theme); color: #fff; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-head { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
     .modal-head h3 { font-size: 13px; font-weight: 500; }
     .modal-close { background: rgba(255,255,255,.15); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
     .modal-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; background: #000; }
@@ -319,7 +322,7 @@
     .straighten-val { min-width: 44px; text-align: right; font-weight: 600; font-family: monospace; color: #7dcea0; }
     .crop-hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
 
-    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--brand-theme); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
+    .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 9px 18px; border-radius: 18px; font-size: 12px; opacity: 0; transition: all .3s; z-index: 200; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .progress-bar { height: 3px; background: rgba(255,255,255,.2); }
     .progress-fill { height: 100%; background: #7dcea0; transition: width .4s; }
@@ -332,7 +335,7 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-brand">SOFACOMPANY</div>
-    <div class="topbar-title" id="topTitle">PP Sample Review (Lite)</div>
+    <div class="topbar-title" id="topTitle">PP Sample Review</div>
     <div class="autosave-indicator" id="saveIndicator" style="display:none"><span>●</span> <span id="saveText">Synced</span></div>
     <div class="topbar-actions">
       <button class="topbar-btn" id="btnHome" onclick="goHome()" style="display:none">← Reports</button>
@@ -348,7 +351,7 @@
     <div class="home-hero">
       <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Chọn</button>
       <div style="font-size:26px;margin-bottom:6px">📋</div>
-      <h1>PP Sample Review (Lite)</h1>
+      <h1>PP Sample Review</h1>
       <p>Cover · Photos · Dimensions · Assembly · Watch Out · Testing · Checklist</p>
     </div>
     
@@ -553,6 +556,36 @@
       return [26, 58, 42];
     }
 
+    function getHeaderFooterTextRgb() {
+      const dummy = document.createElement('div');
+      dummy.style.color = 'var(--brand-header-footer-text)';
+      dummy.style.display = 'none';
+      document.body.appendChild(dummy);
+      const computed = window.getComputedStyle(dummy).color;
+      document.body.removeChild(dummy);
+
+      const match = computed.match(/\d+/g);
+      if (match && match.length >= 3) {
+        return [parseInt(match[0], 10), parseInt(match[1], 10), parseInt(match[2], 10)];
+      }
+      return [255, 255, 255];
+    }
+
+    function getCompanyTextRgb() {
+      const dummy = document.createElement('div');
+      dummy.style.color = 'var(--brand-company-text)';
+      dummy.style.display = 'none';
+      document.body.appendChild(dummy);
+      const computed = window.getComputedStyle(dummy).color;
+      document.body.removeChild(dummy);
+
+      const match = computed.match(/\d+/g);
+      if (match && match.length >= 3) {
+        return [parseInt(match[0], 10), parseInt(match[1], 10), parseInt(match[2], 10)];
+      }
+      return [255, 255, 255];
+    }
+
     // ═══════════════ INDEXED DB STORAGE ═══════════════
     const DB_NAME = 'SofaCompanyPP_DB_Lite';
     const STORE_NAME = 'reports';
@@ -596,7 +629,7 @@
     }
 
     // ═══════════════ DATA CONSTANTS ═══════════════
-    const TABS = ['Overall', 'Photo', 'Dimensions', 'Product Assembly', 'Quality watch out', 'Testing', 'Checklist'];
+    const TABS = ['Overall', 'Photo', 'Dimensions', 'Product Assembly', 'Quality Watch Out', 'Testing', 'Checklist'];
     const COVER_SLOTS = ['FRONT VIEW', 'SIDE VIEW', 'ANGLE VIEW', 'BOTTOM VIEW'];
     const CHECK_OPTS = {
       stage: ['Frame', 'Foam', 'Upholstery'], sample: ['Initial', 'Repaired', 'Final'],
@@ -1078,7 +1111,7 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       document.getElementById('btnExport').style.display = 'none';
       document.getElementById('btnShare').style.display = 'none';
       document.getElementById('saveIndicator').style.display = 'none';
-      document.getElementById('topTitle').textContent = 'PP Sample Review (Lite)';
+      document.getElementById('topTitle').textContent = 'PP Sample Review';
       await renderHome();
     }
 
@@ -1656,15 +1689,27 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
 
       const themeRgb = getThemeRgb();
+      const headerFooterTextRgb = getHeaderFooterTextRgb();
+      const companyTextRgb = getCompanyTextRgb();
+      const setPdfTextOpacity = opacity => {
+        if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') {
+          doc.setGState(new doc.GState({ opacity }));
+        }
+      };
 
       const addHeader = (title) => {
         doc.addPage(); 
         doc.setFillColor(...themeRgb); 
         doc.rect(0, 0, W, 20, 'F'); 
-        doc.setTextColor(255, 255, 255);
+        doc.setTextColor(...companyTextRgb);
         doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 8);
+        doc.setTextColor(...headerFooterTextRgb);
         const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
-        if(topInfo) { doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' }); }
+        if(topInfo) {
+          setPdfTextOpacity(0.7);
+          doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 8, { align: 'right' });
+          setPdfTextOpacity(1);
+        }
         doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 14, { align: 'center' });
         y = 28; doc.setTextColor(30, 30, 30);
       };
@@ -1733,9 +1778,10 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       // ================= 1. OVERALL =================
       doc.setFillColor(...themeRgb); 
       doc.rect(0, 0, W, 24, 'F'); 
-      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+      doc.setTextColor(...companyTextRgb); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+      doc.setTextColor(...headerFooterTextRgb);
       doc.setFontSize(14); doc.text('PP SAMPLE REVIEW REPORT', W / 2, 16, { align: 'center' });
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(190, 220, 200); doc.text('Pre-Production Sample Review (Lite)', W / 2, 21, { align: 'center' }); y = 30;
+      y = 30;
 
       const infoRows = [
         ['Model No.', D.model], ['Description', D.desc], 
@@ -1956,8 +2002,9 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
         doc.setPage(p); 
         doc.setFillColor(...themeRgb); 
         doc.rect(0, 285, W, 12, 'F'); 
-        doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-        doc.text(`${reportName} — Sofacompany`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
+        doc.setTextColor(...headerFooterTextRgb); setPdfTextOpacity(0.7); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        doc.text(`${reportName} — SOFACOMPANY`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
+        setPdfTextOpacity(1);
       }
 
       const outFileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
