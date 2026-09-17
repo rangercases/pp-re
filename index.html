@@ -251,6 +251,9 @@
     .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
     .dim-row label { font-size: 9.5px; color: var(--muted); }
     .dim-row input { width: 70px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
+    .dim-measure-group { display: flex; gap: 3px; }
+    .dim-row .dim-value-input { width: 58px; }
+    .dim-row .dim-unit-input { width: 34px; text-align: left; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
     .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
@@ -1299,8 +1302,8 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
         <!-- KHỐI DỮ LIỆU ĐÁY (GIỮ NGUYÊN FORMAT CŨ) -->
         <div class="dim-fields">
           <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)">
-          <div class="dim-row"><label>Actual</label><input value="${d.actual || ''}" oninput="updateDimField(${i},'actual',this.value)"> <div class="color-dot ${d.color || 'color-blue'}"></div></div>
-          <div class="dim-row"><label>Drawing</label><input value="${d.drawing || ''}" oninput="updateDimField(${i},'drawing',this.value)"></div>
+          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.actual || ''}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${d.actualUnit || 'mm'}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div><div class="color-dot ${d.color || 'color-blue'}"></div></div>
+          <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.drawing || ''}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" value="${d.drawingUnit || 'mm'}" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
           <div class="dim-row"><label>Status</label>
             <select onchange="updateDimField(${i},'color',this.value)">
               <option value="color-blue" ${(d.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
@@ -1342,6 +1345,26 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
       return Math.abs(actual - drawing) > 10 ? 'color-red' : 'color-blue';
     }
 
+    function normalizeDimensionMeasurement(dimension, field) {
+      const unitField = field + 'Unit';
+      const rawValue = String(dimension[field] || '').trim();
+      const match = rawValue.match(/^([-+]?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-zA-Z]+)?$/);
+
+      if (match) {
+        dimension[field] = match[1];
+        if (!dimension[unitField]) dimension[unitField] = match[2] || 'mm';
+      } else if (!dimension[unitField]) {
+        dimension[unitField] = 'mm';
+      }
+    }
+
+    function formatDimensionMeasurement(dimension, field) {
+      const value = dimension[field];
+      if (!value) return '—';
+      const unit = dimension[field + 'Unit'];
+      return unit ? `${value} ${unit}` : value;
+    }
+
     function updateDimField(index, field, val) {
       const dimension = D.dimensions[index];
       dimension[field] = val;
@@ -1371,6 +1394,8 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
         name: 'DIMENSION NAME', 
         actual: '', 
         drawing: '', 
+        actualUnit: 'mm',
+        drawingUnit: 'mm',
         color: 'color-blue', 
         img: null, 
         original: null,
@@ -1512,6 +1537,8 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
                     name: f.name,
                     actual: actualVal,
                     drawing: drawingVal,
+                    actualUnit: 'mm',
+                    drawingUnit: 'mm',
                     color: colorVal,
                     img: imgVal,
                     original: originalVal,
@@ -1521,6 +1548,10 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
             }
         }
 
+        D.dimensions.forEach(dimension => {
+          normalizeDimensionMeasurement(dimension, 'actual');
+          normalizeDimensionMeasurement(dimension, 'drawing');
+        });
         buildDimGrid(); 
         renderBVTable();
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
@@ -1862,8 +1893,8 @@ aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động   
           doc.circle(dx + dimSlotW - 5, fy + 2, 2, 'F');
           
           doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70);
-          doc.text(`Actual: ${d.actual || '—'}`, dx + 3, fy + 9); 
-          doc.text(`Drawing: ${d.drawing || '—'}`, dx + 3, fy + 14);
+          doc.text(`Actual: ${formatDimensionMeasurement(d, 'actual')}`, dx + 3, fy + 9); 
+          doc.text(`Drawing: ${formatDimensionMeasurement(d, 'drawing')}`, dx + 3, fy + 14);
           
           dx += dimSlotW + 4;
           if ((i + 1) % dimCols === 0) {
