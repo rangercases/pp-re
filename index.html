@@ -24,7 +24,7 @@
   <style>
     :root {
       /* ════════════════════════════════════════════════════════════════════════════
-         👉 CHỈNH DUY NHẤT 1 DÒNG NÀY: TOÀN BỘ APP & FILE PDF TỰ ĐỘNG ĐỔI MÀU THEO
+         👉 CHỈNH DUY NHẤT 1 DÒNG NÀY: TOÀN BỘ APP & FILE PDF TỰ ĐỔI MÀU THEO
          ════════════════════════════════════════════════════════════════════════════ */
       --brand-theme: #1a3a2a; 
 
@@ -99,7 +99,7 @@
     
     .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent); border-radius: var(--r); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
     
-    /* REPORT CARD & SELECTION */
+    /* REPORT CARD */
     #reportsList { user-select: none; -webkit-user-select: none; }
     .report-card { 
       background: var(--card); border: 1px solid var(--border); border-radius: var(--r); 
@@ -131,7 +131,7 @@
     .badge-wip { background: #fef9e7; color: #7a5c00; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
 
-    /* BATCH ACTION BAR DƯỚI ĐÁY */
+    /* BATCH ACTION BAR */
     .batch-bar {
       position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(15px); border-top: 1px solid var(--border); padding: 12px 18px;
@@ -167,7 +167,7 @@
     .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; }
     .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
     
-    .dual-tap-box { width: 100%; height: calc(100% - 26px); display: flex; }
+    .dual-tap-box { width: 100%; height: 100%; display: flex; }
     .tap-option { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; background: #fafbfc; transition: background 0.15s; }
     .tap-option:first-child { border-right: 1px dashed var(--border-light); }
     .tap-option:active { background: var(--accent-light); }
@@ -182,7 +182,7 @@
     .photo-slot .pbar input:focus { background: var(--accent-light); color: var(--accent); }
 
     .pactions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 2; }
-    .pact { width: 24px; height: 24px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
+    .pact { width: 22px; height: 22px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3);}
     .pact:active { transform: scale(0.9); }
     .pact.edit { background: rgba(232, 144, 32, .95); }
     .pact.cam { background: var(--brand-theme); }
@@ -204,22 +204,16 @@
     }
     .add-photo-btn:active { background: #d0e4d8; }
 
-    /* DIMENSIONS STYLING */
-    .dim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; }
+    /* ═══════════════ DIMENSIONS (2 CỘT & CỤM ẢNH KÉP 3:1) ═══════════════ */
+    .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
     .dim-slot { 
       background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; 
-      overflow: hidden; position: relative; transition: all 0.2s ease; 
+      overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .dim-slot.dim-selecting { 
-      cursor: pointer; 
-      border-color: #c7d2fe;
-    }
-    .dim-slot.dim-selecting * {
-      pointer-events: none !important;
-    }
+    .dim-slot.dim-selecting { cursor: pointer; border-color: #c7d2fe; }
+    .dim-slot.dim-selecting * { pointer-events: none !important; }
     .dim-slot.dim-selected { 
-      border-color: #007aff !important; 
-      background: #f0f7ff !important; 
+      border-color: #007aff !important; background: #f0f7ff !important; 
       box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.25);
     }
     
@@ -232,20 +226,31 @@
     .dim-slot.dim-selected .dim-select-circle { background: #007aff; border-color: #007aff; }
     .dim-slot.dim-selected .dim-select-circle::after { content: '✓'; color: #fff; font-size: 12px; font-weight: bold; }
 
-    .dim-photo { aspect-ratio: 4/3; position: relative; background: #ffffff; }
-    .dim-photo img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; }
-    .dim-fields { padding: 6px 7px; }
-    
+    /* Container chia 4 phần: 3 phần trái (75%) và 1 phần phải (25%) */
+    .dim-photo-container {
+      display: flex; width: 100%; border-bottom: 1px solid var(--border); background: #ffffff;
+    }
+    .dim-main-photo {
+      flex: 3; aspect-ratio: 4/3; position: relative; border-right: 1px solid var(--border); background: #ffffff;
+    }
+    .dim-sub-photo {
+      flex: 1; position: relative; background: #ffffff;
+    }
+    .dim-main-photo img, .dim-sub-photo img {
+      width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block;
+    }
+
+    .dim-fields { padding: 8px 10px; }
     .dim-name-input { 
-      width: calc(100% - 4px); font-size: 10px; text-transform: uppercase; color: var(--text); 
-      margin-bottom: 4px; font-weight: 700; border: none; background: transparent; 
-      border-bottom: 1px dashed var(--border); outline: none; padding-bottom: 2px; 
+      width: 100%; font-size: 11px; text-transform: uppercase; color: var(--text); 
+      margin-bottom: 6px; font-weight: 700; border: none; background: transparent; 
+      border-bottom: 1px dashed var(--border); outline: none; padding-bottom: 3px; 
     }
     .dim-name-input:focus { border-bottom-color: var(--accent); }
 
-    .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
-    .dim-row label { font-size: 9px; color: var(--muted); }
-    .dim-row input { width: 64px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
+    .dim-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .dim-row label { font-size: 9.5px; color: var(--muted); }
+    .dim-row input { width: 70px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 5px; font-size: 11px; text-align: right; background: #fff; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
     .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
@@ -261,7 +266,7 @@
     }
 
     .add-dim-btn { 
-      min-height: 180px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
+      min-height: 190px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; 
       background: var(--accent-light); cursor: pointer; gap: 6px;
     }
@@ -401,7 +406,7 @@
       </div>
     </div>
 
-    <!-- S2: DIMENSIONS -->
+    <!-- S2: DIMENSIONS (2 CỘT) -->
     <div id="sec2" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">
@@ -494,7 +499,7 @@
                 <button class="tool-btn" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
                 <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
                 <button class="tool-btn active" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
-                <button class="tool-btn" id="ratio_16_9" onclick="setCropRatio(16/9, this)">16:9</button>
+                <button class="tool-btn" id="ratio_4_9" onclick="setCropRatio(4/9, this)">4:9 (Phụ)</button>
             </div>
 
             <div class="tools-row">
@@ -529,7 +534,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // ═══════════════ TỰ ĐỘNG CHUYỂN MÃ MÀU CSS CHO PDF ═══════════════
+    // ═══════════════ THEME COLOR RGB CHO PDF ═══════════════
     function getThemeRgb() {
       const dummy = document.createElement('div');
       dummy.style.color = 'var(--brand-theme)';
@@ -625,11 +630,8 @@
     let scaleX = 1;
     let scaleY = 1;
 
-    // BATCH SELECT MODE CHO REPORT
     let isSelectMode = false;
     let selectedReportIds = new Set();
-
-    // BATCH SELECT MODE CHO DIMENSIONS
     let isDimSelectMode = false;
     let selectedDimIndices = new Set();
 
@@ -656,7 +658,7 @@
       });
     }
 
-    // ═══════════════ XỬ LÝ KÉO THẢ TỪ THƯ MỤC / FOLDER ═══════════════
+    // ═══════════════ XỬ LÝ DRAG & DROP TỪ FOLDER ═══════════════
     function attachDropZone(element, target, isMulti = false) {
       if (!element) return;
 
@@ -763,12 +765,16 @@
       initCropper(imgSrc);
     }
 
-    function editDimPhoto(index) {
+    function editDimPhoto(index, subType = 'main') {
       if (isDimSelectMode) return;
       const data = D.dimensions[index];
-      if (!data || !data.img) return;
-      const imgSrc = typeof data.img === 'string' ? data.img : (data.original || data.img);
-      camTarget = {type: 'dim', index};
+      if (!data) return;
+      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
+      const origKey = subType === 'sub' ? 'originalSub' : 'original';
+      const imgSrc = typeof data[imgKey] === 'string' ? data[imgKey] : (data[origKey] || data[imgKey]);
+      if (!imgSrc) return;
+
+      camTarget = {type: 'dim', index, subType};
       currentOriginalImg = imgSrc;
       document.getElementById('btnRetakeCam').classList.add('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
@@ -789,7 +795,7 @@
     function initCropper(imgSrc) {
         let title = 'Chỉnh sửa ảnh';
         if (camTarget.type === 'dim') {
-          title = 'KÍCH THƯỚC';
+          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT)' : 'ẢNH CHÍNH (TOÀN CẢNH)';
         } else if (camTarget.type === 'slot') {
           const customName = D.coverTitles && D.coverTitles[camTarget.key];
           title = customName || camTarget.key.replace(/_/g, ' ');
@@ -799,8 +805,23 @@
         document.getElementById('camModal').classList.remove('hidden');
 
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
-        const btn11 = document.getElementById('ratio_1_1');
-        if(btn11) btn11.classList.add('active');
+        
+        // Mặc định tỷ lệ 4:3 cho ảnh chính dimensions, 1:1 cho các ảnh khác
+        // Tự động nhận diện ô chính (4:3), ô phụ (4:9) hoặc các ô khác (1:1)
+let defaultRatio = 1;
+let defaultRatioBtn = document.getElementById('ratio_1_1');
+
+if (camTarget.type === 'dim') {
+  if (camTarget.subType === 'sub') {
+    defaultRatio = 4 / 9;
+    defaultRatioBtn = document.getElementById('ratio_4_9');
+  } else {
+    defaultRatio = 4 / 3;
+    defaultRatioBtn = document.getElementById('ratio_4_3');
+  }
+}
+
+if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
         baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
         const slider = document.getElementById('straightenRange'); if(slider) slider.value = 0;
@@ -811,8 +832,7 @@
 
         if (cropper) cropper.destroy();
         cropper = new Cropper(image, {
-            aspectRatio: 1, 
-            viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false,
+aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động            viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false,
             guides: true, center: true, highlight: false, cropBoxMovable: true,
             cropBoxResizable: true, toggleDragModeOnDblclick: false, zoomOnWheel: true, background: false
         });
@@ -883,8 +903,13 @@
       } else if (t.type === 'dim') {
         if (!D.dimensions) D.dimensions = [];
         if (!D.dimensions[t.index]) D.dimensions[t.index] = {};
-        D.dimensions[t.index].img = imgData; 
-        D.dimensions[t.index].original = originalData;
+        if (t.subType === 'sub') {
+          D.dimensions[t.index].imgSub = imgData;
+          D.dimensions[t.index].originalSub = originalData;
+        } else {
+          D.dimensions[t.index].img = imgData; 
+          D.dimensions[t.index].original = originalData;
+        }
         buildDimGrid();
       }
       as(); showToast('✓ Đã lưu ảnh');
@@ -1207,7 +1232,7 @@
       refreshSlot(containerId, key, section); as();
     }
 
-    // ═══════════════ DYNAMIC DIMENSIONS ═══════════════
+    // ═══════════════ DYNAMIC DIMENSIONS (2 CỘT & 2 ẢNH 3:1) ═══════════════
     function buildDimGrid() {
       const grid = document.getElementById('dimGrid'); if (!grid) return; grid.innerHTML = '';
       
@@ -1219,31 +1244,59 @@
         if (isDimSelectMode) div.classList.add('dim-selecting');
         if (selectedDimIndices.has(i)) div.classList.add('dim-selected');
 
-        const targetObj = `{type:'dim', index:${i}}`;
+        const targetMain = `{type:'dim', index:${i}, subType:'main'}`;
+        const targetSub = `{type:'dim', index:${i}, subType:'sub'}`;
+        
         const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
+        const displayImgSub = d.imgSub ? (typeof d.imgSub === 'string' ? d.imgSub : d.imgSub) : null;
         
         div.innerHTML = `
         <div class="dim-select-circle"></div>
 
-        <div class="dim-photo" id="dph_${d.id}">
-          ${displayImg ? `<img src="${displayImg}">` : `
-          <div class="dual-tap-box" style="height:100%;">
-            <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <span>Chụp</span>
-            </div>
-            <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span>Album</span>
-            </div>
-          </div>`}
-          ${displayImg ? `<div class="pactions" style="right: 4px;">
-            <button class="pact edit" onclick="editDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-            <button class="pact cam" onclick="triggerNativeCamera(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-            <button class="pact gal" onclick="triggerPickLibrary(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
-            <button class="pact del" onclick="delDimPhoto(${i});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-          </div>` : ''}
+        <!-- CỤM 2 ẢNH: 3 PHẦN TRÁI (CHÍNH) & 1 PHẦN PHẢI (PHỤ) -->
+        <div class="dim-photo-container">
+          
+          <!-- ẢNH CHÍNH 4:3 (75% RỘNG) -->
+          <div class="dim-main-photo" id="dph_main_${i}">
+            ${displayImg ? `<img src="${displayImg}">` : `
+            <div class="dual-tap-box">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Chụp</span>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Album</span>
+              </div>
+            </div>`}
+            ${displayImg ? `<div class="pactions" style="right: 4px;">
+              <button class="pact edit" onclick="editDimPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact cam" onclick="triggerNativeCamera(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+              <button class="pact gal" onclick="triggerPickLibrary(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+              <button class="pact del" onclick="delDimPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : ''}
+          </div>
+
+          <!-- ẢNH PHỤ CHI TIẾT (25% RỘNG) -->
+          <div class="dim-sub-photo" id="dph_sub_${i}">
+            ${displayImgSub ? `<img src="${displayImgSub}">` : `
+            <div class="dual-tap-box" style="flex-direction:column;">
+              <div class="tap-option" style="border-right:none; border-bottom:1px dashed var(--border-light);" onclick="triggerNativeCamera(${targetSub})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetSub})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+            </div>`}
+            ${displayImgSub ? `<div class="pactions" style="right: 2px;">
+              <button class="pact edit" style="width:18px;height:18px;" onclick="editDimPhoto(${i}, 'sub');event.stopPropagation()"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact del" style="width:18px;height:18px;" onclick="delDimPhoto(${i}, 'sub');event.stopPropagation()"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : ''}
+          </div>
+
         </div>
+
+        <!-- KHỐI DỮ LIỆU ĐÁY (GIỮ NGUYÊN FORMAT CŨ) -->
         <div class="dim-fields">
           <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)">
           <div class="dim-row"><label>Actual</label><input value="${d.actual || ''}" oninput="updateDimField(${i},'actual',this.value)"> <div class="color-dot ${d.color || 'color-blue'}"></div></div>
@@ -1265,7 +1318,12 @@
           }
         };
 
-        attachDropZone(div, { type: 'dim', index: i });
+        // Gắn lắng nghe kéo-thả riêng cho từng ô ảnh nhỏ
+        const mainPhotoEl = div.querySelector('.dim-main-photo');
+        const subPhotoEl = div.querySelector('.dim-sub-photo');
+        attachDropZone(mainPhotoEl, { type: 'dim', index: i, subType: 'main' });
+        attachDropZone(subPhotoEl, { type: 'dim', index: i, subType: 'sub' });
+
         grid.appendChild(div);
       });
 
@@ -1285,14 +1343,29 @@
 
     function addDimSlot() {
       if(!D.dimensions) D.dimensions = [];
-      D.dimensions.push({ id: 'dim_' + Math.random().toString(36).substr(2, 9), name: 'DIMENSION NAME', actual: '', drawing: '', color: 'color-blue', img: null, original: null });
+      D.dimensions.push({ 
+        id: 'dim_' + Math.random().toString(36).substr(2, 9), 
+        name: 'DIMENSION NAME', 
+        actual: '', 
+        drawing: '', 
+        color: 'color-blue', 
+        img: null, 
+        original: null,
+        imgSub: null,
+        originalSub: null
+      });
       buildDimGrid(); as();
     }
 
-    function delDimPhoto(index) { 
-      if (!confirm('Xóa ảnh kích thước này?')) return; 
-      D.dimensions[index].img = null; 
-      D.dimensions[index].original = null; 
+    function delDimPhoto(index, subType = 'main') { 
+      if (!confirm('Xóa ảnh này?')) return; 
+      if (subType === 'sub') {
+        D.dimensions[index].imgSub = null;
+        D.dimensions[index].originalSub = null;
+      } else {
+        D.dimensions[index].img = null; 
+        D.dimensions[index].original = null; 
+      }
       buildDimGrid(); as(); 
     }
 
@@ -1314,7 +1387,7 @@
             <div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
         } else {
             div.innerHTML = `
-              <div class="dual-tap-box" style="height:100%;">
+              <div class="dual-tap-box">
                 <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                   <span>Chụp mới</span>
@@ -1410,7 +1483,9 @@
                     drawing: drawingVal,
                     color: colorVal,
                     img: imgVal,
-                    original: originalVal
+                    original: originalVal,
+                    imgSub: null,
+                    originalSub: null
                 });
             }
         }
@@ -1512,7 +1587,7 @@
     async function deleteReport() { if (!confirm('Xóa vĩnh viễn báo cáo này?')) return; await dbDelete(currentId); goHome(); }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-    // ═══════════════ PDF EXPORT ═══════════════
+    // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -1542,7 +1617,35 @@
         return ty + 4;
       };
 
-      const addImg = (src, x, iy, iw, ih) => { if (!src) return; try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch (e) { console.error(e); } };
+     const addImg = (src, x, iy, iw, ih) => { 
+        if (!src) return; 
+        try { 
+          // Kiểm tra tỉ lệ ảnh gốc để hiển thị đúng chuẩn "contain" (không méo hình)
+          const imgProps = doc.getImageProperties(src);
+          const imgRatio = imgProps.width / imgProps.height;
+          const boxRatio = iw / ih;
+
+          let renderW = iw;
+          let renderH = ih;
+          let offsetX = 0;
+          let offsetY = 0;
+
+          if (imgRatio > boxRatio) {
+            // Ảnh bè ngang hơn khung -> co theo chiều rộng
+            renderH = iw / imgRatio;
+            offsetY = (ih - renderH) / 2;
+          } else {
+            // Ảnh cao hơn khung -> co theo chiều cao
+            renderW = ih * imgRatio;
+            offsetX = (iw - renderW) / 2;
+          }
+
+          doc.addImage(src, 'JPEG', x + offsetX, iy + offsetY, renderW, renderH); 
+        } catch (e) {
+          // Dự phòng nếu không đọc được thuộc tính ảnh
+          try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch(err) {}
+        } 
+      };
 
       const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle) => {
         const validPhotos = (photoArray || []).filter(p => p && p.img);
@@ -1644,12 +1747,11 @@
       // ================= 2. PHOTO =================
       renderPhotoSection('Product Photos', D.prodPhotos, null, null);
 
-      // ================= 3. DIMENSIONS =================
-      const validDims = (D.dimensions || []).filter(d => d.img || d.actual || d.drawing);
+      // ================= 3. DIMENSIONS (2 CỘT & ẢNH KÉP 3:1) =================
+      const validDims = (D.dimensions || []).filter(d => d.img || d.imgSub || d.actual || d.drawing);
       if(validDims.length > 0 || (D.dimNotes && D.dimNotes.trim())) {
         addHeader('Product Dimension & Details');
         
-        // Vẽ Legend dạng hình tròn màu trực quan
         let lx = M;
         const ly = y - 0.8;
         const legendItems = [
@@ -1672,9 +1774,12 @@
         y += 6;
         
         let dx = M, dy = y;
-        const dimCols = 3, dimSlotW = (W - M * 2 - 2 * (dimCols - 1)) / dimCols; 
-        const dimImgH = dimSlotW; 
-        const dimSlotH = dimImgH + 18; 
+        const dimCols = 2; 
+        const dimSlotW = (W - M * 2 - 4) / dimCols; // ~89mm mỗi ô
+        const mainW = dimSlotW * 0.75;             // 3 phần (75%)
+        const subW = dimSlotW * 0.25;              // 1 phần (25%)
+        const dimImgH = mainW * 0.75;              // Tỷ lệ 4:3 theo mainW (~50mm)
+        const dimSlotH = dimImgH + 20;             // Thêm 20mm cho phần dữ liệu text dưới
         
         validDims.forEach((d, i) => {
           if (dy + dimSlotH > BOTTOM_LIMIT) { 
@@ -1684,25 +1789,58 @@
           }
           
           const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
+          const displayImgSub = d.imgSub ? (typeof d.imgSub === 'string' ? d.imgSub : d.imgSub) : null;
           
-          doc.setDrawColor(220, 217, 210); doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
-          if (displayImg) { addImg(displayImg, dx, dy, dimSlotW, dimImgH); } else { doc.setFillColor(248, 245, 240); doc.rect(dx, dy, dimSlotW, dimImgH, 'F'); }
+          // Viền khung tổng
+          doc.setDrawColor(220, 217, 210); 
+          doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
+
+          // Vùng ẢNH CHÍNH (3 phần - Trái)
+          if (displayImg) { 
+            addImg(displayImg, dx, dy, mainW, dimImgH); 
+          } else { 
+            doc.setFillColor(248, 245, 240); 
+            doc.rect(dx, dy, mainW, dimImgH, 'F'); 
+            doc.setFontSize(6); doc.setTextColor(170, 165, 158);
+            doc.text('Main View', dx + mainW/2, dy + dimImgH/2, { align: 'center' });
+          }
+
+          // Vùng ẢNH PHỤ (1 phần - Phải)
+          if (displayImgSub) { 
+            addImg(displayImgSub, dx + mainW, dy, subW, dimImgH); 
+          } else { 
+            doc.setFillColor(244, 242, 238); 
+            doc.rect(dx + mainW, dy, subW, dimImgH, 'F'); 
+            doc.setFontSize(5); doc.setTextColor(170, 165, 158);
+            doc.text('Detail', dx + mainW + subW/2, dy + dimImgH/2, { align: 'center' });
+          }
+
+          // Đường phân cách giữa 2 ảnh
+          doc.setDrawColor(220, 217, 210);
+          doc.line(dx + mainW, dy, dx + mainW, dy + dimImgH);
+          // Đường kẻ ngang ngăn cách ảnh và vùng text
+          doc.line(dx, dy + dimImgH, dx + dimSlotW, dy + dimImgH);
           
-          const fy = dy + dimImgH + 3; 
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(50, 45, 40); 
-          doc.text(d.name || 'DIMENSION', dx + 2, fy + 3);
+          // KHỐI DỮ LIỆU ĐÁY
+          const fy = dy + dimImgH + 2; 
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(50, 45, 40); 
+          doc.text(d.name || 'DIMENSION', dx + 3, fy + 3);
           
-          const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; doc.setFillColor(...color); doc.circle(dx + dimSlotW - 4, fy + 2, 2, 'F');
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(80, 75, 70);
-          doc.text(`Actual: ${d.actual || '—'}`, dx + 2, fy + 8); doc.text(`Drawing: ${d.drawing || '—'}`, dx + 2, fy + 13);
+          const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; 
+          doc.setFillColor(...color); 
+          doc.circle(dx + dimSlotW - 5, fy + 2, 2, 'F');
           
-          dx += dimSlotW + 2;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(80, 75, 70);
+          doc.text(`Actual: ${d.actual || '—'}`, dx + 3, fy + 9); 
+          doc.text(`Drawing: ${d.drawing || '—'}`, dx + 3, fy + 14);
+          
+          dx += dimSlotW + 4;
           if ((i + 1) % dimCols === 0) {
               dx = M;
-              dy += dimSlotH + 4;
+              dy += dimSlotH + 5;
           }
         });
-        if (validDims.length % dimCols !== 0) dy += dimSlotH + 4;
+        if (validDims.length % dimCols !== 0) dy += dimSlotH + 5;
         y = dy;
         if (D.dimNotes) y = addSafeTextBlock('Dimension Comments', D.dimNotes, y);
       }
