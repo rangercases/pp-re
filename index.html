@@ -864,6 +864,11 @@
     }
 
     function initCropper(imgSrc) {
+        if (!imgSrc) {
+          showToast('Không có dữ liệu ảnh để hiển thị');
+          return;
+        }
+
         let title = 'Chỉnh sửa ảnh';
         if (camTarget.type === 'dim') {
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT)' : 'ẢNH CHÍNH (TOÀN CẢNH)';
@@ -899,14 +904,39 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         const valText = document.getElementById('straightenVal'); if(valText) valText.textContent = '0.0°';
 
         const image = document.getElementById('cropperImage');
-        image.src = imgSrc;
+        if (cropper) {
+          cropper.destroy();
+          cropper = null;
+        }
 
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(image, {
-aspectRatio: defaultRatio, // Áp dụng tỷ lệ nhận diện tự động            viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false,
-            guides: true, center: true, highlight: false, cropBoxMovable: true,
-            cropBoxResizable: true, toggleDragModeOnDblclick: false, zoomOnWheel: true, background: false
-        });
+        image.onload = () => {
+          if (cropper) cropper.destroy();
+          cropper = new Cropper(image, {
+            aspectRatio: defaultRatio,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.95,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+            zoomOnWheel: true,
+            background: false
+          });
+        };
+        image.onerror = () => {
+          if (cropper) {
+            cropper.destroy();
+            cropper = null;
+          }
+          image.removeAttribute('src');
+          closeCamera();
+          showToast('Không thể đọc ảnh này. Hãy dùng JPG hoặc PNG; Safari có thể không hỗ trợ HEIC.');
+        };
+        image.src = imgSrc;
     }
 
     function setCropRatio(ratio, btnEl) {
