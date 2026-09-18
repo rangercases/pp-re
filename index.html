@@ -714,6 +714,22 @@
     }
 
     // ═══════════════ XỬ LÝ DRAG & DROP TỪ FOLDER ═══════════════
+    function isImageFile(file) {
+      if (!file) return false;
+      if (file.type && file.type.startsWith('image/')) return true;
+      return /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name || '');
+    }
+
+    function getDroppedImageFiles(dataTransfer) {
+      const files = Array.from((dataTransfer && dataTransfer.files) || []);
+      if (files.length) return files.filter(isImageFile);
+
+      return Array.from((dataTransfer && dataTransfer.items) || [])
+        .filter(item => item.kind === 'file')
+        .map(item => item.getAsFile())
+        .filter(isImageFile);
+    }
+
     function attachDropZone(element, target, isMulti = false) {
       if (!element) return;
 
@@ -738,7 +754,7 @@
         e.stopPropagation();
         element.classList.remove('drag-over');
 
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        const files = getDroppedImageFiles(e.dataTransfer);
         if (!files.length) return;
 
         if (isMulti) {
