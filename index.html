@@ -760,24 +760,23 @@
             })
           ]);
           const firstResult = Array.isArray(converted) ? converted[0] : converted;
-          if (!(firstResult instanceof Blob) || !firstResult.size) {
+          if (!firstResult || typeof firstResult.size !== 'number' || !firstResult.size) {
             throw new Error('HEIC converter returned an empty image');
           }
-          imageBlob = firstResult.type === 'image/jpeg'
-            ? firstResult
-            : new Blob([firstResult], { type: 'image/jpeg' });
+          imageBlob = new Blob([firstResult], { type: 'image/jpeg' });
         } catch (error) {
           console.error('HEIC conversion failed', {
             name: error && error.name,
             message: error && error.message,
             fileName: file.name,
             fileType: file.type,
-            fileSize: file.size
+            fileSize: file.size,
+            converterLoaded: typeof window.heic2any === 'function'
           });
           const reason = error && error.message === 'HEIC conversion timed out'
             ? 'quá lâu'
             : 'không thành công';
-          showToast(`Chuyển HEIC sang JPG ${reason}. Hãy thử ảnh HEIC khác hoặc JPG/PNG.`);
+          showToast(`Chuyển HEIC sang JPG ${reason}. Kiểm tra Console (F12) để xem chi tiết.`);
           return null;
         }
       }
