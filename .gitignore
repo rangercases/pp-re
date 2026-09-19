@@ -1,0 +1,14 @@
+# D? li?u và báo cáo cá nhân
+*.pdf
+*.json
+
+# H? di?u hành & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# File t?m
+*.tmp
+*.log
+scratch/
