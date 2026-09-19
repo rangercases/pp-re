@@ -168,8 +168,8 @@
     .checks { display: flex; gap: 10px; flex-wrap: wrap; }
     .chk { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
     .chkbox { width: 15px; height: 15px; border: 1.5px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; background: #fff; }
-    .chkbox.on { background: var(--accent); border-color: var(--accent); }
-    .chkbox.on::after { content: '✓'; color: #fff; font-size: 9px; font-weight: bold; }
+    .chkbox.on { background: var(--accent); border-color: rgba(0, 0, 0, 0.35); }
+    .chkbox.on::after { content: '✓'; color: #fff; font-size: 9.5px; font-weight: 800; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
 
     /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
@@ -841,6 +841,19 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function onStylerColorChange(prop, val) {
       pdfConfig[prop] = val;
       setText('val_' + prop, val);
+      if (prop === 'themeColor') {
+        const isDark = isColorDark(val);
+        const isHeaderDark = isColorDark(pdfConfig.headerTextColor || '#ffffff');
+        if (!isDark && !isHeaderDark) {
+          pdfConfig.headerTextColor = '#1a1916';
+          setVal('cfg_headerTextColor', '#1a1916');
+          setText('val_headerTextColor', '#1a1916');
+        } else if (isDark && isHeaderDark) {
+          pdfConfig.headerTextColor = '#ffffff';
+          setVal('cfg_headerTextColor', '#ffffff');
+          setText('val_headerTextColor', '#ffffff');
+        }
+      }
       drawLiveHeaderPreview();
     }
 
@@ -879,8 +892,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       ctx.fillStyle = pdfConfig.themeColor || '#1a3a2a';
       ctx.fillRect(0, 0, canvas.width, bannerH_px);
 
-      // Logo
       const isDark = isColorDark(pdfConfig.themeColor || '#1a3a2a');
+      if (!isDark) {
+        ctx.strokeStyle = '#d5d9de';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, bannerH_px);
+        ctx.lineTo(canvas.width, bannerH_px);
+        ctx.stroke();
+      }
+
+      // Logo
       const logoImg = isDark ? cachedLogoWhiteImg : cachedLogoBlackImg;
       const logoW_mm = stylerActiveTab === 'p1' ? pdfConfig.logoW_p1 : pdfConfig.logoW_sub;
       const logoH_mm = logoW_mm / 10.1587;
@@ -892,7 +914,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
 
       // Tiêu đề & Thông tin
-      ctx.fillStyle = pdfConfig.headerTextColor || '#ffffff';
+      const isHeaderDark = isColorDark(pdfConfig.headerTextColor || '#ffffff');
+      const textFill = (!isDark && !isHeaderDark) ? '#1a1916' : (pdfConfig.headerTextColor || '#ffffff');
+      ctx.fillStyle = textFill;
       if (stylerActiveTab === 'p1') {
         const titlePt = pdfConfig.titleFontSize || 16;
         const fontPx = Math.round(titlePt * 0.3527 * scale * 1.05);
@@ -2277,7 +2301,9 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
       const cfg = pdfConfig || DEFAULT_PDF_CONFIG;
       const themeRgb = hexToRgbArr(cfg.themeColor);
-      const headerFooterTextRgb = hexToRgbArr(cfg.headerTextColor);
+      const isDarkTheme = isColorDark(cfg.themeColor);
+      const isHeaderDark = isColorDark(cfg.headerTextColor);
+      const headerFooterTextRgb = (!isDarkTheme && !isHeaderDark) ? [20, 20, 20] : hexToRgbArr(cfg.headerTextColor);
       const companyTextRgb = headerFooterTextRgb;
       const setPdfTextOpacity = opacity => {
         if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') {
@@ -2289,7 +2315,11 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         doc.addPage(); 
         doc.setFillColor(...themeRgb); 
         doc.rect(0, 0, W, 24, 'F'); 
-        const isDarkTheme = isColorDark(cfg.themeColor);
+        if (!isDarkTheme) {
+          doc.setDrawColor(215, 220, 225);
+          doc.setLineWidth(0.35);
+          doc.line(0, 24, W, 24);
+        }
         const pdfLogo = isDarkTheme ? LOGO_WHITE : LOGO_BLACK;
         const logoW_sub = cfg.logoW_sub || 36;
         const logoH_sub = logoW_sub / 10.1587;
@@ -2407,7 +2437,11 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       doc.setFillColor(...themeRgb); 
       const bannerH = cfg.bannerH || 24;
       doc.rect(0, 0, W, bannerH, 'F'); 
-      const isDarkTheme = isColorDark(cfg.themeColor);
+      if (!isDarkTheme) {
+        doc.setDrawColor(215, 220, 225);
+        doc.setLineWidth(0.35);
+        doc.line(0, bannerH, W, bannerH);
+      }
       const pdfLogo = isDarkTheme ? LOGO_WHITE : LOGO_BLACK;
       const logoW_p1 = cfg.logoW_p1 || 44;
       const logoH_p1 = logoW_p1 / 10.1587;
@@ -2441,12 +2475,16 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
       const chkLine = (label, group) => {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
+        const checkFillRgb = isDarkTheme ? themeRgb : [30, 30, 30];
+        const checkBorderRgb = isDarkTheme ? themeRgb : [30, 30, 30];
         CHECK_OPTS[group].forEach(k => {
           if (!!((D.checks || {})[group]?.[k])) {
-            doc.setFillColor(...themeRgb);
-            doc.rect(cx, y + 1, 3, 3, 'F');
+            doc.setFillColor(...checkFillRgb);
+            doc.setDrawColor(...checkBorderRgb);
+            doc.setLineWidth(0.2);
+            doc.rect(cx, y + 1, 3, 3, 'FD');
             doc.setDrawColor(255, 255, 255);
-            doc.setLineWidth(0.35);
+            doc.setLineWidth(0.38);
             doc.line(cx + 0.65, y + 2.45, cx + 1.3, y + 3.05);
             doc.line(cx + 1.3, y + 3.05, cx + 2.45, y + 1.55);
           } else {
@@ -2662,6 +2700,11 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         doc.setPage(p); 
         doc.setFillColor(...themeRgb); 
         doc.rect(0, 285, W, 12, 'F'); 
+        if (!isDarkTheme) {
+          doc.setDrawColor(215, 220, 225);
+          doc.setLineWidth(0.3);
+          doc.line(0, 285, W, 285);
+        }
         doc.setTextColor(...headerFooterTextRgb); setPdfTextOpacity(0.7); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
         doc.text(`${reportName} — SOFACOMPANY`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
         setPdfTextOpacity(1);
