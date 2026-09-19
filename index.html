@@ -618,7 +618,6 @@
         <button class="mbtn sec" onclick="closeCamera()">Hủy</button>
         <button class="mbtn pri hidden" id="btnRetakeCam" onclick="triggerNativeCamera(camTarget)">📷 Chụp lại</button>
         <button class="mbtn pri hidden" id="btnRetakeLib" onclick="triggerPickLibrary(camTarget)">🖼️ Chọn lại</button>
-        <button class="mbtn pri" id="btnPasteInModal" onclick="triggerPasteInModal()" title="Dán ảnh mới từ Clipboard (Ctrl+V)">📋 Dán ảnh</button>
         <button class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
       </div>
     </div>
@@ -1654,51 +1653,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     }
 
-    async function triggerPasteInModal() {
-      if (!navigator.clipboard || !navigator.clipboard.read) {
-        showToast('Hãy ấn Ctrl+V trên bàn phím để dán ảnh!');
-        return;
-      }
-      try {
-        const items = await navigator.clipboard.read();
-        let imgBlob = null;
-        for (const item of items) {
-          const t = item.types.find(type => type.startsWith('image/'));
-          if (t) {
-            imgBlob = await item.getType(t);
-            break;
-          }
-        }
-        if (!imgBlob) {
-          showToast('Không tìm thấy ảnh trong Clipboard! Hãy sao chép ảnh trước.');
-          return;
-        }
-        const dataUrl = await readImageFileAsDataUrl(imgBlob);
-        if (dataUrl) {
-          currentOriginalImg = dataUrl;
-          initCropper(dataUrl);
-          showToast('✓ Đã nạp ảnh từ Clipboard vào bộ cắt ảnh!');
-        }
-      } catch (err) {
-        console.warn('Modal paste error:', err);
-        showToast('Hãy nhấn phím Ctrl+V để dán ảnh trực tiếp!');
-      }
-    }
-
     window.addEventListener('paste', async (e) => {
-      // 1. Cropper modal check
+      // 1. If modal is open, do not intercept
       const camModal = document.getElementById('camModal');
-      if (camModal && !camModal.classList.contains('hidden')) {
-        const imgFiles = getClipboardImageFiles(e.clipboardData);
-        if (imgFiles.length > 0) {
-          e.preventDefault();
-          const dataUrl = await readImageFileAsDataUrl(imgFiles[0]);
-          if (dataUrl) {
-            currentOriginalImg = dataUrl;
-            initCropper(dataUrl);
-            showToast('✓ Đã nạp ảnh mới vào bộ cắt ảnh!');
-          }
-        }
+      const stylerModal = document.getElementById('pdfStylerModal');
+      if ((camModal && !camModal.classList.contains('hidden')) || 
+          (stylerModal && !stylerModal.classList.contains('hidden'))) {
         return;
       }
 
