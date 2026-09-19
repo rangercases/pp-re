@@ -748,15 +748,36 @@
           return null;
         }
         try {
-          const converted = await window.heic2any({
+          const conversion = window.heic2any({
             blob: file,
             toType: 'image/jpeg',
             quality: 0.9
           });
-          imageBlob = Array.isArray(converted) ? converted[0] : converted;
+          const converted = await Promise.race([
+            conversion,
+            new Promise((resolve, reject) => {
+              setTimeout(() => reject(new Error('HEIC conversion timed out')), 30000);
+            })
+          ]);
+          const firstResult = Array.isArray(converted) ? converted[0] : converted;
+          if (!(firstResult instanceof Blob) || !firstResult.size) {
+            throw new Error('HEIC converter returned an empty image');
+          }
+          imageBlob = firstResult.type === 'image/jpeg'
+            ? firstResult
+            : new Blob([firstResult], { type: 'image/jpeg' });
         } catch (error) {
-          console.error('HEIC conversion failed', error);
-          showToast('Không thể chuyển HEIC sang JPG. Hãy thử file HEIC khác.');
+          console.error('HEIC conversion failed', {
+            name: error && error.name,
+            message: error && error.message,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size
+          });
+          const reason = error && error.message === 'HEIC conversion timed out'
+            ? 'quá lâu'
+            : 'không thành công';
+          showToast(`Chuyển HEIC sang JPG ${reason}. Hãy thử ảnh HEIC khác hoặc JPG/PNG.`);
           return null;
         }
       }
@@ -768,7 +789,13 @@
           showToast('Không thể đọc file ảnh này. Hãy dùng JPG, PNG hoặc HEIC hợp lệ.');
           resolve(null);
         };
-        reader.readAsDataURL(imageBlob);
+        try {
+          reader.readAsDataURL(imageBlob);
+        } catch (error) {
+          console.error('Image file read failed', error);
+          showToast('Không thể đọc dữ liệu ảnh này. Hãy thử lại với JPG, PNG hoặc HEIC khác.');
+          resolve(null);
+        }
       });
     }
 
@@ -815,6 +842,7 @@
     async function handleMultipleDroppedFiles(files, key) {
       showToast(`Đang thêm ${files.length} ảnh...`);
       if (!D[key]) D[key] = [];
+      let addedCount = 0;
 
       for (const file of files) {
         const dataUrl = await readImageFileAsDataUrl(file);
@@ -825,10 +853,13 @@
           original: compressed,
           caption: ''
         });
+        addedCount++;
       }
       renderFreePhotos(key);
       as();
-      showToast(`✓ Đã thêm ${files.length} ảnh vào danh sách!`);
+      showToast(addedCount
+        ? `✓ Đã thêm ${addedCount} ảnh vào danh sách!`
+        : 'Không có ảnh nào được thêm.');
     }
 
     // ═══════════════ CAMERA & ALBUM FLOW ═══════════════
