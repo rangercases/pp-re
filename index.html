@@ -18,8 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-  <!-- HEIC/HEIF to JPEG conversion for browsers without native HEIC support -->
-  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <!-- HEIC/HEIF decoder for browsers without native HEIC support -->
   <script src="https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif-wasm/libheif-bundle.js"></script>
 
   <!-- SortableJS Library -->
@@ -791,44 +790,18 @@
 
       let imageBlob = file;
       if (isHeicFile(file)) {
-        if (typeof window.heic2any !== 'function') {
-          showToast('Không tải được bộ chuyển HEIC. Hãy kiểm tra kết nối mạng rồi thử lại.');
-          return null;
-        }
         try {
-          const conversion = window.heic2any({
-            blob: file,
-            toType: 'image/jpeg',
-            quality: 0.9
-          });
-          const converted = await Promise.race([
-            conversion,
-            new Promise((resolve, reject) => {
-              setTimeout(() => reject(new Error('HEIC conversion timed out')), 30000);
-            })
-          ]);
-          const firstResult = Array.isArray(converted) ? converted[0] : converted;
-          if (!firstResult || typeof firstResult.size !== 'number' || !firstResult.size) {
-            throw new Error('HEIC converter returned an empty image');
-          }
-          imageBlob = new Blob([firstResult], { type: 'image/jpeg' });
+          imageBlob = await convertHeicWithLibheif(file);
         } catch (error) {
-          console.error('HEIC conversion failed', {
+          console.error('HEIF conversion failed', {
             name: error && error.name,
             message: error && error.message,
             fileName: file.name,
             fileType: file.type,
-            fileSize: file.size,
-            converterLoaded: typeof window.heic2any === 'function'
+            fileSize: file.size
           });
-          try {
-            showToast('Bộ chuyển cũ không đọc được ảnh, đang thử bộ chuyển mới...');
-            imageBlob = await convertHeicWithLibheif(file);
-          } catch (fallbackError) {
-            console.error('Updated HEIF conversion failed', fallbackError);
-            showToast('Ảnh HEIC này không được hỗ trợ. Hãy đổi sang JPG/PNG trên iPhone hoặc Windows rồi thử lại.');
-            return null;
-          }
+          showToast('Ảnh HEIC này không được hỗ trợ. Hãy đổi sang JPG/PNG trên iPhone hoặc Windows rồi thử lại.');
+          return null;
         }
       }
 
