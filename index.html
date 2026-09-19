@@ -79,7 +79,11 @@
     .topbar-brand img { height: 16px; width: auto; max-width: 150px; object-fit: contain; }
     .topbar-title { color: var(--brand-header-footer-text); font-size: 13px; font-weight: 500; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; }
-    .topbar-btn { background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .35); color: #ffffff; border-radius: var(--rs); padding: 5px 11px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+    .topbar-btn { background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .35); color: #ffffff; border-radius: var(--rs); padding: 5px 11px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; user-select: none; }
+    .topbar-btn:hover:not(:disabled) { background: rgba(255, 255, 255, .28); }
+    .topbar-btn:active:not(:disabled) { transform: scale(0.96); }
+    .topbar-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    .topbar-btn.icon-btn { padding: 5px 8px; }
     .topbar-btn.pri { background: #ffffff; color: #1a3a2a; border-color: #ffffff; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .topbar-actions { display: flex; gap: 6px; padding: 0 10px; align-items: center; }
 
@@ -414,6 +418,12 @@
     <div class="topbar-title" id="topTitle">PP Sample Review</div>
     <div class="autosave-indicator" id="saveIndicator" style="display:none"><span>●</span> <span id="saveText">Synced</span></div>
     <div class="topbar-actions">
+      <button class="topbar-btn icon-btn" id="btnUndo" onclick="undo()" title="Hoàn tác (Ctrl+Z)" style="display:none" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+      </button>
+      <button class="topbar-btn icon-btn" id="btnRedo" onclick="redo()" title="Làm lại (Ctrl+Y)" style="display:none" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg>
+      </button>
       <button class="topbar-btn" id="btnStyler" onclick="openPdfStyler()" title="Căn chỉnh bố cục & màu sắc PDF">🎨 Căn chỉnh</button>
       <button class="topbar-btn" id="btnHome" onclick="goHome()" style="display:none">← Reports</button>
       <button class="topbar-btn" id="btnShare" onclick="shareReport()" style="display:none">Share</button>
@@ -1258,6 +1268,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     let hoveredPasteTarget = null;
     let saveTimeout = null;
 
+    // History Manager (Undo / Redo)
+    let undoStack = [];
+    let redoStack = [];
+    const MAX_HISTORY = 25;
+    let isHistoryNavigating = false;
+    let textInputUndoTimeout = null;
+    let preTypingSnapshot = null;
+
     let cropper = null;
     let currentOriginalImg = null; 
     let baseRotateAngle = 0;
@@ -1460,6 +1478,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     async function handleMultipleDroppedFiles(files, key) {
       showToast(`Đang thêm ${files.length} ảnh...`);
+      pushHistory(`Thêm ${files.length} ảnh`);
       if (!D[key]) D[key] = [];
       let addedCount = 0;
 
@@ -1707,6 +1726,203 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     });
 
+    // ═══════════════ HISTORY MANAGER (UNDO / REDO) ═══════════════
+    function resetHistory() {
+      undoStack = [];
+      redoStack = [];
+      preTypingSnapshot = null;
+      clearTimeout(textInputUndoTimeout);
+      updateUndoRedoUI();
+    }
+
+    function flushPendingTextUndo() {
+      if (preTypingSnapshot && D && currentId) {
+        clearTimeout(textInputUndoTimeout);
+        const currentSnap = JSON.stringify(D);
+        if (currentSnap !== preTypingSnapshot) {
+          pushHistorySnapshot(preTypingSnapshot, 'Nhập văn bản');
+        }
+        preTypingSnapshot = null;
+      }
+    }
+
+    function pushHistorySnapshot(snapshotData, desc = 'Thao tác') {
+      if (isHistoryNavigating || !currentId) return;
+      undoStack.push({ data: snapshotData, desc });
+      if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+      }
+      redoStack = [];
+      updateUndoRedoUI();
+    }
+
+    function pushHistory(desc = 'Thao tác') {
+      if (isHistoryNavigating || !currentId || !D) return;
+      flushPendingTextUndo();
+      try {
+        const snapshot = JSON.stringify(D);
+        undoStack.push({ data: snapshot, desc });
+        if (undoStack.length > MAX_HISTORY) {
+          undoStack.shift();
+        }
+        redoStack = [];
+        updateUndoRedoUI();
+      } catch (err) {
+        console.warn('History snapshot failed', err);
+      }
+    }
+
+    function updateUndoRedoUI() {
+      const btnUndo = document.getElementById('btnUndo');
+      const btnRedo = document.getElementById('btnRedo');
+      if (btnUndo) {
+        btnUndo.disabled = undoStack.length === 0;
+        btnUndo.title = undoStack.length > 0 
+          ? `Hoàn tác: ${undoStack[undoStack.length - 1].desc} (Ctrl+Z)` 
+          : 'Hoàn tác (Ctrl+Z)';
+      }
+      if (btnRedo) {
+        btnRedo.disabled = redoStack.length === 0;
+        btnRedo.title = redoStack.length > 0 
+          ? `Làm lại: ${redoStack[redoStack.length - 1].desc} (Ctrl+Y)` 
+          : 'Làm lại (Ctrl+Y)';
+      }
+    }
+
+    async function undo() {
+      if (isDimSelectMode) return;
+      flushPendingTextUndo();
+      if (!undoStack.length || !currentId) {
+        showToast('Không có thao tác nào để hoàn tác');
+        return;
+      }
+
+      isHistoryNavigating = true;
+      try {
+        const currentSnap = JSON.stringify(D);
+        const item = undoStack.pop();
+        redoStack.push({ data: currentSnap, desc: item.desc });
+
+        D = JSON.parse(item.data);
+        loadData();
+        updateTopbar();
+        await dbPut(D);
+        showToast(`↩️ Đã hoàn tác: ${item.desc}`);
+      } catch (err) {
+        console.error('Undo failed', err);
+        showToast('Lỗi khi hoàn tác dữ liệu');
+      } finally {
+        isHistoryNavigating = false;
+        updateUndoRedoUI();
+      }
+    }
+
+    async function redo() {
+      if (isDimSelectMode) return;
+      flushPendingTextUndo();
+      if (!redoStack.length || !currentId) {
+        showToast('Không có thao tác nào để làm lại');
+        return;
+      }
+
+      isHistoryNavigating = true;
+      try {
+        const currentSnap = JSON.stringify(D);
+        const item = redoStack.pop();
+        undoStack.push({ data: currentSnap, desc: item.desc });
+
+        D = JSON.parse(item.data);
+        loadData();
+        updateTopbar();
+        await dbPut(D);
+        showToast(`↪️ Đã làm lại: ${item.desc}`);
+      } catch (err) {
+        console.error('Redo failed', err);
+        showToast('Lỗi khi làm lại dữ liệu');
+      } finally {
+        isHistoryNavigating = false;
+        updateUndoRedoUI();
+      }
+    }
+
+    // Global Keybinding for Undo / Redo
+    window.addEventListener('keydown', (e) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      if (!isCtrl) return;
+
+      const key = e.key.toLowerCase();
+
+      // Redo: Ctrl+Y or Ctrl+Shift+Z
+      if ((isCtrl && key === 'y') || (isCtrl && e.shiftKey && key === 'z')) {
+        const camModal = document.getElementById('camModal');
+        const stylerModal = document.getElementById('pdfStylerModal');
+        if ((camModal && !camModal.classList.contains('hidden')) || 
+            (stylerModal && !stylerModal.classList.contains('hidden'))) {
+          return;
+        }
+        
+        const editScreen = document.getElementById('editScreen');
+        if (currentId && editScreen && editScreen.classList.contains('active')) {
+          e.preventDefault();
+          redo();
+        }
+        return;
+      }
+
+      // Undo: Ctrl+Z (without Shift)
+      if (isCtrl && !e.shiftKey && key === 'z') {
+        const camModal = document.getElementById('camModal');
+        const stylerModal = document.getElementById('pdfStylerModal');
+        if ((camModal && !camModal.classList.contains('hidden')) || 
+            (stylerModal && !stylerModal.classList.contains('hidden'))) {
+          return;
+        }
+
+        const editScreen = document.getElementById('editScreen');
+        if (currentId && editScreen && editScreen.classList.contains('active')) {
+          e.preventDefault();
+          if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+            document.activeElement.blur();
+          }
+          undo();
+        }
+      }
+    });
+
+    // Auto-capture text changes for input and textarea
+    document.addEventListener('input', (e) => {
+      if (!currentId || isHistoryNavigating) return;
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        if (!preTypingSnapshot && D) {
+          preTypingSnapshot = JSON.stringify(D);
+        }
+        clearTimeout(textInputUndoTimeout);
+        textInputUndoTimeout = setTimeout(() => {
+          if (preTypingSnapshot) {
+            const currentSnap = JSON.stringify(D);
+            if (currentSnap !== preTypingSnapshot) {
+              pushHistorySnapshot(preTypingSnapshot, 'Nhập văn bản');
+            }
+            preTypingSnapshot = null;
+          }
+        }, 750);
+      }
+    }, true);
+
+    document.addEventListener('focusout', (e) => {
+      if (!currentId || isHistoryNavigating) return;
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        if (preTypingSnapshot) {
+          clearTimeout(textInputUndoTimeout);
+          const currentSnap = JSON.stringify(D);
+          if (currentSnap !== preTypingSnapshot) {
+            pushHistorySnapshot(preTypingSnapshot, 'Nhập văn bản');
+          }
+          preTypingSnapshot = null;
+        }
+      }
+    }, true);
+
     // ═══════════════ CAMERA & ALBUM FLOW ═══════════════
     function triggerNativeCamera(target) {
       if (isDimSelectMode) return;
@@ -1941,6 +2157,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
     function savePhoto(imgData, originalData) {
       const t = camTarget;
       if (!t) return;
+      pushHistory('Lưu ảnh');
       if (t.type === 'slot') {
         const payload = { img: imgData, original: originalData };
         if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
@@ -2085,6 +2302,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         return;
       }
       if (!confirm(`Bạn có chắc muốn xóa ${selectedDimIndices.size} ô kích thước đã chọn?`)) return;
+      pushHistory(`Xóa ${selectedDimIndices.size} ô kích thước`);
       
       const sorted = Array.from(selectedDimIndices).sort((a, b) => b - a);
       sorted.forEach(idx => {
@@ -2128,8 +2346,11 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       document.getElementById('btnHome').style.display = 'none';
       document.getElementById('btnExport').style.display = 'none';
       document.getElementById('btnShare').style.display = 'none';
+      document.getElementById('btnUndo').style.display = 'none';
+      document.getElementById('btnRedo').style.display = 'none';
       document.getElementById('saveIndicator').style.display = 'none';
       document.getElementById('topTitle').textContent = 'PP Sample Review';
+      resetHistory();
       await renderHome();
     }
 
@@ -2289,6 +2510,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
     function delSlotPhoto(containerId, key, section) {
       if (!confirm('Bạn có chắc muốn xóa ảnh này không?')) return;
+      pushHistory('Xóa ảnh Cover');
       delete D.coverPhotos[key];
       refreshSlot(containerId, key, section); as();
     }
@@ -2450,11 +2672,15 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         }
       }
 
-      if (field === 'color') buildDimGrid();
+      if (field === 'color') {
+        pushHistory('Đổi trạng thái kích thước');
+        buildDimGrid();
+      }
       as();
     }
 
     function addDimSlot() {
+      pushHistory('Thêm ô kích thước');
       if(!D.dimensions) D.dimensions = [];
       D.dimensions.push({ 
         id: 'dim_' + Math.random().toString(36).substr(2, 9), 
@@ -2474,6 +2700,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
     function delDimPhoto(index, subType = 'main') { 
       if (!confirm('Xóa ảnh này?')) return; 
+      pushHistory(subType === 'sub' ? 'Xóa ảnh phụ kích thước' : 'Xóa ảnh chính kích thước');
       if (subType === 'sub') {
         D.dimensions[index].imgSub = null;
         D.dimensions[index].originalSub = null;
@@ -2528,7 +2755,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn ignore-drag';
       addBtn.title = 'Bấm để thêm ô, kéo thả hoặc nhấn Ctrl+V để dán ảnh';
       addBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:2px;">THÊM ẢNH</span><span style="font-size:9px; color:var(--muted); font-weight:normal;">Kéo thả hoặc Ctrl+V để dán</span>`;
-      addBtn.onclick = () => { if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
+      addBtn.onclick = () => { pushHistory('Thêm ô ảnh'); if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
 
       attachDropZone(addBtn, { type: 'free', key }, true);
       el.appendChild(addBtn);
@@ -2539,6 +2766,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
              animation: 150, delay: 250, delayOnTouchOnly: true, filter: '.ignore-drag', ghostClass: 'sortable-ghost',
              onEnd: function (evt) {
                 if (evt.oldIndex === evt.newIndex) return;
+                pushHistory('Đổi thứ tự ảnh');
                 const array = D[key]; const movedItem = array.splice(evt.oldIndex, 1)[0]; array.splice(evt.newIndex, 0, movedItem);
                 as(); renderFreePhotos(key);
              }
@@ -2547,8 +2775,8 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
     }
 
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
-    function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; D[key][i] = null; renderFreePhotos(key); as(); }
-    function delFreeSlot(key, i) { D[key].splice(i, 1); renderFreePhotos(key); as(); }
+    function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; pushHistory('Xóa ảnh'); D[key][i] = null; renderFreePhotos(key); as(); }
+    function delFreeSlot(key, i) { pushHistory('Xóa ô ảnh'); D[key].splice(i, 1); renderFreePhotos(key); as(); }
 
     function renderBVTable() {
       const tbody = document.getElementById('bvBody'); if (!tbody) return; tbody.innerHTML = '';
@@ -2564,9 +2792,9 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         tbody.appendChild(tr);
       });
     }
-    function addBVRow() { if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
+    function addBVRow() { pushHistory('Thêm hàng thử nghiệm BV'); if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
-    function setBVResult(i, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
+    function setBVResult(i, val) { pushHistory('Đổi kết quả thử nghiệm BV'); if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
 
     function refreshAllSlots() { 
       COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); 
@@ -2655,6 +2883,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
     }
 
     function toggleCheck(group, key) {
+      pushHistory(`Đổi lựa chọn ${group}: ${key}`);
       if (!D.checks) D.checks = {}; if (!D.checks[group]) D.checks[group] = {}; D.checks[group][key] = !D.checks[group][key]; const el = document.getElementById(`ck_${group}_${key}`); if (el) el.classList.toggle('on', !!D.checks[group][key]);
       as();
     }
@@ -2705,9 +2934,10 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         curSec = 0;
         isDimSelectMode = false;
         selectedDimIndices.clear();
+        resetHistory();
         buildUI(); loadData(); showSection(0);
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'saveIndicator'].forEach(elemId => document.getElementById(elemId).style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':'inline-flex');
+        ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator'].forEach(elemId => document.getElementById(elemId).style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':'inline-flex');
         document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); window.scrollTo(0, 0);
       } catch (err) {
         alert("Lỗi khi mở báo cáo: " + err.message);
