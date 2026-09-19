@@ -660,12 +660,12 @@
             </div>
             <div class="styler-control">
               <label>Tiêu đề Vị trí Dọc (Y):</label>
-              <input type="range" id="cfg_titleY" min="8" max="22" step="0.5" oninput="onStylerSliderChange('titleY', this.value, ' mm')">
+              <input type="range" id="cfg_titleY" min="4" max="26" step="0.5" oninput="onStylerSliderChange('titleY', this.value, ' mm')">
               <span class="styler-val" id="val_titleY">16.0 mm</span>
             </div>
             <div class="styler-control">
               <label>Chiều cao dải màu Header:</label>
-              <input type="range" id="cfg_bannerH" min="18" max="32" step="0.5" oninput="onStylerSliderChange('bannerH', this.value, ' mm')">
+              <input type="range" id="cfg_bannerH" min="16" max="36" step="0.5" oninput="onStylerSliderChange('bannerH', this.value, ' mm')">
               <span class="styler-val" id="val_bannerH">24.0 mm</span>
             </div>
           </div>
@@ -783,8 +783,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       stylerModalOpen = true;
       initCachedLogos();
       populateStylerUI();
+      switchStylerTab(stylerActiveTab || 'p1');
       document.getElementById('pdfStylerModal').classList.remove('hidden');
-      setTimeout(drawLiveHeaderPreview, 50);
+      setTimeout(drawLiveHeaderPreview, 60);
     }
 
     function closePdfStyler() {
@@ -830,6 +831,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const bs = document.getElementById('btnTabSub');
       if (b1) b1.classList.toggle('active', tab === 'p1');
       if (bs) bs.classList.toggle('active', tab === 'sub');
+      const secP1 = document.getElementById('section_p1_settings');
+      const secSub = document.getElementById('section_sub_settings');
+      if (secP1) secP1.style.display = tab === 'p1' ? 'block' : 'none';
+      if (secSub) secSub.style.display = tab === 'sub' ? 'block' : 'none';
       drawLiveHeaderPreview();
     }
 
@@ -876,69 +881,207 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const W_mm = 210;
-      const scale = canvas.width / W_mm; // ~3.0 px/mm
-      const H_mm = 32;
-      canvas.height = Math.round(H_mm * scale);
+      const scale = canvas.width / W_mm; // 3.0 px/mm
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Nền trắng giấy A4
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Dải màu Header
-      const bannerH_mm = stylerActiveTab === 'p1' ? (pdfConfig.bannerH || 24) : 24;
-      const bannerH_px = Math.round(bannerH_mm * scale);
-      ctx.fillStyle = pdfConfig.themeColor || '#1a3a2a';
-      ctx.fillRect(0, 0, canvas.width, bannerH_px);
-
-      const isDark = isColorDark(pdfConfig.themeColor || '#1a3a2a');
-      if (!isDark) {
-        ctx.strokeStyle = '#d5d9de';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, bannerH_px);
-        ctx.lineTo(canvas.width, bannerH_px);
-        ctx.stroke();
-      }
-
-      // Logo
-      const logoImg = isDark ? cachedLogoWhiteImg : cachedLogoBlackImg;
-      const logoW_mm = stylerActiveTab === 'p1' ? pdfConfig.logoW_p1 : pdfConfig.logoW_sub;
-      const logoH_mm = logoW_mm / 10.1587;
-      const logoX_mm = stylerActiveTab === 'p1' ? pdfConfig.logoX_p1 : pdfConfig.logoX_sub;
-      const logoY_mm = stylerActiveTab === 'p1' ? pdfConfig.logoY_p1 : pdfConfig.logoY_sub;
-
-      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-        ctx.drawImage(logoImg, logoX_mm * scale, logoY_mm * scale, logoW_mm * scale, logoH_mm * scale);
-      }
-
-      // Tiêu đề & Thông tin
-      const isHeaderDark = isColorDark(pdfConfig.headerTextColor || '#ffffff');
-      const textFill = (!isDark && !isHeaderDark) ? '#1a1916' : (pdfConfig.headerTextColor || '#ffffff');
-      ctx.fillStyle = textFill;
       if (stylerActiveTab === 'p1') {
-        const titlePt = pdfConfig.titleFontSize || 16;
-        const fontPx = Math.round(titlePt * 0.3527 * scale * 1.05);
-        ctx.font = `bold ${fontPx}px Helvetica, Arial, sans-serif`;
+        // TRANG BÌA 1: Render mô phỏng 65mm đầu trang A4 (Header + Khung thông tin + Ô tick)
+        const H_mm = 65;
+        canvas.height = Math.round(H_mm * scale);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Nền giấy trắng A4
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Dải màu Header
+        const bannerH_mm = pdfConfig.bannerH || 24;
+        const bannerH_px = Math.round(bannerH_mm * scale);
+        ctx.fillStyle = pdfConfig.themeColor || '#1a3a2a';
+        ctx.fillRect(0, 0, canvas.width, bannerH_px);
+
+        const isDark = isColorDark(pdfConfig.themeColor || '#1a3a2a');
+        if (!isDark) {
+          ctx.strokeStyle = '#d7dce1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, bannerH_px);
+          ctx.lineTo(canvas.width, bannerH_px);
+          ctx.stroke();
+        }
+
+        // Logo Trang 1
+        const logoImg = isDark ? cachedLogoWhiteImg : cachedLogoBlackImg;
+        const logoW_mm = pdfConfig.logoW_p1 || 44;
+        const logoH_mm = logoW_mm / 10.1587;
+        const logoX_mm = pdfConfig.logoX_p1 || 14;
+        const logoY_mm = pdfConfig.logoY_p1 || 6.2;
+        if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+          ctx.drawImage(logoImg, logoX_mm * scale, logoY_mm * scale, logoW_mm * scale, logoH_mm * scale);
+        }
+
+        // Tiêu đề Trang 1 (căn giữa theo vertical middle đồng bộ 100% với jsPDF)
+        const isHeaderDark = isColorDark(pdfConfig.headerTextColor || '#ffffff');
+        const textFill = (!isDark && !isHeaderDark) ? '#1a1916' : (pdfConfig.headerTextColor || '#ffffff');
+        ctx.fillStyle = textFill;
+        const titlePt = parseFloat(pdfConfig.titleFontSize || 16);
+        const fontPx = Math.round(titlePt * (25.4 / 72) * scale);
+        ctx.font = `bold ${fontPx}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const displayTitle = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (pdfConfig.reportTitle || 'PP SAMPLE REVIEW REPORT');
         ctx.fillText(displayTitle, canvas.width / 2, (pdfConfig.titleY || 16) * scale);
+
+        // Render mô phỏng phần thông tin sản phẩm và ô tick bên dưới giống hệt PDF thực tế
+        const M_px = 14 * scale;
+        const py1 = (bannerH_mm + 6) * scale;
+        const hw = ((W_mm - 28) / 2 - 2) * scale;
+        const rowH = 9 * scale;
+
+        ctx.fillStyle = '#f8f6f2';
+        ctx.strokeStyle = '#e2dfd9';
+        ctx.lineWidth = 1;
+        ctx.fillRect(M_px, py1, hw, rowH);
+        ctx.strokeRect(M_px, py1, hw, rowH);
+        ctx.fillRect(M_px + hw + 4 * scale, py1, hw, rowH);
+        ctx.strokeRect(M_px + hw + 4 * scale, py1, hw, rowH);
+
+        const cellTextSize = Math.round(8.5 * (25.4 / 72) * scale);
+        ctx.font = `bold ${cellTextSize}px Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = '#645f5a';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Model No.:', M_px + 2 * scale, py1 + 5.9 * scale);
+        ctx.fillText('Description:', M_px + hw + 6 * scale, py1 + 5.9 * scale);
+
+        ctx.font = `normal ${cellTextSize}px Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = '#141414';
+        ctx.fillText(D.model || 'MD 2754', M_px + 24 * scale, py1 + 5.9 * scale);
+        ctx.fillText(D.desc || 'Side Table (Komo)', M_px + hw + 28 * scale, py1 + 5.9 * scale);
+
+        const py2 = py1 + 10 * scale;
+        ctx.fillStyle = '#f8f6f2';
+        ctx.fillRect(M_px, py2, hw, rowH);
+        ctx.strokeRect(M_px, py2, hw, rowH);
+        ctx.fillRect(M_px + hw + 4 * scale, py2, hw, rowH);
+        ctx.strokeRect(M_px + hw + 4 * scale, py2, hw, rowH);
+
+        ctx.font = `bold ${cellTextSize}px Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = '#645f5a';
+        ctx.fillText('Dimension:', M_px + 2 * scale, py2 + 5.9 * scale);
+        ctx.fillText('Date:', M_px + hw + 6 * scale, py2 + 5.9 * scale);
+
+        ctx.font = `normal ${cellTextSize}px Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = '#141414';
+        ctx.fillText(D.dim || '—', M_px + 24 * scale, py2 + 5.9 * scale);
+        ctx.fillText(D.date || '17-Sep-26', M_px + hw + 28 * scale, py2 + 5.9 * scale);
+
+        const py3 = py2 + 13 * scale;
+        ctx.font = `bold ${cellTextSize}px Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = '#504b46';
+        ctx.fillText('Stage:', M_px, py3);
+
+        const cbFill = isDark ? (pdfConfig.themeColor || '#1a3a2a') : '#1e1e1e';
+        const cbSize = 3 * scale;
+        let cx = M_px + 18 * scale;
+        const checks = [{ l: 'Frame', c: true }, { l: 'Foam', c: false }, { l: 'Upholstery', c: false }];
+        checks.forEach(item => {
+          const cbY = py3 - cbSize / 2;
+          if (item.c) {
+            ctx.fillStyle = cbFill;
+            ctx.fillRect(cx, cbY, cbSize, cbSize);
+            ctx.strokeStyle = isDark ? cbFill : '#1e1e1e';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx, cbY, cbSize, cbSize);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(cx + 0.65 * scale, cbY + 1.45 * scale);
+            ctx.lineTo(cx + 1.3 * scale, cbY + 2.05 * scale);
+            ctx.lineTo(cx + 2.45 * scale, cbY + 0.55 * scale);
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = '#b4afa9';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx, cbY, cbSize, cbSize);
+          }
+          ctx.font = `normal ${Math.round(8 * (25.4 / 72) * scale)}px Helvetica, Arial, sans-serif`;
+          ctx.fillStyle = '#282828';
+          ctx.fillText(item.l, cx + 4.5 * scale, py3);
+          cx += ctx.measureText(item.l).width + 11 * scale;
+        });
+
       } else {
+        // CÁC TRANG SAU (Page 2+)
+        const H_mm = 48;
+        canvas.height = Math.round(H_mm * scale);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const bannerH_px = Math.round(24 * scale);
+        ctx.fillStyle = pdfConfig.themeColor || '#1a3a2a';
+        ctx.fillRect(0, 0, canvas.width, bannerH_px);
+
+        const isDark = isColorDark(pdfConfig.themeColor || '#1a3a2a');
+        if (!isDark) {
+          ctx.strokeStyle = '#d7dce1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, bannerH_px);
+          ctx.lineTo(canvas.width, bannerH_px);
+          ctx.stroke();
+        }
+
+        // Logo Trang sau
+        const logoImg = isDark ? cachedLogoWhiteImg : cachedLogoBlackImg;
+        const logoW_mm = pdfConfig.logoW_sub || 36;
+        const logoH_mm = logoW_mm / 10.1587;
+        const logoX_mm = pdfConfig.logoX_sub || 14;
+        const logoY_mm = pdfConfig.logoY_sub || 4.2;
+        if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+          ctx.drawImage(logoImg, logoX_mm * scale, logoY_mm * scale, logoW_mm * scale, logoH_mm * scale);
+        }
+
+        // Tiêu đề & Thông tin trang sau
+        const isHeaderDark = isColorDark(pdfConfig.headerTextColor || '#ffffff');
+        const textFill = (!isDark && !isHeaderDark) ? '#1a1916' : (pdfConfig.headerTextColor || '#ffffff');
+        ctx.fillStyle = textFill;
+
         const titlePt = 14;
-        const fontPx = Math.round(titlePt * 0.3527 * scale * 1.05);
-        ctx.font = `bold ${fontPx}px Helvetica, Arial, sans-serif`;
+        const fontPx = Math.round(titlePt * (25.4 / 72) * scale);
+        ctx.font = `bold ${fontPx}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('PRODUCT PHOTOS', canvas.width / 2, 17 * scale);
 
-        // Metadata bên phải
-        ctx.font = `normal ${Math.round(7 * 0.3527 * scale * 1.05)}px Helvetica, Arial, sans-serif`;
+        // Top info bên phải với thông tin thực tế từ report
+        const topInfoText = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ') || 'Model | Description | Reviewer';
+        ctx.font = `normal ${Math.round(7 * (25.4 / 72) * scale)}px Helvetica, Arial, sans-serif`;
         ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
         ctx.globalAlpha = 0.75;
-        ctx.fillText('Model | Description | Reviewer', canvas.width - (14 * scale), 7 * scale);
+        ctx.fillText(topInfoText, canvas.width - (14 * scale), 7 * scale);
         ctx.globalAlpha = 1.0;
+
+        // Khung nội dung ảnh phía dưới
+        const M_px = 14 * scale;
+        const py = bannerH_px + 6 * scale;
+        const gw = ((W_mm - 28 - 6) / 2) * scale;
+        const gh = 14 * scale;
+        ctx.fillStyle = '#f8f9fa';
+        ctx.strokeStyle = '#e2e4e8';
+        ctx.lineWidth = 1;
+        ctx.fillRect(M_px, py, gw, gh);
+        ctx.strokeRect(M_px, py, gw, gh);
+        ctx.fillRect(M_px + gw + 6 * scale, py, gw, gh);
+        ctx.strokeRect(M_px + gw + 6 * scale, py, gw, gh);
+
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = `normal ${Math.round(7.5 * (25.4 / 72) * scale)}px Helvetica, Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Ảnh 1', M_px + gw / 2, py + gh / 2);
+        ctx.fillText('Ảnh 2', M_px + gw + 6 * scale + gw / 2, py + gh / 2);
       }
     }
 
@@ -2334,10 +2477,10 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
         if(topInfo) {
           setPdfTextOpacity(0.7);
-          doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 7, { align: 'right' });
+          doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 7, { align: 'right', baseline: 'middle' });
           setPdfTextOpacity(1);
         }
-        doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 17, { align: 'center' });
+        doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 17, { align: 'center', baseline: 'middle' });
         y = 32; doc.setTextColor(30, 30, 30);
       };
 
@@ -2456,7 +2599,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(cfg.titleFontSize || 16);
       const titleToPrint = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (cfg.reportTitle || 'PP SAMPLE REVIEW REPORT');
-      doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center' });
+      doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center', baseline: 'middle' });
       y = bannerH + 6;
 
       const infoRows = [
