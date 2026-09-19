@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
+  <!-- HEIC/HEIF to JPEG conversion for browsers without native HEIC support -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
@@ -554,7 +557,7 @@
 
   <!-- INPUTS -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-  <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/webp" style="display:none" onchange="handleFile(event)">
+  <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" style="display:none" onchange="handleFile(event)">
   
   <div class="toast" id="toast"></div>
 
@@ -720,6 +723,11 @@
       return /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name || '');
     }
 
+    function isHeicFile(file) {
+      return /\.(heic|heif)$/i.test(file && file.name ? file.name : '') ||
+        Boolean(file && /image\/hei[cf]/i.test(file.type || ''));
+    }
+
     function getDroppedImageFiles(dataTransfer) {
       const files = Array.from((dataTransfer && dataTransfer.files) || []);
       if (files.length) return files.filter(isImageFile);
@@ -728,6 +736,40 @@
         .filter(item => item.kind === 'file')
         .map(item => item.getAsFile())
         .filter(isImageFile);
+    }
+
+    async function readImageFileAsDataUrl(file) {
+      if (!file) return null;
+
+      let imageBlob = file;
+      if (isHeicFile(file)) {
+        if (typeof window.heic2any !== 'function') {
+          showToast('Không tải được bộ chuyển HEIC. Hãy kiểm tra kết nối mạng rồi thử lại.');
+          return null;
+        }
+        try {
+          const converted = await window.heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.9
+          });
+          imageBlob = Array.isArray(converted) ? converted[0] : converted;
+        } catch (error) {
+          console.error('HEIC conversion failed', error);
+          showToast('Không thể chuyển HEIC sang JPG. Hãy thử file HEIC khác.');
+          return null;
+        }
+      }
+
+      return await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target.result);
+        reader.onerror = () => {
+          showToast('Không thể đọc file ảnh này. Hãy dùng JPG, PNG hoặc HEIC hợp lệ.');
+          resolve(null);
+        };
+        reader.readAsDataURL(imageBlob);
+      });
     }
 
     function attachDropZone(element, target, isMulti = false) {
@@ -761,12 +803,11 @@
           handleMultipleDroppedFiles(files, target.key);
         } else {
           camTarget = target;
-          const reader = new FileReader();
-          reader.onload = ev => {
-            currentOriginalImg = ev.target.result;
-            initCropper(ev.target.result);
-          };
-          reader.readAsDataURL(files[0]);
+          readImageFileAsDataUrl(files[0]).then(dataUrl => {
+            if (!dataUrl) return;
+            currentOriginalImg = dataUrl;
+            initCropper(dataUrl);
+          });
         }
       }, false);
     }
@@ -776,11 +817,8 @@
       if (!D[key]) D[key] = [];
 
       for (const file of files) {
-        const dataUrl = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        });
+        const dataUrl = await readImageFileAsDataUrl(file);
+        if (!dataUrl) continue;
         const compressed = await resizeImage(dataUrl, 1280, 0.85);
         D[key].push({
           img: compressed,
@@ -815,13 +853,12 @@
     function handleFile(e) {
       const file = e.target.files[0];
       if (!file || !camTarget) return;
-      const reader = new FileReader();
-      reader.onload = ev => { 
-        currentOriginalImg = ev.target.result; 
-        initCropper(ev.target.result); 
-      };
-      reader.readAsDataURL(file);
       e.target.value = '';
+      readImageFileAsDataUrl(file).then(dataUrl => {
+        if (!dataUrl) return;
+        currentOriginalImg = dataUrl;
+        initCropper(dataUrl);
+      });
     }
 
     function editSlotPhoto(containerId, key, section) {
@@ -934,7 +971,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
           }
           image.removeAttribute('src');
           closeCamera();
-          showToast('Không thể đọc ảnh này. Hãy dùng JPG hoặc PNG; Safari có thể không hỗ trợ HEIC.');
+          showToast('Chrome không thể đọc ảnh này. Hãy dùng ảnh JPG hoặc PNG.');
         };
         image.src = imgSrc;
     }
