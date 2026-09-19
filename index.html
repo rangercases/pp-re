@@ -20,6 +20,7 @@
 
   <!-- HEIC/HEIF to JPEG conversion for browsers without native HEIC support -->
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif-wasm/libheif-bundle.js"></script>
 
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -738,6 +739,53 @@
         .filter(isImageFile);
     }
 
+    let libheifModulePromise = null;
+
+    async function getLibheifModule() {
+      if (!libheifModulePromise) {
+        if (typeof window.libheif !== 'function') {
+          throw new Error('Updated HEIF decoder is unavailable');
+        }
+        libheifModulePromise = window.libheif();
+      }
+      return await libheifModulePromise;
+    }
+
+    async function convertHeicWithLibheif(file) {
+      const libheif = await getLibheifModule();
+      if (!libheif || typeof libheif.HeifDecoder !== 'function') {
+        throw new Error('Updated HEIF decoder is unavailable');
+      }
+
+      const decoder = new libheif.HeifDecoder();
+      const images = decoder.decode(new Uint8Array(await file.arrayBuffer()));
+      if (!images || !images.length) {
+        throw new Error('Updated HEIF decoder found no image');
+      }
+
+      const image = images[0];
+      const width = image.get_width();
+      const height = image.get_height();
+      const imageData = new ImageData(width, height);
+      await new Promise((resolve, reject) => {
+        image.display(imageData, result => {
+          if (!result) {
+            reject(new Error('Updated HEIF decoder could not render image'));
+            return;
+          }
+          resolve();
+        });
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').putImageData(imageData, 0, 0);
+      return await new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not encode JPEG')), 'image/jpeg', 0.9);
+      });
+    }
+
     async function readImageFileAsDataUrl(file) {
       if (!file) return null;
 
@@ -773,11 +821,14 @@
             fileSize: file.size,
             converterLoaded: typeof window.heic2any === 'function'
           });
-          const reason = error && error.message === 'HEIC conversion timed out'
-            ? 'quá lâu'
-            : 'không thành công';
-          showToast(`Chuyển HEIC sang JPG ${reason}. Kiểm tra Console (F12) để xem chi tiết.`);
-          return null;
+          try {
+            showToast('Bộ chuyển cũ không đọc được ảnh, đang thử bộ chuyển mới...');
+            imageBlob = await convertHeicWithLibheif(file);
+          } catch (fallbackError) {
+            console.error('Updated HEIF conversion failed', fallbackError);
+            showToast('Ảnh HEIC này không được hỗ trợ. Hãy đổi sang JPG/PNG trên iPhone hoặc Windows rồi thử lại.');
+            return null;
+          }
         }
       }
 
