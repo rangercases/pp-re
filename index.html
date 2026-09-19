@@ -2381,6 +2381,25 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       saveTimeout = setTimeout(async () => { await dbPut(D); if (saveText) saveText.textContent = 'Saved'; updateTopbar(); }, 400);
     }
 
+    function flushAutosave() {
+      if (!currentId || !D) return;
+      const map = { 
+        fReportTitle: 'reportTitle', fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', 
+        dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes' 
+      };
+      Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
+      const elNumS = document.getElementById('fNumS'); if (elNumS) D.numS = elNumS.value;
+      const elNumR = document.getElementById('fNumR'); if (elNumR) D.numR = elNumR.value;
+      clearTimeout(saveTimeout);
+      dbPut(D);
+    }
+
+    window.addEventListener('beforeunload', flushAutosave);
+    window.addEventListener('pagehide', flushAutosave);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushAutosave();
+    });
+
     async function openReport(id) {
       try {
         currentId = id; 
