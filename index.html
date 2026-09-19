@@ -428,6 +428,10 @@
       <div class="sec-card">
         <div class="sec-head">Product Information</div>
         <div class="form-grid">
+          <div class="fcell" style="grid-column: span 2;">
+            <div class="flabel">Report Title / Tiêu đề báo cáo</div>
+            <input id="fReportTitle" placeholder="PP SAMPLE REVIEW REPORT" oninput="as()">
+          </div>
           <div class="fcell"><div class="flabel">Model No.</div><input id="fModel" placeholder="MD 2741" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Description</div><input id="fDesc" placeholder="Swivel Chair (Skylar)" oninput="as()"></div>
           <div class="fcell"><div class="flabel">Dimension (cm)</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()"></div>
@@ -629,6 +633,11 @@
           <div class="styler-section" id="section_p1_settings">
             <div class="styler-section-title">📄 Căn chỉnh Trang bìa (Page 1)</div>
             
+            <div class="styler-control" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 9px;">
+              <label style="font-weight: 600; color: #222;">Tên tiêu đề trang bìa:</label>
+              <input type="text" id="cfg_reportTitle" style="width: 100%; border: 1px solid #ccc; border-radius: 4px; padding: 5px 8px; font-size: 11.5px; font-weight: 600; color: #1a3a2a;" placeholder="PP SAMPLE REVIEW REPORT" oninput="onStylerTitleChange(this.value)">
+            </div>
+            
             <div class="styler-control">
               <label>Kích thước Logo:</label>
               <input type="range" id="cfg_logoW_p1" min="20" max="65" step="0.5" oninput="onStylerSliderChange('logoW_p1', this.value, ' mm')">
@@ -705,6 +714,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     // ═══════════════ PDF & HEADER VISUAL STYLER CONTROLLER ═══════════════
     const DEFAULT_PDF_CONFIG = {
+      reportTitle: 'PP SAMPLE REVIEW REPORT',
       themeColor: '#1a3a2a',
       headerTextColor: '#ffffff',
       bannerH: 24,
@@ -784,6 +794,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function populateStylerUI() {
       const c = pdfConfig;
+      setVal('cfg_reportTitle', c.reportTitle || 'PP SAMPLE REVIEW REPORT');
       setVal('cfg_themeColor', c.themeColor);
       setText('val_themeColor', c.themeColor);
       setVal('cfg_headerTextColor', c.headerTextColor);
@@ -819,6 +830,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const bs = document.getElementById('btnTabSub');
       if (b1) b1.classList.toggle('active', tab === 'p1');
       if (bs) bs.classList.toggle('active', tab === 'sub');
+      drawLiveHeaderPreview();
+    }
+
+    function onStylerTitleChange(val) {
+      pdfConfig.reportTitle = val;
       drawLiveHeaderPreview();
     }
 
@@ -883,7 +899,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         ctx.font = `bold ${fontPx}px Helvetica, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('PP SAMPLE REVIEW REPORT', canvas.width / 2, (pdfConfig.titleY || 16) * scale);
+        const displayTitle = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (pdfConfig.reportTitle || 'PP SAMPLE REVIEW REPORT');
+        ctx.fillText(displayTitle, canvas.width / 2, (pdfConfig.titleY || 16) * scale);
       } else {
         const titlePt = 14;
         const fontPx = Math.round(titlePt * 0.3527 * scale * 1.05);
@@ -1058,6 +1075,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     let selectedDimIndices = new Set();
 
     function getReportTitle(r) {
+      if (r.reportTitle && r.reportTitle.trim()) {
+        const parts = [r.model, r.desc].filter(Boolean);
+        return parts.length ? `${r.reportTitle.trim()} (${parts.join(' - ')})` : r.reportTitle.trim();
+      }
       const parts = [r.model, r.desc].filter(Boolean);
       return parts.length ? parts.join(' ') : 'Untitled Report';
     }
@@ -2095,8 +2116,8 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
     function loadData() {
       try {
-        const fields = ['fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
-        const keys = ['model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
+        const fields = ['fReportTitle', 'fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
+        const keys = ['reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
         fields.forEach((id, i) => {
           const el = document.getElementById(id);
           if (el) {
@@ -2184,7 +2205,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       if (!currentId) return;
       const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
       const map = { 
-        fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', 
+        fReportTitle: 'reportTitle', fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer', 
         dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes' 
       };
       Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
@@ -2400,7 +2421,8 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       doc.setTextColor(...headerFooterTextRgb);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(cfg.titleFontSize || 16);
-      doc.text('PP SAMPLE REVIEW REPORT', W / 2, cfg.titleY || 16, { align: 'center' });
+      const titleToPrint = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (cfg.reportTitle || 'PP SAMPLE REVIEW REPORT');
+      doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center' });
       y = bannerH + 6;
 
       const infoRows = [
