@@ -13,6 +13,7 @@
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="font_roboto.js"></script>
   
   <!-- Cropper.js Library -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
@@ -325,7 +326,7 @@
 
     /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
-    .photo-slot { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; }
+    .photo-slot { background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; }
     .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
     
     .dual-tap-box { width: 100%; height: 100%; display: flex; }
@@ -337,7 +338,7 @@
     .tap-option span { font-size: 9.5px; color: var(--muted); font-weight: 500; }
     .tap-option:hover span { color: var(--text); }
 
-    .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid var(--border-light); background: #ffffff; text-transform: uppercase; padding: 0 4px; }
+    .photo-slot .pbar { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--muted); border-top: 1px solid rgba(0,0,0,0.04); background: #ffffff; text-transform: uppercase; padding: 0 4px; }
     .photo-slot .pbar input {
       width: 100%; border: none; background: transparent; font-size: 9.5px; font-weight: 700;
       color: var(--text); text-align: center; text-transform: uppercase; outline: none;
@@ -379,7 +380,7 @@
 
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
+    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block; }
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
@@ -395,13 +396,13 @@
     /* ═══════════════ DIMENSIONS (2 CỘT & CỤM ẢNH KÉP 3:1) ═══════════════ */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
     .dim-slot { 
-      background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; 
+      background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; 
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .dim-slot.dim-selecting { cursor: pointer; border-color: #c7d2fe; }
+    .dim-slot.dim-selecting { cursor: pointer; border: 1.5px solid #c7d2fe !important; }
     .dim-slot.dim-selecting * { pointer-events: none !important; }
     .dim-slot.dim-selected { 
-      border-color: #007aff !important; background: #f0f7ff !important; 
+      border: 1.5px solid #007aff !important; background: #f0f7ff !important; 
       box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.25);
     }
     
@@ -417,7 +418,7 @@
     /* Topbar điều khiển và drag handle cho từng ô dimension */
     .dim-slot-topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 8px; background: #f8faf9; border-bottom: 1px solid var(--border-light);
+      padding: 5px 8px; background: #f8faf9; border-bottom: 1px solid rgba(0,0,0,0.04);
       font-size: 10.5px; user-select: none;
       cursor: grab;
       touch-action: none;
@@ -465,21 +466,20 @@
     }
     .dim-close-sub-btn:hover { background: #ffeded; color: #d32f2f; border-color: #ffcdd2; }
 
-    /* QUALITY WATCH OUT MULTI-PHOTO SLOTS */
-    .watchout-slot {
-      background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px;
+    /* QUALITY WATCH OUT & TESTING MULTI-PHOTO SLOTS */
+    .watchout-slot, .testing-slot {
+      background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px;
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .watchout-slot.sortable-ghost, .dim-slot.sortable-ghost {
+    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost {
       opacity: 0.3 !important;
       transform: scale(0.96);
       background: #e8f5ec !important;
       border: 2px dashed #2d5a3d !important;
     }
-    .watchout-slot.sortable-chosen, .dim-slot.sortable-chosen {
+    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen {
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
       transform: scale(1.02);
-      border-color: var(--accent) !important;
       z-index: 40;
     }
     .sortable-swap-highlight {
@@ -489,34 +489,34 @@
       transform: scale(1.02);
       transition: all 0.15s ease !important;
     }
-    .watchout-caption-box {
-      padding: 7px 9px; background: #ffffff; border-top: 1px solid var(--border-light);
+    .watchout-caption-box, .testing-caption-box {
+      padding: 7px 9px; background: #ffffff; border-top: 1px solid rgba(0,0,0,0.04);
       cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
     }
-    .watchout-caption-input {
+    .watchout-caption-input, .testing-caption-input {
       width: 100%; border: none; background: transparent; font-size: 11px;
       color: var(--text); outline: none; font-family: inherit; font-weight: 500;
       cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
     }
-    .watchout-caption-input:focus {
+    .watchout-caption-input:focus, .testing-caption-input:focus {
       background: #f4f8f5; border-radius: 4px; padding: 2px 4px;
     }
 
     /* Container ảnh kích thước: Khóa cố định chiều cao 16:9 để đồng bộ tuyệt đối mọi ô */
     .dim-photo-container {
-      display: flex; width: 100%; aspect-ratio: 16 / 9; border-bottom: 1px solid var(--border);
+      display: flex; width: 100%; aspect-ratio: 16 / 9; border-bottom: 1px solid rgba(0,0,0,0.04);
       background: #ffffff; position: relative; overflow: hidden;
     }
     /* Mode 3:1 (Mặc định: Ảnh chính 75% chuẩn 4:3, Ảnh phụ 25% chuẩn 4:9) */
     .dim-photo-container[data-layout="3:1"] .dim-main-photo {
-      flex: 3; height: 100%; position: relative; border-right: 1px solid var(--border); background: #ffffff;
+      flex: 3; height: 100%; position: relative; border-right: 1px solid rgba(0,0,0,0.04); background: #ffffff;
     }
     .dim-photo-container[data-layout="3:1"] .dim-sub-photo {
       flex: 1; height: 100%; position: relative; background: #ffffff; display: block;
     }
     /* Mode 1:1 (Hai ảnh bằng nhau 50% - 50%, chiều cao cố định không đổi) */
     .dim-photo-container[data-layout="1:1"] .dim-main-photo {
-      flex: 1; height: 100%; position: relative; border-right: 1px solid var(--border); background: #ffffff;
+      flex: 1; height: 100%; position: relative; border-right: 1px solid rgba(0,0,0,0.04); background: #ffffff;
     }
     .dim-photo-container[data-layout="1:1"] .dim-sub-photo {
       flex: 1; height: 100%; position: relative; background: #ffffff; display: block;
@@ -1870,8 +1870,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } else if (target.type === 'dim') {
           el = document.getElementById(`dph_${target.subType}_${target.index}`);
         } else if (target.type === 'free') {
-          if (target.key === 'watchoutPhotos' && target.subType) {
-            el = document.getElementById(`wph_${target.subType}_${target.index}`);
+          if ((target.key === 'watchoutPhotos' || target.key === 'testingPhotos') && target.subType) {
+            const prefix = target.key === 'watchoutPhotos' ? 'wph_' : 'tph_';
+            el = document.getElementById(`${prefix}${target.subType}_${target.index}`);
           }
           if (!el) {
             const container = document.getElementById(target.key);
@@ -1879,7 +1880,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               if (target.index !== undefined && container.children[target.index]) {
                 el = container.children[target.index];
               } else {
-                const items = container.querySelectorAll('.free-photo-item, .watchout-slot');
+                const items = container.querySelectorAll('.free-photo-item, .watchout-slot, .testing-slot');
                 if (items.length) el = items[items.length - 1];
               }
             }
@@ -1923,7 +1924,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         if (D.watchoutPhotos && D.watchoutPhotos.length > 0) {
           for (let i = 0; i < D.watchoutPhotos.length; i++) {
             const p = D.watchoutPhotos[i];
-            const layout = (p && p.photoLayout) || '3:1';
+            const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
             if (!p || !p.img) {
               const el = document.getElementById(`wph_main_${i}`);
               return { target: { type: 'free', key: 'watchoutPhotos', index: i, subType: 'main' }, element: el };
@@ -1931,6 +1932,23 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             if (layout !== 'single' && !p.imgSub) {
               const el = document.getElementById(`wph_sub_${i}`);
               return { target: { type: 'free', key: 'watchoutPhotos', index: i, subType: 'sub' }, element: el };
+            }
+          }
+        }
+      }
+
+      if (curSec === 5) {
+        if (D.testingPhotos && D.testingPhotos.length > 0) {
+          for (let i = 0; i < D.testingPhotos.length; i++) {
+            const p = D.testingPhotos[i];
+            const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
+            if (!p || !p.img) {
+              const el = document.getElementById(`tph_main_${i}`);
+              return { target: { type: 'free', key: 'testingPhotos', index: i, subType: 'main' }, element: el };
+            }
+            if (layout !== 'single' && !p.imgSub) {
+              const el = document.getElementById(`tph_sub_${i}`);
+              return { target: { type: 'free', key: 'testingPhotos', index: i, subType: 'sub' }, element: el };
             }
           }
         }
@@ -2362,6 +2380,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - KÍCH THƯỚC' : 'ẢNH CHÍNH (TOÀN CẢNH) - KÍCH THƯỚC';
         } else if (camTarget.type === 'free' && camTarget.key === 'watchoutPhotos') {
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - QUALITY WATCH OUT' : 'ẢNH CHÍNH (TOÀN CẢNH) - QUALITY WATCH OUT';
+        } else if (camTarget.type === 'free' && camTarget.key === 'testingPhotos') {
+          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - TESTING' : 'ẢNH CHÍNH (TOÀN CẢNH) - TESTING';
         } else if (camTarget.type === 'slot') {
           const customName = D.coverTitles && D.coverTitles[camTarget.key];
           title = customName || camTarget.key.replace(/_/g, ' ');
@@ -2375,10 +2395,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         let defaultRatio = 1;
         let defaultRatioBtn = document.getElementById('ratio_1_1');
 
-        if (camTarget.type === 'dim' || (camTarget.type === 'free' && camTarget.key === 'watchoutPhotos')) {
+        if (camTarget.type === 'dim' || (camTarget.type === 'free' && (camTarget.key === 'watchoutPhotos' || camTarget.key === 'testingPhotos'))) {
           const item = camTarget.type === 'dim'
             ? (D.dimensions && D.dimensions[camTarget.index])
-            : (D.watchoutPhotos && D.watchoutPhotos[camTarget.index]);
+            : (D[camTarget.key] && D[camTarget.key][camTarget.index]);
           const layout = (item && item.photoLayout) || '3:1';
           if (layout === '1:1') {
             defaultRatio = 4 / 3;
@@ -2489,9 +2509,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const payload = { img: imgData, original: originalData };
         if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
       } else if (t.type === 'free') {
+        const isMulti = t.key === 'watchoutPhotos' || t.key === 'testingPhotos';
         if (t.index !== undefined) {
            if (!D[t.key]) D[t.key] = [];
-           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: t.key === 'watchoutPhotos' ? 'single' : undefined }; 
+           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: isMulti ? 'single' : undefined }; 
            if (t.subType === 'sub') {
              D[t.key][t.index].imgSub = imgData;
              D[t.key][t.index].originalSub = originalData;
@@ -2501,7 +2522,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
            }
         } else {
            if (!D[t.key]) D[t.key] = []; 
-           D[t.key].push({ img: imgData, original: originalData, caption: '', photoLayout: t.key === 'watchoutPhotos' ? 'single' : undefined }); 
+           D[t.key].push({ img: imgData, original: originalData, caption: '', photoLayout: isMulti ? 'single' : undefined }); 
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
@@ -3141,6 +3162,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         renderWatchoutPhotos();
         return;
       }
+      if (key === 'testingPhotos') {
+        renderTestingPhotos();
+        return;
+      }
 
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
@@ -3435,6 +3460,218 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       renderWatchoutPhotos();
     }
 
+    function renderTestingPhotos() {
+      const el = document.getElementById('testingPhotos'); if (!el) return; el.innerHTML = '';
+      const arr = D.testingPhotos || [];
+
+      arr.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'testing-slot watchout-slot';
+        div.dataset.index = String(i);
+
+        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
+        const targetMain = `{type:'free',key:'testingPhotos',index:${i},subType:'main'}`;
+        const targetSub = `{type:'free',key:'testingPhotos',index:${i},subType:'sub'}`;
+
+        const displayImg = p && p.img ? p.img : null;
+        const displayImgSub = p && p.imgSub ? p.imgSub : null;
+
+        div.innerHTML = `
+        <!-- THANH TOPBAR VỚI DRAG-HANDLE VÀ CHỌN BỐ CỤC ẢNH (3:1, 1:1, 1 ẢNH) -->
+        <div class="dim-slot-topbar" title="Kéo thả thanh này để hoán đổi vị trí">
+          <span class="dim-drag-handle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            #${i + 1}
+            <span class="dim-drag-hint">(Kéo đổi chỗ)</span>
+          </span>
+          <div style="display:inline-flex; align-items:center; gap:6px;">
+            <div class="dim-layout-pills ignore-drag">
+              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Bố cục 3:1 (Ảnh chính 75% + Phụ 25%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
+                3:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Bố cục 1:1 (2 ảnh bằng nhau 50% - 50%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
+                1:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, 'single');event.stopPropagation()" title="Bố cục 1 ảnh to (100% - Xóa/ẩn ô phụ)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
+                1 ảnh
+              </button>
+            </div>
+            <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Testing này" onclick="delFreeSlot('testingPhotos', ${i});event.stopPropagation()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
+        <div class="dim-photo-container" data-layout="${layout}">
+          <!-- ẢNH CHÍNH -->
+          <div class="dim-main-photo" id="tph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            ${displayImg ? `<img src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions" style="right: 4px;">
+              <button class="pact edit" title="Chỉnh sửa" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact paste" title="Dán đè ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
+              <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+              <button class="pact gal" title="Chọn từ Album" onclick="triggerPickLibrary(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+              <button class="pact del" title="Xóa" onclick="delTestingPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Chụp</span>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Album</span>
+              </div>
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                <span>Dán</span>
+              </div>
+            </div>`}
+          </div>
+
+          <!-- ẢNH PHỤ CHI TIẾT (ẨN KHI Ở CHẾ ĐỘ SINGLE) -->
+          ${layout !== 'single' ? `
+          <div class="dim-sub-photo" id="tph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            <button type="button" class="dim-close-sub-btn ignore-drag" onclick="removeTestingSubPhoto(${i});event.stopPropagation()" title="Đóng ô ảnh phụ (quay lại 1 ảnh)">✕</button>
+            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions" style="right: 4px;">
+              <button class="pact edit" title="Chỉnh sửa" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact paste" title="Dán đè ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
+              <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+              <button class="pact gal" title="Chọn từ Album" onclick="triggerPickLibrary(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+              <button class="pact del" title="Xóa" onclick="delTestingPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box" style="flex-direction: column;">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetSub})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Chụp</span>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetSub})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Album</span>
+              </div>
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetSub})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                <span>Dán</span>
+              </div>
+            </div>`}
+          </div>` : ''}
+        </div>
+
+        <!-- Ô NHẬP CHÚ THÍCH (CAPTION) KHÔNG BỊ SORTABLEJS KÉO THẺ -->
+        <div class="watchout-caption-box ignore-drag">
+          <input type="text" class="watchout-caption-input ignore-drag" value="${p ? (p.caption || '') : ''}" placeholder="Nhập chú thích thử nghiệm (VD: Concentrated load 91kg - PASS)..." oninput="updateCaption('testingPhotos', ${i}, this.value)">
+        </div>`;
+
+        el.appendChild(div);
+
+        const mainPhotoEl = div.querySelector(`#tph_main_${i}`);
+        const subPhotoEl = div.querySelector(`#tph_sub_${i}`);
+        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'testingPhotos', index: i, subType: 'main' });
+        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'testingPhotos', index: i, subType: 'sub' });
+      });
+
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-photo-btn ignore-drag';
+      addBtn.title = 'Bấm để thêm ô Testing Photo, kéo thả hoặc nhấn Ctrl+V để dán ảnh';
+      addBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:2px;">THÊM ẢNH THỬ NGHIỆM</span><span style="font-size:9px; color:var(--muted); font-weight:normal;">Kéo thả hoặc Ctrl+V để dán</span>`;
+      addBtn.onclick = () => {
+        pushHistory('Thêm ô Testing Photo');
+        if (!D.testingPhotos) D.testingPhotos = [];
+        D.testingPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
+        as();
+        renderTestingPhotos();
+      };
+      attachDropZone(addBtn, { type: 'free', key: 'testingPhotos' }, true);
+      el.appendChild(addBtn);
+
+      if (typeof Sortable !== 'undefined') {
+        if (el._sortable) el._sortable.destroy();
+        el._sortable = new Sortable(el, {
+          animation: 180,
+          delay: 200,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 5,
+          draggable: '.testing-slot',
+          handle: '.dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+          preventOnFilter: false,
+          swap: true,
+          swapClass: 'sortable-swap-highlight',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-chosen',
+          onEnd: function (evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
+            if (evt.oldIndex === evt.newIndex) return;
+            if (!D.testingPhotos || !D.testingPhotos.length) return;
+            const total = D.testingPhotos.length;
+            let from = evt.oldIndex;
+            let to = evt.newIndex;
+            if (from >= total) from = total - 1;
+            if (to >= total) to = total - 1;
+            if (from === to) {
+              renderTestingPhotos();
+              return;
+            }
+            pushHistory('Hoán đổi vị trí Testing Photo');
+            const temp = D.testingPhotos[from];
+            D.testingPhotos[from] = D.testingPhotos[to];
+            D.testingPhotos[to] = temp;
+            as();
+            renderTestingPhotos();
+          }
+        });
+      }
+    }
+
+    function setTestingPhotoLayout(index, layout) {
+      if (!D.testingPhotos) D.testingPhotos = [];
+      if (!D.testingPhotos[index]) D.testingPhotos[index] = { caption: '' };
+      pushHistory('Đổi bố cục ảnh Testing');
+      D.testingPhotos[index].photoLayout = layout;
+      as();
+      renderTestingPhotos();
+    }
+
+    function removeTestingSubPhoto(index) {
+      if (!D.testingPhotos || !D.testingPhotos[index]) return;
+      if (D.testingPhotos[index].imgSub) {
+        if (!confirm('Bạn có muốn xóa ô ảnh phụ và chuyển sang bố cục 1 ảnh không? (Ảnh phụ sẽ được ẩn đi)')) return;
+      }
+      setTestingPhotoLayout(index, 'single');
+    }
+
+    function editTestingPhoto(index, subType = 'main') {
+      const p = D.testingPhotos && D.testingPhotos[index];
+      if (!p) return;
+      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
+      if (!imgSrc) return;
+      currentOriginalImg = imgSrc;
+      camTarget = { type: 'free', key: 'testingPhotos', index, subType };
+      initCropper(imgSrc);
+    }
+
+    function delTestingPhoto(index, subType = 'main') {
+      if (!confirm('Xóa ảnh này?')) return;
+      pushHistory(subType === 'sub' ? 'Xóa ảnh phụ Testing' : 'Xóa ảnh chính Testing');
+      if (D.testingPhotos && D.testingPhotos[index]) {
+        if (subType === 'sub') {
+          D.testingPhotos[index].imgSub = null;
+          D.testingPhotos[index].originalSub = null;
+        } else {
+          D.testingPhotos[index].img = null;
+          D.testingPhotos[index].original = null;
+        }
+      }
+      as();
+      renderTestingPhotos();
+    }
+
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
     function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; pushHistory('Xóa ảnh'); D[key][i] = null; renderFreePhotos(key); as(); }
     function delFreeSlot(key, i) { pushHistory('Xóa ô ảnh'); D[key].splice(i, 1); renderFreePhotos(key); as(); }
@@ -3655,6 +3892,22 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
 
+      let fontFam = 'helvetica';
+      if (typeof FONT_ROBOTO !== 'undefined' && FONT_ROBOTO) {
+        try {
+          doc.addFileToVFS('Roboto-Regular.ttf', FONT_ROBOTO);
+          doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+          if (typeof FONT_ROBOTO_BOLD !== 'undefined' && FONT_ROBOTO_BOLD) {
+            doc.addFileToVFS('Roboto-Bold.ttf', FONT_ROBOTO_BOLD);
+            doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+          }
+          fontFam = 'Roboto';
+          doc.setFont('Roboto', 'normal');
+        } catch (e) {
+          console.warn('Could not load Roboto into jsPDF:', e);
+        }
+      }
+
       const cfg = pdfConfig || DEFAULT_PDF_CONFIG;
       const themeRgb = hexToRgbArr(cfg.themeColor);
       const isDarkTheme = isColorDark(cfg.themeColor);
@@ -3684,26 +3937,26 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         try {
           doc.addImage(pdfLogo, 'PNG', logoX_sub, logoY_sub, logoW_sub, logoH_sub);
         } catch (e) {
-          doc.setTextColor(...companyTextRgb); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 7);
+          doc.setTextColor(...companyTextRgb); doc.setFontSize(8); doc.setFont(fontFam, 'bold'); doc.text('SOFACOMPANY', M, 7);
         }
         doc.setTextColor(...headerFooterTextRgb);
         const topInfo = [D.model, D.desc, D.reviewer ? 'Reviewer: ' + D.reviewer : ''].filter(Boolean).join('  |  ');
         if(topInfo) {
           setPdfTextOpacity(0.7);
-          doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text(topInfo, W - M, 7, { align: 'right', baseline: 'middle' });
+          doc.setFontSize(7); doc.setFont(fontFam, 'normal'); doc.text(topInfo, W - M, 7, { align: 'right', baseline: 'middle' });
           setPdfTextOpacity(1);
         }
-        doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text(title.toUpperCase(), W / 2, 17, { align: 'center', baseline: 'middle' });
+        doc.setFontSize(14); doc.setFont(fontFam, 'bold'); doc.text(title.toUpperCase(), W / 2, 17, { align: 'center', baseline: 'middle' });
         y = 32; doc.setTextColor(30, 30, 30);
       };
 
       const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
         if (!text || !text.trim()) return curY; 
         let ty = curY;
-        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5.5; }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40);
+        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5.5; }
+        doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40);
         const lines = doc.splitTextToSize(text, maxW);
-        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title || 'Notes'); ty = y; doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.8; }
+        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title || 'Notes'); ty = y; doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.8; }
         return ty + 4;
       };
 
@@ -3778,17 +4031,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             }
 
             if (itemSubW > 0) {
-              // Khung viền tổng
-              doc.setDrawColor(220, 217, 210);
-              doc.rect(px, py, gw, gh, 'S');
-
               // Vùng ảnh chính
               if (p.img) {
                 addImg(p.img, px, py, itemMainW, gh);
               } else {
                 doc.setFillColor(248, 245, 240);
                 doc.rect(px, py, itemMainW, gh, 'F');
-                doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
                 doc.text('Main View', px + itemMainW / 2, py + gh / 2, { align: 'center' });
               }
 
@@ -3798,30 +4047,24 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               } else {
                 doc.setFillColor(244, 242, 238);
                 doc.rect(px + itemMainW, py, itemSubW, gh, 'F');
-                doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
                 doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
               }
-
-              // Đường phân cách giữa 2 ảnh
-              doc.setDrawColor(220, 217, 210);
-              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
             } else {
               // Chế độ 1 ảnh
               if (p.img) {
                 addImg(p.img, px, py, gw, gh);
               } else {
-                doc.setDrawColor(220, 217, 210);
-                doc.rect(px, py, gw, gh, 'S');
                 doc.setFillColor(248, 245, 240);
                 doc.rect(px, py, gw, gh, 'F');
-                doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
                 doc.text('Photo View', px + gw / 2, py + gh / 2, { align: 'center' });
               }
             }
 
             // Chú thích ảnh (Caption)
             if (p.caption && p.caption.trim()) {
-              doc.setFont('helvetica', 'normal');
+              doc.setFont(fontFam, 'normal');
               doc.setFontSize(7.5);
               doc.setTextColor(70, 65, 60);
               doc.text(p.caption.trim(), px + gw / 2, py + gh + 3.8, { align: 'center', maxWidth: gw - 2 });
@@ -3856,10 +4099,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       try {
         doc.addImage(pdfLogo, 'PNG', logoX_p1, logoY_p1, logoW_p1, logoH_p1);
       } catch (e) {
-        doc.setTextColor(...companyTextRgb); doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('SOFACOMPANY', M, 9);
+        doc.setTextColor(...companyTextRgb); doc.setFontSize(9); doc.setFont(fontFam, 'bold'); doc.text('SOFACOMPANY', M, 9);
       }
       doc.setTextColor(...headerFooterTextRgb);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fontFam, 'bold');
       doc.setFontSize(cfg.titleFontSize || 16);
       const titleToPrint = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (cfg.reportTitle || 'PP SAMPLE REVIEW REPORT');
       doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center', baseline: 'middle' });
@@ -3875,12 +4118,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       for (let i = 0; i < infoRows.length; i += 2) {
         const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
         doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 9, 'FD'); doc.rect(M + hw + 4, y, hw, 9, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9); doc.text(l2 + ':', M + hw + 6, y + 5.9);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9); y += 10;
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9); doc.text(l2 + ':', M + hw + 6, y + 5.9);
+        doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9); y += 10;
       } y += 4;
 
       const chkLine = (label, group) => {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
         const checkFillRgb = isDarkTheme ? themeRgb : [30, 30, 30];
         const checkBorderRgb = isDarkTheme ? themeRgb : [30, 30, 30];
         CHECK_OPTS[group].forEach(k => {
@@ -3898,12 +4141,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             doc.setLineWidth(0.2);
             doc.rect(cx, y + 1, 3, 3, 'S');
           }
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
+          doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 8;
       };
       ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
 
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
+      doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
       const cp = D.coverPhotos || {}; 
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
       
@@ -3926,9 +4169,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         const slotTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : COVER_SLOTS[i];
         
-        doc.setDrawColor(210, 205, 195); 
-        doc.rect(px, py, pw, ph + barH, 'S');
-        
+        // Bỏ viền hộp ngoài
         if (img) { 
           addImg(img, px, py, pw, ph); 
         } else { 
@@ -3936,13 +4177,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           doc.rect(px, py, pw, ph, 'F'); 
           doc.setTextColor(170, 165, 158); 
           doc.setFontSize(8); 
+          doc.setFont(fontFam, 'normal');
           doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); 
         }
         
         doc.setFillColor(245, 242, 237); 
         doc.rect(px, py + ph, pw, barH, 'F'); 
         doc.setTextColor(80, 75, 70); 
-        doc.setFont('helvetica', 'bold'); 
+        doc.setFont(fontFam, 'bold'); 
         doc.setFontSize(7.5); 
         doc.text(slotTitle.toUpperCase(), px + pw / 2, py + ph + (barH / 2) + 1, { align: 'center' });
       });
@@ -3964,7 +4206,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             { color: [210, 138, 20], label: 'Update Drawing' }
           ];
 
-          doc.setFont('helvetica', 'normal');
+          doc.setFont(fontFam, 'normal');
           doc.setFontSize(8);
           doc.setTextColor(80, 75, 70);
 
@@ -4010,10 +4252,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           
           const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
           const displayImgSub = d.imgSub ? (typeof d.imgSub === 'string' ? d.imgSub : d.imgSub) : null;
-          
-          // Viền khung tổng
-          doc.setDrawColor(220, 217, 210); 
-          doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
+
+          // Bỏ viền khung tổng và đường kẻ ngăn cách
 
           // Vùng ẢNH CHÍNH
           if (displayImg) { 
@@ -4021,7 +4261,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           } else { 
             doc.setFillColor(248, 245, 240); 
             doc.rect(dx, dy, itemMainW, dimImgH, 'F'); 
-            doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
             doc.text('Main View', dx + itemMainW / 2, dy + dimImgH / 2, { align: 'center' });
           }
 
@@ -4032,29 +4272,21 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             } else { 
               doc.setFillColor(244, 242, 238); 
               doc.rect(dx + itemMainW, dy, itemSubW, dimImgH, 'F'); 
-              doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+              doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
               doc.text(layout === '1:1' ? 'Side View' : 'Detail', dx + itemMainW + itemSubW / 2, dy + dimImgH / 2, { align: 'center' });
             }
-
-            // Đường phân cách giữa 2 ảnh
-            doc.setDrawColor(220, 217, 210);
-            doc.line(dx + itemMainW, dy, dx + itemMainW, dy + dimImgH);
           }
-
-          // Đường kẻ ngang ngăn cách ảnh và vùng text
-          doc.setDrawColor(220, 217, 210);
-          doc.line(dx, dy + dimImgH, dx + dimSlotW, dy + dimImgH);
           
           // KHỐI DỮ LIỆU ĐÁY
           const fy = dy + dimImgH + 2; 
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
+          doc.setFont(fontFam, 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
           doc.text(d.name || 'DIMENSION', dx + 3, fy + 3);
           
           const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; 
           doc.setFillColor(...color); 
           doc.circle(dx + dimSlotW - 5, fy + 2, 2, 'F');
           
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
+          doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
           doc.text(`Actual: ${formatDimensionMeasurement(d, 'actual')}`, dx + 3, fy + 9); 
           doc.text(`Drawing: ${formatDimensionMeasurement(d, 'drawing')}`, dx + 3, fy + 14);
           
@@ -4080,35 +4312,103 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       // ================= 6. TESTING =================
       const validBV = (D.bvRows || []).filter(r => r.result || r.remark);
-      const validTestingPhotos = (D.testingPhotos || []).filter(p => p && p.img);
+      const validTestingPhotos = (D.testingPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
         if(validBV.length > 0) {
-            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 8, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
+            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 8, 'F'); doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
             doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
             validBV.forEach(row => {
-              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
+              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
               const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
               if (y + rowH > BOTTOM_LIMIT) { addHeader('Testing'); }
-              doc.text(lines, M + 2, y + 4); doc.setFont('helvetica', 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
+              doc.text(lines, M + 2, y + 4); doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont(fontFam, 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
             }); y += 6;
         }
 
         if (validTestingPhotos.length > 0) {
           if(y + 30 > BOTTOM_LIMIT) addHeader('Testing Photos');
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
-          const gwT = (W - M * 2 - 4) / 2; const ghT = gwT; 
+          doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
+          
+          const cols = 2;
+          const rowsPerPage = 3;
+          const photosPerPage = cols * rowsPerPage;
+          const gapX = 6;
+          const gapY = 8.5;
+          const gw = (W - M * 2 - gapX) / cols; // 88mm
+          const gh = 67; // Tỷ lệ chuẩn ~4:3 không méo và không letterboxing vuông
+          const rowHeight = gh + gapY;
+          const startY = y;
+
           validTestingPhotos.forEach((p, i) => {
-            const col = i % 2;
-            if(col === 0 && i > 0) y += ghT + 10;
-            if (y + ghT > BOTTOM_LIMIT) { addHeader('Testing Photos'); }
-            const px = M + col * (gwT + 4);
-            doc.setDrawColor(210, 205, 195); doc.rect(px, y, gwT, ghT, 'S');
-            addImg(p.img, px, y, gwT, ghT);
-            if (p.caption) { doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(80, 75, 70); doc.text(p.caption, px + gwT / 2, y + ghT + 4, { align: 'center', maxWidth: gwT }); }
-          }); y += Math.ceil(validTestingPhotos.length / 2) * (gwT + 10) + 4;
+            const pageSlot = i % photosPerPage;
+            if (i > 0 && pageSlot === 0) {
+              addHeader('Testing Photos');
+              doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6;
+            }
+
+            const col = pageSlot % cols;
+            const row = Math.floor(pageSlot / cols);
+            const px = M + col * (gw + gapX);
+            const py = startY + row * rowHeight;
+
+            const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
+            let itemMainW = gw;
+            let itemSubW = 0;
+            if (layout === '1:1') {
+              itemMainW = gw / 2;
+              itemSubW = gw / 2;
+            } else if (layout === '3:1') {
+              itemMainW = gw * 0.75;
+              itemSubW = gw * 0.25;
+            }
+
+            if (itemSubW > 0) {
+              // Vùng ảnh chính
+              if (p.img) {
+                addImg(p.img, px, py, itemMainW, gh);
+              } else {
+                doc.setFillColor(248, 245, 240);
+                doc.rect(px, py, itemMainW, gh, 'F');
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.text('Main View', px + itemMainW / 2, py + gh / 2, { align: 'center' });
+              }
+
+              // Vùng ảnh phụ
+              if (p.imgSub) {
+                addImg(p.imgSub, px + itemMainW, py, itemSubW, gh);
+              } else {
+                doc.setFillColor(244, 242, 238);
+                doc.rect(px + itemMainW, py, itemSubW, gh, 'F');
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+                doc.text(layout === '1:1' ? 'Detail 2' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
+              }
+            } else {
+              // Chế độ 1 ảnh
+              if (p.img) {
+                addImg(p.img, px, py, gw, gh);
+              } else {
+                doc.setFillColor(248, 245, 240);
+                doc.rect(px, py, gw, gh, 'F');
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.text('Photo View', px + gw / 2, py + gh / 2, { align: 'center' });
+              }
+            }
+
+            // Chú thích ảnh (Caption)
+            if (p.caption && p.caption.trim()) {
+              doc.setFont(fontFam, 'normal');
+              doc.setFontSize(7.5);
+              doc.setTextColor(70, 65, 60);
+              doc.text(p.caption.trim(), px + gw / 2, py + gh + 3.8, { align: 'center', maxWidth: gw - 2 });
+            }
+          });
+
+          const currentPhotosOnPage = ((validTestingPhotos.length - 1) % photosPerPage) + 1;
+          const rowsOnCurrentPage = Math.ceil(currentPhotosOnPage / cols);
+          y = startY + rowsOnCurrentPage * rowHeight + 2;
         }
-        if (D.testingNotes) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
+        if (D.testingNotes && D.testingNotes.trim()) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
       }
 
       // ================= 7. CHECKLIST =================
@@ -4126,13 +4426,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           doc.setLineWidth(0.3);
           doc.line(0, 285, W, 285);
         }
-        doc.setTextColor(...headerFooterTextRgb); setPdfTextOpacity(0.7); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...headerFooterTextRgb); setPdfTextOpacity(0.7); doc.setFontSize(7); doc.setFont(fontFam, 'normal');
         doc.text(`${reportName} — SOFACOMPANY`, M, 292); doc.text(`Page ${p} of ${totalPages}`, W - M, 292, { align: 'right' });
         setPdfTextOpacity(1);
       }
 
       const outFileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
+      window._lastGeneratedDoc = doc;
       doc.save(`PP_Report_${outFileName}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
+      return doc;
     }
 
     initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
