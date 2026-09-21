@@ -321,17 +321,31 @@
     /* Topbar điều khiển và drag handle cho từng ô dimension */
     .dim-slot-topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 8px; background: #f8faf9; border-bottom: 1px solid var(--border-light);
+      padding: 5px 8px; background: #f8faf9; border-bottom: 1px solid var(--border-light);
       font-size: 10.5px; user-select: none;
+      cursor: grab;
+      touch-action: none;
+      transition: background 0.15s ease;
+    }
+    .dim-slot-topbar:hover {
+      background: #edf3ef;
+    }
+    .dim-slot-topbar:active {
+      cursor: grabbing;
     }
     .dim-drag-handle {
-      display: inline-flex; align-items: center; gap: 4px; color: var(--muted);
-      font-weight: 700; font-size: 10px; cursor: grab; letter-spacing: 0.5px;
+      display: inline-flex; align-items: center; gap: 4px; color: var(--text);
+      font-weight: 700; font-size: 11px; cursor: grab; letter-spacing: 0.5px;
     }
     .dim-drag-handle:active { cursor: grabbing; }
+    .dim-drag-handle svg { color: var(--muted); }
+    .dim-drag-hint {
+      font-size: 8.5px; color: var(--muted); font-weight: 500; margin-left: 2px; opacity: 0.85;
+    }
     .dim-layout-pills {
       display: inline-flex; align-items: center; gap: 2px;
       background: #ecefed; padding: 2px; border-radius: 12px;
+      cursor: default;
     }
     .dim-pill-btn {
       display: inline-flex; align-items: center; gap: 3px;
@@ -2704,12 +2718,13 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         <div class="dim-select-circle"></div>
 
         <!-- THANH TOPBAR VỚI DRAG-HANDLE VÀ CHỌN BỐ CỤC ẢNH (3:1, 1:1, 1 ẢNH) -->
-        <div class="dim-slot-topbar ignore-drag">
-          <span class="dim-drag-handle" title="Nhấn giữ để di chuyển vị trí">
+        <div class="dim-slot-topbar" title="Kéo thả hoặc nhấn giữ thanh này để sắp xếp lại vị trí">
+          <span class="dim-drag-handle">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
             #${i + 1}
+            <span class="dim-drag-hint">(Kéo thả)</span>
           </span>
-          <div class="dim-layout-pills">
+          <div class="dim-layout-pills ignore-drag">
             <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setDimPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Bố cục 3:1 (Ảnh chính 75% + Phụ 25%)">
               <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
               3:1
@@ -2832,24 +2847,32 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         if (!isDimSelectMode) {
           grid._sortable = new Sortable(grid, {
             animation: 180,
-            delay: 250,
+            delay: 200,
             delayOnTouchOnly: true,
+            touchStartThreshold: 5,
             draggable: '.dim-slot:not(.add-dim-btn)',
-            filter: '.ignore-drag, input, textarea, select, button, .dim-slot-topbar button, .dual-tap-box, .pactions, .pact, .dim-close-sub-btn',
+            handle: '.dim-slot-topbar, .dim-drag-handle',
+            filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
             preventOnFilter: false,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-chosen',
             onEnd: function (evt) {
+              if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
               if (evt.oldIndex === evt.newIndex) return;
-              if (!D.dimensions) return;
+              if (!D.dimensions || !D.dimensions.length) return;
               const total = D.dimensions.length;
-              if (evt.oldIndex >= total || evt.newIndex >= total) {
+              let from = evt.oldIndex;
+              let to = evt.newIndex;
+              if (from >= total) from = total - 1;
+              if (to >= total) to = total - 1;
+              if (from === to) {
                 buildDimGrid();
                 return;
               }
               pushHistory('Sắp xếp lại kích thước');
-              const movedItem = D.dimensions.splice(evt.oldIndex, 1)[0];
-              D.dimensions.splice(evt.newIndex, 0, movedItem);
+              const movedItem = D.dimensions.splice(from, 1)[0];
+              D.dimensions.splice(to, 0, movedItem);
               as();
               buildDimGrid();
             }
