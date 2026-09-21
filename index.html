@@ -396,7 +396,7 @@
     /* ═══════════════ DIMENSIONS (2 CỘT & CỤM ẢNH KÉP 3:1) ═══════════════ */
     .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
     .dim-slot { 
-      background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; 
+      background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; 
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
     .dim-slot.dim-selecting { cursor: pointer; border: 1.5px solid #c7d2fe !important; }
@@ -418,7 +418,7 @@
     /* Topbar điều khiển và drag handle cho từng ô dimension */
     .dim-slot-topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 8px; background: #f8faf9; border-bottom: 1px solid rgba(0,0,0,0.04);
+      padding: 5px 8px; background: #f8faf9; border-bottom: 1px solid var(--border-light);
       font-size: 10.5px; user-select: none;
       cursor: grab;
       touch-action: none;
@@ -504,19 +504,19 @@
 
     /* Container ảnh kích thước: Khóa cố định chiều cao 16:9 để đồng bộ tuyệt đối mọi ô */
     .dim-photo-container {
-      display: flex; width: 100%; aspect-ratio: 16 / 9; border-bottom: 1px solid rgba(0,0,0,0.04);
+      display: flex; width: 100%; aspect-ratio: 16 / 9; border-bottom: 1px solid var(--border);
       background: #ffffff; position: relative; overflow: hidden;
     }
     /* Mode 3:1 (Mặc định: Ảnh chính 75% chuẩn 4:3, Ảnh phụ 25% chuẩn 4:9) */
     .dim-photo-container[data-layout="3:1"] .dim-main-photo {
-      flex: 3; height: 100%; position: relative; border-right: 1px solid rgba(0,0,0,0.04); background: #ffffff;
+      flex: 3; height: 100%; position: relative; border-right: 1px solid var(--border); background: #ffffff;
     }
     .dim-photo-container[data-layout="3:1"] .dim-sub-photo {
       flex: 1; height: 100%; position: relative; background: #ffffff; display: block;
     }
     /* Mode 1:1 (Hai ảnh bằng nhau 50% - 50%, chiều cao cố định không đổi) */
     .dim-photo-container[data-layout="1:1"] .dim-main-photo {
-      flex: 1; height: 100%; position: relative; border-right: 1px solid rgba(0,0,0,0.04); background: #ffffff;
+      flex: 1; height: 100%; position: relative; border-right: 1px solid var(--border); background: #ffffff;
     }
     .dim-photo-container[data-layout="1:1"] .dim-sub-photo {
       flex: 1; height: 100%; position: relative; background: #ffffff; display: block;
@@ -3961,7 +3961,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       };
 
      const addImg = (src, x, iy, iw, ih) => { 
-        if (!src) return; 
+        if (!src) return null; 
         try { 
           // Kiểm tra tỉ lệ ảnh gốc để hiển thị đúng chuẩn "contain" (không méo hình)
           const imgProps = doc.getImageProperties(src);
@@ -3984,9 +3984,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           }
 
           doc.addImage(src, 'JPEG', x + offsetX, iy + offsetY, renderW, renderH); 
+          return { x: x + offsetX, y: iy + offsetY, w: renderW, h: renderH };
         } catch (e) {
           // Dự phòng nếu không đọc được thuộc tính ảnh
-          try { doc.addImage(src, 'JPEG', x, iy, iw, ih); } catch(err) {}
+          try { 
+            doc.addImage(src, 'JPEG', x, iy, iw, ih); 
+            return { x, y: iy, w: iw, h: ih };
+          } catch(err) {
+            return null;
+          }
         } 
       };
 
@@ -4031,6 +4037,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             }
 
             if (itemSubW > 0) {
+              // Khung viền tổng và đường phân cách cho cụm 2 ảnh
+              doc.setDrawColor(220, 217, 210);
+              doc.rect(px, py, gw, gh, 'S');
+              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
+
               // Vùng ảnh chính
               if (p.img) {
                 addImg(p.img, px, py, itemMainW, gh);
@@ -4051,7 +4062,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
               }
             } else {
-              // Chế độ 1 ảnh
+              // Chế độ 1 ảnh (đứng 1 ảnh thì không thấy viền)
               if (p.img) {
                 addImg(p.img, px, py, gw, gh);
               } else {
@@ -4169,9 +4180,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         const slotTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : COVER_SLOTS[i];
         
-        // Bỏ viền hộp ngoài
+        let barX = px;
+        let barY = py + ph;
+        let barW = pw;
+
         if (img) { 
-          addImg(img, px, py, pw, ph); 
+          const bounds = addImg(img, px, py, pw, ph); 
+          if (bounds) {
+            barX = bounds.x;
+            barW = bounds.w;
+            barY = bounds.y + bounds.h;
+          }
         } else { 
           doc.setFillColor(245, 242, 237); 
           doc.rect(px, py, pw, ph, 'F'); 
@@ -4181,12 +4200,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' }); 
         }
         
+        // Thanh màu nền: độ dài cạnh bằng chính xác 2 cạnh của ảnh, không bị lồi ra ngoài
         doc.setFillColor(245, 242, 237); 
-        doc.rect(px, py + ph, pw, barH, 'F'); 
+        doc.rect(barX, barY, barW, barH, 'F'); 
         doc.setTextColor(80, 75, 70); 
         doc.setFont(fontFam, 'bold'); 
         doc.setFontSize(7.5); 
-        doc.text(slotTitle.toUpperCase(), px + pw / 2, py + ph + (barH / 2) + 1, { align: 'center' });
+        doc.text(slotTitle.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
       });
       
       y += (ph + barH) * 2 + gapY + 4;
@@ -4253,7 +4273,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           const displayImg = d.img ? (typeof d.img === 'string' ? d.img : d.img) : null;
           const displayImgSub = d.imgSub ? (typeof d.imgSub === 'string' ? d.imgSub : d.imgSub) : null;
 
-          // Bỏ viền khung tổng và đường kẻ ngăn cách
+          // Viền khung tổng
+          doc.setDrawColor(220, 217, 210); 
+          doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
 
           // Vùng ẢNH CHÍNH
           if (displayImg) { 
@@ -4275,7 +4297,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
               doc.text(layout === '1:1' ? 'Side View' : 'Detail', dx + itemMainW + itemSubW / 2, dy + dimImgH / 2, { align: 'center' });
             }
+
+            // Đường phân cách giữa 2 ảnh
+            doc.setDrawColor(220, 217, 210);
+            doc.line(dx + itemMainW, dy, dx + itemMainW, dy + dimImgH);
           }
+
+          // Đường kẻ ngang ngăn cách ảnh và vùng text
+          doc.setDrawColor(220, 217, 210);
+          doc.line(dx, dy + dimImgH, dx + dimSlotW, dy + dimImgH);
           
           // KHỐI DỮ LIỆU ĐÁY
           const fy = dy + dimImgH + 2; 
@@ -4364,6 +4394,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             }
 
             if (itemSubW > 0) {
+              // Khung viền tổng và đường phân cách cho cụm 2 ảnh
+              doc.setDrawColor(220, 217, 210);
+              doc.rect(px, py, gw, gh, 'S');
+              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
+
               // Vùng ảnh chính
               if (p.img) {
                 addImg(p.img, px, py, itemMainW, gh);
@@ -4384,7 +4419,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 doc.text(layout === '1:1' ? 'Detail 2' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
               }
             } else {
-              // Chế độ 1 ảnh
+              // Chế độ 1 ảnh (đứng 1 ảnh thì không thấy viền)
               if (p.img) {
                 addImg(p.img, px, py, gw, gh);
               } else {
