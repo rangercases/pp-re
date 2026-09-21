@@ -284,9 +284,8 @@
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
-    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; pointer-events: none;}
-    .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; }
-    .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; }
+    .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
+    .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
     .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
     
     .add-photo-btn { 
@@ -369,18 +368,34 @@
     }
     .dim-close-sub-btn:hover { background: #ffeded; color: #d32f2f; border-color: #ffcdd2; }
 
-    /* Sortable drag classes */
-    .dim-slot.sortable-ghost {
+    /* QUALITY WATCH OUT MULTI-PHOTO SLOTS */
+    .watchout-slot {
+      background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px;
+      overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
+    }
+    .watchout-slot.sortable-ghost, .dim-slot.sortable-ghost {
       opacity: 0.3 !important;
       transform: scale(0.96);
       background: #e8f5ec !important;
       border: 2px dashed #2d5a3d !important;
     }
-    .dim-slot.sortable-chosen {
+    .watchout-slot.sortable-chosen, .dim-slot.sortable-chosen {
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
       transform: scale(1.02);
       border-color: var(--accent) !important;
       z-index: 40;
+    }
+    .watchout-caption-box {
+      padding: 7px 9px; background: #ffffff; border-top: 1px solid var(--border-light);
+      cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
+    }
+    .watchout-caption-input {
+      width: 100%; border: none; background: transparent; font-size: 11px;
+      color: var(--text); outline: none; font-family: inherit; font-weight: 500;
+      cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
+    }
+    .watchout-caption-input:focus {
+      background: #f4f8f5; border-radius: 4px; padding: 2px 4px;
     }
 
     /* Container ảnh kích thước: Khóa cố định chiều cao 16:9 để đồng bộ tuyệt đối mọi ô */
@@ -1751,13 +1766,18 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } else if (target.type === 'dim') {
           el = document.getElementById(`dph_${target.subType}_${target.index}`);
         } else if (target.type === 'free') {
-          const container = document.getElementById(target.key);
-          if (container) {
-            if (target.index !== undefined && container.children[target.index]) {
-              el = container.children[target.index];
-            } else {
-              const items = container.querySelectorAll('.free-photo-item');
-              if (items.length) el = items[items.length - 1];
+          if (target.key === 'watchoutPhotos' && target.subType) {
+            el = document.getElementById(`wph_${target.subType}_${target.index}`);
+          }
+          if (!el) {
+            const container = document.getElementById(target.key);
+            if (container) {
+              if (target.index !== undefined && container.children[target.index]) {
+                el = container.children[target.index];
+              } else {
+                const items = container.querySelectorAll('.free-photo-item, .watchout-slot');
+                if (items.length) el = items[items.length - 1];
+              }
             }
           }
         }
@@ -1794,6 +1814,23 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         5: 'testingPhotos',
         6: 'checklistPhotos'
       };
+
+      if (curSec === 4) {
+        if (D.watchoutPhotos && D.watchoutPhotos.length > 0) {
+          for (let i = 0; i < D.watchoutPhotos.length; i++) {
+            const p = D.watchoutPhotos[i];
+            const layout = (p && p.photoLayout) || '3:1';
+            if (!p || !p.img) {
+              const el = document.getElementById(`wph_main_${i}`);
+              return { target: { type: 'free', key: 'watchoutPhotos', index: i, subType: 'main' }, element: el };
+            }
+            if (layout !== 'single' && !p.imgSub) {
+              const el = document.getElementById(`wph_sub_${i}`);
+              return { target: { type: 'free', key: 'watchoutPhotos', index: i, subType: 'sub' }, element: el };
+            }
+          }
+        }
+      }
 
       if (secFreeMap[curSec]) {
         const key = secFreeMap[curSec];
@@ -2218,7 +2255,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         let title = 'Chỉnh sửa ảnh';
         if (camTarget.type === 'dim') {
-          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT)' : 'ẢNH CHÍNH (TOÀN CẢNH)';
+          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - KÍCH THƯỚC' : 'ẢNH CHÍNH (TOÀN CẢNH) - KÍCH THƯỚC';
+        } else if (camTarget.type === 'free' && camTarget.key === 'watchoutPhotos') {
+          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - QUALITY WATCH OUT' : 'ẢNH CHÍNH (TOÀN CẢNH) - QUALITY WATCH OUT';
         } else if (camTarget.type === 'slot') {
           const customName = D.coverTitles && D.coverTitles[camTarget.key];
           title = customName || camTarget.key.replace(/_/g, ' ');
@@ -2229,27 +2268,27 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
         
-        // Mặc định tỷ lệ 4:3 cho ảnh chính dimensions, 1:1 cho các ảnh khác
-        // Tự động nhận diện ô chính (4:3), ô phụ (4:9) hoặc các ô khác (1:1)
-let defaultRatio = 1;
-let defaultRatioBtn = document.getElementById('ratio_1_1');
+        let defaultRatio = 1;
+        let defaultRatioBtn = document.getElementById('ratio_1_1');
 
-if (camTarget.type === 'dim') {
-  const dimItem = D.dimensions && D.dimensions[camTarget.index];
-  const layout = (dimItem && dimItem.photoLayout) || '3:1';
-  if (layout === '1:1') {
-    defaultRatio = 4 / 3;
-    defaultRatioBtn = document.getElementById('ratio_4_3');
-  } else if (camTarget.subType === 'sub') {
-    defaultRatio = 4 / 9;
-    defaultRatioBtn = document.getElementById('ratio_4_9');
-  } else {
-    defaultRatio = 4 / 3;
-    defaultRatioBtn = document.getElementById('ratio_4_3');
-  }
-}
+        if (camTarget.type === 'dim' || (camTarget.type === 'free' && camTarget.key === 'watchoutPhotos')) {
+          const item = camTarget.type === 'dim'
+            ? (D.dimensions && D.dimensions[camTarget.index])
+            : (D.watchoutPhotos && D.watchoutPhotos[camTarget.index]);
+          const layout = (item && item.photoLayout) || '3:1';
+          if (layout === '1:1') {
+            defaultRatio = 4 / 3;
+            defaultRatioBtn = document.getElementById('ratio_4_3');
+          } else if (camTarget.subType === 'sub') {
+            defaultRatio = 4 / 9;
+            defaultRatioBtn = document.getElementById('ratio_4_9');
+          } else {
+            defaultRatio = 4 / 3;
+            defaultRatioBtn = document.getElementById('ratio_4_3');
+          }
+        }
 
-if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
+        if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
         baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
         const slider = document.getElementById('straightenRange'); if(slider) slider.value = 0;
@@ -2346,12 +2385,18 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
         if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
-           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '' }; 
-           D[t.key][t.index].img = imgData; 
-           D[t.key][t.index].original = originalData;
+           if (!D[t.key]) D[t.key] = [];
+           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: t.key === 'watchoutPhotos' ? '3:1' : undefined }; 
+           if (t.subType === 'sub') {
+             D[t.key][t.index].imgSub = imgData;
+             D[t.key][t.index].originalSub = originalData;
+           } else {
+             D[t.key][t.index].img = imgData; 
+             D[t.key][t.index].original = originalData;
+           }
         } else {
            if (!D[t.key]) D[t.key] = []; 
-           D[t.key].push({ img: imgData, original: originalData, caption: '' }); 
+           D[t.key].push({ img: imgData, original: originalData, caption: '', photoLayout: t.key === 'watchoutPhotos' ? '3:1' : undefined }); 
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
@@ -2984,6 +3029,11 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
     // ═══════════════ FREE PHOTOS UNIVERSAL HANDLER ═══════════════
     function renderFreePhotos(key) {
+      if (key === 'watchoutPhotos') {
+        renderWatchoutPhotos();
+        return;
+      }
+
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
       
@@ -2999,7 +3049,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
               <button class="pact paste" title="Dán đè ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetObj})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
               <button class="pact del" title="Xóa" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>
-            <div class="free-caption"><input value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
+            <div class="free-caption ignore-drag"><input class="ignore-drag" value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
         } else {
             div.innerHTML = `
               <div class="dual-tap-box">
@@ -3034,7 +3084,10 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       if(typeof Sortable !== 'undefined') {
           if(el._sortable) el._sortable.destroy();
           el._sortable = new Sortable(el, {
-             animation: 150, delay: 250, delayOnTouchOnly: true, filter: '.ignore-drag', ghostClass: 'sortable-ghost',
+             animation: 150, delay: 250, delayOnTouchOnly: true,
+             filter: '.ignore-drag, input, textarea, select, button, .free-caption, .free-caption input, .tap-option, .pact',
+             preventOnFilter: false,
+             ghostClass: 'sortable-ghost',
              onEnd: function (evt) {
                 if (evt.oldIndex === evt.newIndex) return;
                 pushHistory('Đổi thứ tự ảnh');
@@ -3043,6 +3096,216 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
              }
           });
       }
+    }
+
+    function renderWatchoutPhotos() {
+      const el = document.getElementById('watchoutPhotos'); if (!el) return; el.innerHTML = '';
+      const arr = D.watchoutPhotos || [];
+
+      arr.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'watchout-slot';
+        div.dataset.index = String(i);
+
+        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : '3:1');
+        const targetMain = `{type:'free',key:'watchoutPhotos',index:${i},subType:'main'}`;
+        const targetSub = `{type:'free',key:'watchoutPhotos',index:${i},subType:'sub'}`;
+
+        const displayImg = p && p.img ? p.img : null;
+        const displayImgSub = p && p.imgSub ? p.imgSub : null;
+
+        div.innerHTML = `
+        <!-- THANH TOPBAR VỚI DRAG-HANDLE VÀ CHỌN BỐ CỤC ẢNH (3:1, 1:1, 1 ẢNH) -->
+        <div class="dim-slot-topbar" title="Kéo thả thanh này để sắp xếp lại vị trí">
+          <span class="dim-drag-handle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            #${i + 1}
+            <span class="dim-drag-hint">(Kéo thả)</span>
+          </span>
+          <div style="display:inline-flex; align-items:center; gap:6px;">
+            <div class="dim-layout-pills ignore-drag">
+              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Bố cục 3:1 (Ảnh chính 75% + Phụ 25%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
+                3:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Bố cục 1:1 (2 ảnh bằng nhau 50% - 50%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
+                1:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, 'single');event.stopPropagation()" title="Bố cục 1 ảnh to (100% - Xóa/ẩn ô phụ)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
+                1 ảnh
+              </button>
+            </div>
+            <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Watch Out này" onclick="delFreeSlot('watchoutPhotos', ${i});event.stopPropagation()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
+        <div class="dim-photo-container" data-layout="${layout}">
+          <!-- ẢNH CHÍNH -->
+          <div class="dim-main-photo" id="wph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            ${displayImg ? `<img src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions" style="right: 4px;">
+              <button class="pact edit" title="Chỉnh sửa" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact paste" title="Dán đè ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
+              <button class="pact cam" title="Chụp mới" onclick="triggerNativeCamera(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+              <button class="pact gal" title="Chọn từ Album" onclick="triggerPickLibrary(${targetMain});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+              <button class="pact del" title="Xóa" onclick="delWatchoutPhoto(${i}, 'main');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Chụp</span>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Album</span>
+              </div>
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                <span>Dán</span>
+              </div>
+            </div>`}
+          </div>
+
+          <!-- ẢNH PHỤ CHI TIẾT (ẨN KHI Ở CHẾ ĐỘ SINGLE) -->
+          ${layout !== 'single' ? `
+          <div class="dim-sub-photo" id="wph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions" style="right: 2px;">
+              <button class="pact edit" style="width:18px;height:18px;" title="Chỉnh sửa" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+              <button class="pact paste" style="width:18px;height:18px;" title="Dán đè ảnh (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub});event.stopPropagation()"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
+              <button class="pact del" style="width:18px;height:18px;" title="Xóa" onclick="delWatchoutPhoto(${i}, 'sub');event.stopPropagation()"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
+              <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Chụp ảnh mới" onclick="triggerNativeCamera(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Chụp</span>' : ''}
+              </div>
+              <div class="tap-option" title="Chọn từ Album" onclick="triggerPickLibrary(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Album</span>' : ''}
+              </div>
+              <div class="tap-option" title="Dán ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Dán</span>' : ''}
+              </div>
+            </div>`}
+            <!-- Nút xóa nhanh ô ảnh phụ -->
+            <button type="button" class="dim-close-sub-btn ignore-drag" onclick="removeWatchoutSubPhoto(${i});event.stopPropagation()" title="Xóa ô ảnh phụ (chuyển sang 1 ảnh to)">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>` : ''}
+        </div>
+
+        <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
+        <div class="watchout-caption-box ignore-drag">
+          <input type="text" class="watchout-caption-input ignore-drag" value="${p ? (p.caption || '') : ''}" placeholder="Ghi chú điểm lưu ý chất lượng (Quality Watch Out)..." oninput="updateCaption('watchoutPhotos', ${i}, this.value)">
+        </div>`;
+
+        const mainPhotoEl = div.querySelector('.dim-main-photo');
+        const subPhotoEl = div.querySelector('.dim-sub-photo');
+        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'watchoutPhotos', index: i, subType: 'main' });
+        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'watchoutPhotos', index: i, subType: 'sub' });
+
+        el.appendChild(div);
+      });
+
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-photo-btn ignore-drag';
+      addBtn.title = 'Bấm để thêm ô Quality Watch Out, kéo thả hoặc nhấn Ctrl+V để dán ảnh';
+      addBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:2px;">THÊM ĐIỂM WATCH OUT</span><span style="font-size:9px; color:var(--muted); font-weight:normal;">Kéo thả hoặc Ctrl+V để dán</span>`;
+      addBtn.onclick = () => {
+        pushHistory('Thêm ô Quality Watch Out');
+        if (!D.watchoutPhotos) D.watchoutPhotos = [];
+        D.watchoutPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: '3:1', caption: '' });
+        as();
+        renderWatchoutPhotos();
+      };
+      attachDropZone(addBtn, { type: 'free', key: 'watchoutPhotos' }, true);
+      el.appendChild(addBtn);
+
+      if (typeof Sortable !== 'undefined') {
+        if (el._sortable) el._sortable.destroy();
+        el._sortable = new Sortable(el, {
+          animation: 180,
+          delay: 200,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 5,
+          draggable: '.watchout-slot',
+          handle: '.dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+          preventOnFilter: false,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-chosen',
+          onEnd: function (evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
+            if (evt.oldIndex === evt.newIndex) return;
+            if (!D.watchoutPhotos || !D.watchoutPhotos.length) return;
+            const total = D.watchoutPhotos.length;
+            let from = evt.oldIndex;
+            let to = evt.newIndex;
+            if (from >= total) from = total - 1;
+            if (to >= total) to = total - 1;
+            if (from === to) {
+              renderWatchoutPhotos();
+              return;
+            }
+            pushHistory('Đổi thứ tự Quality Watch Out');
+            const movedItem = D.watchoutPhotos.splice(from, 1)[0];
+            D.watchoutPhotos.splice(to, 0, movedItem);
+            as();
+            renderWatchoutPhotos();
+          }
+        });
+      }
+    }
+
+    function setWatchoutPhotoLayout(index, layout) {
+      if (!D.watchoutPhotos) D.watchoutPhotos = [];
+      if (!D.watchoutPhotos[index]) D.watchoutPhotos[index] = { caption: '' };
+      pushHistory('Đổi bố cục ảnh Watch Out');
+      D.watchoutPhotos[index].photoLayout = layout;
+      as();
+      renderWatchoutPhotos();
+    }
+
+    function removeWatchoutSubPhoto(index) {
+      if (!D.watchoutPhotos || !D.watchoutPhotos[index]) return;
+      if (D.watchoutPhotos[index].imgSub) {
+        if (!confirm('Bạn có muốn xóa ô ảnh phụ và chuyển sang bố cục 1 ảnh không? (Ảnh phụ sẽ được ẩn đi)')) return;
+      }
+      setWatchoutPhotoLayout(index, 'single');
+    }
+
+    function editWatchoutPhoto(index, subType = 'main') {
+      const p = D.watchoutPhotos && D.watchoutPhotos[index];
+      if (!p) return;
+      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
+      if (!imgSrc) return;
+      currentOriginalImg = imgSrc;
+      camTarget = { type: 'free', key: 'watchoutPhotos', index, subType };
+      initCropper(imgSrc);
+    }
+
+    function delWatchoutPhoto(index, subType = 'main') {
+      if (!confirm('Xóa ảnh này?')) return;
+      pushHistory(subType === 'sub' ? 'Xóa ảnh phụ Watch Out' : 'Xóa ảnh chính Watch Out');
+      if (D.watchoutPhotos && D.watchoutPhotos[index]) {
+        if (subType === 'sub') {
+          D.watchoutPhotos[index].imgSub = null;
+          D.watchoutPhotos[index].originalSub = null;
+        } else {
+          D.watchoutPhotos[index].img = null;
+          D.watchoutPhotos[index].original = null;
+        }
+      }
+      as();
+      renderWatchoutPhotos();
     }
 
     function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
@@ -3348,7 +3611,7 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
       };
 
       const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle) => {
-        const validPhotos = (photoArray || []).filter(p => p && p.img);
+        const validPhotos = (photoArray || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
         if (validPhotos.length === 0 && (!notesText || !notesText.trim())) return;
 
         addHeader(sectionTitle);
@@ -3376,8 +3639,58 @@ if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
             const px = M + col * (gw + gapX);
             const py = startY + row * rowHeight;
 
-            // Hiển thị ảnh không viền (giữ nguyên tỷ lệ, căn giữa)
-            addImg(p.img, px, py, gw, gh);
+            const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
+            let itemMainW = gw;
+            let itemSubW = 0;
+            if (layout === '1:1') {
+              itemMainW = gw / 2;
+              itemSubW = gw / 2;
+            } else if (layout === '3:1') {
+              itemMainW = gw * 0.75;
+              itemSubW = gw * 0.25;
+            }
+
+            if (itemSubW > 0) {
+              // Khung viền tổng
+              doc.setDrawColor(220, 217, 210);
+              doc.rect(px, py, gw, gh, 'S');
+
+              // Vùng ảnh chính
+              if (p.img) {
+                addImg(p.img, px, py, itemMainW, gh);
+              } else {
+                doc.setFillColor(248, 245, 240);
+                doc.rect(px, py, itemMainW, gh, 'F');
+                doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.text('Main View', px + itemMainW / 2, py + gh / 2, { align: 'center' });
+              }
+
+              // Vùng ảnh phụ
+              if (p.imgSub) {
+                addImg(p.imgSub, px + itemMainW, py, itemSubW, gh);
+              } else {
+                doc.setFillColor(244, 242, 238);
+                doc.rect(px + itemMainW, py, itemSubW, gh, 'F');
+                doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+                doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
+              }
+
+              // Đường phân cách giữa 2 ảnh
+              doc.setDrawColor(220, 217, 210);
+              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
+            } else {
+              // Chế độ 1 ảnh
+              if (p.img) {
+                addImg(p.img, px, py, gw, gh);
+              } else {
+                doc.setDrawColor(220, 217, 210);
+                doc.rect(px, py, gw, gh, 'S');
+                doc.setFillColor(248, 245, 240);
+                doc.rect(px, py, gw, gh, 'F');
+                doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.text('Photo View', px + gw / 2, py + gh / 2, { align: 'center' });
+              }
+            }
 
             // Chú thích ảnh (Caption)
             if (p.caption && p.caption.trim()) {
