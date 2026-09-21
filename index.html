@@ -3996,96 +3996,171 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } 
       };
 
+      const renderCard = (p, px, py, gw) => {
+        const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
+        let itemMainW = gw;
+        let itemSubW = 0;
+        if (layout === '1:1') {
+          itemMainW = gw / 2;
+          itemSubW = gw / 2;
+        } else if (layout === '3:1') {
+          itemMainW = gw * 0.75;
+          itemSubW = gw * 0.25;
+        }
+
+        if (itemSubW > 0) {
+          // Bố cục 2 ảnh (3:1 hoặc 1:1)
+          let mainRatio = 4 / 3;
+          if (p.img) {
+            try {
+              const pr1 = doc.getImageProperties(p.img);
+              if (pr1 && pr1.width && pr1.height) mainRatio = pr1.width / pr1.height;
+            } catch(e) {}
+          }
+
+          // Chiều cao ảnh chính theo đúng tỷ lệ thực tế của ảnh (không ép 67mm cố định)
+          let mH = itemMainW / mainRatio;
+          if (mH > 67) mH = 67;
+          if (mH < 35) mH = 35;
+          const cardH = mH;
+
+          // 1. Vẽ ảnh chính
+          let mainBounds = null;
+          if (p.img) {
+            mainBounds = addImg(p.img, px, py, itemMainW, cardH);
+          } else {
+            doc.setFillColor(248, 245, 240);
+            doc.rect(px, py, itemMainW, cardH, 'F');
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.text('Main View', px + itemMainW / 2, py + cardH / 2, { align: 'center' });
+          }
+
+          // Chiều cao và vị trí y của viền lấy chính xác 100% từ ảnh chính -> khít tuyệt đối, không hở trên/dưới
+          const borderY = mainBounds ? mainBounds.y : py;
+          const borderH = mainBounds ? mainBounds.h : cardH;
+
+          // 2. Vùng ảnh phụ (có nền nhẹ, vừa khít với borderH)
+          doc.setFillColor(248, 245, 240);
+          doc.rect(px + itemMainW, borderY, itemSubW, borderH, 'F');
+          if (p.imgSub) {
+            addImg(p.imgSub, px + itemMainW, borderY, itemSubW, borderH);
+          } else {
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+            doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, borderY + borderH / 2, { align: 'center' });
+          }
+
+          // 3. Khung viền và đường kẻ phân cách giữa 2 ảnh
+          doc.setDrawColor(220, 217, 210);
+          doc.setLineWidth(0.2);
+          doc.rect(px, borderY, gw, borderH, 'S');
+          doc.line(px + itemMainW, borderY, px + itemMainW, borderY + borderH);
+
+          // 4. Chú thích ảnh (Caption)
+          if (p.caption && p.caption.trim()) {
+            doc.setFont(fontFam, 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(70, 65, 60);
+            doc.text(p.caption.trim(), px + gw / 2, borderY + borderH + 3.8, { align: 'center', maxWidth: gw - 2 });
+          }
+
+          return borderH;
+        } else {
+          // Chế độ 1 ảnh (Single mode)
+          let imgRatio = 4 / 3;
+          if (p.img) {
+            try {
+              const pr = doc.getImageProperties(p.img);
+              if (pr && pr.width && pr.height) imgRatio = pr.width / pr.height;
+            } catch(e) {}
+          }
+
+          let cardH = gw / imgRatio;
+          if (cardH > 67) cardH = 67;
+          if (cardH < 35) cardH = 35;
+
+          let bounds = null;
+          if (p.img) {
+            bounds = addImg(p.img, px, py, gw, cardH);
+          } else {
+            doc.setFillColor(248, 245, 240);
+            doc.rect(px, py, gw, cardH, 'F');
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.text('Photo View', px + gw / 2, py + cardH / 2, { align: 'center' });
+          }
+
+          const capY = bounds ? (bounds.y + bounds.h) : (py + cardH);
+          if (p.caption && p.caption.trim()) {
+            doc.setFont(fontFam, 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(70, 65, 60);
+            doc.text(p.caption.trim(), px + gw / 2, capY + 3.8, { align: 'center', maxWidth: gw - 2 });
+          }
+
+          return bounds ? bounds.h : cardH;
+        }
+      };
+
+      const renderPhotoGrid = (photos, headerTitle) => {
+        const gapX = 6;
+        const gapY = 8.5;
+        const gw = (W - M * 2 - gapX) / 2; // 88mm
+
+        const estimateCardH = (p) => {
+          if (!p) return 0;
+          const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
+          const mainW = layout === '3:1' ? gw * 0.75 : (layout === '1:1' ? gw * 0.5 : gw);
+          let r = 4 / 3;
+          if (p.img) {
+            try {
+              const pr = doc.getImageProperties(p.img);
+              if (pr && pr.width && pr.height) r = pr.width / pr.height;
+            } catch(e) {}
+          }
+          let h = mainW / r;
+          if (h > 67) h = 67;
+          if (h < 35) h = 35;
+          return h;
+        };
+
+        let r = 0;
+        while (r * 2 < photos.length) {
+          const p0 = photos[r * 2];
+          const p1 = photos[r * 2 + 1];
+
+          const h0 = estimateCardH(p0);
+          const h1 = estimateCardH(p1);
+          const rowMaxCardH = Math.max(h0, h1 || 0, 45);
+          const hasCaption = (p0 && p0.caption && p0.caption.trim()) || (p1 && p1.caption && p1.caption.trim());
+          const captionH = hasCaption ? 6.5 : 0;
+          const rowTotalH = rowMaxCardH + captionH + gapY;
+
+          // Kiểm tra ngắt trang: nếu hàng ảnh tràn quá giới hạn đáy trang (270mm)
+          if (y + rowTotalH > BOTTOM_LIMIT) {
+            addHeader(headerTitle);
+          }
+
+          const py = y;
+          const px0 = M;
+          const px1 = M + gw + gapX;
+
+          renderCard(p0, px0, py, gw);
+          if (p1) {
+            renderCard(p1, px1, py, gw);
+          }
+
+          y += rowTotalH;
+          r++;
+        }
+      };
+
       const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle) => {
         const validPhotos = (photoArray || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
         if (validPhotos.length === 0 && (!notesText || !notesText.trim())) return;
 
         addHeader(sectionTitle);
 
-        // Cân đối bố cục 2 cột x 3 hàng (Tối đa 6 ảnh / trang)
-        const cols = 2;
-        const rowsPerPage = 3;
-        const photosPerPage = cols * rowsPerPage; // 6 ảnh
-        const gapX = 6;
-        const gapY = 8.5;
-        const gw = (W - M * 2 - gapX) / cols; // (210 - 28 - 6) / 2 = 88mm
-        const gh = 67; // Tỷ lệ chuẩn ~4:3 (88mm x 67mm), thanh lịch và chuyên nghiệp
-        const rowHeight = gh + gapY;
-        const startY = 30;
-
         if (validPhotos.length > 0) {
-          validPhotos.forEach((p, i) => {
-            const pageSlot = i % photosPerPage;
-            if (i > 0 && pageSlot === 0) {
-              addHeader(sectionTitle);
-            }
-
-            const col = pageSlot % cols;
-            const row = Math.floor(pageSlot / cols);
-            const px = M + col * (gw + gapX);
-            const py = startY + row * rowHeight;
-
-            const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
-            let itemMainW = gw;
-            let itemSubW = 0;
-            if (layout === '1:1') {
-              itemMainW = gw / 2;
-              itemSubW = gw / 2;
-            } else if (layout === '3:1') {
-              itemMainW = gw * 0.75;
-              itemSubW = gw * 0.25;
-            }
-
-            if (itemSubW > 0) {
-              // Khung viền tổng và đường phân cách cho cụm 2 ảnh
-              doc.setDrawColor(220, 217, 210);
-              doc.rect(px, py, gw, gh, 'S');
-              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
-
-              // Vùng ảnh chính
-              if (p.img) {
-                addImg(p.img, px, py, itemMainW, gh);
-              } else {
-                doc.setFillColor(248, 245, 240);
-                doc.rect(px, py, itemMainW, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
-                doc.text('Main View', px + itemMainW / 2, py + gh / 2, { align: 'center' });
-              }
-
-              // Vùng ảnh phụ
-              if (p.imgSub) {
-                addImg(p.imgSub, px + itemMainW, py, itemSubW, gh);
-              } else {
-                doc.setFillColor(244, 242, 238);
-                doc.rect(px + itemMainW, py, itemSubW, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
-                doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
-              }
-            } else {
-              // Chế độ 1 ảnh (đứng 1 ảnh thì không thấy viền)
-              if (p.img) {
-                addImg(p.img, px, py, gw, gh);
-              } else {
-                doc.setFillColor(248, 245, 240);
-                doc.rect(px, py, gw, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
-                doc.text('Photo View', px + gw / 2, py + gh / 2, { align: 'center' });
-              }
-            }
-
-            // Chú thích ảnh (Caption)
-            if (p.caption && p.caption.trim()) {
-              doc.setFont(fontFam, 'normal');
-              doc.setFontSize(7.5);
-              doc.setTextColor(70, 65, 60);
-              doc.text(p.caption.trim(), px + gw / 2, py + gh + 3.8, { align: 'center', maxWidth: gw - 2 });
-            }
-          });
-
-          // Tọa độ y sau hàng ảnh cuối của trang hiện tại
-          const currentPhotosOnPage = ((validPhotos.length - 1) % photosPerPage) + 1;
-          const rowsOnCurrentPage = Math.ceil(currentPhotosOnPage / cols);
-          y = startY + rowsOnCurrentPage * rowHeight + 2;
+          renderPhotoGrid(validPhotos, sectionTitle);
         }
 
         if (notesText && notesText.trim()) {
@@ -4357,91 +4432,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         }
 
         if (validTestingPhotos.length > 0) {
-          if(y + 30 > BOTTOM_LIMIT) addHeader('Testing Photos');
-          doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6; 
-          
-          const cols = 2;
-          const rowsPerPage = 3;
-          const photosPerPage = cols * rowsPerPage;
-          const gapX = 6;
-          const gapY = 8.5;
-          const gw = (W - M * 2 - gapX) / cols; // 88mm
-          const gh = 67; // Tỷ lệ chuẩn ~4:3 không méo và không letterboxing vuông
-          const rowHeight = gh + gapY;
-          const startY = y;
+          if (y + 45 > BOTTOM_LIMIT) {
+            addHeader('Testing Photos');
+          } else {
+            doc.setFont(fontFam, 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(40, 40, 40);
+            doc.text('Testing Photos', M, y);
+            y += 6;
+          }
 
-          validTestingPhotos.forEach((p, i) => {
-            const pageSlot = i % photosPerPage;
-            if (i > 0 && pageSlot === 0) {
-              addHeader('Testing Photos');
-              doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text('Testing Photos', M, y); y += 6;
-            }
-
-            const col = pageSlot % cols;
-            const row = Math.floor(pageSlot / cols);
-            const px = M + col * (gw + gapX);
-            const py = startY + row * rowHeight;
-
-            const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
-            let itemMainW = gw;
-            let itemSubW = 0;
-            if (layout === '1:1') {
-              itemMainW = gw / 2;
-              itemSubW = gw / 2;
-            } else if (layout === '3:1') {
-              itemMainW = gw * 0.75;
-              itemSubW = gw * 0.25;
-            }
-
-            if (itemSubW > 0) {
-              // Khung viền tổng và đường phân cách cho cụm 2 ảnh
-              doc.setDrawColor(220, 217, 210);
-              doc.rect(px, py, gw, gh, 'S');
-              doc.line(px + itemMainW, py, px + itemMainW, py + gh);
-
-              // Vùng ảnh chính
-              if (p.img) {
-                addImg(p.img, px, py, itemMainW, gh);
-              } else {
-                doc.setFillColor(248, 245, 240);
-                doc.rect(px, py, itemMainW, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
-                doc.text('Main View', px + itemMainW / 2, py + gh / 2, { align: 'center' });
-              }
-
-              // Vùng ảnh phụ
-              if (p.imgSub) {
-                addImg(p.imgSub, px + itemMainW, py, itemSubW, gh);
-              } else {
-                doc.setFillColor(244, 242, 238);
-                doc.rect(px + itemMainW, py, itemSubW, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
-                doc.text(layout === '1:1' ? 'Detail 2' : 'Detail', px + itemMainW + itemSubW / 2, py + gh / 2, { align: 'center' });
-              }
-            } else {
-              // Chế độ 1 ảnh (đứng 1 ảnh thì không thấy viền)
-              if (p.img) {
-                addImg(p.img, px, py, gw, gh);
-              } else {
-                doc.setFillColor(248, 245, 240);
-                doc.rect(px, py, gw, gh, 'F');
-                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
-                doc.text('Photo View', px + gw / 2, py + gh / 2, { align: 'center' });
-              }
-            }
-
-            // Chú thích ảnh (Caption)
-            if (p.caption && p.caption.trim()) {
-              doc.setFont(fontFam, 'normal');
-              doc.setFontSize(7.5);
-              doc.setTextColor(70, 65, 60);
-              doc.text(p.caption.trim(), px + gw / 2, py + gh + 3.8, { align: 'center', maxWidth: gw - 2 });
-            }
-          });
-
-          const currentPhotosOnPage = ((validTestingPhotos.length - 1) % photosPerPage) + 1;
-          const rowsOnCurrentPage = Math.ceil(currentPhotosOnPage / cols);
-          y = startY + rowsOnCurrentPage * rowHeight + 2;
+          renderPhotoGrid(validTestingPhotos, 'Testing Photos');
         }
         if (D.testingNotes && D.testingNotes.trim()) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
       }
