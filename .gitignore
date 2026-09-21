@@ -12,3 +12,6 @@ Thumbs.db
 *.tmp
 *.log
 scratch/
+
+# Logo files
+SOFACOMPANY_*.png
