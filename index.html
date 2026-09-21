@@ -23,6 +23,102 @@
 
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script>
+    // Tích hợp Swap Plugin cho SortableJS để hỗ trợ hoán đổi 1-1 giữa 2 ô ảnh
+    (function() {
+      if (typeof Sortable === 'undefined' || typeof Sortable.mount !== 'function') return;
+      var lastSwapEl = null;
+      function toggleClass(el, name, state) {
+        if (!el || !name) return;
+        if (el.classList) el.classList[state ? 'add' : 'remove'](name);
+        else el.className = (' ' + el.className + ' ').replace(new RegExp(' ' + name + ' ', 'g'), ' ').trim() + (state ? ' ' + name : '');
+      }
+      function getIndex(el) {
+        if (!el || !el.parentNode) return -1;
+        var children = el.parentNode.children;
+        for (var i = 0; i < children.length; i++) {
+          if (children[i] === el) return i;
+        }
+        return -1;
+      }
+      function swapNodes(n1, n2) {
+        var p1 = n1.parentNode, p2 = n2.parentNode;
+        if (!p1 || !p2 || p1 === n2 || p2 === n1) return;
+        var i1 = getIndex(n1), i2 = getIndex(n2);
+        if (p1 === p2 && i1 < i2) i2++;
+        p1.insertBefore(n2, p1.children[i1]);
+        p2.insertBefore(n1, p2.children[i2]);
+      }
+      function SwapPlugin() {
+        function Swap() {
+          this.defaults = { swapClass: 'sortable-swap-highlight' };
+        }
+        Swap.prototype = {
+          dragStart: function(_ref) {
+            lastSwapEl = _ref.dragEl;
+          },
+          dragOverValid: function(_ref2) {
+            var target = _ref2.target,
+                onMove = _ref2.onMove,
+                activeSortable = _ref2.activeSortable,
+                changed = _ref2.changed,
+                completed = _ref2.completed,
+                cancel = _ref2.cancel;
+            if (!activeSortable.options.swap) return;
+            var el = this.sortable.el,
+                options = this.options;
+            var dragItem = target && target.closest ? target.closest(activeSortable.options.draggable || '*') : target;
+            if (dragItem && dragItem !== el && (!activeSortable.options.draggable || (dragItem.matches && dragItem.matches(activeSortable.options.draggable)))) {
+              var prevSwapEl = lastSwapEl;
+              if (onMove(dragItem) !== false) {
+                if (options.swapClass) toggleClass(dragItem, options.swapClass, true);
+                lastSwapEl = dragItem;
+              } else {
+                lastSwapEl = null;
+              }
+              if (prevSwapEl && prevSwapEl !== lastSwapEl) {
+                if (options.swapClass) toggleClass(prevSwapEl, options.swapClass, false);
+              }
+            }
+            changed();
+            completed(true);
+            cancel();
+          },
+          drop: function(_ref3) {
+            var activeSortable = _ref3.activeSortable,
+                putSortable = _ref3.putSortable,
+                dragEl = _ref3.dragEl;
+            var toSortable = putSortable || this.sortable;
+            var options = this.options;
+            if (lastSwapEl && options.swapClass) toggleClass(lastSwapEl, options.swapClass, false);
+            if (lastSwapEl && (options.swap || (putSortable && putSortable.options.swap))) {
+              if (dragEl !== lastSwapEl) {
+                if (toSortable.captureAnimationState) toSortable.captureAnimationState();
+                if (toSortable !== activeSortable && activeSortable.captureAnimationState) activeSortable.captureAnimationState();
+                swapNodes(dragEl, lastSwapEl);
+                if (toSortable.animateAll) toSortable.animateAll();
+                if (toSortable !== activeSortable && activeSortable.animateAll) activeSortable.animateAll();
+              }
+            }
+          },
+          nulling: function() {
+            lastSwapEl = null;
+          }
+        };
+        return Object.assign(Swap, {
+          pluginName: 'swap',
+          eventProperties: function() {
+            return { swapItem: lastSwapEl };
+          }
+        });
+      }
+      try {
+        Sortable.mount(new SwapPlugin());
+      } catch (e) {
+        console.warn('Sortable SwapPlugin mount error:', e);
+      }
+    })();
+  </script>
 
   <style>
     :root {
@@ -385,6 +481,13 @@
       transform: scale(1.02);
       border-color: var(--accent) !important;
       z-index: 40;
+    }
+    .sortable-swap-highlight {
+      outline: 2.5px solid var(--accent) !important;
+      box-shadow: 0 0 18px rgba(45, 90, 61, 0.45) !important;
+      background: #eef7f1 !important;
+      transform: scale(1.02);
+      transition: all 0.15s ease !important;
     }
     .watchout-caption-box {
       padding: 7px 9px; background: #ffffff; border-top: 1px solid var(--border-light);
@@ -836,8 +939,6 @@
                 <button class="tool-btn" type="button" onclick="rotate90()">🔄 Xoay 90°</button>
                 <button class="tool-btn" type="button" onclick="flipImage('x')">⇄ Lật ngang</button>
                 <button class="tool-btn" type="button" onclick="flipImage('y')">⇅ Lật dọc</button>
-                <button class="tool-btn" type="button" onclick="zoomPhoto(-0.1)" title="Thu nhỏ ảnh để xem toàn cảnh hoặc lấy thêm góc nhìn">🔍- Thu nhỏ</button>
-                <button class="tool-btn" type="button" onclick="zoomPhoto(0.1)" title="Phóng to ảnh">🔍+ Phóng to</button>
                 <button class="tool-btn" type="button" onclick="resetTransforms()">↺ Đặt lại</button>
             </div>
 
@@ -847,7 +948,7 @@
                 <span class="straighten-val" id="straightenVal">0.0°</span>
             </div>
         </div>
-        <div class="crop-hint" id="cropHint">Cuộn chuột hoặc bấm 🔍- / 🔍+ để zoom. Kéo góc hoặc rê ảnh để cắt bố cục.</div>
+        <div class="crop-hint" id="cropHint">Cuộn chuột hoặc dùng 2 ngón tay trên điện thoại để zoom. Kéo để căn góc ảnh.</div>
       </div>
       
       <div class="modal-foot">
@@ -2307,7 +2408,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           if (cropper) cropper.destroy();
           cropper = new Cropper(image, {
             aspectRatio: defaultRatio,
-            viewMode: 0,
+            viewMode: 1,
             dragMode: 'move',
             autoCropArea: 0.95,
             restore: false,
@@ -2318,6 +2419,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             cropBoxResizable: true,
             toggleDragModeOnDblclick: false,
             zoomOnWheel: true,
+            zoomOnTouch: true,
             background: false
           });
         };
@@ -2350,11 +2452,6 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         if (!cropper) return;
         if (axis === 'x') { scaleX = -scaleX; cropper.scaleX(scaleX); } 
         else if (axis === 'y') { scaleY = -scaleY; cropper.scaleY(scaleY); }
-    }
-
-    function zoomPhoto(delta) {
-        if (!cropper) return;
-        cropper.zoom(delta);
     }
 
     function applyStraighten(val) {
@@ -2394,7 +2491,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       } else if (t.type === 'free') {
         if (t.index !== undefined) {
            if (!D[t.key]) D[t.key] = [];
-           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: t.key === 'watchoutPhotos' ? '3:1' : undefined }; 
+           if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: t.key === 'watchoutPhotos' ? 'single' : undefined }; 
            if (t.subType === 'sub') {
              D[t.key][t.index].imgSub = imgData;
              D[t.key][t.index].originalSub = originalData;
@@ -2404,7 +2501,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
            }
         } else {
            if (!D[t.key]) D[t.key] = []; 
-           D[t.key].push({ img: imgData, original: originalData, caption: '', photoLayout: t.key === 'watchoutPhotos' ? '3:1' : undefined }); 
+           D[t.key].push({ img: imgData, original: originalData, caption: '', photoLayout: t.key === 'watchoutPhotos' ? 'single' : undefined }); 
         }
         renderFreePhotos(t.key);
       } else if (t.type === 'dim') {
@@ -2907,6 +3004,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             handle: '.dim-slot-topbar, .dim-drag-handle',
             filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
             preventOnFilter: false,
+            swap: true,
+            swapClass: 'sortable-swap-highlight',
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-chosen',
@@ -2923,9 +3022,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 buildDimGrid();
                 return;
               }
-              pushHistory('Sắp xếp lại kích thước');
-              const movedItem = D.dimensions.splice(from, 1)[0];
-              D.dimensions.splice(to, 0, movedItem);
+              pushHistory('Hoán đổi vị trí kích thước');
+              const temp = D.dimensions[from];
+              D.dimensions[from] = D.dimensions[to];
+              D.dimensions[to] = temp;
               as();
               buildDimGrid();
             }
@@ -3093,13 +3193,29 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           if(el._sortable) el._sortable.destroy();
           el._sortable = new Sortable(el, {
              animation: 150, delay: 250, delayOnTouchOnly: true,
+             draggable: '.free-photo-item',
              filter: '.ignore-drag, input, textarea, select, button, .free-caption, .free-caption input, .tap-option, .pact',
              preventOnFilter: false,
+             swap: true,
+             swapClass: 'sortable-swap-highlight',
              ghostClass: 'sortable-ghost',
              onEnd: function (evt) {
+                if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
                 if (evt.oldIndex === evt.newIndex) return;
-                pushHistory('Đổi thứ tự ảnh');
-                const array = D[key]; const movedItem = array.splice(evt.oldIndex, 1)[0]; array.splice(evt.newIndex, 0, movedItem);
+                if (!D[key] || !D[key].length) return;
+                const total = D[key].length;
+                let from = evt.oldIndex;
+                let to = evt.newIndex;
+                if (from >= total) from = total - 1;
+                if (to >= total) to = total - 1;
+                if (from === to) {
+                  renderFreePhotos(key);
+                  return;
+                }
+                pushHistory('Hoán đổi vị trí ảnh');
+                const temp = D[key][from];
+                D[key][from] = D[key][to];
+                D[key][to] = temp;
                 as(); renderFreePhotos(key);
              }
           });
@@ -3115,7 +3231,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         div.className = 'watchout-slot';
         div.dataset.index = String(i);
 
-        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : '3:1');
+        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
         const targetMain = `{type:'free',key:'watchoutPhotos',index:${i},subType:'main'}`;
         const targetSub = `{type:'free',key:'watchoutPhotos',index:${i},subType:'sub'}`;
 
@@ -3229,7 +3345,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       addBtn.onclick = () => {
         pushHistory('Thêm ô Quality Watch Out');
         if (!D.watchoutPhotos) D.watchoutPhotos = [];
-        D.watchoutPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: '3:1', caption: '' });
+        D.watchoutPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
         as();
         renderWatchoutPhotos();
       };
@@ -3247,6 +3363,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
+          swap: true,
+          swapClass: 'sortable-swap-highlight',
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
@@ -3263,9 +3381,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderWatchoutPhotos();
               return;
             }
-            pushHistory('Đổi thứ tự Quality Watch Out');
-            const movedItem = D.watchoutPhotos.splice(from, 1)[0];
-            D.watchoutPhotos.splice(to, 0, movedItem);
+            pushHistory('Hoán đổi vị trí Quality Watch Out');
+            const temp = D.watchoutPhotos[from];
+            D.watchoutPhotos[from] = D.watchoutPhotos[to];
+            D.watchoutPhotos[to] = temp;
             as();
             renderWatchoutPhotos();
           }
