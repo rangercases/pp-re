@@ -1688,25 +1688,86 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return parts.length ? parts.join(' ') : 'Untitled Report';
     }
 
-    function resizeImage(dataUrl, maxDimension = 1280, quality = 0.85) {
-      return new Promise(resolve => {
+    function resizeImage(imageSource, maxDimension = 1280, quality = 0.88) {
+      return new Promise((resolve) => {
+        if (!imageSource) {
+          resolve('');
+          return;
+        }
+
+        const isBlobOrFile = (typeof Blob !== 'undefined' && imageSource instanceof Blob) ||
+                             (typeof File !== 'undefined' && imageSource instanceof File);
+        let objectUrl = null;
+
         const img = new Image();
         img.onload = () => {
-          let w = img.width, h = img.height;
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (!w || !h) {
+            resolve(typeof imageSource === 'string' ? imageSource : '');
+            return;
+          }
           if (w > maxDimension || h > maxDimension) {
             if (w > h) { h = Math.round((h * maxDimension) / w); w = maxDimension; } 
             else { w = Math.round((w * maxDimension) / h); h = maxDimension; }
           }
           const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
+          canvas.width = w;
+          canvas.height = h;
+
+          // Cấu hình không gian màu Display P3 chuẩn màn hình iPhone Retina/OLED
+          let ctx = null;
+          const isP3 = window.matchMedia && window.matchMedia('(color-gamut: p3)').matches;
+          if (isP3) {
+            try {
+              ctx = canvas.getContext('2d', { colorSpace: 'display-p3' });
+            } catch (e) {
+              ctx = null;
+            }
+          }
+          if (!ctx) ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, w, h);
+
+            const isPng = (isBlobOrFile && imageSource.type === 'image/png') ||
+                          (typeof imageSource === 'string' && imageSource.startsWith('data:image/png'));
+            try {
+              resolve(canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality));
+            } catch (err) {
+              resolve(canvas.toDataURL('image/png'));
+            }
+          } else {
+            resolve(typeof imageSource === 'string' ? imageSource : '');
+          }
         };
-        img.src = dataUrl;
+
+        img.onerror = (err) => {
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          console.warn('resizeImage load failed', err);
+          resolve(typeof imageSource === 'string' ? imageSource : '');
+        };
+
+        if (isBlobOrFile) {
+          try {
+            objectUrl = URL.createObjectURL(imageSource);
+            img.src = objectUrl;
+          } catch (e) {
+            console.error('URL.createObjectURL failed', e);
+            resolve('');
+          }
+        } else if (typeof imageSource === 'string') {
+          img.src = imageSource;
+        } else {
+          resolve('');
+        }
       });
     }
 
-    // ═══════════════ XỬ LÝ DRAG & DROP TỪ FOLDER ═══════════════
+    // ═══════════════ XỬ LÝ DRAG & DROP TỪ FOLDER & DECODE ẢNH ═══════════════
     function isImageFile(file) {
       if (!file) return false;
       if (file.type && file.type.startsWith('image/')) return true;
@@ -1716,6 +1777,40 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function isHeicFile(file) {
       return /\.(heic|heif)$/i.test(file && file.name ? file.name : '') ||
         Boolean(file && /image\/hei[cf]/i.test(file.type || ''));
+    }
+
+    // Kiểm tra xem trình duyệt có hỗ trợ giải mã phần cứng HEIC gốc (như iOS Safari/macOS) hay không
+    async function canDecodeNatively(blob) {
+      if (!blob) return false;
+      if (!isHeicFile(blob)) return true;
+
+      if (typeof createImageBitmap === 'function') {
+        try {
+          const bmp = await createImageBitmap(blob);
+          bmp.close();
+          return true;
+        } catch (e) {}
+      }
+
+      return new Promise((resolve) => {
+        let url = null;
+        try {
+          url = URL.createObjectURL(blob);
+        } catch (e) {
+          resolve(false);
+          return;
+        }
+        const testImg = new Image();
+        testImg.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(true);
+        };
+        testImg.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(false);
+        };
+        testImg.src = url;
+      });
     }
 
     function getDroppedImageFiles(dataTransfer) {
@@ -1780,19 +1875,31 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       let imageBlob = file;
       if (isHeicFile(file)) {
-        try {
-          imageBlob = await convertHeicWithLibheif(file);
-        } catch (error) {
-          console.error('HEIF conversion failed', {
-            name: error && error.name,
-            message: error && error.message,
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size
-          });
-          showToast('Ảnh HEIC này không được hỗ trợ. Hãy đổi sang JPG/PNG trên iPhone hoặc Windows rồi thử lại.');
-          return null;
+        // Nếu trình duyệt (như iOS Safari) giải mã HEIC bằng phần cứng Apple gốc được -> không cần dùng libheif
+        const canNative = await canDecodeNatively(file);
+        if (!canNative) {
+          try {
+            imageBlob = await convertHeicWithLibheif(file);
+          } catch (error) {
+            console.error('HEIF fallback conversion failed', {
+              name: error && error.name,
+              message: error && error.message,
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: file.size
+            });
+            showToast('Ảnh HEIC này không được hỗ trợ. Hãy đổi sang JPG/PNG trên iPhone hoặc Windows rồi thử lại.');
+            return null;
+          }
         }
+      }
+
+      // Xử lý nén và bảo tồn màu Display P3 trực tiếp từ blob mà không tạo chuỗi Base64 khổng lồ
+      try {
+        const optimizedDataUrl = await resizeImage(imageBlob, 1920, 0.90);
+        if (optimizedDataUrl) return optimizedDataUrl;
+      } catch (err) {
+        console.warn('Direct blob resize fallback to FileReader', err);
       }
 
       return await new Promise(resolve => {
@@ -2375,7 +2482,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       if (cropper) { cropper.destroy(); cropper = null; closeCamera(); }
       document.getElementById('btnRetakeCam').classList.remove('hidden');
       document.getElementById('btnRetakeLib').classList.add('hidden');
-      document.getElementById('cameraInput').click();
+      const camInput = document.getElementById('cameraInput');
+      if (camInput) {
+        camInput.value = '';
+        camInput.click();
+      }
     }
 
     function triggerPickLibrary(target) {
@@ -2386,6 +2497,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       document.getElementById('btnRetakeLib').classList.remove('hidden');
       const libInput = document.getElementById('libraryInput');
       if (libInput) {
+        libInput.value = '';
         libInput.multiple = Boolean(target && target.type === 'free');
         libInput.click();
       }
@@ -2413,7 +2525,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         for (const file of files) {
           const dataUrl = await readImageFileAsDataUrl(file);
           if (!dataUrl) continue;
-          const compressed = await resizeImage(dataUrl, 1280, 0.85);
+          const compressed = await resizeImage(dataUrl, 1280, 0.88);
           if (camTarget.index !== undefined && addedCount === 0) {
             if (!D[camTarget.key][camTarget.index]) D[camTarget.key][camTarget.index] = { caption: '' };
             D[camTarget.key][camTarget.index].img = compressed;
@@ -2433,8 +2545,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       showToast('Đang áp dụng ảnh...');
       const dataUrl = await readImageFileAsDataUrl(files[0]);
       if (!dataUrl) return;
-      currentOriginalImg = dataUrl;
-      const compressed = await resizeImage(dataUrl, 1280, 0.85);
+      const compressed = await resizeImage(dataUrl, 1280, 0.88);
+      currentOriginalImg = compressed;
       savePhoto(compressed, compressed);
     }
 
@@ -2603,8 +2715,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     async function usePhoto() {
       if (!cropper) { showToast('Lỗi: Chưa có dữ liệu ảnh!'); return; }
       const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
-      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.85);
-      const compressedOriginal = await resizeImage(currentOriginalImg, 1280, 0.85);
+      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.88);
+      const compressedOriginal = await resizeImage(currentOriginalImg, 1280, 0.88);
       savePhoto(finalDataUrl, compressedOriginal);
       closeCamera();
     }
