@@ -289,6 +289,16 @@
     .rc-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
     .badge-done { background: var(--accent-light); color: var(--accent2); }
     .badge-wip { background: #fef9e7; color: #7a5c00; }
+    .rc-action-btn {
+      background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.08);
+      color: var(--muted); border-radius: 6px; width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .rc-action-btn:hover {
+      background: var(--accent-light); border-color: var(--accent); color: var(--accent2);
+      transform: scale(1.08);
+    }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 2; }
 
     /* BATCH ACTION BAR */
@@ -795,7 +805,10 @@
     </div>
     
     <button class="new-btn" id="btnNewReport" onclick="newReport()">+ New Report</button>
-    <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-top:-6px;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
+    <div style="display:flex; gap:8px; margin-top:-6px; margin-bottom:14px;">
+      <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-bottom:0; flex:1;" onclick="document.getElementById('importInput').click()">📥 Nhập file đã lưu (.json)</button>
+      <button class="new-btn" id="btnPasteJson" style="background:#fff; border:1.5px solid var(--accent); margin-bottom:0; width:auto; padding:14px 18px; white-space:nowrap;" onclick="pasteJsonFromClipboard()" title="Dán file hoặc dữ liệu JSON từ clipboard (Ctrl+V)">📋 Dán JSON</button>
+    </div>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     
     <div id="reportsList"></div>
@@ -806,6 +819,8 @@
   <div class="batch-bar" id="batchBar">
     <button class="batch-btn pri" onclick="selectAllReports()">Chọn tất cả</button>
     <span style="font-size:12px; font-weight:600; color:var(--muted);" id="selectedCountText">Đã chọn: 0</span>
+    <button class="batch-btn" onclick="shareSelectedReports()" style="color:#007aff; font-weight:600;">Chia sẻ</button>
+    <button class="batch-btn" onclick="duplicateSelectedReports()" style="color:var(--accent); font-weight:600;">Nhân bản</button>
     <button class="batch-btn danger" onclick="deleteSelectedReports()">Xóa</button>
   </div>
 
@@ -2083,9 +2098,51 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       // 1. If modal is open, do not intercept
       const camModal = document.getElementById('camModal');
       const stylerModal = document.getElementById('pdfStylerModal');
+      const conflictModal = document.getElementById('importConflictModal');
       if ((camModal && !camModal.classList.contains('hidden')) || 
-          (stylerModal && !stylerModal.classList.contains('hidden'))) {
+          (stylerModal && !stylerModal.classList.contains('hidden')) ||
+          (conflictModal && !conflictModal.classList.contains('hidden'))) {
         return;
+      }
+
+      const isHomeActive = document.getElementById('homeScreen') && document.getElementById('homeScreen').classList.contains('active');
+
+      // NẾU ĐANG Ở MÀN HÌNH HOME: Ưu tiên bắt file / text JSON để nhập
+      if (isHomeActive) {
+        // A. File JSON trong clipboard
+        if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+          const files = Array.from(e.clipboardData.files);
+          const jsonFile = files.find(f => (f.name && f.name.toLowerCase().endsWith('.json')) || f.type === 'application/json');
+          if (jsonFile) {
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                await processJsonData(data);
+              } catch (err) {
+                alert('Lỗi: File JSON dán vào không hợp lệ!');
+              }
+            };
+            reader.readAsText(jsonFile);
+            return;
+          }
+        }
+
+        // B. Chuỗi text JSON trong clipboard
+        if (e.clipboardData) {
+          const text = e.clipboardData.getData('text');
+          if (text && text.trim().startsWith('{') && text.trim().endsWith('}')) {
+            try {
+              const data = JSON.parse(text.trim());
+              if (data && typeof data === 'object' && (data.model !== undefined || data.desc !== undefined || data.checks !== undefined || data.coverPhotos !== undefined)) {
+                e.preventDefault();
+                await processJsonData(data);
+                return;
+              }
+            } catch (err) {}
+          }
+        }
       }
 
       // 2. Extract image files
@@ -2101,7 +2158,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       // 3. Resolve destination
       const resolved = resolvePasteTarget();
       if (!resolved || !resolved.target) {
-        showToast('Di chuột vào ô ảnh cần dán hoặc chuyển sang trang ảnh tương ứng.');
+        if (!isHomeActive) {
+          showToast('Di chuột vào ô ảnh cần dán hoặc chuyển sang trang ảnh tương ứng.');
+        }
         return;
       }
 
@@ -2771,14 +2830,255 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
 
     function findNextCopySuffix(targetTitle, allReports) {
+      const cleanBase = targetTitle.replace(/\s*\(\d+\)$/, '').trim();
       const existingTitles = allReports.map(r => getReportTitle(r).trim().toLowerCase());
       let n = 1;
-      let candidate = `${targetTitle} (${n})`.toLowerCase();
+      let candidate = `${cleanBase} (${n})`.toLowerCase();
       while (existingTitles.includes(candidate)) {
         n++;
-        candidate = `${targetTitle} (${n})`.toLowerCase();
+        candidate = `${cleanBase} (${n})`.toLowerCase();
       }
       return `(${n})`;
+    }
+
+    async function duplicateReportById(id) {
+      try {
+        const allReps = await dbGetAll();
+        const source = allReps.find(r => String(r.id) === String(id));
+        if (!source) {
+          showToast('Không tìm thấy báo cáo để nhân bản!');
+          return;
+        }
+        await doDuplicateReport(source);
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi nhân bản báo cáo: ' + err.message);
+      }
+    }
+
+    async function doDuplicateReport(source) {
+      const cloned = JSON.parse(JSON.stringify(source));
+      cloned.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+
+      const allReports = await dbGetAll();
+      const baseTitle = getReportTitle(cloned).trim();
+      const suffix = findNextCopySuffix(baseTitle, allReports);
+
+      if (cloned.desc && cloned.desc.trim()) {
+        const cleanDesc = cloned.desc.replace(/\s*\(\d+\)$/, '').trim();
+        cloned.desc = `${cleanDesc} ${suffix}`;
+      } else if (cloned.reportTitle && cloned.reportTitle.trim()) {
+        const cleanTitle = cloned.reportTitle.replace(/\s*\(\d+\)$/, '').trim();
+        cloned.reportTitle = `${cleanTitle} ${suffix}`;
+      } else if (cloned.model && cloned.model.trim()) {
+        const cleanModel = cloned.model.replace(/\s*\(\d+\)$/, '').trim();
+        cloned.model = `${cleanModel} ${suffix}`;
+      } else {
+        cloned.desc = `Bản sao ${suffix}`;
+      }
+
+      await dbPut(cloned);
+      showToast(`✓ Đã nhân bản báo cáo ${suffix}!`);
+      await renderHome();
+    }
+
+    async function duplicateSelectedReports() {
+      if (selectedReportIds.size === 0) {
+        showToast('Chưa chọn báo cáo nào để nhân bản!');
+        return;
+      }
+      try {
+        const allReports = await dbGetAll();
+        const ids = Array.from(selectedReportIds);
+        for (const id of ids) {
+          const source = allReports.find(r => String(r.id) === String(id));
+          if (source) {
+            await doDuplicateReport(source);
+          }
+        }
+        selectedReportIds.clear();
+        toggleSelectMode();
+        showToast(`✓ Đã nhân bản ${ids.length} báo cáo thành công!`);
+        await renderHome();
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi nhân bản hàng loạt: ' + err.message);
+      }
+    }
+
+    function downloadReportJson(rep) {
+      const fileName = [rep.model, rep.desc].filter(Boolean).join('_') || 'report';
+      const data = JSON.stringify(rep, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PP_${fileName}_${rep.date || 'draft'}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function shareReportById(id) {
+      try {
+        const reports = await dbGetAll();
+        const rep = reports.find(r => String(r.id) === String(id));
+        if (!rep) {
+          showToast('Không tìm thấy báo cáo!');
+          return;
+        }
+        downloadReportJson(rep);
+        showToast('✓ Đã tải file JSON báo cáo!');
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi chia sẻ báo cáo: ' + err.message);
+      }
+    }
+
+    async function shareSelectedReports() {
+      if (selectedReportIds.size === 0) {
+        showToast('Chưa chọn báo cáo nào để chia sẻ!');
+        return;
+      }
+      try {
+        const allReports = await dbGetAll();
+        const selectedReps = allReports.filter(r => selectedReportIds.has(String(r.id)));
+        if (selectedReps.length === 0) return;
+
+        showToast(`Đang tải ${selectedReps.length} file JSON...`);
+        for (let i = 0; i < selectedReps.length; i++) {
+          setTimeout(() => {
+            downloadReportJson(selectedReps[i]);
+            if (i === selectedReps.length - 1) {
+              showToast(`✓ Đã tải xong ${selectedReps.length} file JSON!`);
+            }
+          }, i * 300);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi chia sẻ hàng loạt: ' + err.message);
+      }
+    }
+
+    async function processJsonData(data) {
+      try {
+        const existingReports = await dbGetAll();
+
+        const targetTitle = getReportTitle(data).trim();
+        const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
+
+        // 1. Kiểm tra nếu trùng cả NAME với báo cáo đang có
+        let conflictReport = null;
+        if (isNamed) {
+          conflictReport = existingReports.find(r => getReportTitle(r).trim().toLowerCase() === targetTitle.toLowerCase());
+        }
+
+        if (conflictReport) {
+          // Trùng cả name -> Hiển thị hộp thoại hỏi Replace hay Tạo bản (1)
+          pendingImportData = data;
+          pendingExistingReport = conflictReport;
+          pendingCopySuffix = findNextCopySuffix(targetTitle, existingReports);
+
+          const nameEl = document.getElementById('conflictReportName');
+          const newNameEl = document.getElementById('conflictNewName');
+          const btnCopy = document.getElementById('btnConflictCopy');
+          if (nameEl) nameEl.textContent = `"${targetTitle}"`;
+          if (newNameEl) newNameEl.textContent = `bản ${pendingCopySuffix}`;
+          if (btnCopy) btnCopy.textContent = `Tạo bản ${pendingCopySuffix}`;
+
+          const m = document.getElementById('importConflictModal');
+          if (m) m.classList.remove('hidden');
+          return;
+        }
+
+        // 2. Nếu KHÔNG trùng name nhưng trùng ID (hoặc chưa có ID) -> Tự động cấp ID mới
+        const isIdConflict = data.id && existingReports.some(r => String(r.id) === String(data.id));
+        if (!data.id || isIdConflict) {
+          data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+        }
+
+        await dbPut(data);
+        showToast('✓ Nhập báo cáo thành công!');
+        await renderHome();
+        openReport(data.id);
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
+      }
+    }
+
+    async function pasteJsonFromClipboard() {
+      try {
+        // 1. Thử đọc dạng text
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text && text.trim().startsWith('{') && text.trim().endsWith('}')) {
+            try {
+              const data = JSON.parse(text.trim());
+              if (data && typeof data === 'object') {
+                await processJsonData(data);
+                return;
+              }
+            } catch (e) {}
+          }
+        }
+        // 2. Thử đọc dạng files qua clipboard.read()
+        if (navigator.clipboard && navigator.clipboard.read) {
+          try {
+            const items = await navigator.clipboard.read();
+            for (const item of items) {
+              for (const type of item.types) {
+                if (type === 'application/json' || type === 'text/plain') {
+                  const blob = await item.getType(type);
+                  const text = await blob.text();
+                  if (text && text.trim().startsWith('{') && text.trim().endsWith('}')) {
+                    const data = JSON.parse(text.trim());
+                    if (data && typeof data === 'object') {
+                      await processJsonData(data);
+                      return;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+        }
+        showToast('Clipboard chưa có dữ liệu JSON! Hãy copy nội dung hoặc file JSON rồi bấm Dán.');
+      } catch (err) {
+        console.error(err);
+        showToast('Nhấn Ctrl+V để dán dữ liệu JSON trực tiếp!');
+      }
+    }
+
+    function initHomeDragAndDrop() {
+      const home = document.getElementById('homeScreen');
+      if (!home) return;
+      home.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      home.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = Array.from(e.dataTransfer.files || []);
+        const jsonFiles = files.filter(f => (f.name && f.name.toLowerCase().endsWith('.json')) || f.type === 'application/json');
+        if (jsonFiles.length > 0) {
+          for (const file of jsonFiles) {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                await processJsonData(data);
+              } catch (err) {
+                console.error(err);
+                alert(`Lỗi đọc file ${file.name}: Không phải JSON hợp lệ!`);
+              }
+            };
+            reader.readAsText(file);
+          }
+        }
+      });
     }
 
     function importReport(e) {
@@ -2788,45 +3088,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       reader.onload = async (ev) => {
         try {
           const data = JSON.parse(ev.target.result);
-          const existingReports = await dbGetAll();
-
-          const targetTitle = getReportTitle(data).trim();
-          const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
-
-          // 1. Kiểm tra nếu trùng cả NAME với báo cáo đang có
-          let conflictReport = null;
-          if (isNamed) {
-            conflictReport = existingReports.find(r => getReportTitle(r).trim().toLowerCase() === targetTitle.toLowerCase());
-          }
-
-          if (conflictReport) {
-            // Trùng cả name -> Hiển thị hộp thoại hỏi Replace hay Tạo bản (1)
-            pendingImportData = data;
-            pendingExistingReport = conflictReport;
-            pendingCopySuffix = findNextCopySuffix(targetTitle, existingReports);
-
-            const nameEl = document.getElementById('conflictReportName');
-            const newNameEl = document.getElementById('conflictNewName');
-            const btnCopy = document.getElementById('btnConflictCopy');
-            if (nameEl) nameEl.textContent = `"${targetTitle}"`;
-            if (newNameEl) newNameEl.textContent = `bản ${pendingCopySuffix}`;
-            if (btnCopy) btnCopy.textContent = `Tạo bản ${pendingCopySuffix}`;
-
-            const m = document.getElementById('importConflictModal');
-            if (m) m.classList.remove('hidden');
-            return;
-          }
-
-          // 2. Nếu KHÔNG trùng name nhưng trùng ID (hoặc chưa có ID) -> Tự động cấp ID mới
-          const isIdConflict = data.id && existingReports.some(r => String(r.id) === String(data.id));
-          if (!data.id || isIdConflict) {
-            data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
-          }
-
-          await dbPut(data);
-          showToast('✓ Nhập báo cáo thành công!');
-          await renderHome();
-          openReport(data.id);
+          await processJsonData(data);
         } catch (err) {
           console.error(err);
           alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
@@ -2885,7 +3147,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 <div class="rc-sub">${r.date || ''} · ${r.factory || ''} · ${r.reviewer || ''}</div>
               </div>
             </div>
-            <div class="rc-arrow" style="${isSelectMode ? 'display:none' : ''}">›</div>
+            <div class="rc-right" style="${isSelectMode ? 'display:none' : 'display:flex; align-items:center; gap:6px;'}">
+              <button class="rc-action-btn" title="Chia sẻ file JSON" onclick="event.stopPropagation(); shareReportById('${r.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+              <button class="rc-action-btn" title="Nhân bản báo cáo" onclick="event.stopPropagation(); duplicateReportById('${r.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
+              <div class="rc-arrow" style="color:var(--muted); font-size:18px; line-height:1;">›</div>
+            </div>
           `;
           
           d.onclick = (e) => {
@@ -4042,9 +4312,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function shareReport() {
       as(); 
-      const fileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
-      const data = JSON.stringify(D, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `PP_${fileName}_${D.date || 'draft'}.json`; a.click(); URL.revokeObjectURL(url); showToast('✓ JSON file downloaded');
+      downloadReportJson(D);
+      showToast('✓ JSON file downloaded');
     }
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
@@ -4635,7 +4904,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return doc;
     }
 
-    initDB().then(() => { renderHome(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
+    initDB().then(() => { renderHome(); initHomeDragAndDrop(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });
   </script>
 </body>
 
