@@ -381,7 +381,22 @@
     /* FREE PHOTOS */
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
-    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block; }
+    .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block; user-select: none; -webkit-user-drag: none; }
+    .free-drag-handle {
+      position: absolute; top: 6px; left: 6px; z-index: 5;
+      display: inline-flex; align-items: center; gap: 3.5px;
+      padding: 3px 6px; border-radius: 4px;
+      background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      color: #ffffff; font-size: 10px; font-weight: 700;
+      cursor: grab; user-select: none; touch-action: none;
+      transition: all 0.15s ease; line-height: 1;
+    }
+    .free-drag-handle:active { cursor: grabbing; }
+    .free-drag-handle:hover { transform: scale(1.04); }
+    .free-photo-item.is-empty .free-drag-handle {
+      background: #edf3ef; color: #2d5a3d; border: 1px solid var(--border-light);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
     .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
     .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
@@ -471,13 +486,13 @@
       background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px;
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost {
+    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost, .free-photo-item.sortable-ghost {
       opacity: 0.3 !important;
       transform: scale(0.96);
       background: #e8f5ec !important;
       border: 2px dashed #2d5a3d !important;
     }
-    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen {
+    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen, .free-photo-item.sortable-chosen {
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
       transform: scale(1.02);
       z-index: 40;
@@ -1772,8 +1787,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         }
       });
 
+      function isFileDrag(e) {
+        if (!e.dataTransfer || !e.dataTransfer.types) return false;
+        const types = Array.from(e.dataTransfer.types);
+        return types.includes('Files') || types.includes('application/x-moz-file');
+      }
+
       ['dragenter', 'dragover'].forEach(eventName => {
         element.addEventListener(eventName, (e) => {
+          if (!isFileDrag(e)) return;
           e.preventDefault();
           e.stopPropagation();
           element.classList.add('drag-over');
@@ -1782,6 +1804,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       ['dragleave', 'dragend'].forEach(eventName => {
         element.addEventListener(eventName, (e) => {
+          if (!isFileDrag(e)) return;
           e.preventDefault();
           e.stopPropagation();
           element.classList.remove('drag-over');
@@ -1789,6 +1812,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       });
 
       element.addEventListener('drop', (e) => {
+        if (!isFileDrag(e)) return;
         e.preventDefault();
         e.stopPropagation();
         element.classList.remove('drag-over');
@@ -3171,12 +3195,21 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const arr = D[key] || [];
       
       arr.forEach((p, i) => {
-        const div = document.createElement('div'); div.className = 'free-photo-item';
-        div.title = 'Kéo thả hoặc nhấn Ctrl+V để dán ảnh';
+        const div = document.createElement('div');
+        div.className = 'free-photo-item' + (p && p.img ? '' : ' is-empty');
+        div.title = 'Kéo hoặc nhấn giữ để sắp xếp lại vị trí';
         const targetObj = `{type:'free',key:'${key}',index:${i}}`;
         
+        const dragHandleHtml = `
+          <div class="free-drag-handle" title="Kéo hoặc nhấn giữ để di chuyển vị trí">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            <span>#${i + 1}</span>
+          </div>`;
+        
         if (p && p.img) {
-            div.innerHTML = `<img src="${p.img}" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            div.innerHTML = `
+            ${dragHandleHtml}
+            <img src="${p.img}" draggable="false" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
               <button class="pact edit" title="Chỉnh sửa" onclick="editFreePhoto('${key}', ${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
               <button class="pact paste" title="Dán đè ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetObj})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
@@ -3185,6 +3218,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             <div class="free-caption ignore-drag"><input class="ignore-drag" value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
         } else {
             div.innerHTML = `
+              ${dragHandleHtml}
               <div class="dual-tap-box">
                 <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -3217,13 +3251,19 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       if(typeof Sortable !== 'undefined') {
           if(el._sortable) el._sortable.destroy();
           el._sortable = new Sortable(el, {
-             animation: 150, delay: 250, delayOnTouchOnly: true,
+             animation: 180,
+             delay: 200,
+             delayOnTouchOnly: true,
+             touchStartThreshold: 5,
              draggable: '.free-photo-item',
-             filter: '.ignore-drag, input, textarea, select, button, .free-caption, .free-caption input, .tap-option, .pact',
+             handle: '.free-drag-handle, .free-photo-item',
+             filter: 'input, textarea, select, button, .pact, .free-caption, .free-caption input, .ignore-drag',
              preventOnFilter: false,
              swap: true,
              swapClass: 'sortable-swap-highlight',
              ghostClass: 'sortable-ghost',
+             chosenClass: 'sortable-chosen',
+             dragClass: 'sortable-chosen',
              onEnd: function (evt) {
                 if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
                 if (evt.oldIndex === evt.newIndex) return;
