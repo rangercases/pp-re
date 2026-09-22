@@ -1090,6 +1090,31 @@
     </div>
   </div>
 
+  <!-- MODAL XÁC NHẬN TRÙNG TÊN KHI NHẬP JSON -->
+  <div class="modal-overlay hidden" id="importConflictModal" style="z-index: 105;">
+    <div class="modal-box" style="max-width: 460px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.35);">
+      <div class="modal-head">
+        <h3 style="display:flex; align-items:center; gap:8px;">
+          <span>⚠️</span> Phát hiện báo cáo cùng tên
+        </h3>
+        <button class="modal-close" onclick="closeImportConflictModal()">✕</button>
+      </div>
+      <div class="modal-body" style="background: #fff; padding: 20px; color: #2c3e50; font-size: 13.5px; line-height: 1.55;">
+        <p style="margin: 0 0 12px 0;">
+          Báo cáo <strong id="conflictReportName" style="color: #111;"></strong> đã tồn tại trong danh sách.
+        </p>
+        <p style="margin: 0; color: #555;">
+          Bạn muốn <strong>ghi đè (Replace)</strong> lên báo cáo cũ hay <strong>tạo bản sao mới</strong> (<span id="conflictNewName" style="font-weight: 600; color: var(--accent);">(1)</span>)?
+        </p>
+      </div>
+      <div class="modal-foot" style="padding: 12px 16px; background: #fafafa; border-top: 1px solid var(--border-light); display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="mbtn sec" onclick="closeImportConflictModal()">Hủy</button>
+        <button class="mbtn sec" onclick="handleConflictAction(true)" style="color: #c0392b; border-color: #f5c6cb; background: #fff5f5;">Ghi đè (Replace)</button>
+        <button class="mbtn pri" id="btnConflictCopy" onclick="handleConflictAction(false)">Tạo bản (1)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INPUTS -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
   <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" style="display:none" onchange="handleFile(event)">
@@ -2694,6 +2719,68 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
 
     // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
+    let pendingImportData = null;
+    let pendingExistingReport = null;
+    let pendingCopySuffix = '(1)';
+
+    function closeImportConflictModal() {
+      const m = document.getElementById('importConflictModal');
+      if (m) m.classList.add('hidden');
+      pendingImportData = null;
+      pendingExistingReport = null;
+      pendingCopySuffix = '(1)';
+    }
+
+    async function handleConflictAction(isReplace) {
+      if (!pendingImportData) return;
+      await applyImportData(pendingImportData, isReplace);
+    }
+
+    async function applyImportData(data, isReplace) {
+      try {
+        if (isReplace && pendingExistingReport) {
+          data.id = pendingExistingReport.id;
+          await dbPut(data);
+          showToast('✓ Đã ghi đè báo cáo thành công!');
+        } else {
+          data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+          if (pendingExistingReport) {
+            const suffix = pendingCopySuffix || '(1)';
+            if (data.desc && data.desc.trim()) {
+              data.desc = `${data.desc.trim()} ${suffix}`;
+            } else if (data.reportTitle && data.reportTitle.trim()) {
+              data.reportTitle = `${data.reportTitle.trim()} ${suffix}`;
+            } else if (data.model && data.model.trim()) {
+              data.model = `${data.model.trim()} ${suffix}`;
+            } else {
+              data.desc = `Bản sao ${suffix}`;
+            }
+            showToast(`✓ Đã tạo báo cáo mới ${suffix}!`);
+          } else {
+            showToast('✓ Nhập báo cáo thành công!');
+          }
+          await dbPut(data);
+        }
+        closeImportConflictModal();
+        await renderHome();
+        openReport(data.id);
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi lưu báo cáo: ' + err.message);
+      }
+    }
+
+    function findNextCopySuffix(targetTitle, allReports) {
+      const existingTitles = allReports.map(r => getReportTitle(r).trim().toLowerCase());
+      let n = 1;
+      let candidate = `${targetTitle} (${n})`.toLowerCase();
+      while (existingTitles.includes(candidate)) {
+        n++;
+        candidate = `${targetTitle} (${n})`.toLowerCase();
+      }
+      return `(${n})`;
+    }
+
     function importReport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -2701,12 +2788,47 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       reader.onload = async (ev) => {
         try {
           const data = JSON.parse(ev.target.result);
-          if (!data.id) data.id = Date.now().toString();
+          const existingReports = await dbGetAll();
+
+          const targetTitle = getReportTitle(data).trim();
+          const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
+
+          // 1. Kiểm tra nếu trùng cả NAME với báo cáo đang có
+          let conflictReport = null;
+          if (isNamed) {
+            conflictReport = existingReports.find(r => getReportTitle(r).trim().toLowerCase() === targetTitle.toLowerCase());
+          }
+
+          if (conflictReport) {
+            // Trùng cả name -> Hiển thị hộp thoại hỏi Replace hay Tạo bản (1)
+            pendingImportData = data;
+            pendingExistingReport = conflictReport;
+            pendingCopySuffix = findNextCopySuffix(targetTitle, existingReports);
+
+            const nameEl = document.getElementById('conflictReportName');
+            const newNameEl = document.getElementById('conflictNewName');
+            const btnCopy = document.getElementById('btnConflictCopy');
+            if (nameEl) nameEl.textContent = `"${targetTitle}"`;
+            if (newNameEl) newNameEl.textContent = `bản ${pendingCopySuffix}`;
+            if (btnCopy) btnCopy.textContent = `Tạo bản ${pendingCopySuffix}`;
+
+            const m = document.getElementById('importConflictModal');
+            if (m) m.classList.remove('hidden');
+            return;
+          }
+
+          // 2. Nếu KHÔNG trùng name nhưng trùng ID (hoặc chưa có ID) -> Tự động cấp ID mới
+          const isIdConflict = data.id && existingReports.some(r => String(r.id) === String(data.id));
+          if (!data.id || isIdConflict) {
+            data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+          }
+
           await dbPut(data);
           showToast('✓ Nhập báo cáo thành công!');
           await renderHome();
           openReport(data.id);
         } catch (err) {
+          console.error(err);
           alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
         }
       };
