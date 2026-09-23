@@ -1,17 +1,17 @@
-# D? li?u v� b�o c�o c� nh�n
+﻿# Dữ liệu và báo cáo cá nhân
 *.pdf
 *.json
 
-# H? di?u h�nh & IDE
+# Hệ điều hành & IDE
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# File t?m
+# File tạm
 *.tmp
 *.log
 scratch/
 
 # Logo files
-SOFACOMPANY_*.png
+logo_*.png
