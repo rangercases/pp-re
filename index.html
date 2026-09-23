@@ -608,7 +608,357 @@
     .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; }
     .result-btn.fail.on { background: var(--red-bg); border-color: var(--red); color: var(--red); }
     .result-btn.na.on { background: #f0eeea; border-color: #888; color: #555; }
-    .add-row-btn { padding: 6px 12px; border: 1.5px dashed var(--border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; margin: 8px 10px; width: calc(100% - 20px); }
+    /* ════════════════════════════════════════════════════════════════════════════
+       APPLE-STYLE CHECKLIST (CUPERTINO / HIG)
+       ════════════════════════════════════════════════════════════════════════════ */
+    .apple-checklist-container {
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* OVERVIEW / SUMMARY CARD */
+    .apple-overview-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      padding: 16px 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 16px rgba(0, 0, 0, 0.03);
+    }
+    .apple-overview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .apple-overview-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1d1d1f;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .apple-overview-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1b7a37;
+      background: #e8f7ed;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .apple-progress-wrap {
+      height: 6px;
+      background: #e5e5ea;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .apple-progress-bar {
+      height: 100%;
+      background: #34c759;
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .apple-status-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .apple-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      user-select: none;
+    }
+    .apple-chip.chip-pass { background: #e8f7ed; color: #1b7a37; }
+    .apple-chip.chip-fail { background: #fdeeee; color: #c92a2a; }
+    .apple-chip.chip-pend { background: #f2f2f7; color: #6e6e73; }
+    .apple-chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .apple-overview-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .apple-act-btn {
+      border: none;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      font-family: inherit;
+    }
+    .apple-act-btn:active { transform: scale(0.96); }
+    .apple-act-btn.btn-pri { background: var(--brand-theme); color: #ffffff; }
+    .apple-act-btn.btn-pri:hover { opacity: 0.92; transform: translateY(-1px); }
+    .apple-act-btn.btn-pass { background: #e8f7ed; color: #1b7a37; }
+    .apple-act-btn.btn-pass:hover { background: #d7f1df; transform: translateY(-1px); }
+    .apple-act-btn.btn-neutral { background: #f2f2f7; color: #1d1d1f; }
+    .apple-act-btn.btn-neutral:hover { background: #e5e5ea; transform: translateY(-1px); }
+    .apple-act-btn.btn-subtle { background: transparent; color: #86868b; border: 1px solid #d2d2d7; }
+    .apple-act-btn.btn-subtle:hover { background: #f2f2f7; color: #1d1d1f; }
+    .apple-act-btn.btn-sync { background: #f0f7ff; color: #0071e3; border: 1px solid rgba(0, 113, 227, 0.22); }
+    .apple-act-btn.btn-sync:hover { background: #e1f0ff; transform: translateY(-1px); }
+
+    /* CATEGORY INSET GROUPED CARD */
+    .apple-group-card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 3px 10px rgba(0, 0, 0, 0.02);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .apple-group-card.apple-sort-ghost {
+      opacity: 0.35;
+      background: #fbfbfd;
+      border: 1.5px dashed var(--accent);
+    }
+    .apple-group-card.apple-sort-chosen {
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+      transform: scale(1.008);
+      z-index: 10;
+    }
+
+    .apple-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #fbfbfd;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .group-drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      color: #86868b;
+      cursor: grab;
+      font-size: 15px;
+      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease;
+      flex-shrink: 0;
+    }
+    .group-drag-handle:hover {
+      background: #f2f2f7;
+      color: #1d1d1f;
+    }
+    .group-drag-handle:active {
+      cursor: grabbing;
+    }
+    .apple-pill-num {
+      min-width: 24px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #f2f2f7;
+      color: #1d1d1f;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .group-title-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1d1d1f;
+      padding: 4px 6px;
+      border-radius: 6px;
+      outline: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .group-title-input:hover {
+      background: rgba(0, 0, 0, 0.025);
+    }
+    .group-title-input:focus {
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.3);
+    }
+    .group-del-btn {
+      border: none;
+      background: transparent;
+      color: #86868b;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .group-del-btn:hover {
+      background: #fdeeee;
+      color: #c92a2a;
+    }
+
+    .apple-criteria-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .apple-criterion-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
+      transition: background 0.15s ease;
+    }
+    .apple-criterion-row:last-child {
+      border-bottom: none;
+    }
+    .apple-criterion-row:hover {
+      background: #fafafc;
+    }
+    .criterion-bullet {
+      color: #86868b;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .criterion-text-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      color: #1d1d1f;
+      padding: 5px 6px;
+      border-radius: 6px;
+      outline: none;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+    .criterion-text-input:hover {
+      background: rgba(0, 0, 0, 0.025);
+    }
+    .criterion-text-input:focus {
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.3);
+    }
+
+    /* SEGMENTED TOGGLE (YES / NO) */
+    .apple-seg-toggle {
+      display: inline-flex;
+      align-items: center;
+      background: #f2f2f7;
+      border-radius: 999px;
+      padding: 2px;
+      gap: 2px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .apple-seg-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: #6e6e73;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+    }
+    .apple-seg-btn:hover:not(.active-yes):not(.active-no) {
+      color: #1d1d1f;
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .apple-seg-btn.active-yes {
+      background: #34c759;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(52, 199, 89, 0.35);
+    }
+    .apple-seg-btn.active-no {
+      background: #ff3b30;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.35);
+    }
+
+    .criterion-del-btn {
+      border: none;
+      background: transparent;
+      color: #c7c7cc;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .criterion-del-btn:hover {
+      background: #fdeeee;
+      color: #c92a2a;
+    }
+
+    .apple-group-footer {
+      padding: 7px 14px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      border-top: 1px dashed rgba(0, 0, 0, 0.05);
+      background: #ffffff;
+    }
+    .apple-add-criterion-btn {
+      border: none;
+      background: transparent;
+      color: var(--brand-theme);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s ease;
+      font-family: inherit;
+    }
+    .apple-add-criterion-btn:hover {
+      background: var(--accent-light);
+    }
 
     /* SAVE BAR */
     .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 14px max(12px, env(safe-area-inset-bottom)); min-height: calc(64px + env(safe-area-inset-bottom)); z-index: 55; display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
@@ -922,8 +1272,17 @@
 
     <!-- S6: CHECKLIST -->
     <div id="sec6" class="sec-block" style="display:none">
-      <div class="sec-card">
-        <div class="sec-head">Check List <span>Nhấn giữ để di chuyển</span></div>
+      <div class="apple-checklist-container">
+        <!-- Overview & Actions Card -->
+        <div class="apple-overview-card" id="checklistOverviewCard"></div>
+
+        <!-- Category Groups Container (SortableJS enabled) -->
+        <div id="checklistGroupsContainer"></div>
+      </div>
+
+      <!-- Checklist Photos & Remarks Card -->
+      <div class="sec-card" style="margin-top: 16px;">
+        <div class="sec-head">Check List Photos <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="checklistPhotos"></div>
         <div class="note-area"><textarea id="checklistNotes" placeholder="Checklist remarks, final inspections..." oninput="as()"></textarea></div>
       </div>
@@ -1646,6 +2005,121 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       { test: 'ANSI/BIFMA X5.1 Sec. 12', result: '', remark: '' }, { test: 'ANSI/BIFMA X5.1 Sec. 13', result: '', remark: '' },
       { test: 'ANSI/BIFMA X5.4 Sec. 15', result: '', remark: '' }, { test: 'BS EN 12520:2024', result: '', remark: '' },
       { test: 'BS EN 1022:2023', result: '', remark: '' }, { test: 'EN 16139:2013 Level 1', result: '', remark: '' }
+    ];
+
+    const DEFAULT_CHECKLIST_CONFIG = [
+      {
+        id: 'cg_photos',
+        title: 'Product Photos',
+        items: [
+          { id: 'ci_1_1', text: 'Four Views: Front / Side / Back / Bottom', status: null },
+          { id: 'ci_1_2', text: 'Comparing Prototype Sample', status: null }
+        ]
+      },
+      {
+        id: 'cg_dim',
+        title: 'Overall Dimension',
+        items: [
+          { id: 'ci_2_1', text: '2D Drawing (Factory to provide)', status: null },
+          { id: 'ci_2_2', text: 'AI Drawing (Factory to provide)', status: null }
+        ]
+      },
+      {
+        id: 'cg_carcass',
+        title: 'Carcass Frame',
+        items: [
+          { id: 'ci_3_1', text: 'Frame/sub frames Classification & Identification/Dimension', status: null },
+          { id: 'ci_3_2', text: 'Carcass Construction and Joinery', status: null },
+          { id: 'ci_3_3', text: 'Critical & Functional Dimension', status: null },
+          { id: 'ci_3_4', text: 'Suspension and Support (Nozag/Webbing)', status: null },
+          { id: 'ci_3_5', text: 'Legs and Base Location', status: null },
+          { id: 'ci_3_6', text: 'Weight', status: null }
+        ]
+      },
+      {
+        id: 'cg_foaming',
+        title: 'Foaming',
+        items: [
+          { id: 'ci_4_1', text: 'Foam Quality & Quantity', status: null },
+          { id: 'ci_4_2', text: 'Foam Specification', status: null },
+          { id: 'ci_4_3', text: 'Fiber Matting / Padding on Surfaces', status: null },
+          { id: 'ci_4_4', text: 'Weight', status: null }
+        ]
+      },
+      {
+        id: 'cg_upholstered',
+        title: 'Upholstered Sofa',
+        items: [
+          { id: 'ci_5_1', text: 'Overall Dimension', status: null },
+          { id: 'ci_5_2', text: 'Functional Dimension', status: null },
+          { id: 'ci_5_3', text: 'Comfort', status: null },
+          { id: 'ci_5_4', text: 'Fabric Specification, Direction & Quality (fabric swatch)', status: null },
+          { id: 'ci_5_5', text: 'Seat and Back Cushion Function', status: null },
+          { id: 'ci_5_6', text: 'Stitching Details', status: null },
+          { id: 'ci_5_7', text: 'Weight', status: null }
+        ]
+      },
+      {
+        id: 'cg_cushion',
+        title: 'Back & Seat Cushion',
+        items: [
+          { id: 'ci_6_1', text: 'Comfort & Filling of Cushion', status: null },
+          { id: 'ci_6_2', text: 'Size / Dimension & Weight', status: null }
+        ]
+      },
+      {
+        id: 'cg_legs',
+        title: 'Legs & Base Frame',
+        items: [
+          { id: 'ci_7_1', text: 'Wood Specification & Verification', status: null },
+          { id: 'ci_7_2', text: 'Construction & Joinery', status: null },
+          { id: 'ci_7_3', text: 'Finishing (color swatch)', status: null }
+        ]
+      },
+      {
+        id: 'cg_hardware',
+        title: 'Hardware & Assembly',
+        items: [
+          { id: 'ci_8_1', text: 'Verify with AI drawing', status: null }
+        ]
+      },
+      {
+        id: 'cg_quality_test',
+        title: 'Quality Test',
+        items: [
+          { id: 'ci_9_1', text: 'BV Testing / In-house Testing', status: null }
+        ]
+      },
+      {
+        id: 'cg_packaging',
+        title: 'Packaging',
+        items: [
+          { id: 'ci_10_1', text: 'Gross Weight', status: null },
+          { id: 'ci_10_2', text: 'Box Size Verification', status: null },
+          { id: 'ci_10_3', text: 'Packaging material and cushioning', status: null }
+        ]
+      },
+      {
+        id: 'cg_droptest',
+        title: 'Drop Test',
+        items: [
+          { id: 'ci_11_1', text: '3A (BV Testing)', status: null }
+        ]
+      },
+      {
+        id: 'cg_watchouts',
+        title: 'Quality Watchouts',
+        items: [
+          { id: 'ci_12_1', text: 'Production Watchout', status: null }
+        ]
+      },
+      {
+        id: 'cg_approval',
+        title: 'Final Approval',
+        items: [
+          { id: 'ci_13_1', text: 'After passed BV test (Green label with signature)', status: null }
+        ]
+      }
     ];
 
     const FREE_PHOTO_KEYS = ['prodPhotos', 'assemblyPhotos', 'watchoutPhotos', 'testingPhotos', 'checklistPhotos'];
@@ -4239,6 +4713,373 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
     function setBVResult(i, val) { pushHistory('Đổi kết quả thử nghiệm BV'); if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
 
+    /* ════════════════════════════════════════════════════════════════════════════
+       APPLE-STYLE CHECKLIST LOGIC & SORTABLE DRAG-DROP
+       ════════════════════════════════════════════════════════════════════════════ */
+    function getActiveDefaultChecklist() {
+      try {
+        const custom = localStorage.getItem('user_custom_default_checklist');
+        if (custom) {
+          const parsed = JSON.parse(custom);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+      return DEFAULT_CHECKLIST_CONFIG;
+    }
+
+    function ensureChecklistData() {
+      if (!D.checklist || !Array.isArray(D.checklist) || D.checklist.length === 0) {
+        D.checklist = JSON.parse(JSON.stringify(getActiveDefaultChecklist()));
+      }
+    }
+
+    function escapeChecklistText(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderChecklist() {
+      ensureChecklistData();
+      const overviewEl = document.getElementById('checklistOverviewCard');
+      const groupsEl = document.getElementById('checklistGroupsContainer');
+      if (!overviewEl || !groupsEl) return;
+
+      // Calculate statistics
+      let totalCriteria = 0;
+      let passCount = 0;
+      let failCount = 0;
+      let pendingCount = 0;
+
+      D.checklist.forEach(g => {
+        if (!g.items || !Array.isArray(g.items)) g.items = [];
+        g.items.forEach(item => {
+          totalCriteria++;
+          if (item.status === 'yes') passCount++;
+          else if (item.status === 'no') failCount++;
+          else pendingCount++;
+        });
+      });
+
+      const checkedCount = passCount + failCount;
+      const pct = totalCriteria > 0 ? Math.round((checkedCount / totalCriteria) * 100) : 0;
+
+      // Render Overview Card
+      overviewEl.innerHTML = `
+        <div class="apple-overview-header">
+          <div class="apple-overview-title">
+            <span>Tiêu Chuẩn Kiểm Tra (Checklist)</span>
+            <span class="apple-pill-num" style="background:#e8f7ed; color:#1b7a37;">${D.checklist.length} Nhóm</span>
+          </div>
+          <div class="apple-overview-pct">${pct}% Hoàn thành</div>
+        </div>
+        <div class="apple-progress-wrap">
+          <div class="apple-progress-bar" style="width: ${pct}%;"></div>
+        </div>
+        <div class="apple-status-chips">
+          <div class="apple-chip chip-pass"><span class="apple-chip-dot"></span> Đạt: <strong>${passCount}</strong></div>
+          <div class="apple-chip chip-fail"><span class="apple-chip-dot"></span> Không đạt: <strong>${failCount}</strong></div>
+          <div class="apple-chip chip-pend"><span class="apple-chip-dot"></span> Chưa kiểm: <strong>${pendingCount}</strong> / ${totalCriteria}</div>
+        </div>
+        <div class="apple-overview-actions">
+          <button class="apple-act-btn btn-pri" onclick="addCategoryGroup()">+ Thêm Nhóm</button>
+          <button class="apple-act-btn btn-pass" onclick="setAllChecklistStatus('yes')">✓ Tick Tất Cả Yes</button>
+          <button class="apple-act-btn btn-neutral" onclick="setAllChecklistStatus(null)">↺ Xóa Tất Cả Tick</button>
+          <button class="apple-act-btn btn-sync" onclick="copyChecklistFromLatestReport()" title="Cập nhật bảng checklist từ báo cáo được lưu gần đây nhất">📥 Lấy Từ Báo Cáo Gần Nhất</button>
+          <button class="apple-act-btn btn-subtle" onclick="saveCurrentChecklistAsDefault()" title="Lưu cấu trúc checklist này làm mẫu mặc định cho tất cả báo cáo tạo mới sau này">⭐ Lưu Làm Mẫu Mới</button>
+          <button class="apple-act-btn btn-subtle" onclick="resetDefaultChecklist()">⚙ 13 Nhóm Gốc</button>
+        </div>
+      `;
+
+      // Render Groups
+      groupsEl.innerHTML = '';
+      D.checklist.forEach((group, gIdx) => {
+        const groupCard = document.createElement('div');
+        groupCard.className = 'apple-group-card';
+        groupCard.dataset.groupIndex = gIdx;
+
+        // Header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'apple-group-header';
+        headerDiv.innerHTML = `
+          <div class="group-drag-handle" title="Kéo thả để đổi thứ tự nhóm">⋮⋮</div>
+          <span class="apple-pill-num">${gIdx + 1}</span>
+          <input type="text" class="group-title-input" value="${escapeChecklistText(group.title || '')}" placeholder="Nhập tên nhóm hạng mục..." oninput="updateCategoryTitle(${gIdx}, this.value)">
+          <button class="group-del-btn" title="Xóa toàn bộ nhóm này" onclick="removeCategoryGroup(${gIdx})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Xóa</span>
+          </button>
+        `;
+        groupCard.appendChild(headerDiv);
+
+        // Criteria List
+        const criteriaListDiv = document.createElement('div');
+        criteriaListDiv.className = 'apple-criteria-list';
+
+        (group.items || []).forEach((item, iIdx) => {
+          const isYes = item.status === 'yes';
+          const isNo = item.status === 'no';
+
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'apple-criterion-row';
+          rowDiv.innerHTML = `
+            <span class="criterion-bullet">•</span>
+            <input type="text" class="criterion-text-input" value="${escapeChecklistText(item.text || '')}" placeholder="Nhập nội dung tiêu chí kiểm tra..." oninput="updateCriterionText(${gIdx}, ${iIdx}, this.value)">
+            <div class="apple-seg-toggle">
+              <button class="apple-seg-btn ${isYes ? 'active-yes' : ''}" onclick="toggleChecklistStatus(${gIdx}, ${iIdx}, 'yes')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Yes</span>
+              </button>
+              <button class="apple-seg-btn ${isNo ? 'active-no' : ''}" onclick="toggleChecklistStatus(${gIdx}, ${iIdx}, 'no')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>No</span>
+              </button>
+            </div>
+            <button class="criterion-del-btn" title="Xóa tiêu chí này" onclick="removeCriterion(${gIdx}, ${iIdx})">✕</button>
+          `;
+          criteriaListDiv.appendChild(rowDiv);
+        });
+
+        groupCard.appendChild(criteriaListDiv);
+
+        // Footer with Add Criterion
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'apple-group-footer';
+        footerDiv.innerHTML = `
+          <button class="apple-add-criterion-btn" onclick="addCriterion(${gIdx})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Thêm tiêu chí</span>
+          </button>
+        `;
+        groupCard.appendChild(footerDiv);
+
+        groupsEl.appendChild(groupCard);
+      });
+
+      // Initialize / Refresh SortableJS on groups container
+      initChecklistSortable();
+    }
+
+    function initChecklistSortable() {
+      const el = document.getElementById('checklistGroupsContainer');
+      if (!el || typeof Sortable === 'undefined') return;
+
+      if (el._checklistSortable) {
+        el._checklistSortable.destroy();
+      }
+
+      el._checklistSortable = new Sortable(el, {
+        animation: 220,
+        handle: '.group-drag-handle',
+        draggable: '.apple-group-card',
+        filter: 'input, button, textarea',
+        preventOnFilter: false,
+        ghostClass: 'apple-sort-ghost',
+        chosenClass: 'apple-sort-chosen',
+        onEnd: function (evt) {
+          if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
+          if (!D.checklist || !D.checklist.length) return;
+          const moved = D.checklist.splice(evt.oldIndex, 1)[0];
+          D.checklist.splice(evt.newIndex, 0, moved);
+          pushHistory('Đổi thứ tự nhóm checklist');
+          renderChecklist();
+          as();
+        }
+      });
+    }
+
+    function updateCategoryTitle(gIdx, val) {
+      if (!D.checklist || !D.checklist[gIdx]) return;
+      D.checklist[gIdx].title = val;
+      as();
+    }
+
+    function updateCriterionText(gIdx, iIdx, val) {
+      if (!D.checklist || !D.checklist[gIdx] || !D.checklist[gIdx].items || !D.checklist[gIdx].items[iIdx]) return;
+      D.checklist[gIdx].items[iIdx].text = val;
+      as();
+    }
+
+    function toggleChecklistStatus(gIdx, iIdx, targetStatus) {
+      if (!D.checklist || !D.checklist[gIdx] || !D.checklist[gIdx].items || !D.checklist[gIdx].items[iIdx]) return;
+      const cur = D.checklist[gIdx].items[iIdx].status;
+      D.checklist[gIdx].items[iIdx].status = (cur === targetStatus) ? null : targetStatus;
+      pushHistory('Đổi trạng thái tick checklist');
+      renderChecklist();
+      as();
+    }
+
+    function addCriterion(gIdx) {
+      if (!D.checklist || !D.checklist[gIdx]) return;
+      if (!D.checklist[gIdx].items) D.checklist[gIdx].items = [];
+      D.checklist[gIdx].items.push({
+        id: 'ci_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        text: '',
+        status: null
+      });
+      pushHistory('Thêm tiêu chí checklist');
+      renderChecklist();
+      as();
+
+      // Focus on the newly added criterion input
+      setTimeout(() => {
+        const cards = document.querySelectorAll('.apple-group-card');
+        if (cards[gIdx]) {
+          const inputs = cards[gIdx].querySelectorAll('.criterion-text-input');
+          if (inputs.length > 0) inputs[inputs.length - 1].focus();
+        }
+      }, 50);
+    }
+
+    function removeCriterion(gIdx, iIdx) {
+      if (!D.checklist || !D.checklist[gIdx] || !D.checklist[gIdx].items) return;
+      D.checklist[gIdx].items.splice(iIdx, 1);
+      pushHistory('Xóa tiêu chí checklist');
+      renderChecklist();
+      as();
+    }
+
+    function addCategoryGroup() {
+      ensureChecklistData();
+      const newGroupNum = D.checklist.length + 1;
+      D.checklist.push({
+        id: 'cg_' + Date.now(),
+        title: 'Hạng mục mới ' + newGroupNum,
+        items: [
+          { id: 'ci_' + Date.now() + '_1', text: '', status: null }
+        ]
+      });
+      pushHistory('Thêm nhóm checklist mới');
+      renderChecklist();
+      as();
+
+      // Scroll smoothly to the newly added group card
+      setTimeout(() => {
+        const cards = document.querySelectorAll('.apple-group-card');
+        if (cards.length > 0) {
+          const lastCard = cards[cards.length - 1];
+          lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const titleInput = lastCard.querySelector('.group-title-input');
+          if (titleInput) { titleInput.focus(); titleInput.select(); }
+        }
+      }, 80);
+    }
+
+    function removeCategoryGroup(gIdx) {
+      if (!D.checklist || !D.checklist[gIdx]) return;
+      const title = D.checklist[gIdx].title || `Nhóm ${gIdx + 1}`;
+      if (!confirm(`Bạn có chắc muốn xóa nhóm "${title}" và toàn bộ tiêu chí bên trong?`)) return;
+      D.checklist.splice(gIdx, 1);
+      pushHistory('Xóa nhóm checklist');
+      renderChecklist();
+      as();
+    }
+
+    function setAllChecklistStatus(targetStatus) {
+      ensureChecklistData();
+      D.checklist.forEach(g => {
+        (g.items || []).forEach(item => {
+          item.status = targetStatus;
+        });
+      });
+      pushHistory(targetStatus === 'yes' ? 'Tick tất cả Yes checklist' : 'Xóa tất cả tick checklist');
+      renderChecklist();
+      as();
+    }
+
+    async function copyChecklistFromLatestReport() {
+      try {
+        const allReports = await dbGetAll();
+        if (!allReports || allReports.length === 0) {
+          showToast('Chưa có báo cáo nào khác');
+          return;
+        }
+
+        const otherReports = allReports.filter(r => String(r.id) !== String(currentId));
+        if (otherReports.length === 0) {
+          showToast('Không có báo cáo nào khác để sao chép');
+          return;
+        }
+
+        // Sắp xếp báo cáo theo thời gian cập nhật mới nhất
+        otherReports.sort((a, b) => {
+          const timeA = a.updatedAt || parseInt(a.id) || 0;
+          const timeB = b.updatedAt || parseInt(b.id) || 0;
+          return timeB - timeA;
+        });
+
+        // Tìm báo cáo gần nhất có dữ liệu checklist
+        const sourceReport = otherReports.find(r => r.checklist && Array.isArray(r.checklist) && r.checklist.length > 0);
+        if (!sourceReport) {
+          showToast('Không tìm thấy báo cáo nào có bảng checklist');
+          return;
+        }
+
+        const sourceTitle = getReportTitle(sourceReport);
+        const countGroups = sourceReport.checklist.length;
+        let countItems = 0;
+        sourceReport.checklist.forEach(g => countItems += (g.items ? g.items.length : 0));
+
+        const confirmed = confirm(
+          `Tìm thấy báo cáo lưu gần nhất:\n"${sourceTitle}" (${countGroups} nhóm, ${countItems} tiêu chí).\n\n` +
+          `Bạn có muốn cập nhật bảng Checklist này vào báo cáo hiện tại không?`
+        );
+        if (!confirmed) return;
+
+        const resetTicks = confirm(
+          `Bạn có muốn LÀM MỚI các ô tick (đặt về chưa tick) để kiểm tra mẫu sản phẩm mới không?\n\n` +
+          `• Chọn [OK]: Làm mới ô tick (Khuyên dùng khi bắt đầu kiểm tra mẫu mới)\n` +
+          `• Chọn [Cancel]: Giữ nguyên kết quả tick từ báo cáo trước`
+        );
+
+        const cloned = JSON.parse(JSON.stringify(sourceReport.checklist));
+        if (resetTicks) {
+          cloned.forEach(g => {
+            if (g.items && Array.isArray(g.items)) {
+              g.items.forEach(item => { item.status = null; });
+            }
+          });
+        }
+
+        pushHistory(`Đồng bộ checklist từ "${sourceTitle}"`);
+        D.checklist = cloned;
+        renderChecklist();
+        as();
+        showToast(`✓ Đã cập nhật checklist từ "${sourceTitle}"!`);
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi sao chép checklist: ' + err.message);
+      }
+    }
+
+    function saveCurrentChecklistAsDefault() {
+      if (!D.checklist || !D.checklist.length) return;
+      const countGroups = D.checklist.length;
+      let countItems = 0;
+      D.checklist.forEach(g => countItems += (g.items ? g.items.length : 0));
+
+      if (!confirm(`Lưu bảng Checklist hiện tại (${countGroups} nhóm, ${countItems} tiêu chí) làm MẪU MẶC ĐỊNH?\n\nTừ nay, khi bấm tạo Báo Cáo Mới, hệ thống sẽ tự động dùng luôn mẫu này thay vì mẫu 13 nhóm ban đầu.`)) return;
+
+      const cleanTemplate = JSON.parse(JSON.stringify(D.checklist));
+      cleanTemplate.forEach(g => {
+        if (g.items && Array.isArray(g.items)) {
+          g.items.forEach(item => { item.status = null; });
+        }
+      });
+
+      localStorage.setItem('user_custom_default_checklist', JSON.stringify(cleanTemplate));
+      showToast('⭐ Đã lưu làm Mẫu Mặc Định cho các báo cáo tạo mới!');
+    }
+
+    function resetDefaultChecklist() {
+      if (!confirm('Khôi phục danh sách checklist về 13 nhóm tiêu chuẩn mặc định ban đầu của hệ thống?')) return;
+      D.checklist = JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_CONFIG));
+      localStorage.removeItem('user_custom_default_checklist');
+      pushHistory('Khôi phục checklist mặc định');
+      renderChecklist();
+      as();
+      showToast('✓ Đã khôi phục 13 nhóm tiêu chuẩn');
+    }
+
     function refreshAllSlots() { 
       COVER_SLOTS.forEach(s => refreshSlot('coverPhotos', s.replace(/ /g, '_'), 'cover')); 
     }
@@ -4300,6 +5141,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         });
         buildDimGrid(); 
         renderBVTable();
+        renderChecklist();
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
         refreshAllSlots();
       } catch (err) {
@@ -4340,6 +5182,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function as() {
       if (!currentId) return;
+      D.updatedAt = Date.now();
       const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
       const saveIndicator = document.getElementById('saveIndicator'); if (saveIndicator) saveIndicator.title = 'Đang lưu dữ liệu...';
       Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
@@ -4355,6 +5198,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function flushAutosave() {
       if (!currentId || !D) return;
+      D.updatedAt = Date.now();
       Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
       const elNumS = document.getElementById('fNumS'); if (elNumS) D.numS = elNumS.value;
       const elNumR = document.getElementById('fNumR'); if (elNumR) D.numR = elNumR.value;
@@ -4410,6 +5254,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           assemblyPhotos: [], assemblyNotes: '',
           watchoutPhotos: [], watchoutNotes: '', 
           bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), testingPhotos: [], testingNotes: '',
+          checklist: JSON.parse(JSON.stringify(getActiveDefaultChecklist())),
           checklistPhotos: [], checklistNotes: ''
         };
         
@@ -4990,7 +5835,159 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
 
       // ================= 7. CHECKLIST =================
-      renderPhotoSection('Check List', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
+      const checklistGroups = (D.checklist && Array.isArray(D.checklist)) ? D.checklist : [];
+      const hasChecklistData = checklistGroups.some(g => g && g.items && g.items.length > 0);
+
+      if (hasChecklistData) {
+        addHeader('Check List');
+
+        // Bắt đầu ngay dưới banner (y=28mm thay vì 32mm để tận dụng tối đa chiều cao trang)
+        y = 28;
+
+        const colGroupW = 42;
+        const colItemW = 116;
+        const colYesW = 12;
+        const colNoW = 12;
+        const totalW = colGroupW + colItemW + colYesW + colNoW; // 182mm (Khớp khít chiều rộng khả dụng: 210 - 28)
+
+        // Tính tổng số dòng tiêu chí
+        let totalRows = 0;
+        checklistGroups.forEach(g => {
+          totalRows += (g.items && g.items.length > 0) ? g.items.length : 1;
+        });
+
+        const headerH = 6.2;
+        const safeBottomY = 281; // Ngay phía trên dải footer ở 285mm
+        const maxAvailableH = safeBottomY - y - headerH; // ~246.8mm
+
+        // Tính toán chiều cao hàng động: Nếu danh sách tối đa (~32-34 mục), tự động co để khớp đúng 1 trang PDF
+        const canFitSinglePage = totalRows <= 35;
+        let rowH = 7.0;
+        let fontSize = 7.3;
+        let groupFontSize = 7.5;
+
+        if (canFitSinglePage && totalRows > 0) {
+          const calcH = maxAvailableH / totalRows;
+          rowH = Math.min(Math.max(calcH, 6.5), 8.2);
+          if (totalRows >= 28) {
+            fontSize = 7.1;
+            groupFontSize = 7.3;
+          } else if (totalRows >= 20) {
+            fontSize = 7.4;
+            groupFontSize = 7.6;
+          } else {
+            fontSize = 7.8;
+            groupFontSize = 8.0;
+          }
+        }
+
+        const drawChecklistTableHeader = (curY) => {
+          doc.setFillColor(242, 242, 247);
+          doc.rect(M, curY, totalW, headerH, 'F');
+          doc.setDrawColor(200, 200, 205);
+          doc.setLineWidth(0.3);
+          doc.rect(M, curY, totalW, headerH, 'S');
+
+          // Kẻ vách ngăn giữa các cột tiêu đề
+          doc.line(M + colGroupW, curY, M + colGroupW, curY + headerH);
+          doc.line(M + colGroupW + colItemW, curY, M + colGroupW + colItemW, curY + headerH);
+          doc.line(M + colGroupW + colItemW + colYesW, curY, M + colGroupW + colItemW + colYesW, curY + headerH);
+
+          doc.setFont(fontFam, 'bold');
+          doc.setFontSize(7.8);
+          doc.setTextColor(50, 50, 55);
+          doc.text('Category', M + 2.5, curY + 4.2);
+          doc.text('Inspection Criteria', M + colGroupW + 2.5, curY + 4.2);
+          doc.text('Yes', M + colGroupW + colItemW + colYesW / 2, curY + 4.2, { align: 'center' });
+          doc.text('No', M + colGroupW + colItemW + colYesW + colNoW / 2, curY + 4.2, { align: 'center' });
+          return curY + headerH;
+        };
+
+        y = drawChecklistTableHeader(y);
+
+        checklistGroups.forEach((g, gIdx) => {
+          const groupTitle = `${gIdx + 1}. ${g.title || ''}`;
+          const items = (g.items && g.items.length > 0) ? g.items : [{ text: '—', status: null }];
+          const groupTotalRows = items.length;
+          const groupTotalH = groupTotalRows * rowH;
+
+          // Kiểm tra ngắt trang nếu vượt quá 35 mục (fallback an toàn)
+          if (!canFitSinglePage && y + rowH > BOTTOM_LIMIT) {
+            addHeader('Check List');
+            y = 28;
+            y = drawChecklistTableHeader(y);
+          }
+
+          const groupStartY = y;
+
+          // 1. Vẽ ô nhóm gộp (Merged Cell) bên cột trái giống ảnh mẫu
+          doc.setDrawColor(215, 215, 220);
+          doc.setLineWidth(0.25);
+          doc.rect(M, groupStartY, colGroupW, groupTotalH, 'S');
+
+          // Căn giữa tiêu đề nhóm theo chiều cao ô gộp
+          doc.setFont(fontFam, 'bold');
+          doc.setFontSize(groupFontSize);
+          doc.setTextColor(25, 25, 25);
+          const groupLines = doc.splitTextToSize(groupTitle, colGroupW - 5);
+          const lineSpacing = 3.3;
+          const groupTextH = (groupLines.length - 1) * lineSpacing;
+          const groupTextY = groupStartY + (groupTotalH - groupTextH) / 2 + 0.9;
+          doc.text(groupLines, M + 2.5, groupTextY);
+
+          // 2. Vẽ từng dòng tiêu chí & ô Yes / No
+          items.forEach(item => {
+            const rowY = y;
+
+            // Ô tiêu chí
+            doc.rect(M + colGroupW, rowY, colItemW, rowH, 'S');
+            // Ô Yes & No
+            doc.rect(M + colGroupW + colItemW, rowY, colYesW, rowH, 'S');
+            doc.rect(M + colGroupW + colItemW + colYesW, rowY, colNoW, rowH, 'S');
+
+            // Chữ tiêu chí (căn giữa theo chiều dọc hàng)
+            doc.setFont(fontFam, 'normal');
+            doc.setFontSize(fontSize);
+            doc.setTextColor(35, 35, 35);
+            const itemText = item.text || '—';
+            const itemLines = doc.splitTextToSize(itemText, colItemW - 5);
+            const itemTextH = (itemLines.length - 1) * 3.0;
+            const itemTextY = rowY + (rowH - itemTextH) / 2 + 0.8;
+            doc.text(itemLines, M + colGroupW + 2.5, itemTextY);
+
+            // Dấu Yes / No
+            const yesCenterX = M + colGroupW + colItemW + colYesW / 2;
+            const noCenterX = M + colGroupW + colItemW + colYesW + colNoW / 2;
+            const symbolCenterY = rowY + rowH / 2;
+
+            if (item.status === 'yes') {
+              doc.setDrawColor(34, 138, 61);
+              doc.setLineWidth(0.45);
+              doc.line(yesCenterX - 1.4, symbolCenterY - 0.2, yesCenterX - 0.4, symbolCenterY + 0.9);
+              doc.line(yesCenterX - 0.4, symbolCenterY + 0.9, yesCenterX + 1.5, symbolCenterY - 1.1);
+            } else if (item.status === 'no') {
+              doc.setDrawColor(201, 42, 42);
+              doc.setLineWidth(0.45);
+              doc.line(noCenterX - 1.1, symbolCenterY - 1.1, noCenterX + 1.1, symbolCenterY + 1.1);
+              doc.line(noCenterX + 1.1, symbolCenterY - 1.1, noCenterX - 1.1, symbolCenterY + 1.1);
+            }
+
+            y += rowH;
+          });
+        });
+
+        y += 6;
+      }
+
+      // Kiểm tra ảnh chụp & ghi chú checklist: nếu trang hiện tại không đủ chỗ (như bảng đầy 32 mục), tự động đẩy sang trang mới
+      const validChecklistPhotos = (D.checklistPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
+      const hasChecklistNotes = !!(D.checklistNotes && D.checklistNotes.trim());
+      if (validChecklistPhotos.length > 0 || hasChecklistNotes) {
+        if (y + 50 > BOTTOM_LIMIT) {
+          addHeader('Check List Photos');
+        }
+        renderPhotoSection('Check List Photos', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
+      }
 
       // Đánh số trang & Footer
       const totalPages = doc.getNumberOfPages();
