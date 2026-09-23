@@ -1,0 +1,25 @@
+## QUY TRÌNH BẮT BUỘC: LẬP KẾ HOẠCH TRƯỚC KHI THI HÀNH (PLAN-FIRST WORKFLOW)
+
+### 1. NGUYÊN TẮC CỐT LÕI
+- **TUYỆT ĐỐI KHÔNG** tự ý chỉnh sửa file, tạo file mới hoặc thực thi lệnh terminal làm thay đổi hệ thống trước khi người dùng xác nhận kế hoạch.
+- Mọi yêu cầu liên quan đến logic, sửa lỗi (bug fix), thêm tính năng mới hoặc tái cấu trúc (refactor) đều phải bắt đầu bằng một **Implementation Plan**.
+
+### 2. CẤU TRÚC PLAN BẮT BUỘC
+Khi nhận nhiệm vụ, AI chỉ được phản hồi bằng một bản kế hoạch gồm 4 phần sau:
+
+1. **Phân tích hiện trạng & Nguyên nhân gốc rễ**: 
+   - Tóm tắt vấn đề và nguyên nhân kỹ thuật (nếu là fix bug).
+2. **Danh sách file bị tác động**:
+   - Liệt kê chính xác đường dẫn các file cần chỉnh sửa hoặc tạo mới.
+3. **Các bước thực hiện chi tiết (Step-by-Step)**:
+   - Mô tả tuần tự logic sẽ thay đổi ở từng file, nêu rõ function/class chịu ảnh hưởng.
+4. **Đánh giá rủi ro & Phương án kiểm thử**:
+   - Rủi ro phá vỡ code hiện tại (breaking changes).
+   - Cách kiểm tra để xác nhận thành công sau khi sửa.
+
+### 3. ĐIỀU KIỆN TIẾP TỤC
+- Cuối bản kế hoạch, AI phải dừng lại với câu hỏi: *"Bạn có đồng ý với kế hoạch này không, hoặc cần điều chỉnh gì trước khi tôi tiến hành viết code?"*
+- Chỉ bắt đầu can thiệp vào code khi người dùng phản hồi đồng ý (ví dụ: "OK", "Tiến hành", "Approved", "Làm đi").
+
+### 4. NGOẠI LỆ DUY NHẤT
+- Quy trình này được bỏ qua nếu người dùng chỉ hỏi thuần thông tin/giải thích lý thuyết, hoặc trong câu lệnh có chỉ định rõ: *"bỏ qua plan, làm luôn"*.

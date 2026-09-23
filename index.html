@@ -336,8 +336,8 @@
 
     /* PHOTO GRID */
     .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
-    .photo-slot { background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; }
-    .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; }
+    .photo-slot { background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; touch-action: none; }
+    .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; user-select: none; -webkit-user-drag: none; }
     
     .dual-tap-box { width: 100%; height: 100%; display: flex; }
     .tap-option { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; background: #fafbfc; transition: all 0.15s ease; user-select: none; }
@@ -489,13 +489,13 @@
       background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px;
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost, .free-photo-item.sortable-ghost {
+    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost, .free-photo-item.sortable-ghost, .photo-slot.sortable-ghost {
       opacity: 0.3 !important;
       transform: scale(0.96);
       background: #e8f5ec !important;
       border: 2px dashed #2d5a3d !important;
     }
-    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen, .free-photo-item.sortable-chosen {
+    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen, .free-photo-item.sortable-chosen, .photo-slot.sortable-chosen {
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
       transform: scale(1.02);
       z-index: 40;
@@ -1200,7 +1200,7 @@
         <div class="check-row"><div class="check-row-label">Rating</div><div class="checks" id="ck_rating"></div></div>
       </div>
       <div class="sec-card">
-        <div class="sec-head">OVERLOOK <span> </span></div>
+        <div class="sec-head">OVERVIEW <span>Nhấn giữ để di chuyển</span></div>
         <div class="photo-grid-2" id="coverPhotos"></div>
       </div>
     </div>
@@ -1311,9 +1311,9 @@
         <div id="editorToolbar" class="cropper-tools">
             <div class="tools-row">
                 <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
-                <button class="tool-btn" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
                 <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
-                <button class="tool-btn active" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
+                <button class="tool-btn" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
                 <button class="tool-btn" id="ratio_4_9" onclick="setCropRatio(4/9, this)">4:9 (Phụ)</button>
             </div>
 
@@ -1341,7 +1341,7 @@
         </div>
         <div style="display: flex; gap: 6px;">
           <button type="button" class="mbtn sec" onclick="closeCamera()">Hủy</button>
-          <button type="button" class="mbtn pri" id="btnUse" onclick="usePhoto()">✓ Lưu ảnh</button>
+          <button type="button" class="mbtn pri" id="btnUse" onclick="usePhoto()" title="Nhấn Enter để lưu ảnh">✓ Lưu ảnh (Enter)</button>
         </div>
       </div>
     </div>
@@ -2883,8 +2883,26 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     }
 
-    // Global Keybinding for Undo / Redo
+    // Global Keybinding for Undo / Redo & Modal Shortcuts
     window.addEventListener('keydown', (e) => {
+      // Enter để lưu ảnh khi đang mở Cropper modal
+      if (e.key === 'Enter') {
+        const camModal = document.getElementById('camModal');
+        if (camModal && !camModal.classList.contains('hidden')) {
+          e.preventDefault();
+          usePhoto();
+          return;
+        }
+      }
+      if (e.key === 'Escape') {
+        const camModal = document.getElementById('camModal');
+        if (camModal && !camModal.classList.contains('hidden')) {
+          e.preventDefault();
+          closeCamera();
+          return;
+        }
+      }
+
       const isCtrl = e.ctrlKey || e.metaKey;
       if (!isCtrl) return;
 
@@ -3131,18 +3149,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
         
-        let defaultRatio = 1;
-        let defaultRatioBtn = document.getElementById('ratio_1_1');
+        let defaultRatio = 4 / 3;
+        let defaultRatioBtn = document.getElementById('ratio_4_3');
 
         if (camTarget.type === 'dim' || (camTarget.type === 'free' && (camTarget.key === 'watchoutPhotos' || camTarget.key === 'testingPhotos'))) {
           const item = camTarget.type === 'dim'
             ? (D.dimensions && D.dimensions[camTarget.index])
             : (D[camTarget.key] && D[camTarget.key][camTarget.index]);
           const layout = (item && item.photoLayout) || '3:1';
-          if (layout === '1:1') {
-            defaultRatio = 4 / 3;
-            defaultRatioBtn = document.getElementById('ratio_4_3');
-          } else if (camTarget.subType === 'sub') {
+          if (layout !== '1:1' && camTarget.subType === 'sub') {
             defaultRatio = 4 / 9;
             defaultRatioBtn = document.getElementById('ratio_4_9');
           } else {
@@ -3228,7 +3243,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         cropper.reset();
         document.getElementById('straightenRange').value = 0;
         document.getElementById('straightenVal').textContent = '0.0°';
-        setCropRatio(1, document.getElementById('ratio_1_1'));
+        if (camTarget && camTarget.subType === 'sub') {
+          setCropRatio(4 / 9, document.getElementById('ratio_4_9'));
+        } else {
+          setCropRatio(4 / 3, document.getElementById('ratio_4_3'));
+        }
     }
 
     async function usePhoto() {
@@ -3837,11 +3856,73 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function buildSlotGrid(containerId, slots, type, section) {
       const el = document.getElementById(containerId); if (!el) return; el.innerHTML = '';
       slots.forEach(s => {
-        const div = document.createElement('div'); div.className = 'photo-slot'; div.id = `ps_${containerId}_${s.key}`;
+        const div = document.createElement('div');
+        div.className = 'photo-slot';
+        div.id = `ps_${containerId}_${s.key}`;
+        div.dataset.key = s.key;
         div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section);
         attachDropZone(div, { type: 'slot', key: s.key, containerId, section });
         el.appendChild(div);
       });
+
+      if (typeof Sortable !== 'undefined' && containerId === 'coverPhotos') {
+        if (el._sortable) el._sortable.destroy();
+        el._sortable = new Sortable(el, {
+          animation: 180,
+          delay: 150,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 5,
+          draggable: '.photo-slot',
+          handle: '.free-drag-handle, .photo-slot',
+          filter: 'input, textarea, select, button, .pact, .tap-option, .dual-tap-box, .ignore-drag',
+          preventOnFilter: false,
+          swap: true,
+          swapClass: 'sortable-swap-highlight',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-chosen',
+          onEnd: function (evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
+            if (evt.oldIndex === evt.newIndex) return;
+            const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+            let from = evt.oldIndex;
+            let to = evt.newIndex;
+            if (from >= ckeys.length || to >= ckeys.length) return;
+            const keyFrom = ckeys[from];
+            const keyTo = ckeys[to];
+
+            if (!D.coverPhotos) D.coverPhotos = {};
+            const tempPhoto = D.coverPhotos[keyFrom];
+            if (D.coverPhotos[keyTo] !== undefined) {
+              D.coverPhotos[keyFrom] = D.coverPhotos[keyTo];
+            } else {
+              delete D.coverPhotos[keyFrom];
+            }
+            if (tempPhoto !== undefined) {
+              D.coverPhotos[keyTo] = tempPhoto;
+            } else {
+              delete D.coverPhotos[keyTo];
+            }
+
+            if (!D.coverTitles) D.coverTitles = {};
+            const tempTitle = D.coverTitles[keyFrom];
+            if (D.coverTitles[keyTo] !== undefined) {
+              D.coverTitles[keyFrom] = D.coverTitles[keyTo];
+            } else {
+              delete D.coverTitles[keyFrom];
+            }
+            if (tempTitle !== undefined) {
+              D.coverTitles[keyTo] = tempTitle;
+            } else {
+              delete D.coverTitles[keyTo];
+            }
+
+            pushHistory('Hoán đổi vị trí ảnh Overview');
+            as();
+            buildSlotGrid(containerId, slots, type, section);
+          }
+        });
+      }
     }
 
     function updateCoverLabel(key, val) {
@@ -3859,7 +3940,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       
       let inner = '';
       if (displayImg) {
-        inner = `<img class="pimg" src="${displayImg}" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+        inner = `
+        <div class="free-drag-handle" title="Kéo để hoán đổi vị trí">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+        </div>
+        <img class="pimg" src="${displayImg}" draggable="false" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
         <div class="pactions">
           <button class="pact del" title="Xóa ảnh" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -5619,7 +5704,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       };
       ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
 
-      doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERLOOK", M, y); y += 4;
+      doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 4;
       const cp = D.coverPhotos || {}; 
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
       
