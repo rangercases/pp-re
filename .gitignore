@@ -1,17 +1,10 @@
-﻿# Dữ liệu và báo cáo cá nhân
-*.pdf
-*.json
+# Bỏ qua toàn bộ các file khác
+*
 
-# Hệ điều hành & IDE
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# File tạm
-*.tmp
-*.log
-scratch/
-
-# Logo files
-logo_*.png
+# Chỉ giữ lại duy nhất index.html và cấu hình Git/CI cần thiết
+!index.html
+!.gitignore
+!.github/
+!.github/**
+!.agents/
+!.agents/**
