@@ -6404,18 +6404,25 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           const actVal = formatDimensionMeasurement(d, 'actual');
           const drwVal = formatDimensionMeasurement(d, 'drawing');
           
-          // Dòng Drawing in trước để xác định mốc đuôi lề phải (right anchor)
-          const drwLabelW = doc.getTextWidth('Drawing: ');
-          const drwValW = doc.getTextWidth(drwVal);
-          const anchorRightX = (dx + 3) + drwLabelW + drwValW;
+          // Cột nhãn và giá trị cố định thẳng hàng, không bị phụ thuộc vào độ dài Drawing để tránh đè chữ
+          const labelColX = dx + 3;
+          const valColX = dx + 18; // Cột số đo bắt đầu ngay sau nhãn 'Actual:' / 'Drawing:'
           
-          // In chữ 'Drawing: ' lề trái và số đo Drawing
-          doc.text('Drawing: ', dx + 3, fy + 14);
-          doc.text(drwVal, (dx + 3) + drwLabelW, fy + 14);
+          // Dòng 1: Actual
+          doc.setFont(fontFam, 'bold');
+          doc.setTextColor(100, 95, 90);
+          doc.text('Actual:', labelColX, fy + 9.5);
+          doc.setFont(fontFam, 'normal');
+          doc.setTextColor(30, 30, 30);
+          doc.text(actVal, valColX, fy + 9.5);
           
-          // In chữ 'Actual: ' lề trái và số đo Actual căn lề phải theo đúng mốc đuôi của Drawing
-          doc.text('Actual: ', dx + 3, fy + 9);
-          doc.text(actVal, anchorRightX, fy + 9, { align: 'right' });
+          // Dòng 2: Drawing
+          doc.setFont(fontFam, 'bold');
+          doc.setTextColor(100, 95, 90);
+          doc.text('Drawing:', labelColX, fy + 14);
+          doc.setFont(fontFam, 'normal');
+          doc.setTextColor(50, 50, 50);
+          doc.text(drwVal, valColX, fy + 14);
           
           dx += dimSlotW + 4;
           if ((i + 1) % dimCols === 0) {
