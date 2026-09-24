@@ -410,7 +410,7 @@
       background: #edf3ef; color: #2d5a3d; border: 1px solid var(--border-light);
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
-    .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); padding: 4px 7px; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
+    .free-caption { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.68); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 4px 7px; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; z-index: 5; }
     .free-caption input { width: 100%; background: transparent; border: none; color: #fff; font-size: 10px; outline: none; user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
     .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
     
@@ -509,14 +509,27 @@
     .watchout-caption-box, .testing-caption-box {
       padding: 7px 9px; background: #ffffff; border-top: 1px solid rgba(0,0,0,0.04);
       cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
+      display: flex; flex-direction: column; gap: 4px;
     }
     .watchout-caption-input, .testing-caption-input {
-      width: 100%; border: none; background: transparent; font-size: 11px;
+      width: 100%; max-width: 48ch; border: 1px solid transparent; background: transparent; font-size: 11px;
       color: var(--text); outline: none; font-family: inherit; font-weight: 500;
+      resize: vertical; min-height: 32px; line-height: 1.4;
       cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
+      border-radius: 4px; padding: 2px 4px;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
     .watchout-caption-input:focus, .testing-caption-input:focus {
-      background: #f4f8f5; border-radius: 4px; padding: 2px 4px;
+      background: #f4f8f5; border-color: var(--border-light);
+    }
+    .free-caption textarea {
+      width: 100%; max-width: 48ch; background: transparent; border: 1px solid transparent; color: #fff; font-size: 10px;
+      outline: none; resize: vertical; min-height: 24px; font-family: inherit; line-height: 1.35;
+      user-select: text !important; -webkit-user-select: text !important; cursor: text !important;
+      border-radius: 4px; padding: 2px 4px;
+    }
+    .free-caption textarea:focus {
+      background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3);
     }
 
     /* Container ảnh kích thước: Khóa cố định chiều cao 16:9 để đồng bộ tuyệt đối mọi ô */
@@ -573,7 +586,13 @@
     .dim-row .dim-unit-input { width: 34px; text-align: left; }
     .dim-row .color-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: 4px; }
     .color-red { background: #e24b4b; } .color-blue { background: #378add; } .color-orange { background: #e89020; }
-    .legend-row { display: flex; gap: 12px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); }
+    .dim-status-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; flex-shrink: 0; }
+    .dim-status-icon.shape-ok { color: #378add; }
+    .dim-status-icon.shape-not-ok { color: #e24b4b; }
+    .dim-status-icon.shape-update { color: #e89020; }
+    .dim-status-icon .color-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .legend-row { display: flex; gap: 14px; padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--border-light); align-items: center; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
 
     .dim-head-btn {
       background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4);
@@ -602,6 +621,14 @@
     .bv-table th { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
     .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); }
     .bv-table td input[type=text] { width: 100%; border: none; background: transparent; font-size: 11px; outline: none; }
+    .bv-table td textarea.bv-table-textarea {
+      width: 100%; border: 1px solid transparent; background: transparent; font-size: 11px;
+      font-family: inherit; color: var(--text); resize: vertical; min-height: 24px; line-height: 1.4;
+      border-radius: 4px; padding: 2px 4px; outline: none; box-sizing: border-box; display: block;
+    }
+    .bv-table td textarea.bv-table-textarea:focus {
+      background: #f4f8f5; border-color: var(--border-light);
+    }
     .result-sel { display: flex; gap: 5px; }
     .result-btn { padding: 3px 8px; border-radius: 10px; font-size: 10px; border: 1px solid var(--border); cursor: pointer; background: #fff; }
     .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; }
@@ -616,6 +643,64 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+    }
+
+    /* OVERVIEW / EXECUTIVE SUMMARY STRIP */
+    .overview-summary-strip {
+      background: #faf9f6;
+      border: 1px solid #e7e3db;
+      border-radius: var(--apple-radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .overview-summary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #8c827a;
+    }
+    .overview-summary-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .summary-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+      transition: all 0.15s ease;
+    }
+    .summary-badge.badge-danger {
+      background: #fdf0f0;
+      color: #c93b3b;
+      border: 1px solid #f8c8c8;
+    }
+    .summary-badge.badge-warning {
+      background: #fdf7ec;
+      color: #b45309;
+      border: 1px solid #f9deaf;
+    }
+    .summary-badge.badge-success {
+      background: #edf7ee;
+      color: #1b7a37;
+      border: 1px solid #c3e6cb;
+    }
+    .summary-badge.badge-neutral {
+      background: #f0ede8;
+      color: #55504a;
+      border: 1px solid #ded9d0;
     }
 
     /* OVERVIEW / SUMMARY CARD */
@@ -1206,6 +1291,10 @@
         <div class="check-row"><div class="check-row-label">Comfort</div><div class="checks" id="ck_comfort"></div></div>
         <div class="check-row"><div class="check-row-label">Rating</div><div class="checks" id="ck_rating"></div></div>
       </div>
+
+      <!-- EXECUTIVE SUMMARY STRIP (QUICK METRICS) -->
+      <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
+
       <div class="sec-card">
         <div class="sec-head">OVERVIEW <span>Nhấn giữ để di chuyển</span></div>
         <div class="photo-grid-2" id="coverPhotos"></div>
@@ -1229,9 +1318,9 @@
         </div>
         
         <div class="legend-row">
-          <div class="legend-item"><div class="color-dot color-red"></div><span>Not acceptable</span></div>
-          <div class="legend-item"><div class="color-dot color-blue"></div><span>Within tolerance</span></div>
-          <div class="legend-item"><div class="color-dot color-orange"></div><span>Drawing to update</span></div>
+          <div class="legend-item"><span class="dim-status-icon shape-ok"><span class="color-dot color-blue"></span></span><span>OK</span></div>
+          <div class="legend-item"><span class="dim-status-icon shape-not-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e24b4b" stroke-width="3.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span><span>Not OK</span></div>
+          <div class="legend-item"><span class="dim-status-icon shape-update"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e89020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span><span>Update Drawing</span></div>
         </div>
 
         <div class="dim-batch-bar" id="dimBatchBar">
@@ -4217,16 +4306,21 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         </div>
 
-        <!-- KHỐI DỮ LIỆU ĐÁY (GIỮ NGUYÊN FORMAT CŨ) -->
+        <!-- KHỐI DỮ LIỆU ĐÁY -->
         <div class="dim-fields">
-          <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)">
-          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.actual || ''}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${d.actualUnit || 'mm'}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div><div class="color-dot ${d.color || 'color-blue'}"></div></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
+            <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)" style="margin-bottom:0;">
+            <span class="dim-status-icon-badge" id="dimStatusBadge_${i}">
+              ${renderDimStatusShape(d.color || 'color-blue')}
+            </span>
+          </div>
+          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.actual || ''}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${d.actualUnit || 'mm'}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div></div>
           <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.drawing || ''}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" value="${d.drawingUnit || 'mm'}" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
           <div class="dim-row"><label>Status</label>
             <select onchange="updateDimField(${i},'color',this.value)">
               <option value="color-blue" ${(d.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
               <option value="color-red" ${d.color === 'color-red' ? 'selected' : ''}>✗ Not OK</option>
-              <option value="color-orange" ${d.color === 'color-orange' ? 'selected' : ''}>~ Update Dwg</option>
+              <option value="color-orange" ${d.color === 'color-orange' ? 'selected' : ''}>↻ Update Dwg</option>
             </select>
           </div>
         </div>`;
@@ -4337,6 +4431,16 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     }
 
+    function renderDimStatusShape(color) {
+      if (color === 'color-red') {
+        return `<span class="dim-status-icon shape-not-ok" title="Not OK"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e24b4b" stroke-width="3.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>`;
+      }
+      if (color === 'color-orange') {
+        return `<span class="dim-status-icon shape-update" title="Update Drawing"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e89020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span>`;
+      }
+      return `<span class="dim-status-icon shape-ok" title="OK"><span class="color-dot color-blue"></span></span>`;
+    }
+
     function formatDimensionMeasurement(dimension, field) {
       const value = dimension[field];
       if (!value) return '—';
@@ -4352,10 +4456,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const automaticColor = getAutomaticDimensionColor(dimension);
         if (automaticColor) {
           dimension.color = automaticColor;
-          const colorDot = document.querySelector(`[data-dim-index="${index}"] .dim-fields .color-dot`);
-          if (colorDot) {
-            colorDot.classList.remove('color-red', 'color-blue', 'color-orange');
-            colorDot.classList.add(automaticColor);
+          const statusBadge = document.getElementById(`dimStatusBadge_${index}`);
+          if (statusBadge) {
+            statusBadge.innerHTML = renderDimStatusShape(automaticColor);
           }
           const statusSelect = document.querySelector(`[data-dim-index="${index}"] .dim-fields select`);
           if (statusSelect) statusSelect.value = automaticColor;
@@ -4435,7 +4538,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             <div class="pactions">
               <button class="pact del" title="Xóa" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>
-            <div class="free-caption ignore-drag"><input class="ignore-drag" value="${p.caption || ''}" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value)"></div>`;
+            <div class="free-caption ignore-drag"><textarea class="ignore-drag" rows="1" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value, this)">${escapeHtml(p.caption || '')}</textarea></div>`;
+            const ta = div.querySelector('.free-caption textarea');
+            if (ta && p.caption) autoGrowTextarea(ta);
         } else {
             div.innerHTML = `
               ${dragHandleHtml}
@@ -4601,7 +4706,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
         <div class="watchout-caption-box ignore-drag">
-          <input type="text" class="watchout-caption-input ignore-drag" value="${p ? (p.caption || '') : ''}" placeholder="Ghi chú điểm lưu ý chất lượng (Quality Watch Out)..." oninput="updateCaption('watchoutPhotos', ${i}, this.value)">
+          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Ghi chú điểm lưu ý chất lượng (Quality Watch Out)..." oninput="updateCaption('watchoutPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
         </div>`;
 
         const mainPhotoEl = div.querySelector('.dim-main-photo');
@@ -4610,6 +4715,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'watchoutPhotos', index: i, subType: 'sub' });
 
         el.appendChild(div);
+
+        const wta = div.querySelector('textarea.watchout-caption-input');
+        if (wta && p && p.caption) autoGrowTextarea(wta);
       });
 
       const addBtn = document.createElement('div');
@@ -4803,10 +4911,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         <!-- Ô NHẬP CHÚ THÍCH (CAPTION) KHÔNG BỊ SORTABLEJS KÉO THẺ -->
         <div class="watchout-caption-box ignore-drag">
-          <input type="text" class="watchout-caption-input ignore-drag" value="${p ? (p.caption || '') : ''}" placeholder="Nhập chú thích thử nghiệm (VD: Concentrated load 91kg - PASS)..." oninput="updateCaption('testingPhotos', ${i}, this.value)">
+          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Nhập chú thích thử nghiệm (VD: Concentrated load 91kg - PASS)..." oninput="updateCaption('testingPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
         </div>`;
 
         el.appendChild(div);
+
+        const tta = div.querySelector('textarea.watchout-caption-input');
+        if (tta && p && p.caption) autoGrowTextarea(tta);
 
         const mainPhotoEl = div.querySelector(`#tph_main_${i}`);
         const subPhotoEl = div.querySelector(`#tph_sub_${i}`);
@@ -4911,7 +5022,33 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       renderTestingPhotos();
     }
 
-    function updateCaption(key, i, val) { if (!D[key]) return; D[key][i].caption = val; as(); }
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function autoGrowTextarea(textareaEl) {
+      if (!textareaEl) return;
+      try {
+        textareaEl.style.height = 'auto';
+        textareaEl.style.height = Math.max(textareaEl.scrollHeight, 24) + 'px';
+      } catch (e) {}
+    }
+
+    function updateCaption(key, i, val, el) {
+      if (!D[key]) return;
+      if (!D[key][i]) D[key][i] = {};
+      D[key][i].caption = val;
+      if (el) {
+        autoGrowTextarea(el);
+      }
+      as();
+    }
     function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; pushHistory('Xóa ảnh'); D[key][i] = null; renderFreePhotos(key); as(); }
     function delFreeSlot(key, i) { pushHistory('Xóa ô ảnh'); D[key].splice(i, 1); renderFreePhotos(key); as(); }
 
@@ -4925,13 +5062,143 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <button class="result-btn fail ${row.result === 'fail' ? 'on' : ''}" onclick="setBVResult(${i},'fail')">FAIL</button>
           <button class="result-btn na ${row.result === 'na' ? 'on' : ''}" onclick="setBVResult(${i},'na')">N/A</button>
         </div></td>
-        <td><input type="text" value="${row.remark || ''}" oninput="saveBV(${i},'remark',this.value)"></td>`;
+        <td><textarea class="bv-table-textarea ignore-drag" rows="1" placeholder="Remark..." oninput="saveBV(${i},'remark',this.value);autoGrowTextarea(this)">${escapeHtml(row.remark || '')}</textarea></td>`;
         tbody.appendChild(tr);
+        const rta = tr.querySelector('textarea.bv-table-textarea');
+        if (rta && row.remark) autoGrowTextarea(rta);
       });
     }
     function addBVRow() { pushHistory('Thêm hàng thử nghiệm BV'); if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
     function setBVResult(i, val) { pushHistory('Đổi kết quả thử nghiệm BV'); if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+       EXECUTIVE QUALITY METRICS / OVERVIEW SUMMARY STRIP
+       ════════════════════════════════════════════════════════════════════════════ */
+    function getReportQuickMetrics(data) {
+      const d = data || D || {};
+      
+      // 1. Quality Watch-outs
+      const watchPhotos = (d.watchoutPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
+      const watchCount = watchPhotos.length;
+
+      // 2. Testing BV
+      const bvList = (d.bvRows || []).filter(r => r && (r.test || r.result || r.remark));
+      const totalTests = bvList.length;
+      const failedTests = bvList.filter(r => r.result === 'fail').length;
+      const passedTests = bvList.filter(r => r.result === 'pass').length;
+
+      // 3. Checklist
+      let totalCriteria = 0;
+      let checkedCriteria = 0;
+      let passCriteria = 0;
+      let failCriteria = 0;
+      const chkGroups = (d.checklist && Array.isArray(d.checklist)) ? d.checklist : [];
+      chkGroups.forEach(g => {
+        (g.items || []).forEach(it => {
+          totalCriteria++;
+          if (it.status === 'yes') { checkedCriteria++; passCriteria++; }
+          else if (it.status === 'no') { checkedCriteria++; failCriteria++; }
+        });
+      });
+
+      // 4. Dimensions flagged
+      const validDims = (d.dimensions || []).filter(dim => dim && (dim.img || dim.imgSub || dim.actual || dim.drawing));
+      const redDims = validDims.filter(dim => dim.color === 'color-red').length;
+      const orangeDims = validDims.filter(dim => dim.color === 'color-orange').length;
+
+      return {
+        watchCount,
+        totalTests,
+        failedTests,
+        passedTests,
+        totalCriteria,
+        checkedCriteria,
+        passCriteria,
+        failCriteria,
+        redDims,
+        orangeDims
+      };
+    }
+
+    function renderOverviewSummary() {
+      const el = document.getElementById('overviewSummaryStrip');
+      if (!el || !D) return;
+
+      const m = getReportQuickMetrics(D);
+
+      // Watch-out badge
+      let watchBadge = '';
+      if (m.watchCount > 0) {
+        watchBadge = `<div class="summary-badge badge-danger">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><b>${m.watchCount}</b> Quality Watch-out${m.watchCount > 1 ? 's' : ''}</span>
+        </div>`;
+      } else {
+        watchBadge = `<div class="summary-badge badge-success">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>0 Watch-outs (Clean)</span>
+        </div>`;
+      }
+
+      // Testing badge
+      let testBadge = '';
+      if (m.totalTests === 0) {
+        testBadge = `<div class="summary-badge badge-neutral">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>No Lab Tests</span>
+        </div>`;
+      } else if (m.failedTests > 0) {
+        testBadge = `<div class="summary-badge badge-danger">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span><b>${m.failedTests}/${m.totalTests}</b> Tests Failed</span>
+        </div>`;
+      } else {
+        testBadge = `<div class="summary-badge badge-success">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>All Tests Passed (${m.passedTests}/${m.totalTests})</span>
+        </div>`;
+      }
+
+      // Checklist badge
+      let checkBadge = '';
+      if (m.totalCriteria === 0) {
+        checkBadge = `<div class="summary-badge badge-neutral"><span>Checklist: 0 Items</span></div>`;
+      } else {
+        const isComplete = m.checkedCriteria === m.totalCriteria;
+        const cls = m.failCriteria > 0 ? 'badge-warning' : (isComplete ? 'badge-success' : 'badge-neutral');
+        const icon = m.failCriteria > 0 ? 
+          `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` : 
+          `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        checkBadge = `<div class="summary-badge ${cls}">
+          ${icon}
+          <span><b>${m.checkedCriteria}/${m.totalCriteria}</b> Checklist Done${m.failCriteria > 0 ? ` (${m.failCriteria} Not OK)` : ''}</span>
+        </div>`;
+      }
+
+      // Dimension status badge (optional but super valuable)
+      let dimBadge = '';
+      if (m.redDims > 0 || m.orangeDims > 0) {
+        const totalIssue = m.redDims + m.orangeDims;
+        dimBadge = `<div class="summary-badge badge-warning">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span><b>${totalIssue}</b> Dim Issue${totalIssue > 1 ? 's' : ''}</span>
+        </div>`;
+      }
+
+      el.innerHTML = `
+        <div class="overview-summary-head">
+          <span>Executive Quality Summary</span>
+          <span style="font-size:10px; font-weight:500; color:var(--muted)">Auto-calculated</span>
+        </div>
+        <div class="overview-summary-pills">
+          ${watchBadge}
+          ${testBadge}
+          ${checkBadge}
+          ${dimBadge}
+        </div>
+      `;
+    }
 
     /* ════════════════════════════════════════════════════════════════════════════
        APPLE-STYLE CHECKLIST LOGIC & SORTABLE DRAG-DROP
@@ -5362,6 +5629,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         buildDimGrid(); 
         renderBVTable();
         renderChecklist();
+        renderOverviewSummary();
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
         refreshAllSlots();
       } catch (err) {
@@ -5407,6 +5675,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const saveIndicator = document.getElementById('saveIndicator'); if (saveIndicator) saveIndicator.title = 'Đang lưu dữ liệu...';
       Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
       D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
+      renderOverviewSummary();
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         await dbPut(D);
@@ -5560,10 +5829,29 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const addSafeTextBlock = (title, text, curY, maxW = W - M * 2) => {
         if (!text || !text.trim()) return curY; 
         let ty = curY;
-        if (title) { if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text(title, M, ty); ty += 5.5; }
-        doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40);
+        if (title) { 
+          if (ty + 8 > BOTTOM_LIMIT) { addHeader(title); ty = y; } 
+          doc.setFont(fontFam, 'bold'); 
+          doc.setFontSize(9.5); 
+          doc.setTextColor(40, 40, 40); 
+          doc.text(title, M, ty); 
+          ty += 5.2; 
+        }
+        doc.setFont(fontFam, 'normal'); 
+        doc.setFontSize(9); 
+        doc.setTextColor(50, 45, 40);
         const lines = doc.splitTextToSize(text, maxW);
-        for (let i = 0; i < lines.length; i++) { if (ty + 4 > BOTTOM_LIMIT) { addHeader(title || 'Notes'); ty = y; doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(50, 45, 40); } doc.text(lines[i], M, ty); ty += 4.8; }
+        for (let i = 0; i < lines.length; i++) { 
+          if (ty + 5 > BOTTOM_LIMIT) { 
+            addHeader(title || 'Notes'); 
+            ty = y; 
+            doc.setFont(fontFam, 'normal'); 
+            doc.setFontSize(9); 
+            doc.setTextColor(50, 45, 40); 
+          } 
+          doc.text(lines[i], M, ty); 
+          ty += 4.5; 
+        }
         return ty + 4;
       };
 
@@ -5603,7 +5891,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } 
       };
 
-      const renderCard = (p, px, py, gw) => {
+      const renderCard = (p, px, py, gw, cardH) => {
+        if (!p) return cardH;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
         let itemMainW = gw;
         let itemSubW = 0;
@@ -5617,103 +5906,59 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         if (itemSubW > 0) {
           // Bố cục 2 ảnh (3:1 hoặc 1:1)
-          let mainRatio = 4 / 3;
           if (p.img) {
-            try {
-              const pr1 = doc.getImageProperties(p.img);
-              if (pr1 && pr1.width && pr1.height) mainRatio = pr1.width / pr1.height;
-            } catch(e) {}
-          }
-
-          // Chiều cao ảnh chính theo đúng tỷ lệ thực tế của ảnh (không ép 67mm cố định)
-          let mH = itemMainW / mainRatio;
-          if (mH > 67) mH = 67;
-          if (mH < 35) mH = 35;
-          const cardH = mH;
-
-          // 1. Vẽ ảnh chính
-          let mainBounds = null;
-          if (p.img) {
-            mainBounds = addImg(p.img, px, py, itemMainW, cardH);
+            addImg(p.img, px, py, itemMainW, cardH);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px, py, itemMainW, cardH, 'F');
-            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 158);
             doc.text('Main View', px + itemMainW / 2, py + cardH / 2, { align: 'center' });
           }
 
-          // Chiều cao và vị trí y của viền lấy chính xác 100% từ ảnh chính -> khít tuyệt đối, không hở trên/dưới
-          const borderY = mainBounds ? mainBounds.y : py;
-          const borderH = mainBounds ? mainBounds.h : cardH;
-
-          // 2. Vùng ảnh phụ (có nền nhẹ, vừa khít với borderH)
-          doc.setFillColor(248, 245, 240);
-          doc.rect(px + itemMainW, borderY, itemSubW, borderH, 'F');
+          // Vùng ảnh phụ (đồng bộ với ảnh chính: chỉ vẽ nền chờ khi chưa có ảnh)
           if (p.imgSub) {
-            addImg(p.imgSub, px + itemMainW, borderY, itemSubW, borderH);
+            addImg(p.imgSub, px + itemMainW, py, itemSubW, cardH);
           } else {
-            doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
-            doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, borderY + borderH / 2, { align: 'center' });
+            doc.setFillColor(248, 245, 240);
+            doc.rect(px + itemMainW, py, itemSubW, cardH, 'F');
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + cardH / 2, { align: 'center' });
           }
 
-          // 3. Khung viền và đường kẻ phân cách giữa 2 ảnh
+          // Khung viền và đường kẻ phân cách
           doc.setDrawColor(220, 217, 210);
-          doc.setLineWidth(0.2);
-          doc.rect(px, borderY, gw, borderH, 'S');
-          doc.line(px + itemMainW, borderY, px + itemMainW, borderY + borderH);
+          doc.setLineWidth(0.25);
+          doc.rect(px, py, gw, cardH, 'S');
+          doc.line(px + itemMainW, py, px + itemMainW, py + cardH);
 
-          // 4. Chú thích ảnh (Caption)
-          if (p.caption && p.caption.trim()) {
-            doc.setFont(fontFam, 'normal');
-            doc.setFontSize(7.5);
-            doc.setTextColor(70, 65, 60);
-            doc.text(p.caption.trim(), px + gw / 2, borderY + borderH + 3.8, { align: 'center', maxWidth: gw - 2 });
-          }
-
-          return borderH;
+          return cardH;
         } else {
           // Chế độ 1 ảnh (Single mode)
-          let imgRatio = 4 / 3;
           if (p.img) {
-            try {
-              const pr = doc.getImageProperties(p.img);
-              if (pr && pr.width && pr.height) imgRatio = pr.width / pr.height;
-            } catch(e) {}
-          }
-
-          let cardH = gw / imgRatio;
-          if (cardH > 67) cardH = 67;
-          if (cardH < 35) cardH = 35;
-
-          let bounds = null;
-          if (p.img) {
-            bounds = addImg(p.img, px, py, gw, cardH);
+            addImg(p.img, px, py, gw, cardH);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px, py, gw, cardH, 'F');
-            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 158);
             doc.text('Photo View', px + gw / 2, py + cardH / 2, { align: 'center' });
           }
 
-          const capY = bounds ? (bounds.y + bounds.h) : (py + cardH);
-          if (p.caption && p.caption.trim()) {
-            doc.setFont(fontFam, 'normal');
-            doc.setFontSize(7.5);
-            doc.setTextColor(70, 65, 60);
-            doc.text(p.caption.trim(), px + gw / 2, capY + 3.8, { align: 'center', maxWidth: gw - 2 });
-          }
+          doc.setDrawColor(220, 217, 210);
+          doc.setLineWidth(0.25);
+          doc.rect(px, py, gw, cardH, 'S');
 
-          return bounds ? bounds.h : cardH;
+          return cardH;
         }
       };
 
-      const renderPhotoGrid = (photos, headerTitle) => {
+      const renderPhotoGrid = (photos, headerTitle, customCardH, customGapY) => {
         const gapX = 6;
-        const gapY = 8.5;
+        const gapY = customGapY !== undefined ? customGapY : 6.5;
         const gw = (W - M * 2 - gapX) / 2; // 88mm
 
         const estimateCardH = (p) => {
           if (!p) return 0;
+          if (customCardH) return customCardH;
           const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
           const mainW = layout === '3:1' ? gw * 0.75 : (layout === '1:1' ? gw * 0.5 : gw);
           let r = 4 / 3;
@@ -5724,7 +5969,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             } catch(e) {}
           }
           let h = mainW / r;
-          if (h > 67) h = 67;
+          if (h > 62) h = 62;
           if (h < 35) h = 35;
           return h;
         };
@@ -5734,14 +5979,20 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           const p0 = photos[r * 2];
           const p1 = photos[r * 2 + 1];
 
-          const h0 = estimateCardH(p0);
-          const h1 = estimateCardH(p1);
-          const rowMaxCardH = Math.max(h0, h1 || 0, 45);
-          const hasCaption = (p0 && p0.caption && p0.caption.trim()) || (p1 && p1.caption && p1.caption.trim());
-          const captionH = hasCaption ? 6.5 : 0;
+          const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0), estimateCardH(p1) || 0, 42);
+
+          const padX = 2.5;
+          const textW = gw - padX * 2;
+          doc.setFont(fontFam, 'normal');
+          doc.setFontSize(8.5);
+
+          const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
+          const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
+          const maxCapLines = Math.max(capLines0.length, capLines1.length);
+          const captionH = maxCapLines > 0 ? (maxCapLines * 3.8 + 3.0) : 0;
           const rowTotalH = rowMaxCardH + captionH + gapY;
 
-          // Kiểm tra ngắt trang: nếu hàng ảnh tràn quá giới hạn đáy trang (270mm)
+          // Kiểm tra ngắt trang: nếu hàng ảnh tràn quá giới hạn đáy trang
           if (y + rowTotalH > BOTTOM_LIMIT) {
             addHeader(headerTitle);
           }
@@ -5750,9 +6001,34 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           const px0 = M;
           const px1 = M + gw + gapX;
 
-          renderCard(p0, px0, py, gw);
+          renderCard(p0, px0, py, gw, rowMaxCardH);
           if (p1) {
-            renderCard(p1, px1, py, gw);
+            renderCard(p1, px1, py, gw, rowMaxCardH);
+          }
+
+          // Căn chỉnh chú thích (Caption): Căn giữa nếu 1 dòng, Căn trái thẳng mép ảnh nếu câu comment dài (>= 2 dòng)
+          const capY = py + rowMaxCardH + 3.8;
+          doc.setFontSize(8.5);
+          doc.setTextColor(45, 40, 35);
+
+          const drawCaption = (lines, px) => {
+            if (!lines || lines.length === 0) return;
+            if (lines.length === 1) {
+              // Nhãn / tiêu đề ngắn 1 dòng -> căn giữa thanh lịch
+              doc.setFont(fontFam, 'bold');
+              doc.text(lines[0], px + gw / 2, capY, { align: 'center' });
+            } else {
+              // Câu comment / nhận xét dài nhiều dòng -> BẮT BUỘC căn đều lề trái (align: 'left') thẳng tắp
+              doc.setFont(fontFam, 'normal');
+              for (let i = 0; i < lines.length; i++) {
+                doc.text(lines[i], px + padX, capY + i * 3.8);
+              }
+            }
+          };
+
+          drawCaption(capLines0, px0);
+          if (p1) {
+            drawCaption(capLines1, px1);
           }
 
           y += rowTotalH;
@@ -5835,19 +6111,92 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             doc.rect(cx, y + 1, 3, 3, 'S');
           }
           doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
-        }); y += 8;
+        }); y += 6.5;
       };
-      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 4;
+      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 2.5;
+
+      // ================= EXECUTIVE QUALITY SUMMARY STRIP =================
+      const qm = getReportQuickMetrics(D);
+      const sumBoxW = W - M * 2;
+      const sumBoxH = 13.5;
+      doc.setFillColor(248, 246, 242);
+      doc.setDrawColor(225, 220, 212);
+      doc.setLineWidth(0.25);
+      doc.rect(M, y, sumBoxW, sumBoxH, 'FD');
+
+      // Tiêu đề nhỏ thanh lịch
+      doc.setFont(fontFam, 'bold');
+      doc.setFontSize(6.8);
+      doc.setTextColor(140, 130, 122);
+      doc.text("EXECUTIVE QUALITY SUMMARY", M + 3, y + 3.8);
+
+      // Vẽ các Badges / Status Pills
+      let badgeX = M + 3;
+      const badgeY = y + 5.5;
+      const badgeH = 5.6;
+
+      const drawPdfBadge = (text, bgRgb, borderRgb, textRgb, isAlert = false) => {
+        doc.setFont(fontFam, 'bold');
+        doc.setFontSize(7.5);
+        const textW = doc.getTextWidth(text);
+        const bW = textW + 8;
+        doc.setFillColor(...bgRgb);
+        doc.setDrawColor(...borderRgb);
+        doc.setLineWidth(0.2);
+        doc.rect(badgeX, badgeY, bW, badgeH, 'FD');
+        
+        // Vẽ chấm tròn nhỏ biểu trưng trạng thái
+        doc.setFillColor(...borderRgb);
+        doc.circle(badgeX + 3.2, badgeY + badgeH / 2, 1.1, 'F');
+
+        doc.setTextColor(...textRgb);
+        doc.text(text, badgeX + 6.2, badgeY + 4.0);
+        badgeX += bW + 3;
+      };
+
+      // 1. Watch-out
+      if (qm.watchCount > 0) {
+        drawPdfBadge(`${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
+      } else {
+        drawPdfBadge("0 Watch-outs", [237, 247, 238], [52, 168, 83], [30, 120, 50]);
+      }
+
+      // 2. Testing BV
+      if (qm.totalTests > 0) {
+        if (qm.failedTests > 0) {
+          drawPdfBadge(`${qm.failedTests}/${qm.totalTests} Tests Failed`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
+        } else {
+          drawPdfBadge(`All Tests Passed (${qm.passedTests}/${qm.totalTests})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
+        }
+      }
+
+      // 3. Checklist
+      if (qm.totalCriteria > 0) {
+        if (qm.failCriteria > 0) {
+          drawPdfBadge(`${qm.checkedCriteria}/${qm.totalCriteria} Checklist (${qm.failCriteria} Not OK)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
+        } else {
+          const chkDone = qm.checkedCriteria === qm.totalCriteria;
+          drawPdfBadge(`${qm.checkedCriteria}/${qm.totalCriteria} Checklist Done`, chkDone ? [237, 247, 238] : [240, 237, 232], chkDone ? [52, 168, 83] : [140, 135, 130], chkDone ? [30, 120, 50] : [70, 65, 60]);
+        }
+      }
+
+      // 4. Dimension (nếu có vấn đề phát hiện)
+      if (qm.redDims > 0 || qm.orangeDims > 0) {
+        const dimTotal = qm.redDims + qm.orangeDims;
+        drawPdfBadge(`${dimTotal} Dim Issue${dimTotal > 1 ? 's' : ''}`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
+      }
+
+      y += sumBoxH + 4;
 
       doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 4;
       const cp = D.coverPhotos || {}; 
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_')); 
       
       const gapX = 4;
-      const gapY = 5;
-      const barH = 5.5;
+      const gapY = 4.5;
+      const barH = 5.2;
       const pw = (W - M * 2 - gapX) / 2; 
-      const ph = 81;
+      const ph = 74;
       
       const gridCoords = [
         [M, y], 
@@ -5898,14 +6247,69 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       // ================= 3. DIMENSIONS (2 CỘT & ẢNH KÉP 3:1) =================
       const validDims = (D.dimensions || []).filter(d => d.img || d.imgSub || d.actual || d.drawing);
-      if(validDims.length > 0) {
+      if (validDims.length > 0) {
+        let _updateIconPngDataUrl = null;
+        const getUpdateIconPng = () => {
+          if (_updateIconPngDataUrl) return _updateIconPngDataUrl;
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 72; canvas.height = 72;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 72, 72);
+            ctx.scale(72 / 24, 72 / 24);
+            ctx.strokeStyle = '#e89020';
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            if (typeof Path2D !== 'undefined') {
+              ctx.stroke(new Path2D("M21 2v6h-6"));
+              ctx.stroke(new Path2D("M3 12a9 9 0 0 1 15-6.7L21 8"));
+              ctx.stroke(new Path2D("M3 22v-6h6"));
+              ctx.stroke(new Path2D("M21 12a9 9 0 0 1-15 6.7L3 16"));
+            } else {
+              ctx.beginPath();
+              ctx.arc(12, 12, 8.5, -0.4, 2.0);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(12, 12, 8.5, Math.PI - 0.4, Math.PI + 2.0);
+              ctx.stroke();
+            }
+            _updateIconPngDataUrl = canvas.toDataURL('image/png');
+          } catch(e) {
+            console.warn('Cannot generate update icon canvas', e);
+          }
+          return _updateIconPngDataUrl;
+        };
+
+        const drawDimStatusShapePdf = (shapeType, sx, sy, r = 1.6) => {
+          if (shapeType === 'color-red' || shapeType === 'not_ok') {
+            doc.setDrawColor(226, 75, 74);
+            doc.setLineWidth(0.55);
+            const d = r * 0.85;
+            doc.line(sx - d, sy - d, sx + d, sy + d);
+            doc.line(sx - d, sy + d, sx + d, sy - d);
+          } else if (shapeType === 'color-orange' || shapeType === 'update') {
+            const iconUrl = getUpdateIconPng();
+            if (iconUrl) {
+              const iconSize = r * 2.2;
+              doc.addImage(iconUrl, 'PNG', sx - iconSize / 2, sy - iconSize / 2, iconSize, iconSize);
+            } else {
+              doc.setFillColor(210, 138, 20);
+              doc.circle(sx, sy, r, 'F');
+            }
+          } else {
+            doc.setFillColor(55, 138, 221);
+            doc.circle(sx, sy, r, 'F');
+          }
+        };
+
         const addDimensionLegend = () => {
           let lx = M;
           const ly = y - 0.8;
           const legendItems = [
-            { color: [226, 75, 74], label: 'Not OK' },
-            { color: [55, 138, 221], label: 'OK' },
-            { color: [210, 138, 20], label: 'Update Drawing' }
+            { type: 'ok', label: 'OK' },
+            { type: 'not_ok', label: 'Not OK' },
+            { type: 'update', label: 'Update Drawing' }
           ];
 
           doc.setFont(fontFam, 'normal');
@@ -5913,8 +6317,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           doc.setTextColor(80, 75, 70);
 
           legendItems.forEach((item) => {
-            doc.setFillColor(...item.color);
-            doc.circle(lx + 1.5, ly, 1.6, 'F');
+            drawDimStatusShapePdf(item.type, lx + 1.5, ly, 1.6);
             doc.text(item.label, lx + 4.5, ly + 1);
             lx += doc.getTextWidth(item.label) + 12;
           });
@@ -5974,7 +6377,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             if (displayImgSub) { 
               addImg(displayImgSub, dx + itemMainW, dy, itemSubW, dimImgH); 
             } else { 
-              doc.setFillColor(244, 242, 238); 
+              doc.setFillColor(248, 245, 240); 
               doc.rect(dx + itemMainW, dy, itemSubW, dimImgH, 'F'); 
               doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
               doc.text(layout === '1:1' ? 'Side View' : 'Detail', dx + itemMainW + itemSubW / 2, dy + dimImgH / 2, { align: 'center' });
@@ -5992,15 +6395,27 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           // KHỐI DỮ LIỆU ĐÁY
           const fy = dy + dimImgH + 2; 
           doc.setFont(fontFam, 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
-          doc.text(d.name || 'DIMENSION', dx + 3, fy + 3);
+          doc.text(d.name || 'DIMENSION', dx + 3, fy + 3, { maxWidth: dimSlotW - 12 });
           
-          const color = d.color === 'color-red' ? [226, 75, 74] : d.color === 'color-orange' ? [210, 138, 20] : [55, 138, 221]; 
-          doc.setFillColor(...color); 
-          doc.circle(dx + dimSlotW - 5, fy + 2, 2, 'F');
+          const statusType = d.color === 'color-red' ? 'not_ok' : d.color === 'color-orange' ? 'update' : 'ok';
+          drawDimStatusShapePdf(statusType, dx + dimSlotW - 5, fy + 2, 1.8);
           
           doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
-          doc.text(`Actual: ${formatDimensionMeasurement(d, 'actual')}`, dx + 3, fy + 9); 
-          doc.text(`Drawing: ${formatDimensionMeasurement(d, 'drawing')}`, dx + 3, fy + 14);
+          const actVal = formatDimensionMeasurement(d, 'actual');
+          const drwVal = formatDimensionMeasurement(d, 'drawing');
+          
+          // Dòng Drawing in trước để xác định mốc đuôi lề phải (right anchor)
+          const drwLabelW = doc.getTextWidth('Drawing: ');
+          const drwValW = doc.getTextWidth(drwVal);
+          const anchorRightX = (dx + 3) + drwLabelW + drwValW;
+          
+          // In chữ 'Drawing: ' lề trái và số đo Drawing
+          doc.text('Drawing: ', dx + 3, fy + 14);
+          doc.text(drwVal, (dx + 3) + drwLabelW, fy + 14);
+          
+          // In chữ 'Actual: ' lề trái và số đo Actual căn lề phải theo đúng mốc đuôi của Drawing
+          doc.text('Actual: ', dx + 3, fy + 9);
+          doc.text(actVal, anchorRightX, fy + 9, { align: 'right' });
           
           dx += dimSlotW + 4;
           if ((i + 1) % dimCols === 0) {
@@ -6014,6 +6429,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } else {
           y = Math.max(y, dy - 5);
         }
+        if (D.dimNotes && D.dimNotes.trim()) y = addSafeTextBlock('Dimension Remarks', D.dimNotes, y);
       }
 
       // ================= 4. PRODUCT ASSEMBLY =================
@@ -6028,28 +6444,71 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
         if(validBV.length > 0) {
-            doc.setFillColor(240, 238, 232); doc.rect(M, y, W - M * 2, 8, 'F'); doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
-            doc.text('Test Property', M + 2, y + 4.5); doc.text('Result', M + 110, y + 4.5); doc.text('Remark', M + 140, y + 4.5); y += 8;
+            const tableW = W - M * 2;
+            doc.setFillColor(242, 242, 247); 
+            doc.rect(M, y, tableW, 6.5, 'F'); 
+            doc.setDrawColor(215, 215, 220);
+            doc.setLineWidth(0.3);
+            doc.rect(M, y, tableW, 6.5, 'S');
+            doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
+            doc.text('Test Property', M + 3, y + 4.4); 
+            doc.text('Result', M + 106, y + 4.4, { align: 'center' }); 
+            doc.text('Remark', M + 122, y + 4.4); 
+            y += 6.5;
+
             validBV.forEach(row => {
-              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110]; doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
-              const lines = doc.splitTextToSize(row.test || '', 95), rowH = lines.length * 4 + 4;
-              if (y + rowH > BOTTOM_LIMIT) { addHeader('Testing'); }
-              doc.text(lines, M + 2, y + 4); doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); doc.text((row.result || '—').toUpperCase(), M + 110, y + 4); doc.setFont(fontFam, 'normal'); doc.setTextColor(80, 75, 70); doc.text(row.remark || '', M + 140, y + 4, { maxWidth: 55 }); doc.setDrawColor(225, 220, 212); doc.line(M, y + rowH, M + W - M * 2, y + rowH); y += rowH;
-            }); y += 6;
+              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110];
+              const testLines = doc.splitTextToSize(row.test || '', 92);
+              const remarkLines = doc.splitTextToSize(row.remark || '', 56);
+              const maxLines = Math.max(testLines.length, remarkLines.length, 1);
+              const rowH = maxLines * 3.8 + 3.2;
+
+              if (y + rowH > BOTTOM_LIMIT) { 
+                addHeader('Testing'); 
+                doc.setFillColor(242, 242, 247); 
+                doc.rect(M, y, tableW, 6.5, 'F'); 
+                doc.setDrawColor(215, 215, 220);
+                doc.setLineWidth(0.3);
+                doc.rect(M, y, tableW, 6.5, 'S');
+                doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
+                doc.text('Test Property', M + 3, y + 4.4); 
+                doc.text('Result', M + 106, y + 4.4, { align: 'center' }); 
+                doc.text('Remark', M + 122, y + 4.4); 
+                y += 6.5;
+              }
+
+              doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
+              doc.text(testLines, M + 3, y + 4.0); 
+
+              doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); 
+              doc.text((row.result || '—').toUpperCase(), M + 106, y + 4.0, { align: 'center' }); 
+
+              doc.setFont(fontFam, 'normal'); doc.setTextColor(70, 65, 60); 
+              doc.text(remarkLines, M + 122, y + 4.0); 
+
+              doc.setDrawColor(225, 220, 212); 
+              doc.setLineWidth(0.25);
+              doc.line(M, y + rowH, M + tableW, y + rowH); 
+              y += rowH;
+            }); 
+            y += 5;
         }
 
         if (validTestingPhotos.length > 0) {
-          if (y + 45 > BOTTOM_LIMIT) {
+          if (y + 40 > BOTTOM_LIMIT) {
             addHeader('Testing Photos');
           } else {
             doc.setFont(fontFam, 'bold');
             doc.setFontSize(9.5);
             doc.setTextColor(40, 40, 40);
             doc.text('Testing Photos', M, y);
-            y += 6;
+            y += 5.5;
           }
 
-          renderPhotoGrid(validTestingPhotos, 'Testing Photos');
+          const isThreeRows = validTestingPhotos.length > 4;
+          const testingCardH = isThreeRows ? 41 : (validTestingPhotos.length > 2 ? 48 : 55);
+          const testingGapY = isThreeRows ? 3.5 : 5.5;
+          renderPhotoGrid(validTestingPhotos, 'Testing Photos', testingCardH, testingGapY);
         }
         if (D.testingNotes && D.testingNotes.trim()) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
       }
@@ -6158,6 +6617,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           // 2. Vẽ từng dòng tiêu chí & ô Yes / No
           items.forEach(item => {
             const rowY = y;
+
+            // Đặt lại màu viền xám và độ dày nét chuẩn trước khi vẽ các ô
+            doc.setDrawColor(215, 215, 220);
+            doc.setLineWidth(0.25);
 
             // Ô tiêu chí
             doc.rect(M + colGroupW, rowY, colItemW, rowH, 'S');
