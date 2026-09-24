@@ -3,11 +3,13 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a3a2a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PP Review">
   
+  <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
   <title>PP Sample Review</title>
   
@@ -1064,8 +1066,8 @@
     .mbtn.sec { background: #f0eee8; border: 1px solid var(--border); }
     .mbtn.pri { background: var(--accent); color: #fff; }
 
-    .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; }
-    .cropper-wrapper img { display: block; max-width: 100%; }
+    .cropper-wrapper { width: 100%; height: 42vh; min-height: 260px; background: #000; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .cropper-wrapper img, .cropper-wrapper .cropper-container, .cropper-wrapper .cropper-wrap-box, .cropper-wrapper .cropper-canvas, .cropper-wrapper .cropper-drag-box, .cropper-wrapper .cropper-crop-box, .cropper-wrapper .cropper-modal, .cropper-wrapper .cropper-view-box { touch-action: none !important; }
     .cropper-tools { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; background: #000; }
     .tools-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
     .tool-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); padding: 6px 10px; border-radius: 6px; font-size: 11.5px; cursor: pointer; flex: 1; min-width: 52px; font-weight: 500; }
@@ -2038,12 +2040,29 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return [255, 255, 255];
     }
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // ═══════════════ INDEXED DB STORAGE ═══════════════
     const DB_NAME = 'SofaCompanyPP_DB_Lite';
     const STORE_NAME = 'reports';
     let db = null;
 
     function initDB() {
+      // Yêu cầu quyền lưu trữ bền vững (Persistent Storage) trên Safari iOS & Chrome để tránh bị tự động xóa
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then(granted => {
+          if (granted) console.log('[Storage] Trình duyệt đã cấp quyền lưu trữ bền vững (Persistent Storage).');
+        }).catch(err => console.warn('[Storage] Không thể yêu cầu persistent storage:', err));
+      }
+
       return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, 1);
         req.onupgradeneeded = e => {
@@ -2147,7 +2166,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           let count = 0;
           for (const rep of reportsToRestore) {
             if (!rep.id) rep.id = 'pp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            await dbPut(rep);
+            const normalizedRep = await normalizeReportPhotos(rep);
+            await dbPut(normalizedRep);
             count++;
           }
           await renderHome();
@@ -2377,6 +2397,44 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         img.onerror = () => resolve(dataUrl);
         img.src = dataUrl;
       });
+    }
+
+    // Chuẩn hóa toàn bộ ảnh trong một báo cáo (khi nhập JSON / khôi phục) để tránh vượt quá hạn mức quota lưu trữ
+    async function normalizeReportPhotos(rep) {
+      if (!rep || typeof rep !== 'object') return rep;
+      try {
+        if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
+          for (const k of Object.keys(rep.coverPhotos)) {
+            const p = rep.coverPhotos[k];
+            if (p && typeof p === 'object') {
+              if (p.master && typeof p.master === 'string' && p.master.length > 400000) {
+                p.master = await normalizeMasterPhoto(p.master);
+              }
+              if (p.src && typeof p.src === 'string' && p.src.length > 400000) {
+                p.src = await normalizeMasterPhoto(p.src);
+              }
+            }
+          }
+        }
+        const photoKeys = ['prodPhotos', 'hardwarePhotos', 'cartonPhotos', 'markingPhotos', 'internalPhotos', 'testingPhotos', 'watchoutPhotos'];
+        for (const arrKey of photoKeys) {
+          if (Array.isArray(rep[arrKey])) {
+            for (const p of rep[arrKey]) {
+              if (p && typeof p === 'object') {
+                if (p.master && typeof p.master === 'string' && p.master.length > 400000) {
+                  p.master = await normalizeMasterPhoto(p.master);
+                }
+                if (p.src && typeof p.src === 'string' && p.src.length > 400000) {
+                  p.src = await normalizeMasterPhoto(p.src);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Lỗi chuẩn hóa ảnh báo cáo:', err);
+      }
+      return rep;
     }
 
     function resizeImage(imageSource, maxDimension = 1280, quality = 0.88) {
@@ -3356,6 +3414,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           return;
         }
 
+        if (typeof Cropper === 'undefined') {
+          showToast('Lỗi: Thư viện cắt ảnh Cropper chưa sẵn sàng (vui lòng kiểm tra kết nối mạng).');
+          closeCamera();
+          return;
+        }
+
         let title = 'Chỉnh sửa ảnh';
         if (camTarget.type === 'dim') {
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - KÍCH THƯỚC' : 'ẢNH CHÍNH (TOÀN CẢNH) - KÍCH THƯỚC';
@@ -3673,32 +3737,33 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     async function applyImportData(data, isReplace) {
       try {
+        const normalizedData = await normalizeReportPhotos(data);
         if (isReplace && pendingExistingReport) {
-          data.id = pendingExistingReport.id;
-          await dbPut(data);
+          normalizedData.id = pendingExistingReport.id;
+          await dbPut(normalizedData);
           showToast('✓ Đã ghi đè báo cáo thành công!');
         } else {
-          data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+          normalizedData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
           if (pendingExistingReport) {
             const suffix = pendingCopySuffix || '(1)';
-            if (data.desc && data.desc.trim()) {
-              data.desc = `${data.desc.trim()} ${suffix}`;
-            } else if (data.reportTitle && data.reportTitle.trim()) {
-              data.reportTitle = `${data.reportTitle.trim()} ${suffix}`;
-            } else if (data.model && data.model.trim()) {
-              data.model = `${data.model.trim()} ${suffix}`;
+            if (normalizedData.desc && normalizedData.desc.trim()) {
+              normalizedData.desc = `${normalizedData.desc.trim()} ${suffix}`;
+            } else if (normalizedData.reportTitle && normalizedData.reportTitle.trim()) {
+              normalizedData.reportTitle = `${normalizedData.reportTitle.trim()} ${suffix}`;
+            } else if (normalizedData.model && normalizedData.model.trim()) {
+              normalizedData.model = `${normalizedData.model.trim()} ${suffix}`;
             } else {
-              data.desc = `Bản sao ${suffix}`;
+              normalizedData.desc = `Bản sao ${suffix}`;
             }
             showToast(`✓ Đã tạo báo cáo mới ${suffix}!`);
           } else {
             showToast('✓ Nhập báo cáo thành công!');
           }
-          await dbPut(data);
+          await dbPut(normalizedData);
         }
         closeImportConflictModal();
         await renderHome();
-        openReport(data.id);
+        openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
         alert('Lỗi khi lưu báo cáo: ' + err.message);
@@ -3872,10 +3937,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
         }
 
-        await dbPut(data);
+        const normalizedData = await normalizeReportPhotos(data);
+        await dbPut(normalizedData);
         showToast('✓ Nhập báo cáo thành công!');
         await renderHome();
-        openReport(data.id);
+        openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
         alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
@@ -4014,25 +4080,44 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
 
           const reportTitle = getReportTitle(r);
+          const safeTitle = escapeHtml(reportTitle);
+          const safeDate = escapeHtml(r.date || '');
+          const safeFactory = escapeHtml(r.factory || '');
+          const safeReviewer = escapeHtml(r.reviewer || '');
 
           d.innerHTML = `
             <div class="rc-left">
               <div class="rc-select-circle"></div>
               <div>
-                <div class="rc-title">${reportTitle}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
-                <div class="rc-sub">${r.date || ''} · ${r.factory || ''} · ${r.reviewer || ''}</div>
+                <div class="rc-title">${safeTitle}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
+                <div class="rc-sub">${safeDate} · ${safeFactory} · ${safeReviewer}</div>
               </div>
             </div>
             <div class="rc-right" style="${isSelectMode ? 'display:none' : 'display:flex; align-items:center; gap:6px;'}">
-              <button class="rc-action-btn" title="Chia sẻ file JSON" onclick="event.stopPropagation(); shareReportById('${r.id}')">
+              <button class="rc-action-btn btn-share-report" title="Chia sẻ file JSON">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
               </button>
-              <button class="rc-action-btn" title="Nhân bản báo cáo" onclick="event.stopPropagation(); duplicateReportById('${r.id}')">
+              <button class="rc-action-btn btn-dup-report" title="Nhân bản báo cáo">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               </button>
               <div class="rc-arrow" style="color:var(--muted); font-size:18px; line-height:1;">›</div>
             </div>
           `;
+
+          const shareBtn = d.querySelector('.btn-share-report');
+          if (shareBtn) {
+            shareBtn.onclick = (e) => {
+              e.stopPropagation();
+              shareReportById(r.id);
+            };
+          }
+          const dupBtn = d.querySelector('.btn-dup-report');
+          if (dupBtn) {
+            dupBtn.onclick = (e) => {
+              e.stopPropagation();
+              duplicateReportById(r.id);
+            };
+          }
           
           d.onclick = (e) => {
             if (isSelectMode) {
@@ -5022,15 +5107,6 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       renderTestingPhotos();
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
 
     function autoGrowTextarea(textareaEl) {
       if (!textareaEl) return;
@@ -5765,6 +5841,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF() {
       as(); showToast('Đang khởi tạo PDF...'); await new Promise(r => setTimeout(r, 150));
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        showToast('Lỗi: Thư viện xuất PDF chưa sẵn sàng (vui lòng kiểm tra kết nối mạng).');
+        return;
+      }
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
 
@@ -6700,6 +6780,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       window._lastGeneratedDoc = doc;
       doc.save(`PP_Report_${outFileName}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
       return doc;
+    }
+
+    // ═══════════════ PWA SERVICE WORKER REGISTRATION ═══════════════
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log('[PWA] ServiceWorker đã đăng ký thành công:', reg.scope))
+          .catch(err => console.warn('[PWA] Không thể đăng ký ServiceWorker:', err));
+      });
     }
 
     initDB().then(() => { renderHome(); initHomeDragAndDrop(); }).catch(err => { console.error('Lỗi khởi tạo IndexedDB:', err); showToast('Lỗi bộ nhớ IndexedDB'); });

@@ -1,8 +1,10 @@
 # Bỏ qua toàn bộ các file khác
 *
 
-# Chỉ giữ lại duy nhất index.html và cấu hình Git/CI cần thiết
+# Chỉ giữ lại index.html, PWA files và cấu hình Git/CI cần thiết
 !index.html
+!manifest.json
+!service-worker.js
 !.gitignore
 !.github/
 !.github/**
