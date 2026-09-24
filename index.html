@@ -5229,10 +5229,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           <span><b>${m.failedTests}/${m.totalTests}</b> Tests Failed</span>
         </div>`;
-      } else {
+      } else if (m.passedTests === m.totalTests) {
         testBadge = `<div class="summary-badge badge-success">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           <span>All Tests Passed (${m.passedTests}/${m.totalTests})</span>
+        </div>`;
+      } else {
+        testBadge = `<div class="summary-badge badge-neutral">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Testing: Pending (${m.passedTests}/${m.totalTests})</span>
         </div>`;
       }
 
@@ -6242,12 +6247,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
 
       // 2. Testing BV
-      if (qm.totalTests > 0) {
-        if (qm.failedTests > 0) {
-          drawPdfBadge(`${qm.failedTests}/${qm.totalTests} Tests Failed`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
-        } else {
-          drawPdfBadge(`All Tests Passed (${qm.passedTests}/${qm.totalTests})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
-        }
+      if (qm.totalTests === 0) {
+        drawPdfBadge("No Lab Tests", [240, 237, 232], [140, 135, 130], [70, 65, 60]);
+      } else if (qm.failedTests > 0) {
+        drawPdfBadge(`${qm.failedTests}/${qm.totalTests} Tests Failed`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
+      } else if (qm.passedTests === qm.totalTests) {
+        drawPdfBadge(`All Tests Passed (${qm.passedTests}/${qm.totalTests})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
+      } else {
+        drawPdfBadge(`Testing: Pending (${qm.passedTests}/${qm.totalTests})`, [240, 237, 232], [140, 135, 130], [70, 65, 60]);
       }
 
       // 3. Checklist
