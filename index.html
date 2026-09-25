@@ -633,9 +633,9 @@
     }
     .result-sel { display: flex; gap: 5px; }
     .result-btn { padding: 3px 8px; border-radius: 10px; font-size: 10px; border: 1px solid var(--border); cursor: pointer; background: #fff; }
-    .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; }
-    .result-btn.fail.on { background: var(--red-bg); border-color: var(--red); color: var(--red); }
-    .result-btn.na.on { background: #f0eeea; border-color: #888; color: #555; }
+    .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; font-weight: 600; }
+    .result-btn.fail.on { background: var(--red-bg); border-color: var(--red); color: var(--red); font-weight: 600; }
+    .result-btn.na.on, .result-btn.pending.on { background: #fff8ed; border-color: #f59e0b; color: #b45309; font-weight: 600; }
     /* ════════════════════════════════════════════════════════════════════════════
        APPLE-STYLE CHECKLIST (CUPERTINO / HIG)
        ════════════════════════════════════════════════════════════════════════════ */
@@ -5131,12 +5131,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function renderBVTable() {
       const tbody = document.getElementById('bvBody'); if (!tbody) return; tbody.innerHTML = '';
       (D.bvRows || []).forEach((row, i) => {
+        const isPass = row.result === 'pass';
+        const isFail = row.result === 'fail';
+        const isPending = row.result === 'pending' || row.result === 'na';
         const tr = document.createElement('tr');
         tr.innerHTML = `<td><input type="text" value="${row.test || ''}" oninput="saveBV(${i},'test',this.value)"></td>
         <td><div class="result-sel">
-          <button class="result-btn pass ${row.result === 'pass' ? 'on' : ''}" onclick="setBVResult(${i},'pass')">PASS</button>
-          <button class="result-btn fail ${row.result === 'fail' ? 'on' : ''}" onclick="setBVResult(${i},'fail')">FAIL</button>
-          <button class="result-btn na ${row.result === 'na' ? 'on' : ''}" onclick="setBVResult(${i},'na')">N/A</button>
+          <button class="result-btn pass ${isPass ? 'on' : ''}" onclick="setBVResult(${i},'pass')">PASS</button>
+          <button class="result-btn fail ${isFail ? 'on' : ''}" onclick="setBVResult(${i},'fail')">FAIL</button>
+          <button class="result-btn pending ${isPending ? 'on' : ''}" onclick="setBVResult(${i},'pending')">PENDING</button>
         </div></td>
         <td><textarea class="bv-table-textarea ignore-drag" rows="1" placeholder="Remark..." oninput="saveBV(${i},'remark',this.value);autoGrowTextarea(this)">${escapeHtml(row.remark || '')}</textarea></td>`;
         tbody.appendChild(tr);
@@ -5146,7 +5149,15 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
     function addBVRow() { pushHistory('Thêm hàng thử nghiệm BV'); if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
-    function setBVResult(i, val) { pushHistory('Đổi kết quả thử nghiệm BV'); if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i].result = val; renderBVTable(); as(); }
+    function setBVResult(i, val) { 
+      pushHistory('Đổi kết quả thử nghiệm BV'); 
+      if (!D.bvRows || !D.bvRows[i]) return; 
+      const current = D.bvRows[i].result;
+      const isSame = current === val || (val === 'pending' && current === 'na');
+      D.bvRows[i].result = isSame ? '' : val; 
+      renderBVTable(); 
+      as(); 
+    }
 
     /* ════════════════════════════════════════════════════════════════════════════
        EXECUTIVE QUALITY METRICS / OVERVIEW SUMMARY STRIP
@@ -5163,6 +5174,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const totalTests = bvList.length;
       const failedTests = bvList.filter(r => r.result === 'fail').length;
       const passedTests = bvList.filter(r => r.result === 'pass').length;
+      const pendingTests = bvList.filter(r => r.result === 'pending' || r.result === 'na').length;
 
       // 3. Checklist
       let totalCriteria = 0;
@@ -5188,6 +5200,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         totalTests,
         failedTests,
         passedTests,
+        pendingTests,
         totalCriteria,
         checkedCriteria,
         passCriteria,
@@ -5235,9 +5248,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <span>All Tests Passed (${m.passedTests}/${m.totalTests})</span>
         </div>`;
       } else {
-        testBadge = `<div class="summary-badge badge-neutral">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span>Testing: Pending (${m.passedTests}/${m.totalTests})</span>
+        testBadge = `<div class="summary-badge badge-warning">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span><b>${m.passedTests}/${m.totalTests}</b> Passed · ${m.pendingTests || (m.totalTests - m.passedTests)} Pending</span>
         </div>`;
       }
 
@@ -6254,7 +6267,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       } else if (qm.passedTests === qm.totalTests) {
         drawPdfBadge(`All Tests Passed (${qm.passedTests}/${qm.totalTests})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
       } else {
-        drawPdfBadge(`Testing: Pending (${qm.passedTests}/${qm.totalTests})`, [240, 237, 232], [140, 135, 130], [70, 65, 60]);
+        drawPdfBadge(`${qm.passedTests}/${qm.totalTests} Passed (${qm.pendingTests || (qm.totalTests - qm.passedTests)} Pending)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
       }
 
       // 3. Checklist
@@ -6533,7 +6546,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       renderPhotoSection('Quality Watch Out', D.watchoutPhotos, D.watchoutNotes, 'Quality Watch Out Notes');
 
       // ================= 6. TESTING =================
-      const validBV = (D.bvRows || []).filter(r => r.result || r.remark);
+      const validBV = (D.bvRows || []).filter(r => r && (r.test || r.result || r.remark));
       const validTestingPhotos = (D.testingPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
@@ -6551,7 +6564,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             y += 6.5;
 
             validBV.forEach(row => {
-              const rColor = row.result === 'pass' ? [45, 90, 61] : row.result === 'fail' ? [139, 32, 32] : [120, 115, 110];
+              const isPass = row.result === 'pass';
+              const isFail = row.result === 'fail';
+              const isPending = row.result === 'pending' || row.result === 'na';
+              const rColor = isPass ? [45, 90, 61] : isFail ? [139, 32, 32] : isPending ? [180, 100, 20] : [120, 115, 110];
+              const resText = isPending ? 'PENDING' : (row.result || '—').toUpperCase();
               const testLines = doc.splitTextToSize(row.test || '', 92);
               const remarkLines = doc.splitTextToSize(row.remark || '', 56);
               const maxLines = Math.max(testLines.length, remarkLines.length, 1);
@@ -6575,7 +6592,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               doc.text(testLines, M + 3, y + 4.0); 
 
               doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); 
-              doc.text((row.result || '—').toUpperCase(), M + 106, y + 4.0, { align: 'center' }); 
+              doc.text(resText, M + 106, y + 4.0, { align: 'center' }); 
 
               doc.setFont(fontFam, 'normal'); doc.setTextColor(70, 65, 60); 
               doc.text(remarkLines, M + 122, y + 4.0); 
@@ -6783,9 +6800,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         setPdfTextOpacity(1);
       }
 
-      const outFileName = [D.model, D.desc].filter(Boolean).join('_') || 'report';
+      const repTitle = (D.reportTitle && D.reportTitle.trim()) || (typeof pdfConfig !== 'undefined' && pdfConfig.reportTitle) || 'PP SAMPLE REVIEW REPORT';
+      const parts = [repTitle, D.model, D.desc, D.date].map(s => (s || '').trim()).filter(Boolean);
+      const rawFileName = parts.join('_') || 'report';
+      const safeFileName = rawFileName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
       window._lastGeneratedDoc = doc;
-      doc.save(`PP_Report_${outFileName}_${D.date || 'nodate'}.pdf`); showToast('✓ PDF đã tải xong!');
+      doc.save(`${safeFileName}.pdf`); showToast('✓ PDF đã tải xong!');
       return doc;
     }
 
