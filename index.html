@@ -1231,7 +1231,7 @@
       <div style="font-size:26px;margin-bottom:6px">📋</div>
       <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
         <h1 style="margin:0;">PP Sample Review</h1>
-        <span style="font-size:11px; font-weight:700; color:var(--accent); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px; letter-spacing:0.5px;">v2.5.0</span>
+        <span style="font-size:11px; font-weight:700; color:var(--accent); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px; letter-spacing:0.5px;">v3.0.0</span>
       </div>
       <p style="margin-top:6px;">Overall · Photos · Dimensions · Assembly · Watch Out · Testing · Checklist</p>
     </div>
@@ -2082,6 +2082,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         req.onerror = () => rej(req.error); 
       }); 
     }
+
+    function dbGet(id) { 
+      return new Promise((res, rej) => { 
+        const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(id); 
+        req.onsuccess = () => res(req.result || null); 
+        req.onerror = () => rej(req.error); 
+      }); 
+    }
     
     function dbPut(report) { 
       return new Promise((res, rej) => { 
@@ -2099,7 +2107,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }); 
     }
 
-    const APP_VERSION = 'v2.5.0';
+    const APP_VERSION = 'v3.0.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -2330,7 +2338,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     // History Manager (Undo / Redo)
     let undoStack = [];
     let redoStack = [];
-    const MAX_HISTORY = 25;
+    const MAX_HISTORY = 8;
     let isHistoryNavigating = false;
     let textInputUndoTimeout = null;
     let preTypingSnapshot = null;
@@ -2355,27 +2363,29 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return parts.length ? parts.join(' ') : 'Untitled Report';
     }
 
-    // Chuẩn hóa trần ảnh gốc (Master Photo): Khống chế tối đa 2048px với chất lượng 0.95 (gần như không nén)
-    // Giúp giảm 80-90% dung lượng IndexedDB mà vẫn bảo toàn độ nét tối đa khi zoom vào cắt nhiều lần
-    async function normalizeMasterPhoto(dataUrl, maxDimension = 2048, quality = 0.95) {
+    // Chuẩn hóa trần ảnh gốc (Master Photo): Khống chế tối đa 1600px với chất lượng 0.7
+    // Tiết kiệm hơn 85% dung lượng bộ nhớ mà vẫn bảo toàn đầy đủ khung cảnh để bấm cắt lại (re-crop) bất kỳ lúc nào
+    async function normalizeMasterPhoto(dataUrl, maxDimension = 1600, quality = 0.7) {
       if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return dataUrl;
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
           const w = img.naturalWidth || img.width;
           const h = img.naturalHeight || img.height;
-          // Nếu ảnh đã nhỏ hơn mức trần 2048px thì giữ nguyên vẹn 100% không đụng chạm
-          if (w <= maxDimension && h <= maxDimension) {
+          // Nếu ảnh đã dưới 1600px VÀ dung lượng đã gọn gàng (< 350KB) thì giữ nguyên
+          if (w <= maxDimension && h <= maxDimension && dataUrl.length < 450000 && !dataUrl.startsWith('data:image/png')) {
             resolve(dataUrl);
             return;
           }
           let targetW = w, targetH = h;
-          if (w > h) {
-            targetH = Math.round((h * maxDimension) / w);
-            targetW = maxDimension;
-          } else {
-            targetW = Math.round((w * maxDimension) / h);
-            targetH = maxDimension;
+          if (w > maxDimension || h > maxDimension) {
+            if (w > h) {
+              targetH = Math.round((h * maxDimension) / w);
+              targetW = maxDimension;
+            } else {
+              targetW = Math.round((w * maxDimension) / h);
+              targetH = maxDimension;
+            }
           }
           const canvas = document.createElement('canvas');
           canvas.width = targetW;
@@ -2389,7 +2399,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, targetW, targetH);
-            resolve(canvas.toDataURL('image/jpeg', quality));
+            const res = canvas.toDataURL('image/jpeg', quality);
+            canvas.width = 0; canvas.height = 0; // Giải phóng ngay lập tức buffer GPU của Canvas
+            resolve(res);
           } else {
             resolve(dataUrl);
           }
@@ -2407,16 +2419,16 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           for (const k of Object.keys(rep.coverPhotos)) {
             const p = rep.coverPhotos[k];
             if (p && typeof p === 'object') {
-              if (p.master && typeof p.master === 'string' && p.master.length > 400000) {
-                p.master = await normalizeMasterPhoto(p.master);
+              if (p.original && typeof p.original === 'string' && p.original.length > 400000) {
+                p.original = await normalizeMasterPhoto(p.original);
               }
-              if (p.src && typeof p.src === 'string' && p.src.length > 400000) {
-                p.src = await normalizeMasterPhoto(p.src);
+              if (p.img && typeof p.img === 'string' && p.img.length > 400000) {
+                p.img = await resizeImage(p.img, 1280, 0.72);
               }
             }
           }
         }
-        const photoKeys = ['prodPhotos', 'hardwarePhotos', 'cartonPhotos', 'markingPhotos', 'internalPhotos', 'testingPhotos', 'watchoutPhotos'];
+        const photoKeys = ['prodPhotos', 'hardwarePhotos', 'cartonPhotos', 'markingPhotos', 'internalPhotos', 'testingPhotos', 'watchoutPhotos', 'assemblyPhotos'];
         for (const arrKey of photoKeys) {
           if (Array.isArray(rep[arrKey])) {
             for (const p of rep[arrKey]) {
@@ -2485,9 +2497,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             const isPng = (isBlobOrFile && imageSource.type === 'image/png') ||
                           (typeof imageSource === 'string' && imageSource.startsWith('data:image/png'));
             try {
-              resolve(canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality));
+              const res = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality);
+              canvas.width = 0; canvas.height = 0; // Giải phóng ngay GPU Texture
+              resolve(res);
             } catch (err) {
-              resolve(canvas.toDataURL('image/png'));
+              const res = canvas.toDataURL('image/png');
+              canvas.width = 0; canvas.height = 0;
+              resolve(res);
             }
           } else {
             resolve(typeof imageSource === 'string' ? imageSource : '');
@@ -3258,7 +3274,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             }
             preTypingSnapshot = null;
           }
-        }, 750);
+        }, 1200);
       }
     }, true);
 
@@ -3560,7 +3576,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     async function usePhoto() {
       if (!cropper) { showToast('Lỗi: Chưa có dữ liệu ảnh!'); return; }
       const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
-      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.88);
+      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.75);
+      croppedCanvas.width = 0; croppedCanvas.height = 0; // Giải phóng ngay bộ nhớ Canvas
       savePhoto(finalDataUrl, currentOriginalImg);
       closeCamera();
     }
@@ -3607,6 +3624,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function closeCamera() { 
         if(cropper) { cropper.destroy(); cropper = null; }
         currentOriginalImg = null;
+        const imgEl = document.getElementById('cropperImage');
+        if (imgEl) {
+          imgEl.removeAttribute('src');
+          imgEl.src = '';
+        }
         document.getElementById('camModal').classList.add('hidden'); 
     }
 
@@ -4061,6 +4083,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     async function goHome() {
       currentId = null; curSec = 0;
+      D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
       ['tabsWrap', 'progressBar', 'saveBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
@@ -6029,13 +6052,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     async function openReport(id) {
       try {
         currentId = id; 
-        reports = await dbGetAll(); 
-        D = reports.find(r => String(r.id) === String(id)); 
+        D = await dbGet(id); 
+        if (!D) {
+          const all = await dbGetAll();
+          D = all.find(r => String(r.id) === String(id));
+        }
         
         if (!D) {
             alert('Lỗi: Không tìm thấy dữ liệu báo cáo!');
             return;
         }
+        reports = []; // Giải phóng mảng danh sách báo cáo khỏi RAM khi đang làm việc trong report
         
         curSec = 0;
         isDimSelectMode = false;
@@ -7035,8 +7062,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const parts = [repTitle, D.model, D.desc, D.date].map(s => (s || '').trim()).filter(Boolean);
       const rawFileName = parts.join('_') || 'report';
       const safeFileName = rawFileName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
-      window._lastGeneratedDoc = doc;
-      doc.save(`${safeFileName}.pdf`); showToast('✓ PDF đã tải xong!');
+      doc.save(`${safeFileName}.pdf`); 
+      showToast('✓ PDF đã tải xong!');
+      if (typeof window !== 'undefined' && window._lastGeneratedDoc) {
+        delete window._lastGeneratedDoc;
+      }
       return doc;
     }
 
