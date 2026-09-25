@@ -1,5 +1,5 @@
 // Service Worker for PP Sample Review (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v1.5';
+const CACHE_NAME = 'pp-review-v1.6';
 
 const STATIC_ASSETS = [
   './',

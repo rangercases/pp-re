@@ -485,18 +485,18 @@
     }
     .dim-close-sub-btn { display: none !important; }
 
-    /* QUALITY WATCH OUT & TESTING MULTI-PHOTO SLOTS */
-    .watchout-slot, .testing-slot {
+    /* ASSEMBLY, QUALITY WATCH OUT & TESTING MULTI-PHOTO SLOTS */
+    .assembly-slot, .watchout-slot, .testing-slot {
       background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px;
       overflow: hidden; position: relative; transition: all 0.2s ease; display: flex; flex-direction: column;
     }
-    .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost, .free-photo-item.sortable-ghost, .photo-slot.sortable-ghost {
+    .assembly-slot.sortable-ghost, .watchout-slot.sortable-ghost, .testing-slot.sortable-ghost, .dim-slot.sortable-ghost, .free-photo-item.sortable-ghost, .photo-slot.sortable-ghost {
       opacity: 0.3 !important;
       transform: scale(0.96);
       background: #e8f5ec !important;
       border: 2px dashed #2d5a3d !important;
     }
-    .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen, .free-photo-item.sortable-chosen, .photo-slot.sortable-chosen {
+    .assembly-slot.sortable-chosen, .watchout-slot.sortable-chosen, .testing-slot.sortable-chosen, .dim-slot.sortable-chosen, .free-photo-item.sortable-chosen, .photo-slot.sortable-chosen {
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
       transform: scale(1.02);
       z-index: 40;
@@ -508,12 +508,12 @@
       transform: scale(1.02);
       transition: all 0.15s ease !important;
     }
-    .watchout-caption-box, .testing-caption-box {
+    .assembly-caption-box, .watchout-caption-box, .testing-caption-box {
       padding: 7px 9px; background: #ffffff; border-top: 1px solid rgba(0,0,0,0.04);
       cursor: text !important; user-select: text !important; -webkit-user-select: text !important;
       display: flex; flex-direction: column; gap: 4px;
     }
-    .watchout-caption-input, .testing-caption-input {
+    .assembly-caption-input, .watchout-caption-input, .testing-caption-input {
       width: 100%; max-width: 48ch; border: 1px solid transparent; background: transparent; font-size: 11px;
       color: var(--text); outline: none; font-family: inherit; font-weight: 500;
       resize: vertical; min-height: 32px; line-height: 1.4;
@@ -521,7 +521,7 @@
       border-radius: 4px; padding: 2px 4px;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .watchout-caption-input:focus, .testing-caption-input:focus {
+    .assembly-caption-input:focus, .watchout-caption-input:focus, .testing-caption-input:focus {
       background: #f4f8f5; border-color: var(--border-light);
     }
     .free-caption textarea {
@@ -2790,8 +2790,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         } else if (target.type === 'dim') {
           el = document.getElementById(`dph_${target.subType}_${target.index}`);
         } else if (target.type === 'free') {
-          if ((target.key === 'watchoutPhotos' || target.key === 'testingPhotos') && target.subType) {
-            const prefix = target.key === 'watchoutPhotos' ? 'wph_' : 'tph_';
+          if ((target.key === 'watchoutPhotos' || target.key === 'testingPhotos' || target.key === 'assemblyPhotos') && target.subType) {
+            const prefix = target.key === 'watchoutPhotos' ? 'wph_' : (target.key === 'assemblyPhotos' ? 'asph_' : 'tph_');
             el = document.getElementById(`${prefix}${target.subType}_${target.index}`);
           }
           if (!el) {
@@ -2800,7 +2800,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               if (target.index !== undefined && container.children[target.index]) {
                 el = container.children[target.index];
               } else {
-                const items = container.querySelectorAll('.free-photo-item, .watchout-slot, .testing-slot');
+                const items = container.querySelectorAll('.free-photo-item, .watchout-slot, .testing-slot, .assembly-slot');
                 if (items.length) el = items[items.length - 1];
               }
             }
@@ -2839,6 +2839,23 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         5: 'testingPhotos',
         6: 'checklistPhotos'
       };
+
+      if (curSec === 3) {
+        if (D.assemblyPhotos && D.assemblyPhotos.length > 0) {
+          for (let i = 0; i < D.assemblyPhotos.length; i++) {
+            const p = D.assemblyPhotos[i];
+            const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
+            if (!p || (!p.img && typeof p !== 'string')) {
+              const el = document.getElementById(`asph_main_${i}`);
+              return { target: { type: 'free', key: 'assemblyPhotos', index: i, subType: 'main' }, element: el };
+            }
+            if (layout !== 'single' && !p.imgSub) {
+              const el = document.getElementById(`asph_sub_${i}`);
+              return { target: { type: 'free', key: 'assemblyPhotos', index: i, subType: 'sub' }, element: el };
+            }
+          }
+        }
+      }
 
       if (curSec === 4) {
         if (D.watchoutPhotos && D.watchoutPhotos.length > 0) {
@@ -3423,6 +3440,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         let title = 'Chỉnh sửa ảnh';
         if (camTarget.type === 'dim') {
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - KÍCH THƯỚC' : 'ẢNH CHÍNH (TOÀN CẢNH) - KÍCH THƯỚC';
+        } else if (camTarget.type === 'free' && camTarget.key === 'assemblyPhotos') {
+          title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - LẮP RÁP (ASSEMBLY)' : 'ẢNH CHÍNH (TOÀN CẢNH) - LẮP RÁP (ASSEMBLY)';
         } else if (camTarget.type === 'free' && camTarget.key === 'watchoutPhotos') {
           title = camTarget.subType === 'sub' ? 'ẢNH PHỤ (CHI TIẾT) - QUALITY WATCH OUT' : 'ẢNH CHÍNH (TOÀN CẢNH) - QUALITY WATCH OUT';
         } else if (camTarget.type === 'free' && camTarget.key === 'testingPhotos') {
@@ -3440,7 +3459,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         let defaultRatio = 4 / 3;
         let defaultRatioBtn = document.getElementById('ratio_4_3');
 
-        if (camTarget.type === 'dim' || (camTarget.type === 'free' && (camTarget.key === 'watchoutPhotos' || camTarget.key === 'testingPhotos'))) {
+        if (camTarget.type === 'dim' || (camTarget.type === 'free' && (camTarget.key === 'watchoutPhotos' || camTarget.key === 'testingPhotos' || camTarget.key === 'assemblyPhotos'))) {
           const item = camTarget.type === 'dim'
             ? (D.dimensions && D.dimensions[camTarget.index])
             : (D[camTarget.key] && D[camTarget.key][camTarget.index]);
@@ -3554,7 +3573,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const payload = { img: imgData, original: originalData };
         if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
       } else if (t.type === 'free') {
-        const isMulti = t.key === 'watchoutPhotos' || t.key === 'testingPhotos';
+        const isMulti = t.key === 'watchoutPhotos' || t.key === 'testingPhotos' || t.key === 'assemblyPhotos';
         if (t.index !== undefined) {
            if (!D[t.key]) D[t.key] = [];
            if (!D[t.key][t.index]) D[t.key][t.index] = { caption: '', photoLayout: isMulti ? 'single' : undefined }; 
@@ -4592,6 +4611,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     // ═══════════════ FREE PHOTOS UNIVERSAL HANDLER ═══════════════
     function renderFreePhotos(key) {
+      if (key === 'assemblyPhotos') {
+        renderAssemblyPhotos();
+        return;
+      }
       if (key === 'watchoutPhotos') {
         renderWatchoutPhotos();
         return;
@@ -5105,6 +5128,211 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
       as();
       renderTestingPhotos();
+    }
+
+    function renderAssemblyPhotos() {
+      const el = document.getElementById('assemblyPhotos'); if (!el) return; el.innerHTML = '';
+      const arr = D.assemblyPhotos || [];
+
+      arr.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'assembly-slot watchout-slot';
+        div.dataset.index = String(i);
+
+        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
+        const targetMain = `{type:'free',key:'assemblyPhotos',index:${i},subType:'main'}`;
+        const targetSub = `{type:'free',key:'assemblyPhotos',index:${i},subType:'sub'}`;
+
+        const displayImg = p ? (typeof p === 'string' ? p : (p.img || null)) : null;
+        const displayImgSub = p && p.imgSub ? p.imgSub : null;
+
+        div.innerHTML = `
+        <!-- THANH TOPBAR VỚI DRAG-HANDLE VÀ CHỌN BỐ CỤC ẢNH (3:1, 1:1, 1 ẢNH) -->
+        <div class="dim-slot-topbar" title="Kéo thả thanh này để hoán đổi vị trí">
+          <span class="dim-drag-handle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            #${i + 1}
+          </span>
+          <div style="display:inline-flex; align-items:center; gap:6px;">
+            <div class="dim-layout-pills ignore-drag">
+              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Bố cục 3:1 (Ảnh chính 75% + Phụ 25%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
+                3:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Bố cục 1:1 (2 ảnh bằng nhau 50% - 50%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
+                1:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, 'single');event.stopPropagation()" title="Bố cục 1 ảnh to (100% - Xóa/ẩn ô phụ)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
+                1 ảnh
+              </button>
+            </div>
+            <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Assembly này" onclick="delFreeSlot('assemblyPhotos', ${i});event.stopPropagation()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
+        <div class="dim-photo-container" data-layout="${layout}">
+          <!-- ẢNH CHÍNH -->
+          <div class="dim-main-photo" id="asph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            ${displayImg ? `<img src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions">
+              <button class="pact del" title="Xóa ảnh" onclick="delAssemblyPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Chụp</span>
+              </div>
+              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Album</span>
+              </div>
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                <span>Dán</span>
+              </div>
+            </div>`}
+          </div>
+
+          <!-- ẢNH PHỤ CHI TIẾT (ẨN KHI Ở CHẾ ĐỘ SINGLE) -->
+          ${layout !== 'single' ? `
+          <div class="dim-sub-photo" id="asph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
+            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editAssemblyPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
+            <div class="pactions">
+              <button class="pact del" title="Xóa ảnh phụ" onclick="delAssemblyPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : `
+            <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
+              <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Chụp ảnh mới" onclick="triggerNativeCamera(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Chụp</span>' : ''}
+              </div>
+              <div class="tap-option" title="Chọn từ Album" onclick="triggerPickLibrary(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Album</span>' : ''}
+              </div>
+              <div class="tap-option" title="Dán ảnh từ Clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Dán</span>' : ''}
+              </div>
+            </div>`}
+          </div>` : ''}
+        </div>
+
+        <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
+        <div class="assembly-caption-box watchout-caption-box ignore-drag">
+          <textarea class="assembly-caption-input watchout-caption-input ignore-drag" rows="2" placeholder="Ghi chú bước lắp ráp (Assembly instructions, steps, hardware)..." oninput="updateCaption('assemblyPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
+        </div>`;
+
+        const mainPhotoEl = div.querySelector('.dim-main-photo');
+        const subPhotoEl = div.querySelector('.dim-sub-photo');
+        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'assemblyPhotos', index: i, subType: 'main' });
+        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'assemblyPhotos', index: i, subType: 'sub' });
+
+        el.appendChild(div);
+
+        const ata = div.querySelector('textarea.assembly-caption-input');
+        if (ata && p && p.caption) autoGrowTextarea(ata);
+      });
+
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-photo-btn ignore-drag';
+      addBtn.title = 'Bấm để thêm ô Assembly, kéo thả hoặc nhấn Ctrl+V để dán ảnh';
+      addBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:2px;">THÊM BƯỚC LẮP RÁP</span><span style="font-size:9px; color:var(--muted); font-weight:normal;">Kéo thả hoặc Ctrl+V để dán</span>`;
+      addBtn.onclick = () => {
+        pushHistory('Thêm ô Assembly');
+        if (!D.assemblyPhotos) D.assemblyPhotos = [];
+        D.assemblyPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
+        as();
+        renderAssemblyPhotos();
+      };
+      attachDropZone(addBtn, { type: 'free', key: 'assemblyPhotos' }, true);
+      el.appendChild(addBtn);
+
+      if (typeof Sortable !== 'undefined') {
+        if (el._sortable) el._sortable.destroy();
+        el._sortable = new Sortable(el, {
+          animation: 180,
+          delay: 200,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 5,
+          draggable: '.assembly-slot',
+          handle: '.dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
+          preventOnFilter: false,
+          swap: true,
+          swapClass: 'sortable-swap-highlight',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-chosen',
+          onEnd: function (evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
+            if (evt.oldIndex === evt.newIndex) return;
+            if (!D.assemblyPhotos || !D.assemblyPhotos.length) return;
+            const total = D.assemblyPhotos.length;
+            let from = evt.oldIndex;
+            let to = evt.newIndex;
+            if (from >= total) from = total - 1;
+            if (to >= total) to = total - 1;
+            if (from === to) {
+              renderAssemblyPhotos();
+              return;
+            }
+            pushHistory('Hoán đổi vị trí Assembly Photo');
+            const temp = D.assemblyPhotos[from];
+            D.assemblyPhotos[from] = D.assemblyPhotos[to];
+            D.assemblyPhotos[to] = temp;
+            as();
+            renderAssemblyPhotos();
+          }
+        });
+      }
+    }
+
+    function setAssemblyPhotoLayout(index, layout) {
+      if (!D.assemblyPhotos) D.assemblyPhotos = [];
+      if (!D.assemblyPhotos[index]) D.assemblyPhotos[index] = { caption: '' };
+      pushHistory('Đổi bố cục ảnh Assembly');
+      D.assemblyPhotos[index].photoLayout = layout;
+      as();
+      renderAssemblyPhotos();
+    }
+
+    function removeAssemblySubPhoto(index) {
+      if (!D.assemblyPhotos || !D.assemblyPhotos[index]) return;
+      if (D.assemblyPhotos[index].imgSub) {
+        if (!confirm('Bạn có muốn xóa ô ảnh phụ và chuyển sang bố cục 1 ảnh không? (Ảnh phụ sẽ được ẩn đi)')) return;
+      }
+      setAssemblyPhotoLayout(index, 'single');
+    }
+
+    function editAssemblyPhoto(index, subType = 'main') {
+      const p = D.assemblyPhotos && D.assemblyPhotos[index];
+      if (!p) return;
+      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
+      if (!imgSrc) return;
+      currentOriginalImg = imgSrc;
+      camTarget = { type: 'free', key: 'assemblyPhotos', index, subType };
+      initCropper(imgSrc);
+    }
+
+    function delAssemblyPhoto(index, subType = 'main') {
+      if (!confirm('Xóa ảnh này?')) return;
+      pushHistory(subType === 'sub' ? 'Xóa ảnh phụ Assembly' : 'Xóa ảnh chính Assembly');
+      if (D.assemblyPhotos && D.assemblyPhotos[index]) {
+        if (subType === 'sub') {
+          D.assemblyPhotos[index].imgSub = null;
+          D.assemblyPhotos[index].originalSub = null;
+        } else {
+          D.assemblyPhotos[index].img = null;
+          D.assemblyPhotos[index].original = null;
+        }
+      }
+      as();
+      renderAssemblyPhotos();
     }
 
 
