@@ -1,5 +1,5 @@
 // Service Worker for PP Sample Review (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v1.1';
+const CACHE_NAME = 'pp-review-v1.3';
 
 const STATIC_ASSETS = [
   './',
@@ -45,7 +45,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Cache-First for CDN/assets, Stale-While-Revalidate for local app files
+// Fetch: Cache-First for CDN/assets, Network-First for local app files (auto-updates freshest code)
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -77,21 +77,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Local app files -> Stale-While-Revalidate with network fallback
+  // 2. Local app files (index.html, manifest.json) -> Network-First with cache fallback
   event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      const fetchPromise = fetch(req).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-        }
-        return networkResponse;
-      }).catch((err) => {
-        // Return cached if network fails
-        return cachedResponse;
-      });
-
-      return cachedResponse || fetchPromise;
+    fetch(req).then((networkResponse) => {
+      if (networkResponse && networkResponse.status === 200) {
+        const clone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+      }
+      return networkResponse;
+    }).catch(() => {
+      // If offline or network fails, return cached version
+      return caches.match(req);
     })
   );
 });

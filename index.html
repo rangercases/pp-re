@@ -5266,7 +5266,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
         checkBadge = `<div class="summary-badge ${cls}">
           ${icon}
-          <span><b>${m.checkedCriteria}/${m.totalCriteria}</b> Checklist Done${m.failCriteria > 0 ? ` (${m.failCriteria} Not OK)` : ''}</span>
+          <span><b>${m.checkedCriteria}/${m.totalCriteria}</b> Checklist Done${m.failCriteria > 0 ? ` (${m.failCriteria} Pending)` : ''}</span>
         </div>`;
       }
 
@@ -5358,7 +5358,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         </div>
         <div class="apple-status-chips">
           <div class="apple-chip chip-pass"><span class="apple-chip-dot"></span> Đạt: <strong>${passCount}</strong></div>
-          <div class="apple-chip chip-fail"><span class="apple-chip-dot"></span> Không đạt: <strong>${failCount}</strong></div>
+          <div class="apple-chip chip-fail"><span class="apple-chip-dot"></span> Pending: <strong>${failCount}</strong></div>
           <div class="apple-chip chip-pend"><span class="apple-chip-dot"></span> Chưa kiểm: <strong>${pendingCount}</strong> / ${totalCriteria}</div>
         </div>
         <div class="apple-overview-actions">
@@ -6273,7 +6273,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       // 3. Checklist
       if (qm.totalCriteria > 0) {
         if (qm.failCriteria > 0) {
-          drawPdfBadge(`${qm.checkedCriteria}/${qm.totalCriteria} Checklist (${qm.failCriteria} Not OK)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
+          drawPdfBadge(`${qm.checkedCriteria}/${qm.totalCriteria} Checklist (${qm.failCriteria} Pending)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
         } else {
           const chkDone = qm.checkedCriteria === qm.totalCriteria;
           drawPdfBadge(`${qm.checkedCriteria}/${qm.totalCriteria} Checklist Done`, chkDone ? [237, 247, 238] : [240, 237, 232], chkDone ? [52, 168, 83] : [140, 135, 130], chkDone ? [30, 120, 50] : [70, 65, 60]);
