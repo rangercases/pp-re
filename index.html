@@ -1403,7 +1403,7 @@
       
       <div class="modal-body">
         <div id="cropperWrapper" class="cropper-wrapper">
-            <img id="cropperImage" src="">
+            <img id="cropperImage" alt="Cropper Preview">
         </div>
         
         <div id="editorToolbar" class="cropper-tools">
@@ -2370,6 +2370,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
+          img.onload = null;
+          img.onerror = null;
           const w = img.naturalWidth || img.width;
           const h = img.naturalHeight || img.height;
           // Nếu ảnh đã dưới 1600px VÀ dung lượng đã gọn gàng (< 350KB) thì giữ nguyên
@@ -2406,7 +2408,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             resolve(dataUrl);
           }
         };
-        img.onerror = () => resolve(dataUrl);
+        img.onerror = () => {
+          img.onload = null;
+          img.onerror = null;
+          resolve(dataUrl);
+        };
         img.src = dataUrl;
       });
     }
@@ -2462,6 +2468,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         const img = new Image();
         img.onload = () => {
+          img.onload = null;
+          img.onerror = null;
           if (objectUrl) URL.revokeObjectURL(objectUrl);
           let w = img.naturalWidth || img.width;
           let h = img.naturalHeight || img.height;
@@ -2511,6 +2519,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         };
 
         img.onerror = (err) => {
+          img.onload = null;
+          img.onerror = null;
           if (objectUrl) URL.revokeObjectURL(objectUrl);
           console.warn('resizeImage load failed', err);
           resolve(typeof imageSource === 'string' ? imageSource : '');
@@ -2567,10 +2577,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         }
         const testImg = new Image();
         testImg.onload = () => {
+          testImg.onload = null;
+          testImg.onerror = null;
           URL.revokeObjectURL(url);
           resolve(true);
         };
         testImg.onerror = () => {
+          testImg.onload = null;
+          testImg.onerror = null;
           URL.revokeObjectURL(url);
           resolve(false);
         };
@@ -3410,38 +3424,43 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function editSlotPhoto(containerId, key, section) {
       const store = D.coverPhotos;
-      const data = store[key];
+      const data = store && store[key];
       if (!data) return;
-      const imgSrc = typeof data === 'string' ? data : (data.original || data.img);
+      const orig = typeof data === 'string' ? data : (data.original || data.img);
+      const fallback = typeof data === 'object' && data.img ? data.img : null;
+      if (!orig && !fallback) return;
       camTarget = {type: 'slot', key, containerId, section};
-      currentOriginalImg = imgSrc;
-      initCropper(imgSrc);
+      currentOriginalImg = orig || fallback;
+      initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function editDimPhoto(index, subType = 'main') {
       if (isDimSelectMode) return;
-      const data = D.dimensions[index];
+      const data = D.dimensions && D.dimensions[index];
       if (!data) return;
       const imgKey = subType === 'sub' ? 'imgSub' : 'img';
       const origKey = subType === 'sub' ? 'originalSub' : 'original';
-      const imgSrc = data[origKey] || data[imgKey];
-      if (!imgSrc) return;
+      const orig = data[origKey] || data[imgKey];
+      const fallback = data[imgKey] || null;
+      if (!orig && !fallback) return;
 
       camTarget = {type: 'dim', index, subType};
-      currentOriginalImg = imgSrc;
-      initCropper(imgSrc);
+      currentOriginalImg = orig || fallback;
+      initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function editFreePhoto(key, index) {
-      const data = D[key][index];
-      if (!data || !data.img) return;
-      const imgSrc = data.original || data.img;
+      const data = D[key] && D[key][index];
+      if (!data) return;
+      const orig = data.original || data.img;
+      const fallback = data.img || null;
+      if (!orig && !fallback) return;
       camTarget = {type: 'free', key, index};
-      currentOriginalImg = imgSrc;
-      initCropper(imgSrc);
+      currentOriginalImg = orig || fallback;
+      initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
-    function initCropper(imgSrc) {
+    function initCropper(imgSrc, fallbackSrc = null) {
         if (!imgSrc) {
           showToast('Không có dữ liệu ảnh để hiển thị');
           return;
@@ -3501,6 +3520,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           cropper = null;
         }
 
+        // Gỡ bỏ listener cũ trước khi bind mới
+        image.onload = null;
+        image.onerror = null;
+
         image.onload = () => {
           if (cropper) cropper.destroy();
           cropper = new Cropper(image, {
@@ -3520,15 +3543,28 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             background: false
           });
         };
+
         image.onerror = () => {
+          // Ngắt listener ngay lập tức để tránh vòng lặp đệ quy sự kiện
+          image.onload = null;
+          image.onerror = null;
           if (cropper) {
             cropper.destroy();
             cropper = null;
           }
+
+          if (fallbackSrc && fallbackSrc !== imgSrc) {
+            console.warn('Ảnh gốc bị lỗi, tự động thử fallback sang ảnh nén...');
+            currentOriginalImg = fallbackSrc;
+            initCropper(fallbackSrc, null);
+            return;
+          }
+
           image.removeAttribute('src');
           closeCamera();
           showToast('Chrome không thể đọc ảnh này. Hãy dùng ảnh JPG hoặc PNG.');
         };
+
         image.src = imgSrc;
     }
 
@@ -3622,12 +3658,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
 
     function closeCamera() { 
-        if(cropper) { cropper.destroy(); cropper = null; }
+        if (cropper) { cropper.destroy(); cropper = null; }
         currentOriginalImg = null;
-        const imgEl = document.getElementById('cropperImage');
-        if (imgEl) {
-          imgEl.removeAttribute('src');
-          imgEl.src = '';
+        const image = document.getElementById('cropperImage');
+        if (image) {
+          image.onload = null;
+          image.onerror = null;
+          image.removeAttribute('src');
+          image.src = '';
         }
         document.getElementById('camModal').classList.add('hidden'); 
     }
@@ -4925,11 +4963,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function editWatchoutPhoto(index, subType = 'main') {
       const p = D.watchoutPhotos && D.watchoutPhotos[index];
       if (!p) return;
-      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
-      if (!imgSrc) return;
-      currentOriginalImg = imgSrc;
+      const origKey = subType === 'sub' ? 'originalSub' : 'original';
+      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
+      const orig = p[origKey] || p[imgKey];
+      const fallback = p[imgKey] || null;
+      if (!orig && !fallback) return;
+      currentOriginalImg = orig || fallback;
       camTarget = { type: 'free', key: 'watchoutPhotos', index, subType };
-      initCropper(imgSrc);
+      initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function delWatchoutPhoto(index, subType = 'main') {
@@ -5130,11 +5171,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function editTestingPhoto(index, subType = 'main') {
       const p = D.testingPhotos && D.testingPhotos[index];
       if (!p) return;
-      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
-      if (!imgSrc) return;
-      currentOriginalImg = imgSrc;
+      const origKey = subType === 'sub' ? 'originalSub' : 'original';
+      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
+      const orig = p[origKey] || p[imgKey];
+      const fallback = p[imgKey] || null;
+      if (!orig && !fallback) return;
+      currentOriginalImg = orig || fallback;
       camTarget = { type: 'free', key: 'testingPhotos', index, subType };
-      initCropper(imgSrc);
+      initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function delTestingPhoto(index, subType = 'main') {
@@ -6112,7 +6156,21 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       downloadReportJson(D);
       showToast('✓ JSON file downloaded');
     }
-    function showToast(msg, duration = 2200) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), duration); }
+    let toastTimeout = null;
+    function showToast(msg, duration = 2200) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+      t.textContent = msg;
+      t.classList.add('show');
+      toastTimeout = setTimeout(() => {
+        t.classList.remove('show');
+        toastTimeout = null;
+      }, duration);
+    }
 
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF() {
