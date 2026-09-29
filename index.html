@@ -621,7 +621,7 @@
     .note-area textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 64px; background: #ffffff; }
     .bv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .bv-table th { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10px; }
-    .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); }
+    .bv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
     .bv-table td input[type=text] { width: 100%; border: none; background: transparent; font-size: 11px; outline: none; }
     .bv-table td textarea.bv-table-textarea {
       width: 100%; border: 1px solid transparent; background: transparent; font-size: 11px;
@@ -630,6 +630,46 @@
     }
     .bv-table td textarea.bv-table-textarea:focus {
       background: #f4f8f5; border-color: var(--border-light);
+    }
+    .bv-drag-handle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      color: #8e8e93; cursor: grab; font-size: 14px; line-height: 1;
+      user-select: none; transition: all 0.15s ease;
+    }
+    .bv-drag-handle:hover {
+      background: #e5e5ea; color: #1c1c1e;
+    }
+    .bv-drag-handle:active {
+      cursor: grabbing;
+    }
+    .bv-del-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px; border: none;
+      background: transparent; color: #c7c7cc; cursor: pointer;
+      font-size: 13px; line-height: 1; transition: all 0.15s ease;
+    }
+    .bv-del-btn:hover {
+      background: #fee2e2; color: #dc2626;
+    }
+    .bv-row-ghost {
+      opacity: 0.4;
+      background: #e8f5ec !important;
+    }
+    .bv-row-chosen {
+      background: #f4fbf6 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .add-row-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      margin: 10px 12px 12px 12px; padding: 7px 14px;
+      border: 1px dashed var(--accent); border-radius: 6px;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .add-row-btn:hover {
+      background: var(--accent); color: #fff; border-style: solid;
     }
     .result-sel { display: flex; gap: 5px; }
     .result-btn { padding: 3px 8px; border-radius: 10px; font-size: 10px; border: 1px solid var(--border); cursor: pointer; background: #fff; }
@@ -1357,8 +1397,8 @@
     <!-- S5: TESTING -->
     <div id="sec5" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Testing</div>
-        <table class="bv-table" id="bvTable"><thead><tr><th style="width:48%">Test Property</th><th>Result</th><th style="width:27%">Remark</th></tr></thead><tbody id="bvBody"></tbody></table>
+        <div class="sec-head">Testing <span>Nhấn giữ để di chuyển hàng</span></div>
+        <table class="bv-table" id="bvTable"><thead><tr><th style="width:34px; text-align:center;"></th><th style="width:44%">Test Property</th><th>Result</th><th style="width:25%">Remark</th><th style="width:34px; text-align:center;"></th></tr></thead><tbody id="bvBody"></tbody></table>
         <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
       </div>
       <div class="sec-card">
@@ -5430,19 +5470,68 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const isFail = row.result === 'fail';
         const isPending = row.result === 'pending' || row.result === 'na';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input type="text" value="${row.test || ''}" oninput="saveBV(${i},'test',this.value)"></td>
-        <td><div class="result-sel">
+        tr.dataset.index = i;
+        tr.innerHTML = `<td style="text-align:center; padding: 4px 6px;">
+          <div class="bv-drag-handle" title="Kéo thả để đổi thứ tự hàng">⠿</div>
+        </td>
+        <td><input type="text" class="ignore-drag" value="${escapeHtml(row.test || '')}" placeholder="Test property..." oninput="saveBV(${i},'test',this.value)"></td>
+        <td><div class="result-sel ignore-drag">
           <button class="result-btn pass ${isPass ? 'on' : ''}" onclick="setBVResult(${i},'pass')">PASS</button>
           <button class="result-btn fail ${isFail ? 'on' : ''}" onclick="setBVResult(${i},'fail')">FAIL</button>
           <button class="result-btn pending ${isPending ? 'on' : ''}" onclick="setBVResult(${i},'pending')">PENDING</button>
         </div></td>
-        <td><textarea class="bv-table-textarea ignore-drag" rows="1" placeholder="Remark..." oninput="saveBV(${i},'remark',this.value);autoGrowTextarea(this)">${escapeHtml(row.remark || '')}</textarea></td>`;
+        <td><textarea class="bv-table-textarea ignore-drag" rows="1" placeholder="Remark..." oninput="saveBV(${i},'remark',this.value);autoGrowTextarea(this)">${escapeHtml(row.remark || '')}</textarea></td>
+        <td style="text-align:center; padding: 4px 6px;">
+          <button class="bv-del-btn" title="Xóa hàng này" onclick="delBVRow(${i})">✕</button>
+        </td>`;
         tbody.appendChild(tr);
         const rta = tr.querySelector('textarea.bv-table-textarea');
         if (rta && row.remark) autoGrowTextarea(rta);
       });
+
+      initBVSortable();
     }
+
+    function initBVSortable() {
+      const tbody = document.getElementById('bvBody');
+      if (!tbody || typeof Sortable === 'undefined') return;
+
+      if (tbody._bvSortable) {
+        tbody._bvSortable.destroy();
+      }
+
+      tbody._bvSortable = new Sortable(tbody, {
+        animation: 200,
+        handle: '.bv-drag-handle',
+        draggable: 'tr',
+        filter: 'input, button, textarea, .ignore-drag',
+        preventOnFilter: false,
+        ghostClass: 'bv-row-ghost',
+        chosenClass: 'bv-row-chosen',
+        onEnd: function (evt) {
+          if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
+          if (!D.bvRows || !D.bvRows.length) return;
+          const moved = D.bvRows.splice(evt.oldIndex, 1)[0];
+          D.bvRows.splice(evt.newIndex, 0, moved);
+          pushHistory('Đổi thứ tự hàng thử nghiệm BV');
+          renderBVTable();
+          as();
+        }
+      });
+    }
+
     function addBVRow() { pushHistory('Thêm hàng thử nghiệm BV'); if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
+    function delBVRow(i) {
+      if (!D.bvRows || !D.bvRows[i]) return;
+      const row = D.bvRows[i];
+      if (row.test || row.result || row.remark) {
+        if (!confirm(`Bạn có chắc muốn xóa hàng "${row.test || 'thử nghiệm'}" này?`)) return;
+      }
+      pushHistory('Xóa hàng thử nghiệm BV');
+      D.bvRows.splice(i, 1);
+      renderBVTable();
+      as();
+    }
     function saveBV(i, field, val) { if (!D.bvRows || !D.bvRows[i]) return; D.bvRows[i][field] = val; as(); }
     function setBVResult(i, val) { 
       pushHistory('Đổi kết quả thử nghiệm BV'); 
