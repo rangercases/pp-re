@@ -368,6 +368,8 @@
     .pact:active { transform: scale(0.92); }
     .pact.del { background: rgba(220, 38, 38, 0.78); }
     .pact.del:hover { background: rgba(220, 38, 38, 0.95); }
+    .pact.copy { background: rgba(26, 58, 42, 0.78); }
+    .pact.copy:hover { background: rgba(26, 58, 42, 0.95); }
     .dim-sub-photo .pactions { top: 3px; right: 3px; }
     .dim-sub-photo .pact { width: 20px; height: 20px; }
 
@@ -3005,19 +3007,132 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       return null;
     }
 
+    let _appCopiedPhoto = null;
+
+    function getPhotoDataByTarget(target) {
+      if (!target) return null;
+      if (target.type === 'slot') {
+        const val = D.coverPhotos && D.coverPhotos[target.key];
+        if (!val) return null;
+        const orig = typeof val === 'string' ? val : (val.original || val.img);
+        const cropped = typeof val === 'object' && val.img ? val.img : orig;
+        return { original: orig, img: cropped };
+      } else if (target.type === 'dim') {
+        const d = D.dimensions && D.dimensions[target.index];
+        if (!d) return null;
+        if (target.subType === 'sub') {
+          return { original: d.originalSub || d.imgSub, img: d.imgSub };
+        }
+        return { original: d.original || d.img, img: d.img };
+      } else if (target.type === 'free') {
+        const arr = D[target.key];
+        const p = arr && arr[target.index];
+        if (!p) return null;
+        if (typeof p === 'string') return { original: p, img: p };
+        if (target.subType === 'sub') {
+          return { original: p.originalSub || p.imgSub, img: p.imgSub };
+        }
+        return { original: p.original || p.img, img: p.img };
+      }
+      return null;
+    }
+
+    function resolveHoveredPhotoTarget() {
+      if (hoveredPasteTarget && hoveredPasteTarget.target) {
+        return hoveredPasteTarget;
+      }
+      const hoveredEl = document.querySelector('.dim-main-photo:hover, .dim-sub-photo:hover, .free-photo-item:hover, .photo-slot:hover, .testing-slot:hover, .watchout-slot:hover, .assembly-slot:hover');
+      if (hoveredEl && hoveredEl._dropTarget) {
+        return { target: hoveredEl._dropTarget.target, element: hoveredEl };
+      }
+      return null;
+    }
+
+    async function copyDataUrlToClipboard(dataUrl) {
+      if (!navigator.clipboard || !navigator.clipboard.write) return false;
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        let pngBlob = blob;
+        if (blob.type !== 'image/png') {
+          pngBlob = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth || img.width;
+              canvas.height = img.naturalHeight || img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/png');
+            };
+            img.onerror = reject;
+            img.src = dataUrl;
+          });
+        }
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': pngBlob })
+        ]);
+        return true;
+      } catch (err) {
+        console.warn('System clipboard image write error:', err);
+        return false;
+      }
+    }
+
+    async function copyPhotoFromTarget(target, element = null) {
+      const data = getPhotoDataByTarget(target);
+      if (!data || (!data.original && !data.img)) {
+        showToast('Ô này chưa có ảnh để sao chép!');
+        return false;
+      }
+      const masterPhoto = data.original || data.img;
+      _appCopiedPhoto = {
+        original: masterPhoto,
+        img: data.img || masterPhoto,
+        timestamp: Date.now()
+      };
+      try {
+        sessionStorage.setItem('app_copied_photo', JSON.stringify(_appCopiedPhoto));
+      } catch (e) {}
+
+      // Ghi ảnh gốc sang Clipboard hệ thống
+      copyDataUrlToClipboard(masterPhoto);
+
+      highlightTarget(target, element);
+      showToast('✓ Đã sao chép toàn bộ ảnh gốc (Ctrl+C)! Sẵn sàng dán vào ô khác.');
+      return true;
+    }
+
     async function applyImageFileToTarget(file, target, element = null) {
       if (!file || !target) return;
       showToast('Đang áp dụng ảnh từ Clipboard...');
       const dataUrl = await readImageFileAsDataUrl(file);
       if (!dataUrl) return;
 
-      const masterPhoto = await normalizeMasterPhoto(dataUrl);
+      // Ưu tiên dùng lại master photo gốc nếu vừa được sao chép trong app
+      let masterPhoto = null;
+      let displayCropped = null;
+      let copied = _appCopiedPhoto;
+      if (!copied) {
+        try {
+          const stored = sessionStorage.getItem('app_copied_photo');
+          if (stored) copied = JSON.parse(stored);
+        } catch (e) {}
+      }
+
+      if (copied && copied.original && (Date.now() - (copied.timestamp || 0) < 15 * 60 * 1000)) {
+        masterPhoto = copied.original;
+        displayCropped = copied.img || (await resizeImage(masterPhoto, 1280, 0.88));
+      } else {
+        masterPhoto = await normalizeMasterPhoto(dataUrl);
+        displayCropped = await resizeImage(masterPhoto, 1280, 0.88);
+      }
+
       currentOriginalImg = masterPhoto;
-      const compressed = await resizeImage(masterPhoto, 1280, 0.88);
       camTarget = target;
-      savePhoto(compressed, masterPhoto);
+      savePhoto(displayCropped, masterPhoto);
       highlightTarget(target, element);
-      showToast('✓ Đã dán ảnh từ Clipboard thành công!');
+      showToast('✓ Đã dán ảnh thành công (giữ nguyên toàn bộ ảnh gốc)!');
     }
 
     async function triggerPasteToTarget(target, element = null) {
@@ -3317,6 +3432,32 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             document.activeElement.blur();
           }
           undo();
+        }
+        return;
+      }
+
+      // Copy Photo: Ctrl+C / Cmd+C khi rê chuột vào ô ảnh bất kỳ
+      if (isCtrl && key === 'c') {
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+          const selStart = active.selectionStart;
+          const selEnd = active.selectionEnd;
+          if (selStart !== undefined && selEnd !== undefined && selStart !== selEnd) {
+            return; // Người dùng đang bôi đen chữ để copy văn bản
+          }
+        }
+        const winSel = window.getSelection ? window.getSelection().toString() : '';
+        if (winSel && winSel.trim().length > 0) {
+          return; // Có đoạn văn bản đang được bôi đen
+        }
+
+        const hov = resolveHoveredPhotoTarget();
+        if (hov && hov.target) {
+          const photoData = getPhotoDataByTarget(hov.target);
+          if (photoData && (photoData.original || photoData.img)) {
+            e.preventDefault();
+            copyPhotoFromTarget(hov.target, hov.element);
+          }
         }
       }
     });
@@ -4384,6 +4525,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         </div>
         <img class="pimg" src="${displayImg}" draggable="false" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
         <div class="pactions">
+          <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
           <button class="pact del" title="Xóa ảnh" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
@@ -4491,6 +4635,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               </div>
             </div>`}
             ${displayImg ? `<div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delDimPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : ''}
           </div>
@@ -4514,6 +4659,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               </div>
             </div>`}
             ${displayImgSub ? `<div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh phụ" onclick="delDimPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : ''}
           </div>` : ''}
@@ -4754,6 +4900,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             ${dragHandleHtml}
             <img src="${p.img}" draggable="false" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>
             <div class="free-caption ignore-drag"><textarea class="ignore-drag" rows="1" placeholder="Caption..." oninput="updateCaption('${key}',${i},this.value, this)">${escapeHtml(p.caption || '')}</textarea></div>`;
@@ -4880,6 +5027,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="wph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delWatchoutPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box">
@@ -4903,6 +5051,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-sub-photo" id="wph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImgSub ? `<img src="${displayImgSub}" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh phụ" onclick="delWatchoutPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
@@ -5093,6 +5242,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="tph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delTestingPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box">
@@ -5116,6 +5266,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-sub-photo" id="tph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImgSub ? `<img src="${displayImgSub}" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh phụ" onclick="delTestingPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box" style="flex-direction: column;">
@@ -5324,6 +5475,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="asph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delAssemblyPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box">
@@ -5347,6 +5499,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-sub-photo" id="asph_sub_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImgSub ? `<img src="${displayImgSub}" onclick="editAssemblyPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh phụ" onclick="delAssemblyPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
             <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
