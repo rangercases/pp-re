@@ -6459,7 +6459,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         return;
       }
       const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const W = 210, M = 14, BOTTOM_LIMIT = 270; let y = 0;
+      const W = 210, M = 14, BOTTOM_LIMIT = 276; let y = 0;
 
       let fontFam = 'helvetica';
       if (typeof FONT_ROBOTO !== 'undefined' && FONT_ROBOTO) {
@@ -7017,7 +7017,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             lx += doc.getTextWidth(item.label) + 12;
           });
 
-          y += 6;
+          y += 5.5;
         };
 
         addHeader('Product Dimension & Details');
@@ -7122,14 +7122,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           dx += dimSlotW + 4;
           if ((i + 1) % dimCols === 0) {
               dx = M;
-              dy += dimSlotH + 5;
+              dy += dimSlotH + 4.5;
           }
         });
-        if (validDims.length % dimCols !== 0) {
-          dy += dimSlotH;
-          y = dy;
-        } else {
-          y = Math.max(y, dy - 5);
+        if (validDims.length > 0) {
+          const lastCardBottom = (validDims.length % dimCols !== 0) ? (dy + dimSlotH) : (dy - 4.5);
+          y = lastCardBottom + 6.5;
         }
         if (D.dimNotes && D.dimNotes.trim()) y = addSafeTextBlock('Dimension Remarks', D.dimNotes, y);
       }
