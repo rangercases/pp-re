@@ -671,6 +671,15 @@
     .add-row-btn:hover {
       background: var(--accent); color: #fff; border-style: solid;
     }
+    .sync-caption-btn {
+      display: inline-flex; align-items: center; gap: 3px;
+      border: none; background: transparent; color: #8e8e93;
+      font-size: 10px; cursor: pointer; padding: 2px 5px; border-radius: 4px;
+      transition: all 0.15s ease; font-weight: 500;
+    }
+    .sync-caption-btn:hover {
+      background: #f2f2f7; color: var(--accent);
+    }
     .result-sel { display: flex; gap: 5px; }
     .result-btn { padding: 3px 8px; border-radius: 10px; font-size: 10px; border: 1px solid var(--border); cursor: pointer; background: #fff; }
     .result-btn.pass.on { background: #e8f5ec; border-color: #2d5a3d; color: #2d5a3d; font-weight: 600; }
@@ -5045,6 +5054,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const displayImg = p && p.img ? p.img : null;
         const displayImgSub = p && p.imgSub ? p.imgSub : null;
 
+        const defaultCaption = (D.bvRows && D.bvRows[i] && D.bvRows[i].test) ? D.bvRows[i].test.trim() : '';
+        const actualCaption = (p && p.caption !== undefined && p.caption !== null && p.caption !== '') 
+          ? p.caption 
+          : defaultCaption;
+
         div.innerHTML = `
         <!-- THANH TOPBAR VỚI DRAG-HANDLE VÀ CHỌN BỐ CỤC ẢNH (3:1, 1:1, 1 ẢNH) -->
         <div class="dim-slot-topbar" title="Kéo thả thanh này để hoán đổi vị trí">
@@ -5123,13 +5137,20 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
         <!-- Ô NHẬP CHÚ THÍCH (CAPTION) KHÔNG BỊ SORTABLEJS KÉO THẺ -->
         <div class="watchout-caption-box ignore-drag">
-          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Nhập chú thích thử nghiệm (VD: Concentrated load 91kg - PASS)..." oninput="updateCaption('testingPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+            <span style="font-size:10px; font-weight:600; color:#8e8e93;">Chú thích ảnh:</span>
+            <button type="button" class="sync-caption-btn" onclick="syncTestingPhotoCaption(${i})" title="Lấy theo dòng Test Property #${i + 1}">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              <span>Lấy theo Test Property</span>
+            </button>
+          </div>
+          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="${escapeHtml(defaultCaption ? ('Mặc định: ' + defaultCaption) : 'Nhập chú thích thử nghiệm...')}" oninput="updateCaption('testingPhotos', ${i}, this.value, this)">${escapeHtml(actualCaption)}</textarea>
         </div>`;
 
         el.appendChild(div);
 
         const tta = div.querySelector('textarea.watchout-caption-input');
-        if (tta && p && p.caption) autoGrowTextarea(tta);
+        if (tta && actualCaption) autoGrowTextarea(tta);
 
         const mainPhotoEl = div.querySelector(`#tph_main_${i}`);
         const subPhotoEl = div.querySelector(`#tph_sub_${i}`);
@@ -5144,7 +5165,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       addBtn.onclick = () => {
         pushHistory('Thêm ô Testing Photo');
         if (!D.testingPhotos) D.testingPhotos = [];
-        D.testingPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
+        const newIdx = D.testingPhotos.length;
+        const defaultCaption = (D.bvRows && D.bvRows[newIdx] && D.bvRows[newIdx].test) ? D.bvRows[newIdx].test.trim() : '';
+        D.testingPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: defaultCaption });
         as();
         renderTestingPhotos();
       };
@@ -5189,6 +5212,20 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           }
         });
       }
+    }
+
+    function syncTestingPhotoCaption(index) {
+      if (!D.testingPhotos) D.testingPhotos = [];
+      if (!D.testingPhotos[index]) D.testingPhotos[index] = {};
+      const targetTest = (D.bvRows && D.bvRows[index] && D.bvRows[index].test) ? D.bvRows[index].test.trim() : '';
+      if (!targetTest) {
+        showToast && showToast('Không tìm thấy dòng Test Property #' + (index + 1));
+        return;
+      }
+      pushHistory('Đồng bộ chú thích ảnh Testing theo Test Property');
+      D.testingPhotos[index].caption = targetTest;
+      as();
+      renderTestingPhotos();
     }
 
     function setTestingPhotoLayout(index, layout) {
@@ -6952,7 +6989,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       // ================= 6. TESTING =================
       const validBV = (D.bvRows || []).filter(r => r && (r.test || r.result || r.remark));
-      const validTestingPhotos = (D.testingPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
+      const validTestingPhotos = (D.testingPhotos || [])
+        .map((p, idx) => {
+          if (!p) return null;
+          const defaultCap = (D.bvRows && D.bvRows[idx] && D.bvRows[idx].test) ? D.bvRows[idx].test.trim() : '';
+          const cap = (p.caption !== undefined && p.caption !== null && p.caption !== '') ? p.caption : defaultCap;
+          return { ...p, caption: cap };
+        })
+        .filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
       if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
         addHeader('Testing');
         if(validBV.length > 0) {
