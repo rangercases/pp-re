@@ -153,7 +153,7 @@
     html {
       width: 100%;
       max-width: 100vw;
-      overflow-x: hidden;
+      overflow-x: clip;
       -webkit-text-size-adjust: 100%;
     }
 
@@ -166,7 +166,7 @@
       line-height: 1.35;
       width: 100%;
       max-width: 100vw;
-      overflow-x: hidden;
+      overflow-x: clip;
       position: relative;
     }
 
@@ -605,12 +605,12 @@
 
     .dim-batch-bar {
       display: none; align-items: center; justify-content: space-between;
-      position: sticky; top: calc(52px + env(safe-area-inset-top)); z-index: 20;
+      position: sticky; top: calc(50px + env(safe-area-inset-top)); z-index: 30;
       background: rgba(248, 250, 249, 0.96); border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border); padding: 10px 14px;
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); backdrop-filter: blur(10px);
     }
-    .dimensions-card { overflow: visible; }
+    .dimensions-card { overflow: visible !important; }
 
     .add-dim-btn { 
       min-height: 190px; height: 100%; border: 2px dashed var(--accent); border-radius: 8px; 
@@ -1207,6 +1207,9 @@
       }
       .screen {
         padding: 10px;
+      }
+      .dim-batch-bar {
+        top: calc(46px + env(safe-area-inset-top));
       }
     }
 
