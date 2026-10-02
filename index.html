@@ -336,9 +336,8 @@
     .chkbox.on::after { content: '✓'; color: #fff; font-size: 9.5px; font-weight: 800; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
 
     /* PHOTO GRID */
-    /* PHOTO GRID - 10-COLUMN FLEXIBLE SYSTEM */
-    .photo-grid-2 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 9px; padding: 10px; }
-    .photo-slot { background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; touch-action: none; grid-column: span 5; }
+    .photo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 10px; }
+    .photo-slot { background: #ffffff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; position: relative; transition: all 0.2s ease; touch-action: none; }
     .photo-slot .pimg { width: 100%; height: calc(100% - 26px); object-fit: contain; background: #ffffff; display: block; user-select: none; -webkit-user-drag: none; }
     
     .dual-tap-box { width: 100%; height: 100%; display: flex; }
@@ -396,85 +395,34 @@
       z-index: 10 !important;
     }
 
-    /* FREE PHOTOS - 10-COLUMN FLEXIBLE SYSTEM */
-    .free-photos { padding: 10px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; }
-    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #ffffff; touch-action: none; transition: all 0.2s ease; grid-column: span 5; }
+    /* FREE PHOTOS */
+    .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block; user-select: none; -webkit-user-drag: none; }
 
-    /* DYNAMIC GRID SPANS (10-COLUMN SYSTEM: NORMAL 50/50, LARGE 60/40, FULL 100) */
-    .free-photo-item.span-10,
-    .watchout-slot.span-10,
-    .assembly-slot.span-10,
-    .testing-slot.span-10,
+    /* FULL-WIDTH PHOTO CELL */
     .free-photo-item.is-fullwidth,
     .watchout-slot.is-fullwidth,
     .assembly-slot.is-fullwidth,
     .testing-slot.is-fullwidth {
-      grid-column: span 10 !important;
+      grid-column: 1 / -1 !important;
     }
-    .free-photo-item.span-6,
-    .watchout-slot.span-6,
-    .assembly-slot.span-6,
-    .testing-slot.span-6,
-    .free-photo-item.is-large,
-    .watchout-slot.is-large,
-    .assembly-slot.is-large,
-    .testing-slot.is-large {
-      grid-column: span 6 !important;
-    }
-    .free-photo-item.span-5,
-    .watchout-slot.span-5,
-    .assembly-slot.span-5,
-    .testing-slot.span-5 {
-      grid-column: span 5 !important;
-    }
-    .free-photo-item.span-4,
-    .watchout-slot.span-4,
-    .assembly-slot.span-4,
-    .testing-slot.span-4 {
-      grid-column: span 4 !important;
-    }
-
-    .free-photos .add-photo-btn {
-      grid-column: span 5;
-    }
-    .free-photos .add-photo-btn.span-4 {
-      grid-column: span 4 !important;
-    }
-
-    /* FULL-WIDTH PHOTO CELL (16:9) */
-    .free-photo-item.span-10,
     .free-photo-item.is-fullwidth {
       aspect-ratio: 16 / 9;
-      max-height: 480px;
+      max-height: 320px;
     }
-    .watchout-slot.span-10 .dim-photo-container,
-    .assembly-slot.span-10 .dim-photo-container,
-    .testing-slot.span-10 .dim-photo-container,
+    .free-photo-item.is-fullwidth img {
+      max-height: 320px;
+      object-fit: contain;
+    }
     .watchout-slot.is-fullwidth .dim-photo-container,
     .assembly-slot.is-fullwidth .dim-photo-container,
     .testing-slot.is-fullwidth .dim-photo-container {
       aspect-ratio: 16 / 9;
-      max-height: 440px;
+      max-height: 320px;
     }
 
-    /* LARGE 60% PHOTO CELL (OPTIMIZED 4:3) */
-    .free-photo-item.span-6,
-    .free-photo-item.is-large {
-      aspect-ratio: 4 / 3;
-      max-height: 440px;
-    }
-    .watchout-slot.span-6 .dim-photo-container,
-    .assembly-slot.span-6 .dim-photo-container,
-    .testing-slot.span-6 .dim-photo-container,
-    .watchout-slot.is-large .dim-photo-container,
-    .assembly-slot.is-large .dim-photo-container,
-    .testing-slot.is-large .dim-photo-container {
-      aspect-ratio: 4 / 3;
-      max-height: 400px;
-    }
-
-    /* ACTION BUTTON (3-STATE TOGGLE) */
+    /* ACTION BUTTON (TOGGLE FULL-WIDTH / NORMAL) */
     .pact.expand {
       background: rgba(30, 41, 59, 0.72);
     }
@@ -482,12 +430,6 @@
       background: rgba(30, 41, 59, 0.95);
       transform: scale(1.08);
     }
-    .pact.expand.active.large {
-      background: rgba(16, 110, 70, 0.9);
-      color: #a7f3d0;
-      box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.6);
-    }
-    .pact.expand.active.full,
     .pact.expand.active {
       background: rgba(45, 90, 61, 0.9);
       color: #ffffff;
@@ -498,10 +440,6 @@
       color: #ffffff;
       font-weight: 700;
       box-shadow: 0 1px 3px rgba(0,0,0,0.18);
-    }
-    .dim-pill-btn.fullwidth-toggle.active.large {
-      background: #1b5e39;
-      color: #a7f3d0;
     }
     .free-drag-handle {
       position: absolute; top: 6px; left: 6px; z-index: 5;
@@ -4972,111 +4910,62 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       buildDimGrid(); as(); 
     }
 
-    // ═══════════════ PHOTO SIZING & DYNAMIC GRID HELPERS (NORMAL 50%, LARGE 60%, FULL 100%) ═══════════════
+    // ═══════════════ PHOTO SIZING & DYNAMIC GRID HELPERS (NORMAL 50%, FULL 100%) ═══════════════
     function getPhotoSize(p) {
       if (!p) return 'normal';
-      if (p.photoSize === 'large' || p.photoSize === 'full' || p.photoSize === 'normal') {
-        return p.photoSize;
+      if (p.fullWidth === true || p.photoSize === 'full') {
+        return 'full';
       }
-      if (p.fullWidth === true) return 'full';
       return 'normal';
     }
 
-    function calculatePhotoSpans(arr) {
-      const spans = [];
-      let colInRow = 0;
-      for (let i = 0; i < (arr || []).length; i++) {
-        const size = getPhotoSize(arr[i]);
-        if (size === 'full') {
-          spans.push(10);
-          colInRow = 0;
-        } else if (size === 'large') {
-          if (colInRow > 4) colInRow = 0;
-          spans.push(6);
-          colInRow = (colInRow === 0) ? 6 : 0;
-        } else {
-          if (colInRow === 6) {
-            spans.push(4);
-            colInRow = 0;
-          } else if (colInRow === 0) {
-            spans.push(5);
-            colInRow = 5;
-          } else {
-            spans.push(5);
-            colInRow = 0;
-          }
-        }
-      }
-      return spans;
-    }
-
-    function togglePhotoSize(key, index) {
+    function togglePhotoFullWidth(key, index) {
       if (!D[key]) D[key] = [];
       if (!D[key][index]) {
-        D[key][index] = { photoSize: 'normal', fullWidth: false };
+        D[key][index] = { fullWidth: false };
       } else if (typeof D[key][index] === 'string') {
-        D[key][index] = { img: D[key][index], photoSize: 'normal', fullWidth: false };
+        D[key][index] = { img: D[key][index], fullWidth: false };
       }
-      const curr = getPhotoSize(D[key][index]);
-      const next = (curr === 'normal') ? 'large' : (curr === 'large' ? 'full' : 'normal');
-      pushHistory(`Đổi kích thước ô ảnh (${next === 'large' ? 'Lớn 60%' : (next === 'full' ? 'Full-width 100%' : '2 ô / hàng')})`);
-      D[key][index].photoSize = next;
-      D[key][index].fullWidth = (next === 'full');
+      const isFull = (D[key][index].fullWidth === true || D[key][index].photoSize === 'full');
+      const nextFull = !isFull;
+      pushHistory(`Đổi bố cục ô ảnh (${nextFull ? 'Toàn hàng 100%' : '2 ô / hàng 50%'})`);
+      D[key][index].fullWidth = nextFull;
+      D[key][index].photoSize = nextFull ? 'full' : 'normal';
       as();
       renderFreePhotos(key);
     }
-    function togglePhotoFullWidth(key, index) {
-      togglePhotoSize(key, index);
+    function togglePhotoSize(key, index) {
+      togglePhotoFullWidth(key, index);
     }
 
     function getPhotoSizeActionBtnHtml(key, index, size) {
-      const activeClass = (size !== 'normal') ? 'active ' + size : '';
-      let title = 'Đang: 2 ô / hàng (50%) — Bấm để chuyển sang Lớn (60%)';
-      let svg = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="4" width="8" height="16" rx="2"/>
-          <rect x="13" y="4" width="8" height="16" rx="2"/>
-        </svg>
-      `;
-      if (size === 'large') {
-        title = 'Đang: Lớn 60% — Bấm để chuyển sang Toàn hàng (100%)';
-        svg = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <rect x="3" y="4" width="11" height="16" rx="2" fill="rgba(167,243,208,0.5)"/>
-            <rect x="16" y="4" width="5" height="16" rx="1.5"/>
-          </svg>
-        `;
-      } else if (size === 'full') {
-        title = 'Đang: Toàn hàng (100%) — Bấm để quay về 2 ô / hàng (50%)';
-        svg = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21" stroke-width="2.4"/>
-          </svg>
-        `;
-      }
+      const isFull = (size === 'full');
+      const activeClass = isFull ? 'active' : '';
+      const title = isFull 
+        ? 'Đang: 1 ô toàn hàng (100%) — Bấm để thu về 2 ô / hàng (50%)' 
+        : 'Đang: 2 ô / hàng (50%) — Bấm để mở rộng 1 ô toàn hàng (100%)';
+      const svg = isFull
+        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>`
+        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
       return `
-        <button class="pact expand ${activeClass}" type="button" title="${title}" onclick="togglePhotoSize('${key}', ${index});event.stopPropagation()">
+        <button class="pact expand ${activeClass}" type="button" title="${title}" onclick="togglePhotoFullWidth('${key}', ${index});event.stopPropagation()">
           ${svg}
         </button>
       `;
     }
 
     function getPhotoSizePillHtml(key, index, size) {
-      let label = '2 ô/hàng';
-      let icon = '<rect x="0.5" y="0.5" width="5.5" height="9" rx="1"/><rect x="8" y="0.5" width="5.5" height="9" rx="1"/>';
-      let title = 'Đang: 2 ô / hàng (50%) — Bấm để chuyển sang Lớn (60%)';
-      if (size === 'large') {
-        label = 'Lớn 60%';
-        icon = '<rect x="0.5" y="0.5" width="8" height="9" rx="1.2" fill="currentColor"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/>';
-        title = 'Đang: Lớn 60% — Bấm để chuyển sang 1 ô toàn hàng (100%)';
-      } else if (size === 'full') {
-        label = '1 ô/hàng';
-        icon = '<rect x="0.5" y="0.5" width="13" height="9" rx="1.5" fill="currentColor"/>';
-        title = 'Đang: 1 ô toàn hàng (100%) — Bấm để quay về 2 ô / hàng';
-      }
-      const activeClass = (size !== 'normal') ? 'active ' + size : '';
+      const isFull = (size === 'full');
+      const label = isFull ? '1 ô/hàng' : '2 ô/hàng';
+      const icon = isFull
+        ? '<rect x="0.5" y="0.5" width="13" height="9" rx="1.5" fill="currentColor"/>'
+        : '<rect x="0.5" y="0.5" width="5.5" height="9" rx="1"/><rect x="8" y="0.5" width="5.5" height="9" rx="1"/>';
+      const title = isFull
+        ? 'Đang: 1 ô toàn hàng (100%) — Bấm để thu về 2 ô / hàng'
+        : 'Đang: 2 ô / hàng (50%) — Bấm để mở rộng 1 ô toàn hàng (100%)';
+      const activeClass = isFull ? 'active' : '';
       return `
-        <button type="button" class="dim-pill-btn fullwidth-toggle ${activeClass}" onclick="togglePhotoSize('${key}', ${index});event.stopPropagation()" title="${title}">
+        <button type="button" class="dim-pill-btn fullwidth-toggle ${activeClass}" onclick="togglePhotoFullWidth('${key}', ${index});event.stopPropagation()" title="${title}">
           <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor">${icon}</svg> ${label}
         </button>
       `;
@@ -5099,13 +4988,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
       const arr = D[key] || [];
-      const spans = calculatePhotoSpans(arr);
       
       arr.forEach((p, i) => {
         const size = getPhotoSize(p);
-        const span = spans[i] || 5;
+        const isFull = (size === 'full');
         const div = document.createElement('div');
-        div.className = 'free-photo-item' + (p && p.img ? '' : ' is-empty') + ' span-' + span + ' size-' + size + (size === 'full' ? ' is-fullwidth' : (size === 'large' ? ' is-large' : ''));
+        div.className = 'free-photo-item' + (p && p.img ? '' : ' is-empty') + (isFull ? ' is-fullwidth' : '');
         div.title = 'Kéo hoặc nhấn giữ để sắp xếp lại vị trí';
         const targetObj = `{type:'free',key:'${key}',index:${i}}`;
         
@@ -5154,8 +5042,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         el.appendChild(div);
       });
       
-      const lastSpan = spans.length > 0 ? spans[spans.length - 1] : 0;
-      const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn ignore-drag' + (lastSpan === 6 ? ' span-4' : ' span-5');
+      const addBtn = document.createElement('div'); addBtn.className = 'add-photo-btn ignore-drag';
       addBtn.title = 'Bấm để thêm ô, kéo thả hoặc nhấn Ctrl+V để dán ảnh';
       addBtn.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="color:var(--accent); font-weight:600; margin-top:2px;">THÊM ẢNH</span><span style="font-size:9px; color:var(--muted); font-weight:normal;">Kéo thả hoặc Ctrl+V để dán</span>`;
       addBtn.onclick = () => { pushHistory('Thêm ô ảnh'); if(!D[key]) D[key] = []; D[key].push(null); as(); renderFreePhotos(key); };
@@ -5205,13 +5092,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function renderWatchoutPhotos() {
       const el = document.getElementById('watchoutPhotos'); if (!el) return; el.innerHTML = '';
       const arr = D.watchoutPhotos || [];
-      const spans = calculatePhotoSpans(arr);
 
       arr.forEach((p, i) => {
         const size = getPhotoSize(p);
-        const span = spans[i] || 5;
+        const isFull = (size === 'full');
         const div = document.createElement('div');
-        div.className = 'watchout-slot span-' + span + ' size-' + size + (size === 'full' ? ' is-fullwidth' : (size === 'large' ? ' is-large' : ''));
+        div.className = 'watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -5422,13 +5308,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const el = document.getElementById('testingPhotos'); if (!el) return; el.innerHTML = '';
       const arr = D.testingPhotos || [];
 
-      const spans = calculatePhotoSpans(arr);
-
       arr.forEach((p, i) => {
         const size = getPhotoSize(p);
-        const span = spans[i] || 5;
+        const isFull = (size === 'full');
         const div = document.createElement('div');
-        div.className = 'testing-slot watchout-slot span-' + span + ' size-' + size + (size === 'full' ? ' is-fullwidth' : (size === 'large' ? ' is-large' : ''));
+        div.className = 'testing-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -5667,13 +5551,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const el = document.getElementById('assemblyPhotos'); if (!el) return; el.innerHTML = '';
       const arr = D.assemblyPhotos || [];
 
-      const spans = calculatePhotoSpans(arr);
-
       arr.forEach((p, i) => {
         const size = getPhotoSize(p);
-        const span = spans[i] || 5;
+        const isFull = (size === 'full');
         const div = document.createElement('div');
-        div.className = 'assembly-slot watchout-slot span-' + span + ' size-' + size + (size === 'full' ? ' is-fullwidth' : (size === 'large' ? ' is-large' : ''));
+        div.className = 'assembly-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -6905,15 +6787,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         const gapY = customGapY !== undefined ? customGapY : 6.5;
         const fullW = W - M * 2; // 182mm
         const gw = (fullW - gapX) / 2; // 88mm
-        const largeW = 109; // 60% of 182mm
-        const smallW = fullW - largeW - gapX; // 67mm (40%)
 
-        const estimateCardH = (p, targetW) => {
-          if (!p) return (targetW >= 150) ? 65 : (targetW >= 100 ? 55 : 42);
+        const estimateCardH = (p, isFull = false) => {
+          const targetW = isFull ? fullW : gw;
+          if (!p) return isFull ? 65 : 42;
           if (customCardH) {
-            if (targetW >= 150) return Math.min(Math.max(customCardH * 1.5, 65), 115);
-            if (targetW >= 100) return Math.min(Math.max(customCardH * 1.3, 55), 92);
-            return customCardH;
+            return isFull ? Math.min(Math.max(customCardH * 1.4, 60), 85) : customCardH;
           }
           const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
           const mainW = layout === '3:1' ? targetW * 0.75 : (layout === '1:1' ? targetW * 0.5 : targetW);
@@ -6925,12 +6804,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             } catch(e) {}
           }
           let h = mainW / r;
-          if (targetW >= 150) {
-            if (h > 115) h = 115;
+          if (isFull) {
+            if (h > 85) h = 85;
             if (h < 50) h = 50;
-          } else if (targetW >= 100) {
-            if (h > 92) h = 92;
-            if (h < 45) h = 45;
           } else {
             if (h > 62) h = 62;
             if (h < 35) h = 35;
@@ -6958,11 +6834,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         let i = 0;
         while (i < photos.length) {
           const p0 = photos[i];
-          const size0 = getPhotoSize(p0);
+          const isFull0 = !!(p0 && (p0.fullWidth || p0.photoSize === 'full'));
 
-          if (size0 === 'full') {
+          if (isFull0) {
             // ══════════════ NHÁNH 1: FULL-WIDTH 100% (182mm) ══════════════
-            const rowCardH = estimateCardH(p0, fullW);
+            const rowCardH = estimateCardH(p0, true);
             const textW = fullW - padX * 2;
             doc.setFont(fontFam, 'normal');
             doc.setFontSize(8.5);
@@ -6984,51 +6860,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
             y += rowTotalH;
             i++;
-          } else if (size0 === 'large') {
-            // ══════════════ NHÁNH 2: LARGE 60% (~109mm) + 40% (~67mm) ══════════════
-            const p1 = (i + 1 < photos.length && getPhotoSize(photos[i + 1]) === 'normal') ? photos[i + 1] : null;
-
-            const cardH0 = estimateCardH(p0, largeW);
-            const cardH1 = p1 ? estimateCardH(p1, smallW) : 0;
-            const rowMaxCardH = customCardH ? customCardH : Math.max(cardH0, cardH1, 50);
-
-            const textW0 = largeW - padX * 2;
-            const textW1 = smallW - padX * 2;
-            doc.setFont(fontFam, 'normal');
-            doc.setFontSize(8.5);
-
-            const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW0) : [];
-            const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW1) : [];
-            const maxCapLines = Math.max(capLines0.length, capLines1.length);
-            const captionH = maxCapLines > 0 ? (maxCapLines * 3.8 + 3.0) : 0;
-            const rowTotalH = rowMaxCardH + captionH + gapY;
-
-            if (y + rowTotalH > BOTTOM_LIMIT) {
-              addHeader(headerTitle);
-            }
-
-            const py = y;
-            const px0 = M;
-            const px1 = M + largeW + gapX;
-
-            renderCard(p0, px0, py, largeW, rowMaxCardH);
-            if (p1) {
-              renderCard(p1, px1, py, smallW, rowMaxCardH);
-            }
-
-            const capY0 = py + rowMaxCardH + 3.8;
-            drawCaption(capLines0, px0, largeW, capY0);
-            if (p1) {
-              drawCaption(capLines1, px1, smallW, capY0);
-            }
-
-            y += rowTotalH;
-            i += (p1 ? 2 : 1);
           } else {
-            // ══════════════ NHÁNH 3: NORMAL 50% (88mm) + 50% (88mm) ══════════════
-            const p1 = (i + 1 < photos.length && getPhotoSize(photos[i + 1]) === 'normal') ? photos[i + 1] : null;
+            // ══════════════ NHÁNH 2: NORMAL 50% (88mm) + 50% (88mm) ══════════════
+            const p1 = (i + 1 < photos.length && !(photos[i + 1] && (photos[i + 1].fullWidth || photos[i + 1].photoSize === 'full'))) ? photos[i + 1] : null;
 
-            const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0, gw), p1 ? estimateCardH(p1, gw) : 0, 42);
+            const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0, false), p1 ? estimateCardH(p1, false) : 0, 42);
             const textW = gw - padX * 2;
             doc.setFont(fontFam, 'normal');
             doc.setFontSize(8.5);
