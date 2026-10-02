@@ -399,6 +399,42 @@
     .free-photos { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .free-photo-item { aspect-ratio: 4/3; position: relative; border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #ffffff; touch-action: none; transition: all 0.2s ease; }
     .free-photo-item img { width: 100%; height: 100%; object-fit: contain; background: #ffffff; display: block; user-select: none; -webkit-user-drag: none; }
+
+    /* FULL-WIDTH PHOTO CELL */
+    .free-photo-item.is-fullwidth,
+    .watchout-slot.is-fullwidth,
+    .assembly-slot.is-fullwidth,
+    .testing-slot.is-fullwidth {
+      grid-column: 1 / -1 !important;
+    }
+    .free-photo-item.is-fullwidth {
+      aspect-ratio: 16 / 9;
+      max-height: 480px;
+    }
+    .watchout-slot.is-fullwidth .dim-photo-container,
+    .assembly-slot.is-fullwidth .dim-photo-container,
+    .testing-slot.is-fullwidth .dim-photo-container {
+      aspect-ratio: 16 / 9;
+      max-height: 440px;
+    }
+    .pact.expand {
+      background: rgba(30, 41, 59, 0.72);
+    }
+    .pact.expand:hover {
+      background: rgba(30, 41, 59, 0.95);
+      transform: scale(1.08);
+    }
+    .pact.expand.active {
+      background: rgba(45, 90, 61, 0.9);
+      color: #a7f3d0;
+      box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.5);
+    }
+    .dim-pill-btn.fullwidth-toggle.active {
+      background: var(--brand-theme, #2d5a3d);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
     .free-drag-handle {
       position: absolute; top: 6px; left: 6px; z-index: 5;
       display: inline-flex; align-items: center; gap: 3.5px;
@@ -4887,8 +4923,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const arr = D[key] || [];
       
       arr.forEach((p, i) => {
+        const isFull = !!(p && p.fullWidth);
         const div = document.createElement('div');
-        div.className = 'free-photo-item' + (p && p.img ? '' : ' is-empty');
+        div.className = 'free-photo-item' + (p && p.img ? '' : ' is-empty') + (isFull ? ' is-fullwidth' : '');
         div.title = 'Kéo hoặc nhấn giữ để sắp xếp lại vị trí';
         const targetObj = `{type:'free',key:'${key}',index:${i}}`;
         
@@ -4903,6 +4940,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             ${dragHandleHtml}
             <img src="${p.img}" draggable="false" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact expand ${isFull ? 'active' : ''}" type="button" title="${isFull ? 'Thu về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn)'}" onclick="togglePhotoFullWidth('${key}', ${i});event.stopPropagation()">
+                ${isFull ? `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>
+                ` : `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                `}
+              </button>
               <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa" onclick="delFreePhoto('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>
@@ -4926,7 +4970,16 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                   <span>Dán</span>
                 </div>
               </div>
-              <button class="pact del" style="position:absolute; top:4px; right:4px;" title="Xóa ô" onclick="delFreeSlot('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+              <div class="pactions" style="position:absolute; top:4px; right:4px;">
+                <button class="pact expand ${isFull ? 'active' : ''}" type="button" title="${isFull ? 'Thu về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn)'}" onclick="togglePhotoFullWidth('${key}', ${i});event.stopPropagation()">
+                  ${isFull ? `
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>
+                  ` : `
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                  `}
+                </button>
+                <button class="pact del" title="Xóa ô" onclick="delFreeSlot('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+              </div>
             `;
         }
         attachDropZone(div, { type: 'free', key, index: i });
@@ -4985,8 +5038,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const arr = D.watchoutPhotos || [];
 
       arr.forEach((p, i) => {
+        const isFull = !!(p && p.fullWidth);
         const div = document.createElement('div');
-        div.className = 'watchout-slot';
+        div.className = 'watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -5017,6 +5071,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
                 1 ảnh
               </button>
+              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
+              <button type="button" class="dim-pill-btn fullwidth-toggle ${isFull ? 'active' : ''}" onclick="togglePhotoFullWidth('watchoutPhotos', ${i});event.stopPropagation()" title="${isFull ? 'Thu nhỏ về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn toàn chiều ngang)'}">
+                ${isFull ? `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1.5"/></svg> 1 ô/hàng
+                ` : `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="5.5" height="9" rx="1"/><rect x="8" y="0.5" width="5.5" height="9" rx="1"/></svg> 2 ô/hàng
+                `}
+              </button>
             </div>
             <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Watch Out này" onclick="delFreeSlot('watchoutPhotos', ${i});event.stopPropagation()">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -5030,6 +5092,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="wph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact expand ${isFull ? 'active' : ''}" type="button" title="${isFull ? 'Thu về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn)'}" onclick="togglePhotoFullWidth('watchoutPhotos', ${i});event.stopPropagation()">
+                ${isFull ? `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>
+                ` : `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                `}
+              </button>
               <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delWatchoutPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
@@ -5195,8 +5264,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const arr = D.testingPhotos || [];
 
       arr.forEach((p, i) => {
+        const isFull = !!(p && p.fullWidth);
         const div = document.createElement('div');
-        div.className = 'testing-slot watchout-slot';
+        div.className = 'testing-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -5232,6 +5302,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
                 1 ảnh
               </button>
+              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
+              <button type="button" class="dim-pill-btn fullwidth-toggle ${isFull ? 'active' : ''}" onclick="togglePhotoFullWidth('testingPhotos', ${i});event.stopPropagation()" title="${isFull ? 'Thu nhỏ về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn toàn chiều ngang)'}">
+                ${isFull ? `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1.5"/></svg> 1 ô/hàng
+                ` : `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="5.5" height="9" rx="1"/><rect x="8" y="0.5" width="5.5" height="9" rx="1"/></svg> 2 ô/hàng
+                `}
+              </button>
             </div>
             <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Testing này" onclick="delFreeSlot('testingPhotos', ${i});event.stopPropagation()">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -5245,6 +5323,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="tph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact expand ${isFull ? 'active' : ''}" type="button" title="${isFull ? 'Thu về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn)'}" onclick="togglePhotoFullWidth('testingPhotos', ${i});event.stopPropagation()">
+                ${isFull ? `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>
+                ` : `
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                `}
+              </button>
               <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delTestingPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
@@ -5433,8 +5518,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const arr = D.assemblyPhotos || [];
 
       arr.forEach((p, i) => {
+        const isFull = !!(p && p.fullWidth);
         const div = document.createElement('div');
-        div.className = 'assembly-slot watchout-slot';
+        div.className = 'assembly-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
         div.dataset.index = String(i);
 
         const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
@@ -5465,6 +5551,14 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>
                 1 ảnh
               </button>
+              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
+              <button type="button" class="dim-pill-btn fullwidth-toggle ${isFull ? 'active' : ''}" onclick="togglePhotoFullWidth('assemblyPhotos', ${i});event.stopPropagation()" title="${isFull ? 'Thu nhỏ về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn toàn chiều ngang)'}">
+                ${isFull ? `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1.5"/></svg> 1 ô/hàng
+                ` : `
+                  <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="5.5" height="9" rx="1"/><rect x="8" y="0.5" width="5.5" height="9" rx="1"/></svg> 2 ô/hàng
+                `}
+              </button>
             </div>
             <button type="button" class="pact del ignore-drag" style="position:static; width:19px; height:19px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;" title="Xóa ô Assembly này" onclick="delFreeSlot('assemblyPhotos', ${i});event.stopPropagation()">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -5478,6 +5572,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           <div class="dim-main-photo" id="asph_main_${i}" title="Kéo thả hoặc nhấn Ctrl+V để dán ảnh">
             ${displayImg ? `<img src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Bấm để chỉnh sửa/cắt ảnh">
             <div class="pactions">
+              <button class="pact expand ${isFull ? 'active' : ''}" type="button" title="${isFull ? 'Thu về 2 ô / hàng' : 'Mở rộng 1 ô / hàng (ảnh lớn)'}" onclick="togglePhotoFullWidth('assemblyPhotos', ${i});event.stopPropagation()">
+                ${isFull ? `
+                  <svg width="11" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>
+                ` : `
+                  <svg width="11" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                `}
+              </button>
               <button class="pact copy" title="Sao chép toàn bộ ảnh gốc (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Xóa ảnh" onclick="delAssemblyPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
             </div>` : `
@@ -5653,7 +5754,30 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
       as();
     }
-    function delFreePhoto(key, i) { if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return; pushHistory('Xóa ảnh'); D[key][i] = null; renderFreePhotos(key); as(); }
+    function togglePhotoFullWidth(key, index) {
+      if (!D[key]) D[key] = [];
+      if (!D[key][index]) {
+        D[key][index] = { fullWidth: false };
+      } else if (typeof D[key][index] === 'string') {
+        D[key][index] = { img: D[key][index], fullWidth: false };
+      }
+      pushHistory('Đổi bố cục ô ảnh (1 ô / 2 ô)');
+      D[key][index].fullWidth = !D[key][index].fullWidth;
+      as();
+      renderFreePhotos(key);
+    }
+    function delFreePhoto(key, i) {
+      if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return;
+      pushHistory('Xóa ảnh');
+      if (D[key] && D[key][i]) {
+        const isFull = !!D[key][i].fullWidth;
+        D[key][i] = { fullWidth: isFull, caption: '' };
+      } else {
+        D[key][i] = null;
+      }
+      renderFreePhotos(key);
+      as();
+    }
     function delFreeSlot(key, i) { pushHistory('Xóa ô ảnh'); D[key].splice(i, 1); renderFreePhotos(key); as(); }
 
     function renderBVTable() {
@@ -6650,13 +6774,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const renderPhotoGrid = (photos, headerTitle, customCardH, customGapY) => {
         const gapX = 6;
         const gapY = customGapY !== undefined ? customGapY : 6.5;
-        const gw = (W - M * 2 - gapX) / 2; // 88mm
+        const fullW = W - M * 2; // 182mm
+        const gw = (fullW - gapX) / 2; // 88mm
 
-        const estimateCardH = (p) => {
-          if (!p) return 0;
-          if (customCardH) return customCardH;
+        const estimateCardH = (p, isFull = false) => {
+          if (!p) return isFull ? 65 : 42;
+          const targetW = isFull ? fullW : gw;
+          if (customCardH) {
+            return isFull ? Math.min(Math.max(customCardH * 1.5, 65), 115) : customCardH;
+          }
           const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
-          const mainW = layout === '3:1' ? gw * 0.75 : (layout === '1:1' ? gw * 0.5 : gw);
+          const mainW = layout === '3:1' ? targetW * 0.75 : (layout === '1:1' ? targetW * 0.5 : targetW);
           let r = 4 / 3;
           if (p.img) {
             try {
@@ -6665,70 +6793,100 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             } catch(e) {}
           }
           let h = mainW / r;
-          if (h > 62) h = 62;
-          if (h < 35) h = 35;
+          if (isFull) {
+            if (h > 115) h = 115;
+            if (h < 50) h = 50;
+          } else {
+            if (h > 62) h = 62;
+            if (h < 35) h = 35;
+          }
           return h;
         };
 
-        let r = 0;
-        while (r * 2 < photos.length) {
-          const p0 = photos[r * 2];
-          const p1 = photos[r * 2 + 1];
+        const padX = 2.5;
 
-          const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0), estimateCardH(p1) || 0, 42);
-
-          const padX = 2.5;
-          const textW = gw - padX * 2;
-          doc.setFont(fontFam, 'normal');
-          doc.setFontSize(8.5);
-
-          const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
-          const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
-          const maxCapLines = Math.max(capLines0.length, capLines1.length);
-          const captionH = maxCapLines > 0 ? (maxCapLines * 3.8 + 3.0) : 0;
-          const rowTotalH = rowMaxCardH + captionH + gapY;
-
-          // Kiểm tra ngắt trang: nếu hàng ảnh tràn quá giới hạn đáy trang
-          if (y + rowTotalH > BOTTOM_LIMIT) {
-            addHeader(headerTitle);
-          }
-
-          const py = y;
-          const px0 = M;
-          const px1 = M + gw + gapX;
-
-          renderCard(p0, px0, py, gw, rowMaxCardH);
-          if (p1) {
-            renderCard(p1, px1, py, gw, rowMaxCardH);
-          }
-
-          // Căn chỉnh chú thích (Caption): Căn giữa nếu 1 dòng, Căn trái thẳng mép ảnh nếu câu comment dài (>= 2 dòng)
-          const capY = py + rowMaxCardH + 3.8;
+        const drawCaption = (lines, px, targetW, capY) => {
+          if (!lines || lines.length === 0) return;
           doc.setFontSize(8.5);
           doc.setTextColor(45, 40, 35);
-
-          const drawCaption = (lines, px) => {
-            if (!lines || lines.length === 0) return;
-            if (lines.length === 1) {
-              // Nhãn / tiêu đề ngắn 1 dòng -> căn giữa thanh lịch
-              doc.setFont(fontFam, 'bold');
-              doc.text(lines[0], px + gw / 2, capY, { align: 'center' });
-            } else {
-              // Câu comment / nhận xét dài nhiều dòng -> BẮT BUỘC căn đều lề trái (align: 'left') thẳng tắp
-              doc.setFont(fontFam, 'normal');
-              for (let i = 0; i < lines.length; i++) {
-                doc.text(lines[i], px + padX, capY + i * 3.8);
-              }
+          if (lines.length === 1) {
+            doc.setFont(fontFam, 'bold');
+            doc.text(lines[0], px + targetW / 2, capY, { align: 'center' });
+          } else {
+            doc.setFont(fontFam, 'normal');
+            for (let i = 0; i < lines.length; i++) {
+              doc.text(lines[i], px + padX, capY + i * 3.8);
             }
-          };
-
-          drawCaption(capLines0, px0);
-          if (p1) {
-            drawCaption(capLines1, px1);
           }
+        };
 
-          y += rowTotalH;
-          r++;
+        let i = 0;
+        while (i < photos.length) {
+          const p0 = photos[i];
+          const isFull0 = !!(p0 && p0.fullWidth);
+
+          if (isFull0) {
+            // Trường hợp 1: Ô ảnh lớn chiếm toàn bộ hàng (Full-Width 182mm)
+            const rowCardH = estimateCardH(p0, true);
+            const textW = fullW - padX * 2;
+            doc.setFont(fontFam, 'normal');
+            doc.setFontSize(8.5);
+            const capLines = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
+            const captionH = capLines.length > 0 ? (capLines.length * 3.8 + 3.0) : 0;
+            const rowTotalH = rowCardH + captionH + gapY;
+
+            if (y + rowTotalH > BOTTOM_LIMIT) {
+              addHeader(headerTitle);
+            }
+
+            const py = y;
+            const px0 = M;
+
+            renderCard(p0, px0, py, fullW, rowCardH);
+
+            const capY = py + rowCardH + 3.8;
+            drawCaption(capLines, px0, fullW, capY);
+
+            y += rowTotalH;
+            i++;
+          } else {
+            // Trường hợp 2: Ô bình thường (chia đôi 2 cột)
+            // Kiểm tra xem ảnh tiếp theo có thể ghép chung hàng không
+            const p1 = (i + 1 < photos.length && !photos[i + 1]?.fullWidth) ? photos[i + 1] : null;
+
+            const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0, false), p1 ? estimateCardH(p1, false) : 0, 42);
+            const textW = gw - padX * 2;
+            doc.setFont(fontFam, 'normal');
+            doc.setFontSize(8.5);
+
+            const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
+            const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
+            const maxCapLines = Math.max(capLines0.length, capLines1.length);
+            const captionH = maxCapLines > 0 ? (maxCapLines * 3.8 + 3.0) : 0;
+            const rowTotalH = rowMaxCardH + captionH + gapY;
+
+            if (y + rowTotalH > BOTTOM_LIMIT) {
+              addHeader(headerTitle);
+            }
+
+            const py = y;
+            const px0 = M;
+            const px1 = M + gw + gapX;
+
+            renderCard(p0, px0, py, gw, rowMaxCardH);
+            if (p1) {
+              renderCard(p1, px1, py, gw, rowMaxCardH);
+            }
+
+            const capY = py + rowMaxCardH + 3.8;
+            drawCaption(capLines0, px0, gw, capY);
+            if (p1) {
+              drawCaption(capLines1, px1, gw, capY);
+            }
+
+            y += rowTotalH;
+            i += (p1 ? 2 : 1);
+          }
         }
       };
 
