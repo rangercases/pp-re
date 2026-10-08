@@ -1,7 +1,7 @@
 # Bỏ qua toàn bộ các file khác
 *
 
-# Chỉ giữ lại index.html, PWA files và cấu hình Git/CI cần thiết
+# Chỉ giữ lại mã nguồn phát triển và cấu hình Git/CI cần thiết
 !index.html
 !manifest.json
 !service-worker.js
@@ -10,3 +10,15 @@
 !.github/**
 !.agents/
 !.agents/**
+!package.json
+!package-lock.json
+!vite.config.js
+!src/
+!src/**
+
+# Bỏ qua các thư mục tạm và dependencies
+node_modules/
+dist/
+scratch/
+graphify-out/
+backup_index_monolith.html

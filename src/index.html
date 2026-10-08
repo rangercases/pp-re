@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a3a2a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DIGITAL REPORT">
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
+  <title>DIGITAL REPORT</title>
+  
+  <!-- CDN Libraries giữ nguyên -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif-wasm/libheif-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  
+  <!-- Modular Styles -->
+  <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+</head>
+
+<body>
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="topbar-btn topbar-back" id="btnHome" onclick="goHome()" style="display:none" title="Quay lại danh sách báo cáo (Reports)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        <span class="btn-lbl">Reports</span>
+      </button>
+      <div class="topbar-brand"><img id="topbarBrandLogo" src="SOFACOMPANY_White.png" alt="SOFACOMPANY"></div>
+      <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Trạng thái đồng bộ"><span class="dot">●</span> <span id="saveText">Synced</span></div>
+    </div>
+
+    <div class="topbar-title" id="topTitle">DIGITAL REPORT</div>
+
+    <div class="topbar-actions">
+      <button class="topbar-btn icon-btn" id="btnUndo" onclick="undo()" title="Hoàn tác (Ctrl+Z)" style="display:none" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+      </button>
+      <button class="topbar-btn icon-btn" id="btnRedo" onclick="redo()" title="Làm lại (Ctrl+Y)" style="display:none" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg>
+      </button>
+      
+      <div class="topbar-divider" id="topbarDivider" style="display:none"></div>
+
+      <button class="topbar-btn" id="btnStyler" onclick="openPdfStyler()" title="Căn chỉnh bố cục & màu sắc PDF"><span>🎨</span><span class="btn-lbl"> Căn chỉnh</span></button>
+
+      <button class="topbar-btn icon-btn" id="btnShare" onclick="shareReport()" style="display:none" title="Chia sẻ báo cáo">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span class="btn-lbl">Share</span>
+      </button>
+      <button class="topbar-btn pri" id="btnExport" onclick="exportPDF()" style="display:none" title="Xuất file PDF">PDF</button>
+    </div>
+  </div>
+  <div id="tabsWrap" class="tabs-wrap" style="display:none"><div class="tabs" id="tabsRow"></div></div>
+  <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="homeScreen">
+    <div class="home-hero">
+      <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Chọn</button>
+      <div style="font-size:26px;margin-bottom:6px">📋</div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+        <h1 style="margin:0;">DIGITAL REPORT</h1>
+        <span style="font-size:11px; font-weight:700; color:var(--accent); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px; letter-spacing:0.5px;">v3.0.0</span>
+      </div>
+      <p style="margin-top:6px;">Overall · Photos · Dimensions · Assembly · Watch Out · Testing · Checklist</p>
+    </div>
+    
+    <button class="new-btn" id="btnNewReport" onclick="newReport()">+ New Report</button>
+    <div style="display:flex; gap:8px; margin-top:-6px; margin-bottom:8px;">
+      <button class="new-btn" id="btnImport" style="background:#fff; border:1.5px solid var(--accent); margin-bottom:0; flex:1;" onclick="document.getElementById('importInput').click()">📥 Nhập file (.json)</button>
+      <button class="new-btn" id="btnPasteJson" style="background:#fff; border:1.5px solid var(--accent); margin-bottom:0; width:auto; padding:14px 18px; white-space:nowrap;" onclick="pasteJsonFromClipboard()" title="Dán file hoặc dữ liệu JSON từ clipboard (Ctrl+V)">📋 Dán JSON</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <button class="new-btn" id="btnBackupDb" style="background:#f8f9fa; color:#495057; border:1px solid #dee2e6; margin-bottom:0; flex:1; font-size:13px; font-weight:600; padding:9px 12px;" onclick="backupDatabase()" title="Tải về file lưu trữ toàn bộ tất cả báo cáo trong máy">💾 Sao lưu toàn bộ (Backup DB)</button>
+      <button class="new-btn" id="btnRestoreDb" style="background:#f8f9fa; color:#495057; border:1px solid #dee2e6; margin-bottom:0; flex:1; font-size:13px; font-weight:600; padding:9px 12px;" onclick="document.getElementById('restoreDbInput').click()" title="Phục hồi cơ sở dữ liệu từ file sao lưu">🔄 Phục hồi dữ liệu (Restore DB)</button>
+    </div>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
+    <input type="file" id="restoreDbInput" accept=".json" style="display:none" onchange="restoreDatabase(event)">
+    
+    <div id="reportsList"></div>
+    <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
+  </div>
+
+  <!-- THANH BOTTOM XỬ LÝ CHỌN BÁO CÁO HÀNG LOẠT -->
+  <div class="batch-bar" id="batchBar">
+    <button class="batch-btn pri" onclick="selectAllReports()">Chọn tất cả</button>
+    <span style="font-size:12px; font-weight:600; color:var(--muted);" id="selectedCountText">Đã chọn: 0</span>
+    <button class="batch-btn" onclick="shareSelectedReports()" style="color:#007aff; font-weight:600;">Chia sẻ</button>
+    <button class="batch-btn" onclick="duplicateSelectedReports()" style="color:var(--accent); font-weight:600;">Nhân bản</button>
+    <button class="batch-btn danger" onclick="deleteSelectedReports()">Xóa</button>
+  </div>
+
+  <!-- EDIT SCREEN -->
+  <div class="screen" id="editScreen">
+    
+    <!-- S0: OVERALL -->
+    <div id="sec0" class="sec-block">
+      <div class="sec-card">
+        <div class="sec-head">Product Information</div>
+        <div class="form-grid">
+          <div class="fcell" style="grid-column: span 2;">
+            <div class="flabel">Report Title / Tiêu đề báo cáo</div>
+            <input id="fReportTitle" placeholder="PP SAMPLE REVIEW REPORT" oninput="as()">
+          </div>
+          <div class="fcell"><div class="flabel">Model No.</div><input id="fModel" placeholder="MD 2741" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Description</div><input id="fDesc" placeholder="Swivel Chair (Skylar)" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Dimension (cm)</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Date</div><input id="fDate" placeholder="13-Mar-26" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Factory</div><input id="fFactory" placeholder="NHAN HOANG" oninput="as()"></div>
+          <div class="fcell"><div class="flabel">Reviewed by</div><input id="fReviewer" value="Quoc Hung" placeholder="Your name" oninput="as()"></div>
+          <div class="fcell" style="grid-column: span 2;">
+            <div class="flabel">Number Sample / Review</div>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <input id="fNumS" type="number" value="1" style="width:44px;border:1px solid var(--border);border-radius:4px;text-align:center" oninput="as()">
+              <span style="color:var(--muted)">/</span>
+              <input id="fNumR" type="number" value="1" style="width:44px;border:1px solid var(--border);border-radius:4px;text-align:center" oninput="as()">
+            </div>
+          </div>
+        </div>
+        <div class="check-row"><div class="check-row-label">Stage</div><div class="checks" id="ck_stage"></div></div>
+        <div class="check-row"><div class="check-row-label">Sample</div><div class="checks" id="ck_sample"></div></div>
+        <div class="check-row"><div class="check-row-label">Comfort</div><div class="checks" id="ck_comfort"></div></div>
+        <div class="check-row"><div class="check-row-label">Rating</div><div class="checks" id="ck_rating"></div></div>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY STRIP (QUICK METRICS) -->
+      <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
+
+      <div class="sec-card">
+        <div class="sec-head">OVERVIEW <span>Nhấn giữ để di chuyển</span></div>
+        <div class="photo-grid-2" id="coverPhotos"></div>
+      </div>
+    </div>
+
+    <!-- S1: PHOTOS -->
+    <div id="sec1" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="prodPhotos"></div>
+      </div>
+    </div>
+
+    <!-- S2: DIMENSIONS (2 CỘT) -->
+    <div id="sec2" class="sec-block" style="display:none">
+      <div class="sec-card dimensions-card">
+        <div class="sec-head">
+          <span>Product Dimension & Details</span>
+          <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
+        </div>
+        
+        <div class="legend-row">
+          <div class="legend-item"><span class="dim-status-icon shape-ok"><span class="color-dot color-blue"></span></span><span>OK</span></div>
+          <div class="legend-item"><span class="dim-status-icon shape-not-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e24b4b" stroke-width="3.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span><span>Not OK</span></div>
+          <div class="legend-item"><span class="dim-status-icon shape-update"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e89020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg></span><span>Update Drawing</span></div>
+        </div>
+
+        <div class="dim-batch-bar" id="dimBatchBar">
+          <button class="batch-btn pri" onclick="selectAllDims()">Chọn tất cả</button>
+          <span style="font-size:12px; font-weight:600; color:var(--muted);" id="dimSelectedCountText">Đã chọn: 0</span>
+          <button class="batch-btn danger" onclick="deleteSelectedDims()">Xóa các ô đã chọn</button>
+        </div>
+
+        <div class="dim-grid" id="dimGrid"></div>
+      </div>
+      <div class="sec-card"><div class="sec-head">Notes</div><div class="note-area"><textarea id="dimNotes" placeholder="Additional dimension notes..." oninput="as()"></textarea></div></div>
+    </div>
+
+    <!-- S3: PRODUCT ASSEMBLY -->
+    <div id="sec3" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Product Assembly <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="assemblyPhotos"></div>
+        <div class="note-area"><textarea id="assemblyNotes" placeholder="Product assembly steps, notes..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S4: QUALITY WATCH OUT -->
+    <div id="sec4" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="watchoutPhotos"></div>
+        <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, critical quality points..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S5: TESTING -->
+    <div id="sec5" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">Testing <span>Nhấn giữ để di chuyển hàng</span></div>
+        <table class="bv-table" id="bvTable"><thead><tr><th style="width:34px; text-align:center;"></th><th style="width:44%">Test Property</th><th>Result</th><th style="width:25%">Remark</th><th style="width:34px; text-align:center;"></th></tr></thead><tbody id="bvBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
+      </div>
+      <div class="sec-card">
+        <div class="sec-head">Testing Photo <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="testingPhotos"></div>
+        <div class="note-area"><textarea id="testingNotes" placeholder="Testing photos notes, test remarks..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S6: CHECKLIST -->
+    <div id="sec6" class="sec-block" style="display:none">
+      <div class="apple-checklist-container">
+        <!-- Overview & Actions Card -->
+        <div class="apple-overview-card" id="checklistOverviewCard"></div>
+
+        <!-- Category Groups Container (SortableJS enabled) -->
+        <div id="checklistGroupsContainer"></div>
+      </div>
+
+      <!-- Checklist Photos & Remarks Card -->
+      <div class="sec-card" style="margin-top: 16px;">
+        <div class="sec-head">Check List Photos <span>Nhấn giữ để di chuyển</span></div>
+        <div class="free-photos" id="checklistPhotos"></div>
+        <div class="note-area"><textarea id="checklistNotes" placeholder="Checklist remarks, final inspections..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SAVE BAR -->
+  <div class="save-bar" id="saveBar" style="display:none">
+    <button class="sbar-btn sec" onclick="prevSection()">← Back</button>
+    <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
+  </div>
+
+  <!-- CROPPER MODAL -->
+  <div class="modal-overlay hidden" id="camModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="camTitle">Chỉnh sửa ảnh</h3><button class="modal-close" onclick="closeCamera()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div id="cropperWrapper" class="cropper-wrapper">
+            <img id="cropperImage" alt="Cropper Preview">
+        </div>
+        
+        <div id="editorToolbar" class="cropper-tools">
+            <div class="tools-row">
+                <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">Tự do</button>
+                <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
+                <button class="tool-btn" id="ratio_1_1" onclick="setCropRatio(1, this)">1:1</button>
+                <button class="tool-btn" id="ratio_4_9" onclick="setCropRatio(4/9, this)">4:9 (Phụ)</button>
+            </div>
+
+            <div class="tools-row">
+                <button class="tool-btn" type="button" onclick="rotate90()">🔄 Xoay 90°</button>
+                <button class="tool-btn" type="button" onclick="flipImage('x')">⇄ Lật ngang</button>
+                <button class="tool-btn" type="button" onclick="flipImage('y')">⇅ Lật dọc</button>
+                <button class="tool-btn" type="button" onclick="resetTransforms()">↺ Đặt lại</button>
+            </div>
+
+            <div class="straighten-box">
+                <span class="title">📐 Căn thẳng:</span>
+                <input type="range" class="straighten-slider" id="straightenRange" min="-45" max="45" step="0.5" value="0" oninput="applyStraighten(this.value)">
+                <span class="straighten-val" id="straightenVal">0.0°</span>
+            </div>
+        </div>
+        <div class="crop-hint" id="cropHint">Cuộn chuột hoặc dùng 2 ngón tay trên điện thoại để zoom. Kéo để căn góc ảnh.</div>
+      </div>
+      
+      <div class="modal-foot" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="mbtn sec" id="btnRetakeCam" onclick="retakeFromCamera()" title="Chụp ảnh mới đè vào khung">📷 Chụp lại</button>
+          <button type="button" class="mbtn sec" id="btnRetakeLib" onclick="retakeFromLibrary()" title="Chọn ảnh từ Album">🖼️ Đổi ảnh</button>
+          <button type="button" class="mbtn sec" id="btnRetakePaste" onclick="retakeFromPaste()" title="Dán ảnh từ Clipboard (Ctrl+V)">📋 Dán ảnh</button>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="mbtn sec" onclick="closeCamera()">Hủy</button>
+          <button type="button" class="mbtn pri" id="btnUse" onclick="usePhoto()" title="Nhấn Enter để lưu ảnh">✓ Lưu ảnh (Enter)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- PDF STYLER MODAL -->
+  <div class="modal-overlay hidden" id="pdfStylerModal">
+    <div class="modal-box styler-box">
+      <div class="modal-head">
+        <h3>🎨 Căn chỉnh bố cục & màu sắc PDF</h3>
+        <button class="modal-close" onclick="closePdfStyler()">✕</button>
+      </div>
+      
+      <div class="modal-body" style="padding: 12px 16px;">
+        <!-- KHUNG PREVIEW TRỰC TIẾP -->
+        <div class="styler-preview-wrap">
+          <div class="styler-preview-header">
+            <span class="styler-preview-title">👁️ Xem trước thời gian thực (Header A4)</span>
+            <div class="styler-tab-btns">
+              <button class="styler-tab-btn active" id="btnTabP1" onclick="switchStylerTab('p1')">Trang bìa 1</button>
+              <button class="styler-tab-btn" id="btnTabSub" onclick="switchStylerTab('sub')">Các trang sau</button>
+            </div>
+          </div>
+          <div class="styler-canvas-wrap">
+            <canvas id="pdfPreviewCanvas" width="630" height="96"></canvas>
+          </div>
+          <div class="styler-hint">Kéo thanh trượt bên dưới để thay đổi vị trí theo thời gian thực</div>
+        </div>
+
+        <div class="styler-scroll">
+          <!-- NHÓM 1: MÀU SẮC -->
+          <div class="styler-section">
+            <div class="styler-section-title">🎨 Màu sắc Header Bản in PDF</div>
+            <div style="font-size: 10.5px; color: #666; margin-bottom: 8px;">(Chỉ áp dụng cho trang in PDF, không làm đổi màu các nút bấm của ứng dụng web)</div>
+            <div class="styler-color-row">
+              <div class="styler-color-item">
+                <label>Nền Header:</label>
+                <input type="color" id="cfg_themeColor" oninput="onStylerColorChange('themeColor', this.value)">
+                <span class="styler-color-hex" id="val_themeColor">#1a3a2a</span>
+              </div>
+              <div class="styler-color-item">
+                <label>Chữ Header:</label>
+                <input type="color" id="cfg_headerTextColor" oninput="onStylerColorChange('headerTextColor', this.value)">
+                <span class="styler-color-hex" id="val_headerTextColor">#ffffff</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- NHÓM 2: TRANG BÌA (PAGE 1) -->
+          <div class="styler-section" id="section_p1_settings">
+            <div class="styler-section-title">📄 Căn chỉnh Trang bìa (Page 1)</div>
+            
+            <div class="styler-control" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 9px;">
+              <label style="font-weight: 600; color: #222;">Tên tiêu đề trang bìa:</label>
+              <input type="text" id="cfg_reportTitle" style="width: 100%; border: 1px solid #ccc; border-radius: 4px; padding: 5px 8px; font-size: 11.5px; font-weight: 600; color: #1a3a2a;" placeholder="PP SAMPLE REVIEW REPORT" oninput="onStylerTitleChange(this.value)">
+            </div>
+            
+            <div class="styler-control">
+              <label>Kích thước Logo:</label>
+              <input type="range" id="cfg_logoW_p1" min="20" max="65" step="0.5" oninput="onStylerSliderChange('logoW_p1', this.value, ' mm')">
+              <span class="styler-val" id="val_logoW_p1">44.0 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Logo Vị trí Ngang (X):</label>
+              <input type="range" id="cfg_logoX_p1" min="5" max="30" step="0.5" oninput="onStylerSliderChange('logoX_p1', this.value, ' mm')">
+              <span class="styler-val" id="val_logoX_p1">14.0 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Logo Vị trí Dọc (Y):</label>
+              <input type="range" id="cfg_logoY_p1" min="1" max="15" step="0.5" oninput="onStylerSliderChange('logoY_p1', this.value, ' mm')">
+              <span class="styler-val" id="val_logoY_p1">6.2 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Cỡ chữ Tiêu đề:</label>
+              <input type="range" id="cfg_titleFontSize" min="12" max="22" step="0.5" oninput="onStylerSliderChange('titleFontSize', this.value, ' pt')">
+              <span class="styler-val" id="val_titleFontSize">16.0 pt</span>
+            </div>
+            <div class="styler-control">
+              <label>Tiêu đề Vị trí Dọc (Y):</label>
+              <input type="range" id="cfg_titleY" min="4" max="26" step="0.5" oninput="onStylerSliderChange('titleY', this.value, ' mm')">
+              <span class="styler-val" id="val_titleY">16.0 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Chiều cao dải màu Header:</label>
+              <input type="range" id="cfg_bannerH" min="16" max="36" step="0.5" oninput="onStylerSliderChange('bannerH', this.value, ' mm')">
+              <span class="styler-val" id="val_bannerH">24.0 mm</span>
+            </div>
+          </div>
+
+          <!-- NHÓM 3: CÁC TRANG SAU -->
+          <div class="styler-section" id="section_sub_settings">
+            <div class="styler-section-title">📑 Căn chỉnh Các trang sau (Page 2+)</div>
+            
+            <div class="styler-control">
+              <label>Kích thước Logo:</label>
+              <input type="range" id="cfg_logoW_sub" min="15" max="55" step="0.5" oninput="onStylerSliderChange('logoW_sub', this.value, ' mm')">
+              <span class="styler-val" id="val_logoW_sub">36.0 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Logo Vị trí Ngang (X):</label>
+              <input type="range" id="cfg_logoX_sub" min="5" max="30" step="0.5" oninput="onStylerSliderChange('logoX_sub', this.value, ' mm')">
+              <span class="styler-val" id="val_logoX_sub">14.0 mm</span>
+            </div>
+            <div class="styler-control">
+              <label>Logo Vị trí Dọc (Y):</label>
+              <input type="range" id="cfg_logoY_sub" min="1" max="10" step="0.5" oninput="onStylerSliderChange('logoY_sub', this.value, ' mm')">
+              <span class="styler-val" id="val_logoY_sub">4.2 mm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-foot">
+        <button class="mbtn sec" onclick="resetPdfConfig()">↺ Mặc định</button>
+        <button class="mbtn sec" onclick="closePdfStyler()">Đóng</button>
+        <button class="mbtn pri" onclick="savePdfConfigAndClose()">✓ Lưu & Áp dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC NHẬN TRÙNG TÊN KHI NHẬP JSON -->
+  <div class="modal-overlay hidden" id="importConflictModal" style="z-index: 105;">
+    <div class="modal-box" style="max-width: 460px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.35);">
+      <div class="modal-head">
+        <h3 style="display:flex; align-items:center; gap:8px;">
+          <span>⚠️</span> Phát hiện báo cáo cùng tên
+        </h3>
+        <button class="modal-close" onclick="closeImportConflictModal()">✕</button>
+      </div>
+      <div class="modal-body" style="background: #fff; padding: 20px; color: #2c3e50; font-size: 13.5px; line-height: 1.55;">
+        <p style="margin: 0 0 12px 0;">
+          Báo cáo <strong id="conflictReportName" style="color: #111;"></strong> đã tồn tại trong danh sách.
+        </p>
+        <p style="margin: 0; color: #555;">
+          Bạn muốn <strong>ghi đè (Replace)</strong> lên báo cáo cũ hay <strong>tạo bản sao mới</strong> (<span id="conflictNewName" style="font-weight: 600; color: var(--accent);">(1)</span>)?
+        </p>
+      </div>
+      <div class="modal-foot" style="padding: 12px 16px; background: #fafafa; border-top: 1px solid var(--border-light); display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="mbtn sec" onclick="closeImportConflictModal()">Hủy</button>
+        <button class="mbtn sec" onclick="handleConflictAction(true)" style="color: #c0392b; border-color: #f5c6cb; background: #fff5f5;">Ghi đè (Replace)</button>
+        <button class="mbtn pri" id="btnConflictCopy" onclick="handleConflictAction(false)">Tạo bản (1)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUTS -->
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
+  <input type="file" id="libraryInput" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" style="display:none" onchange="handleFile(event)">
+  
+  <div class="toast" id="toast"></div>
+
+
+
+  <!-- Modular Scripts -->
+  <script type="module" src="./modules/sortable-plugin.js"></script>
+  <script type="module" src="./modules/app.js"></script>
+</body>
+</html>

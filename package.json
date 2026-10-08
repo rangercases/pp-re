@@ -1,0 +1,15 @@
+{
+  "name": "sample-review-report-digi",
+  "version": "1.0.0",
+  "description": "Digital Sample Review Report PWA App - SOFACOMPANY",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0",
+    "vite-plugin-singlefile": "^2.1.0"
+  }
+}
