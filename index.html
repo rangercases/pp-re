@@ -26,15 +26,17 @@
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
-    // Tích hợp Swap Plugin cho SortableJS để hỗ trợ hoán đổi 1-1 giữa 2 ô ảnh
+        // Tích hợp Smart Dual Plugin cho SortableJS: Tự động phân vùng Tâm (Hoán đổi 1-1) và Mép (Chèn nối đuôi)
     (function() {
       if (typeof Sortable === 'undefined' || typeof Sortable.mount !== 'function') return;
-      var lastSwapEl = null;
-      function toggleClass(el, name, state) {
-        if (!el || !name) return;
-        if (el.classList) el.classList[state ? 'add' : 'remove'](name);
-        else el.className = (' ' + el.className + ' ').replace(new RegExp(' ' + name + ' ', 'g'), ' ').trim() + (state ? ' ' + name : '');
+      var lastTargetEl = null;
+      var currentMode = 'insert'; // 'swap' hoặc 'insert'
+
+      function clearIndicators(el) {
+        if (!el) return;
+        el.classList.remove('drop-swap-active', 'drop-insert-before', 'drop-insert-after', 'sortable-swap-highlight');
       }
+
       function getIndex(el) {
         if (!el || !el.parentNode) return -1;
         var children = el.parentNode.children;
@@ -43,6 +45,7 @@
         }
         return -1;
       }
+
       function swapNodes(n1, n2) {
         var p1 = n1.parentNode, p2 = n2.parentNode;
         if (!p1 || !p2 || p1 === n2 || p2 === n1) return;
@@ -51,73 +54,96 @@
         p1.insertBefore(n2, p1.children[i1]);
         p2.insertBefore(n1, p2.children[i2]);
       }
-      function SwapPlugin() {
-        function Swap() {
-          this.defaults = { swapClass: 'sortable-swap-highlight' };
+
+      function SmartSwapPlugin() {
+        function Plugin() {
+          this.defaults = { swap: true };
         }
-        Swap.prototype = {
+        Plugin.prototype = {
           dragStart: function(_ref) {
-            lastSwapEl = _ref.dragEl;
+            currentMode = 'insert';
+            lastTargetEl = null;
           },
           dragOverValid: function(_ref2) {
             var target = _ref2.target,
-                onMove = _ref2.onMove,
                 activeSortable = _ref2.activeSortable,
+                originalEvent = _ref2.originalEvent,
                 changed = _ref2.changed,
                 completed = _ref2.completed,
                 cancel = _ref2.cancel;
+
             if (!activeSortable.options.swap) return;
-            var el = this.sortable.el,
-                options = this.options;
             var dragItem = target && target.closest ? target.closest(activeSortable.options.draggable || '*') : target;
-            if (dragItem && dragItem !== el && (!activeSortable.options.draggable || (dragItem.matches && dragItem.matches(activeSortable.options.draggable)))) {
-              var prevSwapEl = lastSwapEl;
-              if (onMove(dragItem) !== false) {
-                if (options.swapClass) toggleClass(dragItem, options.swapClass, true);
-                lastSwapEl = dragItem;
-              } else {
-                lastSwapEl = null;
+            if (!dragItem || dragItem === activeSortable.el || !dragItem.matches(activeSortable.options.draggable || '*')) return;
+
+            var touch = (originalEvent && originalEvent.touches && originalEvent.touches[0]) || originalEvent;
+            if (touch && touch.clientX !== undefined) {
+              var rect = dragItem.getBoundingClientRect();
+              var relX = (touch.clientX - rect.left) / rect.width;
+              var relY = (touch.clientY - rect.top) / rect.height;
+
+              if (lastTargetEl && lastTargetEl !== dragItem) {
+                clearIndicators(lastTargetEl);
               }
-              if (prevSwapEl && prevSwapEl !== lastSwapEl) {
-                if (options.swapClass) toggleClass(prevSwapEl, options.swapClass, false);
+              lastTargetEl = dragItem;
+
+              // Vùng Tâm (Center 60% diện tích): Kích hoạt Hoán đổi 1-1 (Swap)
+              if (relX >= 0.20 && relX <= 0.80 && relY >= 0.15 && relY <= 0.85) {
+                currentMode = 'swap';
+                clearIndicators(dragItem);
+                dragItem.classList.add('drop-swap-active');
+                changed();
+                completed(true);
+                cancel();
+                return;
+              } else {
+                // Vùng Mép (Edge): Kích hoạt Chèn nối đuôi (Insert/Shift)
+                currentMode = 'insert';
+                clearIndicators(dragItem);
+                if (relX < 0.5) {
+                  dragItem.classList.add('drop-insert-before');
+                } else {
+                  dragItem.classList.add('drop-insert-after');
+                }
               }
             }
-            changed();
-            completed(true);
-            cancel();
           },
           drop: function(_ref3) {
             var activeSortable = _ref3.activeSortable,
                 putSortable = _ref3.putSortable,
                 dragEl = _ref3.dragEl;
             var toSortable = putSortable || this.sortable;
-            var options = this.options;
-            if (lastSwapEl && options.swapClass) toggleClass(lastSwapEl, options.swapClass, false);
-            if (lastSwapEl && (options.swap || (putSortable && putSortable.options.swap))) {
-              if (dragEl !== lastSwapEl) {
-                if (toSortable.captureAnimationState) toSortable.captureAnimationState();
-                if (toSortable !== activeSortable && activeSortable.captureAnimationState) activeSortable.captureAnimationState();
-                swapNodes(dragEl, lastSwapEl);
-                if (toSortable.animateAll) toSortable.animateAll();
-                if (toSortable !== activeSortable && activeSortable.animateAll) activeSortable.animateAll();
-              }
+
+            if (lastTargetEl) clearIndicators(lastTargetEl);
+
+            if (currentMode === 'swap' && lastTargetEl && dragEl !== lastTargetEl) {
+              if (toSortable.captureAnimationState) toSortable.captureAnimationState();
+              swapNodes(dragEl, lastTargetEl);
+              if (toSortable.animateAll) toSortable.animateAll();
+              window._lastSortAction = 'swap';
+            } else {
+              window._lastSortAction = 'insert';
             }
           },
           nulling: function() {
-            lastSwapEl = null;
+            if (lastTargetEl) clearIndicators(lastTargetEl);
+            lastTargetEl = null;
+            currentMode = 'insert';
           }
         };
-        return Object.assign(Swap, {
+        return Object.assign(Plugin, {
           pluginName: 'swap',
           eventProperties: function() {
-            return { swapItem: lastSwapEl };
+            return { sortMode: window._lastSortAction || 'insert' };
           }
         });
       }
+
       try {
-        Sortable.mount(new SwapPlugin());
+        Sortable.mount(new SmartSwapPlugin());
+        console.log('[Sortable] Smart Dual Plugin (Swap + Insert) đã kích hoạt thành công.');
       } catch (e) {
-        console.warn('Sortable SwapPlugin mount error:', e);
+        console.warn('Sortable SmartSwapPlugin mount error:', e);
       }
     })();
   </script>
@@ -1280,6 +1306,105 @@
     .styler-color-item { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 500; }
     .styler-color-item input[type="color"] { border: 2px solid #ddd; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; padding: 0; background: none; }
     .styler-color-hex { font-family: monospace; font-size: 11px; color: #555; }
+
+  
+    /* ═══════════════ APPLE-STYLE SLOT UPLOAD LOADING ═══════════════ */
+    @keyframes slotShimmerAnim {
+      0% { opacity: 0.55; }
+      50% { opacity: 0.95; }
+      100% { opacity: 0.55; }
+    }
+    @keyframes slotSpinAnim {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .slot-loading {
+      position: relative !important;
+      pointer-events: none !important;
+      user-select: none !important;
+      border: 1.5px dashed var(--brand-theme, #1a3a2a) !important;
+      background: rgba(26, 58, 42, 0.06) !important;
+      animation: slotShimmerAnim 1.6s ease-in-out infinite !important;
+    }
+    .slot-loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 26px;
+      height: 26px;
+      border: 2.5px solid rgba(26, 58, 42, 0.2);
+      border-top-color: var(--brand-theme, #1a3a2a);
+      border-radius: 50%;
+      animation: slotSpinAnim 0.75s linear infinite;
+      z-index: 15;
+    }
+    .sortable-swap-highlight {
+      outline: 2.5px solid var(--brand-theme, #1a3a2a) !important;
+      outline-offset: -2px;
+      background: rgba(26, 58, 42, 0.12) !important;
+    }
+
+  
+    /* ═══════════════ DUAL DRAG-DROP (SWAP 1-1 VS CHÈN NỐI ĐUÔI) ═══════════════ */
+    .drop-swap-active {
+      outline: 2.5px solid var(--brand-theme, #1a3a2a) !important;
+      outline-offset: -2px !important;
+      background: rgba(26, 58, 42, 0.14) !important;
+      transform: scale(1.025) !important;
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+      position: relative !important;
+      z-index: 20 !important;
+    }
+    .drop-swap-active::before {
+      content: '⇄ Đổi chỗ';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--brand-theme, #1a3a2a);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      pointer-events: none;
+      z-index: 25;
+      letter-spacing: 0.3px;
+    }
+    .drop-insert-before {
+      position: relative !important;
+      box-shadow: -5px 0 0 0 var(--brand-theme, #1a3a2a) !important;
+    }
+    .drop-insert-before::after {
+      content: '';
+      position: absolute;
+      left: -9px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-right: 6px solid var(--brand-theme, #1a3a2a);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      pointer-events: none;
+      z-index: 25;
+    }
+    .drop-insert-after {
+      position: relative !important;
+      box-shadow: 5px 0 0 0 var(--brand-theme, #1a3a2a) !important;
+    }
+    .drop-insert-after::after {
+      content: '';
+      position: absolute;
+      right: -9px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 6px solid var(--brand-theme, #1a3a2a);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      pointer-events: none;
+      z-index: 25;
+    }
 
   </style>
 </head>
@@ -2845,14 +2970,23 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         if (isMulti) {
           handleMultipleDroppedFiles(files, target.key);
         } else {
+          const targetSnapshot = Object.assign({}, target);
           camTarget = target;
+          setTargetLoading(targetSnapshot, true);
           showToast('Đang áp dụng ảnh...');
           readImageFileAsDataUrl(files[0]).then(async dataUrl => {
-            if (!dataUrl) return;
+            if (!dataUrl) {
+              setTargetLoading(targetSnapshot, false);
+              return;
+            }
             currentOriginalImg = dataUrl;
-            const compressed = await resizeImage(dataUrl, 1280, 0.85);
-            savePhoto(compressed, dataUrl);
-            highlightTarget(target, element);
+            const masterPhoto = await normalizeMasterPhoto(dataUrl);
+            const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+            savePhoto(compressed, masterPhoto, targetSnapshot);
+            highlightTarget(targetSnapshot, element);
+          }).catch(err => {
+            console.error('Lỗi drop ảnh:', err);
+            setTargetLoading(targetSnapshot, false);
           });
         }
       }, false);
@@ -2906,6 +3040,40 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
 
       return files;
+    }
+
+    
+    function getTargetElement(target) {
+      if (!target) return null;
+      if (target.type === 'slot') {
+        return document.getElementById(`ps_${target.containerId}_${target.key}`);
+      } else if (target.type === 'dim') {
+        return document.getElementById(`dph_${target.subType}_${target.index}`);
+      } else if (target.type === 'free') {
+        if ((target.key === 'watchoutPhotos' || target.key === 'testingPhotos' || target.key === 'assemblyPhotos') && target.subType) {
+          const prefix = target.key === 'watchoutPhotos' ? 'wph_' : (target.key === 'assemblyPhotos' ? 'asph_' : 'tph_');
+          return document.getElementById(`${prefix}${target.subType}_${target.index}`);
+        }
+        const container = document.getElementById(target.key);
+        if (container) {
+          if (target.index !== undefined && container.children[target.index]) {
+            return container.children[target.index];
+          }
+          const items = container.querySelectorAll('.free-photo-item, .watchout-slot, .testing-slot, .assembly-slot');
+          if (items.length) return items[items.length - 1];
+        }
+      }
+      return null;
+    }
+
+    function setTargetLoading(target, isLoading = true) {
+      const el = getTargetElement(target);
+      if (!el) return;
+      if (isLoading) {
+        el.classList.add('slot-loading', 'ignore-drag');
+      } else {
+        el.classList.remove('slot-loading', 'ignore-drag');
+      }
     }
 
     function highlightTarget(target, element = null) {
@@ -3648,13 +3816,25 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         return;
       }
 
+      const targetSnapshot = Object.assign({}, camTarget);
+      setTargetLoading(targetSnapshot, true);
       showToast('Đang áp dụng ảnh...');
-      const rawDataUrl = await readImageFileAsDataUrl(files[0]);
-      if (!rawDataUrl) return;
-      const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
-      const compressed = await resizeImage(masterPhoto, 1280, 0.88);
-      currentOriginalImg = masterPhoto;
-      savePhoto(compressed, masterPhoto);
+      try {
+        const rawDataUrl = await readImageFileAsDataUrl(files[0]);
+        if (!rawDataUrl) {
+          setTargetLoading(targetSnapshot, false);
+          return;
+        }
+        const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
+        const compressed = await resizeImage(masterPhoto, 1280, 0.88);
+        currentOriginalImg = masterPhoto;
+        savePhoto(compressed, masterPhoto, targetSnapshot);
+        highlightTarget(targetSnapshot);
+      } catch (err) {
+        console.error('Lỗi khi nạp ảnh:', err);
+        setTargetLoading(targetSnapshot, false);
+        showToast('Lỗi xử lý ảnh');
+      }
     }
 
     function editSlotPhoto(containerId, key, section) {
@@ -3853,9 +4033,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       closeCamera();
     }
 
-    function savePhoto(imgData, originalData) {
-      const t = camTarget;
+    function savePhoto(imgData, originalData, explicitTarget = null) {
+      const t = explicitTarget || camTarget;
       if (!t) return;
+      setTargetLoading(t, false);
       pushHistory('Lưu ảnh');
       if (t.type === 'slot') {
         const payload = { img: imgData, original: originalData };
@@ -4788,10 +4969,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 buildDimGrid();
                 return;
               }
-              pushHistory('Hoán đổi vị trí kích thước');
-              const temp = D.dimensions[from];
-              D.dimensions[from] = D.dimensions[to];
-              D.dimensions[to] = temp;
+              const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+              if (isSwap) {
+                pushHistory('Hoán đổi vị trí kích thước (1-1)');
+                const temp = D.dimensions[from];
+                D.dimensions[from] = D.dimensions[to];
+                D.dimensions[to] = temp;
+              } else {
+                pushHistory('Chèn vị trí kích thước (nối đuôi)');
+                const moved = D.dimensions.splice(from, 1)[0];
+                D.dimensions.splice(to, 0, moved);
+              }
               as();
               buildDimGrid();
             }
@@ -5079,10 +5267,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                   renderFreePhotos(key);
                   return;
                 }
-                pushHistory('Hoán đổi vị trí ảnh');
-                const temp = D[key][from];
-                D[key][from] = D[key][to];
-                D[key][to] = temp;
+                const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+                if (isSwap) {
+                  pushHistory('Hoán đổi vị trí ảnh (1-1)');
+                  const temp = D[key][from];
+                  D[key][from] = D[key][to];
+                  D[key][to] = temp;
+                } else {
+                  pushHistory('Chèn vị trí ảnh (nối đuôi)');
+                  const moved = D[key].splice(from, 1)[0];
+                  D[key].splice(to, 0, moved);
+                }
                 as(); renderFreePhotos(key);
              }
           });
@@ -5247,10 +5442,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderWatchoutPhotos();
               return;
             }
-            pushHistory('Hoán đổi vị trí Quality Watch Out');
-            const temp = D.watchoutPhotos[from];
-            D.watchoutPhotos[from] = D.watchoutPhotos[to];
-            D.watchoutPhotos[to] = temp;
+            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            if (isSwap) {
+              pushHistory('Hoán đổi vị trí Quality Watch Out (1-1)');
+              const temp = D.watchoutPhotos[from];
+              D.watchoutPhotos[from] = D.watchoutPhotos[to];
+              D.watchoutPhotos[to] = temp;
+            } else {
+              pushHistory('Chèn vị trí Quality Watch Out (nối đuôi)');
+              const moved = D.watchoutPhotos.splice(from, 1)[0];
+              D.watchoutPhotos.splice(to, 0, moved);
+            }
             as();
             renderWatchoutPhotos();
           }
@@ -5476,10 +5678,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderTestingPhotos();
               return;
             }
-            pushHistory('Hoán đổi vị trí Testing Photo');
-            const temp = D.testingPhotos[from];
-            D.testingPhotos[from] = D.testingPhotos[to];
-            D.testingPhotos[to] = temp;
+            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            if (isSwap) {
+              pushHistory('Hoán đổi vị trí Testing Photo (1-1)');
+              const temp = D.testingPhotos[from];
+              D.testingPhotos[from] = D.testingPhotos[to];
+              D.testingPhotos[to] = temp;
+            } else {
+              pushHistory('Chèn vị trí Testing Photo (nối đuôi)');
+              const moved = D.testingPhotos.splice(from, 1)[0];
+              D.testingPhotos.splice(to, 0, moved);
+            }
             as();
             renderTestingPhotos();
           }
@@ -5705,10 +5914,17 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderAssemblyPhotos();
               return;
             }
-            pushHistory('Hoán đổi vị trí Assembly Photo');
-            const temp = D.assemblyPhotos[from];
-            D.assemblyPhotos[from] = D.assemblyPhotos[to];
-            D.assemblyPhotos[to] = temp;
+            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            if (isSwap) {
+              pushHistory('Hoán đổi vị trí Assembly Photo (1-1)');
+              const temp = D.assemblyPhotos[from];
+              D.assemblyPhotos[from] = D.assemblyPhotos[to];
+              D.assemblyPhotos[to] = temp;
+            } else {
+              pushHistory('Chèn vị trí Assembly Photo (nối đuôi)');
+              const moved = D.assemblyPhotos.splice(from, 1)[0];
+              D.assemblyPhotos.splice(to, 0, moved);
+            }
             as();
             renderAssemblyPhotos();
           }
