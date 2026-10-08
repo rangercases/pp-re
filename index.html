@@ -26,15 +26,15 @@
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
-        // Tích hợp Smart Dual Plugin cho SortableJS: Tự động phân vùng Tâm (Hoán đổi 1-1) và Mép (Chèn nối đuôi)
+            // Tích hợp Swap Plugin tiêu chuẩn cho SortableJS: Tự động đổi chỗ 1-1 sạch sẽ khi bật chế độ Swap
     (function() {
       if (typeof Sortable === 'undefined' || typeof Sortable.mount !== 'function') return;
-      var lastTargetEl = null;
-      var currentMode = 'insert'; // 'swap' hoặc 'insert'
+      var lastSwapEl = null;
 
-      function clearIndicators(el) {
-        if (!el) return;
-        el.classList.remove('drop-swap-active', 'drop-insert-before', 'drop-insert-after', 'sortable-swap-highlight');
+      function toggleClass(el, name, state) {
+        if (!el || !name) return;
+        if (el.classList) el.classList[state ? 'add' : 'remove'](name);
+        else el.className = (' ' + el.className + ' ').replace(new RegExp(' ' + name + ' ', 'g'), ' ').trim() + (state ? ' ' + name : '');
       }
 
       function getIndex(el) {
@@ -55,95 +55,78 @@
         p2.insertBefore(n1, p2.children[i2]);
       }
 
-      function SmartSwapPlugin() {
+      function StandardSwapPlugin() {
         function Plugin() {
-          this.defaults = { swap: true };
+          this.defaults = { swapClass: 'sortable-swap-highlight' };
         }
         Plugin.prototype = {
           dragStart: function(_ref) {
-            currentMode = 'insert';
-            lastTargetEl = null;
+            lastSwapEl = _ref.dragEl;
           },
           dragOverValid: function(_ref2) {
             var target = _ref2.target,
+                onMove = _ref2.onMove,
                 activeSortable = _ref2.activeSortable,
-                originalEvent = _ref2.originalEvent,
                 changed = _ref2.changed,
                 completed = _ref2.completed,
                 cancel = _ref2.cancel;
 
-            if (!activeSortable.options.swap) return;
+            if (!activeSortable.options.swap) return; // Nếu chế độ Nối đuôi (swap: false) thì nhường lại cho SortableJS gốc!
+
+            var el = this.sortable.el,
+                options = this.options;
             var dragItem = target && target.closest ? target.closest(activeSortable.options.draggable || '*') : target;
-            if (!dragItem || dragItem === activeSortable.el || !dragItem.matches(activeSortable.options.draggable || '*')) return;
 
-            var touch = (originalEvent && originalEvent.touches && originalEvent.touches[0]) || originalEvent;
-            if (touch && touch.clientX !== undefined) {
-              var rect = dragItem.getBoundingClientRect();
-              var relX = (touch.clientX - rect.left) / rect.width;
-              var relY = (touch.clientY - rect.top) / rect.height;
-
-              if (lastTargetEl && lastTargetEl !== dragItem) {
-                clearIndicators(lastTargetEl);
-              }
-              lastTargetEl = dragItem;
-
-              // Vùng Tâm (Center 60% diện tích): Kích hoạt Hoán đổi 1-1 (Swap)
-              if (relX >= 0.20 && relX <= 0.80 && relY >= 0.15 && relY <= 0.85) {
-                currentMode = 'swap';
-                clearIndicators(dragItem);
-                dragItem.classList.add('drop-swap-active');
-                changed();
-                completed(true);
-                cancel();
-                return;
+            if (dragItem && dragItem !== el && (!activeSortable.options.draggable || dragItem.matches(activeSortable.options.draggable))) {
+              var prevSwapEl = lastSwapEl;
+              if (onMove(dragItem) !== false) {
+                if (options.swapClass) toggleClass(dragItem, options.swapClass, true);
+                lastSwapEl = dragItem;
               } else {
-                // Vùng Mép (Edge): Kích hoạt Chèn nối đuôi (Insert/Shift)
-                currentMode = 'insert';
-                clearIndicators(dragItem);
-                if (relX < 0.5) {
-                  dragItem.classList.add('drop-insert-before');
-                } else {
-                  dragItem.classList.add('drop-insert-after');
-                }
+                lastSwapEl = null;
+              }
+              if (prevSwapEl && prevSwapEl !== lastSwapEl) {
+                if (options.swapClass) toggleClass(prevSwapEl, options.swapClass, false);
               }
             }
+            changed();
+            completed(true);
+            cancel();
           },
           drop: function(_ref3) {
             var activeSortable = _ref3.activeSortable,
                 putSortable = _ref3.putSortable,
                 dragEl = _ref3.dragEl;
             var toSortable = putSortable || this.sortable;
+            var options = this.options;
 
-            if (lastTargetEl) clearIndicators(lastTargetEl);
-
-            if (currentMode === 'swap' && lastTargetEl && dragEl !== lastTargetEl) {
-              if (toSortable.captureAnimationState) toSortable.captureAnimationState();
-              swapNodes(dragEl, lastTargetEl);
-              if (toSortable.animateAll) toSortable.animateAll();
-              window._lastSortAction = 'swap';
-            } else {
-              window._lastSortAction = 'insert';
+            if (lastSwapEl && options.swapClass) toggleClass(lastSwapEl, options.swapClass, false);
+            if (activeSortable.options.swap && lastSwapEl && (options.swap || (putSortable && putSortable.options.swap))) {
+              if (dragEl !== lastSwapEl) {
+                if (toSortable.captureAnimationState) toSortable.captureAnimationState();
+                if (toSortable !== activeSortable && activeSortable.captureAnimationState) activeSortable.captureAnimationState();
+                swapNodes(dragEl, lastSwapEl);
+                if (toSortable.animateAll) toSortable.animateAll();
+                if (toSortable !== activeSortable && activeSortable.animateAll) activeSortable.animateAll();
+              }
             }
           },
           nulling: function() {
-            if (lastTargetEl) clearIndicators(lastTargetEl);
-            lastTargetEl = null;
-            currentMode = 'insert';
+            lastSwapEl = null;
           }
         };
         return Object.assign(Plugin, {
           pluginName: 'swap',
           eventProperties: function() {
-            return { sortMode: window._lastSortAction || 'insert' };
+            return { swapItem: lastSwapEl };
           }
         });
       }
 
       try {
-        Sortable.mount(new SmartSwapPlugin());
-        console.log('[Sortable] Smart Dual Plugin (Swap + Insert) đã kích hoạt thành công.');
+        Sortable.mount(new StandardSwapPlugin());
       } catch (e) {
-        console.warn('Sortable SmartSwapPlugin mount error:', e);
+        console.warn('Sortable StandardSwapPlugin mount error:', e);
       }
     })();
   </script>
@@ -1346,64 +1329,60 @@
     }
 
   
-    /* ═══════════════ DUAL DRAG-DROP (SWAP 1-1 VS CHÈN NỐI ĐUÔI) ═══════════════ */
-    .drop-swap-active {
+    
+    /* ═══════════════ APPLE SEGMENTED DRAG MODE CONTROL ═══════════════ */
+    .drag-mode-bar-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 6px 14px 2px;
+      gap: 8px;
+    }
+    .drag-mode-segmented {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 18px;
+      padding: 2px;
+      user-select: none;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .drag-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #555;
+      background: transparent;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      line-height: 1;
+    }
+    .drag-mode-btn svg {
+      opacity: 0.7;
+    }
+    .drag-mode-btn:hover {
+      color: #111;
+    }
+    .drag-mode-btn.active {
+      background: #ffffff;
+      color: var(--brand-theme, #1a3a2a);
+      font-weight: 700;
+      box-shadow: 0 1.5px 5px rgba(0, 0, 0, 0.12);
+    }
+    .drag-mode-btn.active svg {
+      opacity: 1;
+      stroke: var(--brand-theme, #1a3a2a);
+    }
+    .sortable-swap-highlight {
       outline: 2.5px solid var(--brand-theme, #1a3a2a) !important;
       outline-offset: -2px !important;
-      background: rgba(26, 58, 42, 0.14) !important;
-      transform: scale(1.025) !important;
-      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-      position: relative !important;
-      z-index: 20 !important;
-    }
-    .drop-swap-active::before {
-      content: '⇄ Đổi chỗ';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--brand-theme, #1a3a2a);
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 9px;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      pointer-events: none;
-      z-index: 25;
-      letter-spacing: 0.3px;
-    }
-    .drop-insert-before {
-      position: relative !important;
-      box-shadow: -5px 0 0 0 var(--brand-theme, #1a3a2a) !important;
-    }
-    .drop-insert-before::after {
-      content: '';
-      position: absolute;
-      left: -9px;
-      top: 50%;
-      transform: translateY(-50%);
-      border-right: 6px solid var(--brand-theme, #1a3a2a);
-      border-top: 5px solid transparent;
-      border-bottom: 5px solid transparent;
-      pointer-events: none;
-      z-index: 25;
-    }
-    .drop-insert-after {
-      position: relative !important;
-      box-shadow: 5px 0 0 0 var(--brand-theme, #1a3a2a) !important;
-    }
-    .drop-insert-after::after {
-      content: '';
-      position: absolute;
-      right: -9px;
-      top: 50%;
-      transform: translateY(-50%);
-      border-left: 6px solid var(--brand-theme, #1a3a2a);
-      border-top: 5px solid transparent;
-      border-bottom: 5px solid transparent;
-      pointer-events: none;
-      z-index: 25;
+      background: rgba(26, 58, 42, 0.12) !important;
+      border-radius: 8px !important;
     }
 
   </style>
@@ -1443,6 +1422,20 @@
     </div>
   </div>
   <div id="tabsWrap" class="tabs-wrap" style="display:none"><div class="tabs" id="tabsRow"></div></div>
+    <!-- DRAG MODE SEGMENTED CONTROL -->
+  <div class="drag-mode-bar-wrap" id="dragModeWrap" style="display:none">
+    <div class="drag-mode-segmented">
+      <button type="button" class="drag-mode-btn active" id="btnDragModeSwap" onclick="setDragMode('swap')" title="Kéo ô A thả vào ô B: Chỉ 2 ô đổi chỗ cho nhau">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+        <span>Đổi chỗ 1-1</span>
+      </button>
+      <button type="button" class="drag-mode-btn" id="btnDragModeInsert" onclick="setDragMode('insert')" title="Kéo ô A chèn vào danh sách: Các ô phía sau tự động dạt ra nối đuôi">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+        <span>Nối đuôi</span>
+      </button>
+    </div>
+  </div>
+
   <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
 
   <!-- HOME SCREEN -->
@@ -2275,6 +2268,45 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     const DB_NAME = 'SofaCompanyPP_DB_Lite';
     const STORE_NAME = 'reports';
     let db = null;
+
+    
+    // ═══════════════ DRAG MODE CONTROLLER (SWAP VS INSERT) ═══════════════
+    let globalDragMode = localStorage.getItem('SOFACOMPANY_DRAG_MODE') || 'swap';
+
+    function setDragMode(mode) {
+      globalDragMode = mode;
+      try { localStorage.setItem('SOFACOMPANY_DRAG_MODE', mode); } catch(e){}
+      updateDragModeUI();
+      applyDragModeToSortables();
+      showToast(mode === 'swap' ? 'Chế độ: ⇄ Đổi chỗ 1-1 (Giữ nguyên các ô khác)' : 'Chế độ: ↳ Nối đuôi (Các ô sau dạt sang một bên)');
+    }
+
+    function updateDragModeUI() {
+      const btnSwap = document.getElementById('btnDragModeSwap');
+      const btnInsert = document.getElementById('btnDragModeInsert');
+      if (btnSwap && btnInsert) {
+        btnSwap.classList.toggle('active', globalDragMode === 'swap');
+        btnInsert.classList.toggle('active', globalDragMode === 'insert');
+      }
+    }
+
+    function applyDragModeToSortables() {
+      const isSwap = (globalDragMode === 'swap');
+      // Duyệt qua tất cả các container có SortableJS để đổi thuộc tính swap
+      const sortableContainers = [
+        document.getElementById('coverPhotos'),
+        document.getElementById('dimGrid'),
+        document.getElementById('prodPhotos'),
+        document.getElementById('watchoutPhotos'),
+        document.getElementById('testingPhotos'),
+        document.getElementById('assemblyPhotos')
+      ];
+      sortableContainers.forEach(c => {
+        if (c && c._sortable) {
+          c._sortable.options.swap = isSwap;
+        }
+      });
+    }
 
     function initDB() {
       // Yêu cầu quyền lưu trữ bền vững (Persistent Storage) trên Safari iOS & Chrome để tránh bị tự động xóa
@@ -4681,7 +4713,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           handle: '.free-drag-handle, .photo-slot',
           filter: 'input, textarea, select, button, .pact, .tap-option, .dual-tap-box, .ignore-drag',
           preventOnFilter: false,
-          swap: true,
+          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
           swapClass: 'sortable-swap-highlight',
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -4951,7 +4983,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
             handle: '.dim-slot-topbar, .dim-drag-handle',
             filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
             preventOnFilter: false,
-            swap: true,
+            swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
             swapClass: 'sortable-swap-highlight',
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
@@ -4969,7 +5001,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 buildDimGrid();
                 return;
               }
-              const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+              const isSwap = (globalDragMode === 'swap');
               if (isSwap) {
                 pushHistory('Hoán đổi vị trí kích thước (1-1)');
                 const temp = D.dimensions[from];
@@ -5249,7 +5281,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
              handle: '.free-drag-handle, .free-photo-item',
              filter: 'input, textarea, select, button, .pact, .free-caption, .free-caption input, .ignore-drag',
              preventOnFilter: false,
-             swap: true,
+             swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
              swapClass: 'sortable-swap-highlight',
              ghostClass: 'sortable-ghost',
              chosenClass: 'sortable-chosen',
@@ -5267,7 +5299,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                   renderFreePhotos(key);
                   return;
                 }
-                const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+                const isSwap = (globalDragMode === 'swap');
                 if (isSwap) {
                   pushHistory('Hoán đổi vị trí ảnh (1-1)');
                   const temp = D[key][from];
@@ -5424,7 +5456,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
-          swap: true,
+          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
           swapClass: 'sortable-swap-highlight',
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -5442,7 +5474,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderWatchoutPhotos();
               return;
             }
-            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            const isSwap = (globalDragMode === 'swap');
             if (isSwap) {
               pushHistory('Hoán đổi vị trí Quality Watch Out (1-1)');
               const temp = D.watchoutPhotos[from];
@@ -5660,7 +5692,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
-          swap: true,
+          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
           swapClass: 'sortable-swap-highlight',
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -5678,7 +5710,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderTestingPhotos();
               return;
             }
-            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            const isSwap = (globalDragMode === 'swap');
             if (isSwap) {
               pushHistory('Hoán đổi vị trí Testing Photo (1-1)');
               const temp = D.testingPhotos[from];
@@ -5896,7 +5928,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
           preventOnFilter: false,
-          swap: true,
+          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
           swapClass: 'sortable-swap-highlight',
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -5914,7 +5946,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
               renderAssemblyPhotos();
               return;
             }
-            const isSwap = (evt.sortMode === 'swap' || window._lastSortAction === 'swap');
+            const isSwap = (globalDragMode === 'swap');
             if (isSwap) {
               pushHistory('Hoán đổi vị trí Assembly Photo (1-1)');
               const temp = D.assemblyPhotos[from];
@@ -6667,6 +6699,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
       const tab = document.getElementById(`tab${i}`); if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
       document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / TABS.length) * 100) + '%';
+      const dmWrap = document.getElementById('dragModeWrap');
+      if (dmWrap) {
+        // Chỉ hiện thanh Drag Mode khi ở các tab có ảnh (Tab 0 đến Tab 5)
+        dmWrap.style.display = (curSec >= 0 && curSec <= 5) ? 'flex' : 'none';
+        updateDragModeUI();
+      }
       window.scrollTo(0, 0);
     }
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }
