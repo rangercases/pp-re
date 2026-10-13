@@ -10766,7 +10766,7 @@
               const pageImg = att.img || (att.data && att.data.startsWith('data:image/') ? att.data : null);
 
               // Mỗi trang bản vẽ xuất thành 1 trang A4 chuyên nghiệp độc lập
-              addHeader(`${modTitle} - ${attName}`);
+              addHeader(modTitle);
 
               if (pageImg) {
                 try {
