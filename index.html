@@ -469,6 +469,145 @@
       opacity: 1;
       stroke: var(--brand-theme, #1a3a2a);
     }
+
+    /* MODULE ACTIONS & HEADER TOOLBAR */
+    .module-head-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+    .module-title-input {
+      background: transparent;
+      border: 1px dashed transparent;
+      color: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 4px;
+      outline: none;
+      transition: all 0.15s ease;
+      cursor: text;
+      font-family: inherit;
+    }
+    .module-title-input:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .module-title-input:focus {
+      border-color: #ffffff;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .module-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .module-action-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s ease;
+      line-height: 1.1;
+      user-select: none;
+    }
+    .module-action-btn:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+    .module-action-btn.btn-del-mod {
+      color: #ffb4b4;
+      border-color: rgba(255, 100, 100, 0.35);
+    }
+    .module-action-btn.btn-del-mod:hover {
+      background: rgba(235, 75, 75, 0.3);
+      color: #ffffff;
+    }
+
+    /* TECHNICAL DOCUMENT DROPZONE */
+    .doc-upload-box {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 22px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-upload-box:hover, .doc-upload-box.dragover {
+      border-color: var(--brand-theme);
+      background: #f0f7f3;
+      transform: scale(1.005);
+    }
+    .doc-browse-btn {
+      margin-top: 10px;
+      background: var(--brand-theme);
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .doc-browse-btn:hover { opacity: 0.9; }
+    .doc-item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      gap: 10px;
+    }
+    .doc-item-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .doc-item-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .doc-item-meta {
+      font-size: 10px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .doc-item-del-btn {
+      background: none;
+      border: none;
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+    }
+    .doc-item-del-btn:hover { background: #fee2e2; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
     .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
     .fcell:nth-child(even) { border-right: none; }
@@ -1835,6 +1974,52 @@
       </div>
     </div>
 
+    <!-- S7: PRODUCT COMPARISON (KẾ THỪA PHOTOS) -->
+    <div id="sec_comparison" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="module-title-display" data-module-id="sec_comparison">Product Comparison</span>
+          <span>Nhấn giữ để di chuyển</span>
+        </div>
+        <div class="free-photos" id="comparisonPhotos"></div>
+        <div class="note-area"><textarea id="comparisonNotes" placeholder="Comparison remarks, different finishes, swatches notes..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S8: TECHNICAL DOCUMENTS (KÉO THẢ / CHỌN NHIỀU FILE PDF & ẢNH BẢN VẼ) -->
+    <div id="sec_documents" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="module-title-display" data-module-id="sec_documents">Technical Documents</span>
+          <span>PDF / Bản vẽ CAD / Lab Test</span>
+        </div>
+        <div class="docs-dropzone-container" style="padding: 14px;">
+          <div class="doc-upload-box" id="docUploadBox" onclick="document.getElementById('docFileInput').click()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand-theme); margin-bottom:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <div style="font-size:13px; font-weight:600; color:var(--text);">Chọn file hoặc Kéo & Thả tài liệu vào đây</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:4px;">Hỗ trợ chèn nhiều file cùng lúc: Bản vẽ kỹ thuật 2D/AI, Báo cáo BV Lab Test, Hình ảnh bản vẽ (PDF, PNG, JPG)</div>
+            <button type="button" class="doc-browse-btn">Chọn tài liệu từ máy</button>
+          </div>
+          <input type="file" id="docFileInput" multiple accept=".pdf,image/png,image/jpeg,image/webp" style="display:none" onchange="handleDocFilesSelected(event)">
+          
+          <div class="doc-files-list" id="docFilesList" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+        <div class="note-area"><textarea id="docNotes" placeholder="Technical document remarks, drawing notes..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- S9: FINAL APPROVED / GREEN LABEL (KẾ THỪA PHOTOS) -->
+    <div id="sec_greenlabel" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="module-title-display" data-module-id="sec_greenlabel">Final Approved / Green Label</span>
+          <span>Nhấn giữ để di chuyển</span>
+        </div>
+        <div class="free-photos" id="greenlabelPhotos"></div>
+        <div class="note-area"><textarea id="greenlabelNotes" placeholder="Green label remarks, final sign-off notes..." oninput="as()"></textarea></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- SAVE BAR -->
@@ -2533,7 +2718,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         document.getElementById('watchoutPhotos'),
         document.getElementById('testingPhotos'),
         document.getElementById('assemblyPhotos'),
-        document.getElementById('checklistPhotos')
+        document.getElementById('checklistPhotos'),
+        document.getElementById('comparisonPhotos'),
+        document.getElementById('greenlabelPhotos')
       ];
       sortableContainers.forEach(c => {
         if (c && c._sortable) {
@@ -2813,7 +3000,21 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     ];
 
-    const FREE_PHOTO_KEYS = ['prodPhotos', 'assemblyPhotos', 'watchoutPhotos', 'testingPhotos', 'checklistPhotos'];
+    // ═══════════════ DEFAULT FULL 10 MODULES (DYNAMIC SYSTEM) ═══════════════
+    const DEFAULT_MODULES = [
+      { id: 'sec_overall', type: 'overall', name: 'OVERVIEW', canDelete: false, canDuplicate: false },
+      { id: 'sec_photos', type: 'photos', name: 'Product Photos', key: 'prodPhotos', canDelete: true, canDuplicate: true },
+      { id: 'sec_dimensions', type: 'dimensions', name: 'Product Dimension & Details', canDelete: true, canDuplicate: true },
+      { id: 'sec_assembly', type: 'assembly', name: 'Product Assembly', key: 'assemblyPhotos', notesKey: 'assemblyNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_testing', type: 'testing', name: 'Testing', key: 'testingPhotos', notesKey: 'testingNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_checklist', type: 'checklist', name: 'Check List', canDelete: true, canDuplicate: true },
+      { id: 'sec_comparison', type: 'comparison', name: 'Product Comparison', key: 'comparisonPhotos', notesKey: 'comparisonNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true },
+      { id: 'sec_greenlabel', type: 'greenlabel', name: 'Final Approved / Green Label', key: 'greenlabelPhotos', notesKey: 'greenlabelNotes', canDelete: true, canDuplicate: true }
+    ];
+
+    const FREE_PHOTO_KEYS = ['prodPhotos', 'assemblyPhotos', 'watchoutPhotos', 'testingPhotos', 'checklistPhotos', 'comparisonPhotos', 'greenlabelPhotos'];
 
     let reports = [];
     let currentId = null, curSec = 0;
@@ -4953,14 +5154,57 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       }
     }
 
+    function ensureReportModules() {
+      if (!D.modules || !Array.isArray(D.modules) || D.modules.length === 0) {
+        D.modules = JSON.parse(JSON.stringify(DEFAULT_MODULES));
+      }
+    }
+
+    function getActiveModules() {
+      ensureReportModules();
+      return D.modules;
+    }
+
     function buildUI() {
+      ensureReportModules();
       const tabsRow = document.getElementById('tabsRow');
       tabsRow.innerHTML = '';
-      TABS.forEach((t, i) => {
+      
+      D.modules.forEach((mod, i) => {
         const d = document.createElement('div');
-        d.className = 'tab'; d.id = `tab${i}`; d.innerHTML = `${t}`;
-        d.onclick = () => showSection(i); tabsRow.appendChild(d);
+        d.className = 'tab'; 
+        d.id = `tab${i}`; 
+        d.dataset.moduleId = mod.id;
+        d.dataset.index = i;
+        d.innerHTML = `<span>${escapeHtml(mod.name)}</span>`;
+        d.onclick = () => showSection(i); 
+        tabsRow.appendChild(d);
       });
+
+      // Kích hoạt Sortable cho các Tab để người dùng kéo thả đổi vị trí module
+      if (typeof Sortable !== 'undefined') {
+        if (tabsRow._sortable) tabsRow._sortable.destroy();
+        tabsRow._sortable = new Sortable(tabsRow, {
+          animation: 180,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          filter: '.ignore-tab-drag',
+          onEnd: function(evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
+            const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
+            D.modules.splice(evt.newIndex, 0, movedMod);
+            pushHistory(`Di chuyển vị trí module "${movedMod.name}"`);
+            as();
+            buildUI();
+            showSection(evt.newIndex);
+            showToast(`✓ Đã đổi vị trí module "${movedMod.name}"`);
+          }
+        });
+      }
+
+      // Render Header Actions (Rename, Duplicate, Delete) cho các Module
+      renderAllModuleHeaders();
+
       buildSlotGrid('coverPhotos', COVER_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'cover');
       Object.entries(CHECK_OPTS).forEach(([g, opts]) => {
         const el = document.getElementById('ck_' + g); if (!el) return; el.innerHTML = '';
@@ -4969,6 +5213,238 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       buildDimGrid(); 
       renderBVTable();
       FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
+      renderDocAttachments();
+    }
+
+    function renderAllModuleHeaders() {
+      ensureReportModules();
+      D.modules.forEach((mod, idx) => {
+        const secBlock = document.getElementById(mod.id);
+        if (!secBlock) return;
+        const secHead = secBlock.querySelector('.sec-head');
+        if (!secHead) return;
+
+        // Lưu hoặc tạo cấu trúc chuẩn của header
+        let headLeft = secHead.querySelector('.module-head-left');
+        if (!headLeft) {
+          headLeft = document.createElement('div');
+          headLeft.className = 'module-head-left';
+          // Chuyển title hiện có vào headLeft
+          secHead.insertBefore(headLeft, secHead.firstChild);
+        }
+
+        headLeft.innerHTML = `
+          <input type="text" class="module-title-input" value="${escapeHtml(mod.name)}" 
+                 title="Bấm vào để đổi tên module (tự đồng bộ sang Tab & PDF)" 
+                 onchange="onModuleRename('${mod.id}', this.value)" 
+                 onkeydown="if(event.key==='Enter') this.blur()">
+        `;
+
+        let headActions = secHead.querySelector('.module-head-actions');
+        if (!headActions) {
+          headActions = document.createElement('div');
+          headActions.className = 'module-head-actions';
+          secHead.appendChild(headActions);
+        }
+
+        const canDup = mod.canDuplicate !== false;
+        const canDel = mod.canDelete !== false;
+
+        headActions.innerHTML = `
+          ${canDup ? `<button type="button" class="module-action-btn" onclick="duplicateModule('${mod.id}')" title="Nhân bản module này">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Nhân bản</span>
+          </button>` : ''}
+          ${canDel ? `<button type="button" class="module-action-btn btn-del-mod" onclick="deleteModule('${mod.id}')" title="Xóa module này khỏi báo cáo">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Xóa</span>
+          </button>` : ''}
+        `;
+      });
+    }
+
+    function onModuleRename(moduleId, newName) {
+      if (!newName || !newName.trim()) return;
+      const mod = (D.modules || []).find(m => m.id === moduleId);
+      if (!mod) return;
+      mod.name = newName.trim();
+      pushHistory(`Đổi tên module thành "${mod.name}"`);
+      as();
+      // Đồng bộ ngay lên tên Tab
+      const tabIdx = D.modules.indexOf(mod);
+      const tabEl = document.getElementById(`tab${tabIdx}`);
+      if (tabEl) {
+        tabEl.querySelector('span').textContent = mod.name;
+      }
+      showToast(`✓ Đã đổi tên module thành: ${mod.name}`);
+    }
+
+    function duplicateModule(moduleId) {
+      const idx = (D.modules || []).findIndex(m => m.id === moduleId);
+      if (idx === -1) return;
+      const origMod = D.modules[idx];
+      const newId = `${origMod.type}_dup_${Date.now()}`;
+      const newName = `${origMod.name} (Bản sao)`;
+      const newMod = JSON.parse(JSON.stringify(origMod));
+      newMod.id = newId;
+      newMod.name = newName;
+      newMod.canDelete = true;
+      newMod.canDuplicate = true;
+
+      // Nhân bản DOM block tương ứng
+      const origDom = document.getElementById(origMod.id);
+      if (origDom) {
+        const clonedDom = origDom.cloneNode(true);
+        clonedDom.id = newId;
+        clonedDom.style.display = 'none';
+
+        // Gán key dữ liệu mới cho clone photo nếu có
+        if (origMod.key) {
+          const newKey = `${origMod.key}_${Date.now()}`;
+          newMod.key = newKey;
+          D[newKey] = JSON.parse(JSON.stringify(D[origMod.key] || []));
+          const photosDiv = clonedDom.querySelector('.free-photos');
+          if (photosDiv) photosDiv.id = newKey;
+          if (!FREE_PHOTO_KEYS.includes(newKey)) FREE_PHOTO_KEYS.push(newKey);
+        }
+
+        // Chèn vào sau block gốc trong editScreen
+        origDom.parentNode.insertBefore(clonedDom, origDom.nextSibling);
+      }
+
+      D.modules.splice(idx + 1, 0, newMod);
+      pushHistory(`Nhân bản module "${origMod.name}"`);
+      as();
+      buildUI();
+      showSection(idx + 1);
+      showToast(`✓ Đã nhân bản module: ${newName}`);
+    }
+
+    function deleteModule(moduleId) {
+      const mod = (D.modules || []).find(m => m.id === moduleId);
+      if (!mod) return;
+      if (mod.canDelete === false) {
+        showToast('Module này không thể xóa');
+        return;
+      }
+      if (!confirm(`Bạn có chắc chắn muốn XÓA module "${mod.name}" khỏi báo cáo này?\n\n(Trang này sẽ không xuất hiện khi in PDF. Khi tạo Report mới khác, hệ thống vẫn sẽ có đầy đủ module mặc định.)`)) return;
+
+      const idx = D.modules.indexOf(mod);
+      D.modules.splice(idx, 1);
+      const domEl = document.getElementById(mod.id);
+      if (domEl) domEl.style.display = 'none';
+
+      pushHistory(`Xóa module "${mod.name}"`);
+      as();
+      buildUI();
+      showSection(Math.max(0, idx - 1));
+      showToast(`✓ Đã xóa module "${mod.name}"`);
+    }
+
+    // ═══════════════ TECHNICAL DOCUMENTS ATTACHMENTS CONTROLLER ═══════════════
+    function renderDocAttachments() {
+      const container = document.getElementById('docFilesList');
+      if (!container) return;
+      const list = D.docAttachments || [];
+      if (list.length === 0) {
+        container.innerHTML = `<div style="font-size:12px; color:var(--muted); text-align:center; padding:10px; border:1px dashed var(--border-light); border-radius:8px;">Chưa có tài liệu/bản vẽ nào được đính kèm.</div>`;
+        return;
+      }
+      container.innerHTML = list.map((doc, idx) => {
+        const isImg = doc.type && doc.type.startsWith('image/');
+        const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
+        const iconSvg = isPdf 
+          ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>`
+          : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007aff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+        const sizeKb = doc.size ? `${(doc.size / 1024).toFixed(1)} KB` : '';
+        return `
+          <div class="doc-item-card">
+            <div class="doc-item-info">
+              ${iconSvg}
+              <div class="doc-item-name" title="${escapeHtml(doc.name || 'Tài liệu')}">${escapeHtml(doc.name || 'Tài liệu')}</div>
+              <div class="doc-item-meta">${sizeKb}</div>
+            </div>
+            <button type="button" class="doc-item-del-btn" onclick="deleteDocAttachment(${idx})" title="Xóa tài liệu này">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleDocFilesSelected(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      await processDocFiles(Array.from(files));
+      e.target.value = '';
+    }
+
+    async function processDocFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      if (!D.docAttachments) D.docAttachments = [];
+
+      let addedCount = 0;
+      for (const f of fileList) {
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve(ev.target.result);
+            reader.onerror = err => reject(err);
+            reader.readAsDataURL(f);
+          });
+          D.docAttachments.push({
+            id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            name: f.name,
+            type: f.type || 'application/octet-stream',
+            size: f.size,
+            data: dataUrl
+          });
+          addedCount++;
+        } catch (err) {
+          console.warn('Lỗi đọc file đính kèm:', f.name, err);
+        }
+      }
+
+      if (addedCount > 0) {
+        pushHistory(`Đính kèm ${addedCount} tài liệu kỹ thuật`);
+        as();
+        renderDocAttachments();
+        showToast(`✓ Đã thêm ${addedCount} tài liệu thành công`);
+      }
+    }
+
+    function deleteDocAttachment(index) {
+      if (!D.docAttachments || !D.docAttachments[index]) return;
+      const docName = D.docAttachments[index].name || 'tài liệu';
+      if (!confirm(`Bạn có chắc muốn xóa "${docName}"?`)) return;
+      pushHistory(`Xóa tài liệu ${docName}`);
+      D.docAttachments.splice(index, 1);
+      as();
+      renderDocAttachments();
+      showToast(`✓ Đã xóa tài liệu`);
+    }
+
+    function initDocDropZone() {
+      const dropBox = document.getElementById('docUploadBox');
+      if (!dropBox) return;
+      ['dragenter', 'dragover'].forEach(name => {
+        dropBox.addEventListener(name, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropBox.addEventListener(name, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.remove('dragover');
+        });
+      });
+      dropBox.addEventListener('drop', async e => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          await processDocFiles(Array.from(dt.files));
+        }
+      });
     }
 
     function makeCheck(group, opt) {
@@ -6918,8 +7394,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     function loadData() {
       try {
-        const fields = ['fReportTitle', 'fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
-        const keys = ['reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes'];
+        const fields = ['fReportTitle', 'fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'greenlabelNotes'];
+        const keys = ['reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'greenlabelNotes'];
         fields.forEach((id, i) => {
           const el = document.getElementById(id);
           if (el) {
@@ -6979,6 +7455,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         renderChecklist();
         renderOverviewSummary();
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
+        renderDocAttachments();
+        initDocDropZone();
         refreshAllSlots();
       } catch (err) {
         alert("Lỗi tải dữ liệu: " + err.message);
@@ -6986,21 +7464,35 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
 
     function showSection(i) {
-      curSec = i; document.querySelectorAll('.sec-block').forEach((b, idx) => b.style.display = idx === i ? 'block' : 'none');
-      document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
-      const tab = document.getElementById(`tab${i}`); if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-      document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / TABS.length) * 100) + '%';
+      ensureReportModules();
+      if (!D.modules.length) return;
+      curSec = Math.max(0, Math.min(i, D.modules.length - 1));
       
-      // Hiện Unified Drag Bar ở các tab có ảnh (Tab 0 đến Tab 6)
+      // Ẩn tất cả các section blocks
+      document.querySelectorAll('.sec-block').forEach(b => b.style.display = 'none');
+      
+      const activeMod = D.modules[curSec];
+      if (activeMod) {
+        const targetBlock = document.getElementById(activeMod.id);
+        if (targetBlock) targetBlock.style.display = 'block';
+      }
+
+      document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === curSec));
+      const tab = document.getElementById(`tab${curSec}`); 
+      if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+      document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / D.modules.length) * 100) + '%';
+      
+      // Hiện Unified Drag Bar ở các tab có ảnh
       const uDragBar = document.getElementById('unifiedDragBar');
       if (uDragBar) {
-        uDragBar.style.display = (curSec >= 0 && curSec <= 6) ? 'flex' : 'none';
+        const isPhotoSec = activeMod && ['overall', 'photos', 'dimensions', 'assembly', 'watchout', 'testing', 'checklist', 'comparison', 'greenlabel'].includes(activeMod.type);
+        uDragBar.style.display = isPhotoSec ? 'flex' : 'none';
       }
       updateDragModeUI();
       window.scrollTo(0, 0);
     }
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }
-    function nextSection() { if (curSec < TABS.length - 1) showSection(curSec + 1); }
+    function nextSection() { if (curSec < D.modules.length - 1) showSection(curSec + 1); }
 
     function updateTopbar() { 
       document.getElementById('topTitle').textContent = getReportTitle(D); 
@@ -7108,7 +7600,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
     const FIELD_KEY_MAP = {
       fReportTitle: 'reportTitle', fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer',
-      dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes'
+      dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes',
+      comparisonNotes: 'comparisonNotes', docNotes: 'docNotes', greenlabelNotes: 'greenlabelNotes'
     };
 
     function as() {
@@ -7198,7 +7691,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
           watchoutPhotos: [], watchoutNotes: '', 
           bvRows: JSON.parse(JSON.stringify(DEFAULT_BV)), testingPhotos: [], testingNotes: '',
           checklist: JSON.parse(JSON.stringify(getActiveDefaultChecklist())),
-          checklistPhotos: [], checklistNotes: ''
+          checklistPhotos: [], checklistNotes: '',
+          comparisonPhotos: [], comparisonNotes: '',
+          docAttachments: [], docNotes: '',
+          greenlabelPhotos: [], greenlabelNotes: '',
+          modules: JSON.parse(JSON.stringify(DEFAULT_MODULES))
         };
         
         await dbPut(r); 
@@ -7749,245 +8246,229 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       
       y += (ph + barH) * 2 + gapY + 4;
 
-      // ================= 2. PHOTO =================
-      renderPhotoSection('Product Photos', D.prodPhotos, null, null);
+      // ================= DYNAMIC MODULES DISPATCHER =================
+      ensureReportModules();
+      const activeModules = (D.modules && D.modules.length > 0) ? D.modules : DEFAULT_MODULES;
 
-      // ================= 3. DIMENSIONS (2 CỘT & ẢNH KÉP 3:1) =================
-      const validDims = (D.dimensions || []).filter(d => d.img || d.imgSub || d.actual || d.drawing);
-      if (validDims.length > 0) {
-        let _updateIconPngDataUrl = null;
-        const getUpdateIconPng = () => {
-          if (_updateIconPngDataUrl) return _updateIconPngDataUrl;
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 72; canvas.height = 72;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 72, 72);
-            ctx.scale(72 / 24, 72 / 24);
-            ctx.strokeStyle = '#e89020';
-            ctx.lineWidth = 2.4;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            if (typeof Path2D !== 'undefined') {
-              ctx.stroke(new Path2D("M21 2v6h-6"));
-              ctx.stroke(new Path2D("M3 12a9 9 0 0 1 15-6.7L21 8"));
-              ctx.stroke(new Path2D("M3 22v-6h6"));
-              ctx.stroke(new Path2D("M21 12a9 9 0 0 1-15 6.7L3 16"));
-            } else {
-              ctx.beginPath();
-              ctx.arc(12, 12, 8.5, -0.4, 2.0);
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.arc(12, 12, 8.5, Math.PI - 0.4, Math.PI + 2.0);
-              ctx.stroke();
-            }
-            _updateIconPngDataUrl = canvas.toDataURL('image/png');
-          } catch(e) {
-            console.warn('Cannot generate update icon canvas', e);
-          }
-          return _updateIconPngDataUrl;
-        };
+      // Duyệt qua từng module theo đúng thứ tự tùy biến của người dùng
+      activeModules.forEach(mod => {
+        const modType = mod.type || 'photos';
+        const modTitle = (mod.name && mod.name.trim()) || 'Module';
 
-        const drawDimStatusShapePdf = (shapeType, sx, sy, r = 1.6) => {
-          if (shapeType === 'color-red' || shapeType === 'not_ok') {
-            doc.setDrawColor(226, 75, 74);
-            doc.setLineWidth(0.55);
-            const d = r * 0.85;
-            doc.line(sx - d, sy - d, sx + d, sy + d);
-            doc.line(sx - d, sy + d, sx + d, sy - d);
-          } else if (shapeType === 'color-orange' || shapeType === 'update') {
-            const iconUrl = getUpdateIconPng();
-            if (iconUrl) {
-              const iconSize = r * 2.2;
-              doc.addImage(iconUrl, 'PNG', sx - iconSize / 2, sy - iconSize / 2, iconSize, iconSize);
-            } else {
-              doc.setFillColor(210, 138, 20);
-              doc.circle(sx, sy, r, 'F');
-            }
-          } else {
-            doc.setFillColor(55, 138, 221);
-            doc.circle(sx, sy, r, 'F');
-          }
-        };
-
-        const addDimensionLegend = () => {
-          let lx = M;
-          const ly = y - 0.8;
-          const legendItems = [
-            { type: 'ok', label: 'OK' },
-            { type: 'not_ok', label: 'Not OK' },
-            { type: 'update', label: 'Update Drawing' }
-          ];
-
-          doc.setFont(fontFam, 'normal');
-          doc.setFontSize(8);
-          doc.setTextColor(80, 75, 70);
-
-          legendItems.forEach((item) => {
-            drawDimStatusShapePdf(item.type, lx + 1.5, ly, 1.6);
-            doc.text(item.label, lx + 4.5, ly + 1);
-            lx += doc.getTextWidth(item.label) + 12;
-          });
-
-          y += 5.5;
-        };
-
-        addHeader('Product Dimension & Details');
-        addDimensionLegend();
-        
-        let dx = M, dy = y;
-        const dimCols = 2; 
-        const dimSlotW = (W - M * 2 - 4) / dimCols; // ~89mm mỗi ô
-        const dimImgH = (dimSlotW * 0.75) * 0.75;  // Chiều cao ảnh chuẩn (~50mm)
-        const dimSlotH = dimImgH + 20;             // Thêm 20mm cho phần dữ liệu text dưới
-        
-        validDims.forEach((d, i) => {
-          if (dy + dimSlotH > BOTTOM_LIMIT) { 
-              addHeader('Product Dimension & Details'); 
-              addDimensionLegend();
-              dy = y; 
-              dx = M; 
-          }
-
-          const layout = d.photoLayout || '3:1';
-          let itemMainW, itemSubW;
-          if (layout === 'single') {
-            itemMainW = dimSlotW;
-            itemSubW = 0;
-          } else if (layout === '1:1') {
-            itemMainW = dimSlotW / 2;
-            itemSubW = dimSlotW / 2;
-          } else {
-            itemMainW = dimSlotW * 0.75;
-            itemSubW = dimSlotW * 0.25;
-          }
-          
-          const displayImg = d.img || null;
-          const displayImgSub = d.imgSub || null;
-
-          // Viền khung tổng
-          doc.setDrawColor(220, 217, 210); 
-          doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
-
-          // Vùng ẢNH CHÍNH
-          if (displayImg) { 
-            addImg(displayImg, dx, dy, itemMainW, dimImgH); 
-          } else { 
-            doc.setFillColor(248, 245, 240); 
-            doc.rect(dx, dy, itemMainW, dimImgH, 'F'); 
-            doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
-            doc.text('Main View', dx + itemMainW / 2, dy + dimImgH / 2, { align: 'center' });
-          }
-
-          // Vùng ẢNH PHỤ (nếu có)
-          if (itemSubW > 0) {
-            if (displayImgSub) { 
-              addImg(displayImgSub, dx + itemMainW, dy, itemSubW, dimImgH); 
-            } else { 
-              doc.setFillColor(248, 245, 240); 
-              doc.rect(dx + itemMainW, dy, itemSubW, dimImgH, 'F'); 
-              doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
-              doc.text(layout === '1:1' ? 'Side View' : 'Detail', dx + itemMainW + itemSubW / 2, dy + dimImgH / 2, { align: 'center' });
-            }
-
-            // Đường phân cách giữa 2 ảnh
-            doc.setDrawColor(220, 217, 210);
-            doc.line(dx + itemMainW, dy, dx + itemMainW, dy + dimImgH);
-          }
-
-          // Đường kẻ ngang ngăn cách ảnh và vùng text
-          doc.setDrawColor(220, 217, 210);
-          doc.line(dx, dy + dimImgH, dx + dimSlotW, dy + dimImgH);
-          
-          // KHỐI DỮ LIỆU ĐÁY
-          const fy = dy + dimImgH + 2; 
-          doc.setFont(fontFam, 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
-          doc.text(d.name || 'DIMENSION', dx + 3, fy + 3, { maxWidth: dimSlotW - 12 });
-          
-          const statusType = d.color === 'color-red' ? 'not_ok' : d.color === 'color-orange' ? 'update' : 'ok';
-          drawDimStatusShapePdf(statusType, dx + dimSlotW - 5, fy + 2, 1.8);
-          
-          doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
-          const actVal = formatDimensionMeasurement(d, 'actual');
-          const drwVal = formatDimensionMeasurement(d, 'drawing');
-          
-          // Cột nhãn và giá trị cố định thẳng hàng, không bị phụ thuộc vào độ dài Drawing để tránh đè chữ
-          const labelColX = dx + 3;
-          const valColX = dx + 18; // Cột số đo bắt đầu ngay sau nhãn 'Actual:' / 'Drawing:'
-          
-          // Dòng 1: Actual
-          doc.setFont(fontFam, 'bold');
-          doc.setTextColor(100, 95, 90);
-          doc.text('Actual:', labelColX, fy + 9.5);
-          doc.setFont(fontFam, 'normal');
-          doc.setTextColor(30, 30, 30);
-          doc.text(actVal, valColX, fy + 9.5);
-          
-          // Dòng 2: Drawing
-          doc.setFont(fontFam, 'bold');
-          doc.setTextColor(100, 95, 90);
-          doc.text('Drawing:', labelColX, fy + 14);
-          doc.setFont(fontFam, 'normal');
-          doc.setTextColor(50, 50, 50);
-          doc.text(drwVal, valColX, fy + 14);
-          
-          dx += dimSlotW + 4;
-          if ((i + 1) % dimCols === 0) {
-              dx = M;
-              dy += dimSlotH + 4.5;
-          }
-        });
-        if (validDims.length > 0) {
-          const lastCardBottom = (validDims.length % dimCols !== 0) ? (dy + dimSlotH) : (dy - 4.5);
-          y = lastCardBottom + 6.5;
+        if (modType === 'overall') {
+          // Trang bìa OVERALL đã được xuất ở trang 1
+          return;
         }
-        if (D.dimNotes && D.dimNotes.trim()) y = addSafeTextBlock('Dimension Remarks', D.dimNotes, y);
-      }
 
-      // ================= 4. PRODUCT ASSEMBLY =================
-      renderPhotoSection('Product Assembly', D.assemblyPhotos, D.assemblyNotes, 'Assembly Notes');
+        if (modType === 'dimensions') {
+          // ================= DIMENSIONS (2 CỘT & ẢNH KÉP 3:1) =================
+          const validDims = (D.dimensions || []).filter(d => d.img || d.imgSub || d.actual || d.drawing);
+          if (validDims.length > 0) {
+            let _updateIconPngDataUrl = null;
+            const getUpdateIconPng = () => {
+              if (_updateIconPngDataUrl) return _updateIconPngDataUrl;
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 72; canvas.height = 72;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 72, 72);
+                ctx.scale(72 / 24, 72 / 24);
+                ctx.strokeStyle = '#e89020';
+                ctx.lineWidth = 2.4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                if (typeof Path2D !== 'undefined') {
+                  ctx.stroke(new Path2D("M21 2v6h-6"));
+                  ctx.stroke(new Path2D("M3 12a9 9 0 0 1 15-6.7L21 8"));
+                  ctx.stroke(new Path2D("M3 22v-6h6"));
+                  ctx.stroke(new Path2D("M21 12a9 9 0 0 1-15 6.7L3 16"));
+                } else {
+                  ctx.beginPath();
+                  ctx.arc(12, 12, 8.5, -0.4, 2.0);
+                  ctx.stroke();
+                  ctx.beginPath();
+                  ctx.arc(12, 12, 8.5, Math.PI - 0.4, Math.PI + 2.0);
+                  ctx.stroke();
+                }
+                _updateIconPngDataUrl = canvas.toDataURL('image/png');
+              } catch(e) {
+                console.warn('Cannot generate update icon canvas', e);
+              }
+              return _updateIconPngDataUrl;
+            };
 
-      // ================= 5. QUALITY WATCH OUT =================
-      renderPhotoSection('Quality Watch Out', D.watchoutPhotos, D.watchoutNotes, 'Quality Watch Out Notes');
+            const drawDimStatusShapePdf = (shapeType, sx, sy, r = 1.6) => {
+              if (shapeType === 'color-red' || shapeType === 'not_ok') {
+                doc.setDrawColor(226, 75, 74);
+                doc.setLineWidth(0.55);
+                const d = r * 0.85;
+                doc.line(sx - d, sy - d, sx + d, sy + d);
+                doc.line(sx - d, sy + d, sx + d, sy - d);
+              } else if (shapeType === 'color-orange' || shapeType === 'update') {
+                const iconUrl = getUpdateIconPng();
+                if (iconUrl) {
+                  const iconSize = r * 2.2;
+                  doc.addImage(iconUrl, 'PNG', sx - iconSize / 2, sy - iconSize / 2, iconSize, iconSize);
+                } else {
+                  doc.setFillColor(210, 138, 20);
+                  doc.circle(sx, sy, r, 'F');
+                }
+              } else {
+                doc.setFillColor(55, 138, 221);
+                doc.circle(sx, sy, r, 'F');
+              }
+            };
 
-      // ================= 6. TESTING =================
-      const validBV = (D.bvRows || []).filter(r => r && (r.test || r.result || r.remark));
-      const validTestingPhotos = (D.testingPhotos || [])
-        .map((p, idx) => {
-          if (!p) return null;
-          const defaultCap = (D.bvRows && D.bvRows[idx] && D.bvRows[idx].test) ? D.bvRows[idx].test.trim() : '';
-          const cap = (p.caption !== undefined && p.caption !== null && p.caption !== '') ? p.caption : defaultCap;
-          return { ...p, caption: cap };
-        })
-        .filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
-      if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
-        addHeader('Testing');
-        if(validBV.length > 0) {
-            const tableW = W - M * 2;
-            doc.setFillColor(242, 242, 247); 
-            doc.rect(M, y, tableW, 6.5, 'F'); 
-            doc.setDrawColor(215, 215, 220);
-            doc.setLineWidth(0.3);
-            doc.rect(M, y, tableW, 6.5, 'S');
-            doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
-            doc.text('Test Property', M + 3, y + 4.4); 
-            doc.text('Result', M + 106, y + 4.4, { align: 'center' }); 
-            doc.text('Remark', M + 122, y + 4.4); 
-            y += 6.5;
+            const addDimensionLegend = () => {
+              let lx = M;
+              const ly = y - 0.8;
+              const legendItems = [
+                { type: 'ok', label: 'OK' },
+                { type: 'not_ok', label: 'Not OK' },
+                { type: 'update', label: 'Update Drawing' }
+              ];
 
-            validBV.forEach(row => {
-              const isPass = row.result === 'pass';
-              const isFail = row.result === 'fail';
-              const isPending = row.result === 'pending' || row.result === 'na';
-              const rColor = isPass ? [45, 90, 61] : isFail ? [139, 32, 32] : isPending ? [180, 100, 20] : [120, 115, 110];
-              const resText = isPending ? 'PENDING' : (row.result || '—').toUpperCase();
-              const testLines = doc.splitTextToSize(row.test || '', 92);
-              const remarkLines = doc.splitTextToSize(row.remark || '', 56);
-              const maxLines = Math.max(testLines.length, remarkLines.length, 1);
-              const rowH = maxLines * 3.8 + 3.2;
+              doc.setFont(fontFam, 'normal');
+              doc.setFontSize(8);
+              doc.setTextColor(80, 75, 70);
 
-              if (y + rowH > BOTTOM_LIMIT) { 
-                addHeader('Testing'); 
+              legendItems.forEach((item) => {
+                drawDimStatusShapePdf(item.type, lx + 1.5, ly, 1.6);
+                doc.text(item.label, lx + 4.5, ly + 1);
+                lx += doc.getTextWidth(item.label) + 12;
+              });
+
+              y += 5.5;
+            };
+
+            addHeader(modTitle);
+            addDimensionLegend();
+            
+            let dx = M, dy = y;
+            const dimCols = 2; 
+            const dimSlotW = (W - M * 2 - 4) / dimCols; // ~89mm mỗi ô
+            const dimImgH = (dimSlotW * 0.75) * 0.75;  // Chiều cao ảnh chuẩn (~50mm)
+            const dimSlotH = dimImgH + 20;             // Thêm 20mm cho phần dữ liệu text dưới
+            
+            validDims.forEach((d, i) => {
+              if (dy + dimSlotH > BOTTOM_LIMIT) { 
+                  addHeader(modTitle); 
+                  addDimensionLegend();
+                  dy = y; 
+                  dx = M; 
+              }
+
+              const layout = d.photoLayout || '3:1';
+              let itemMainW, itemSubW;
+              if (layout === 'single') {
+                itemMainW = dimSlotW;
+                itemSubW = 0;
+              } else if (layout === '1:1') {
+                itemMainW = dimSlotW / 2;
+                itemSubW = dimSlotW / 2;
+              } else {
+                itemMainW = dimSlotW * 0.75;
+                itemSubW = dimSlotW * 0.25;
+              }
+              
+              const displayImg = d.img || null;
+              const displayImgSub = d.imgSub || null;
+
+              // Viền khung tổng
+              doc.setDrawColor(220, 217, 210); 
+              doc.rect(dx, dy, dimSlotW, dimSlotH, 'S');
+
+              // Vùng ẢNH CHÍNH
+              if (displayImg) { 
+                addImg(displayImg, dx, dy, itemMainW, dimImgH); 
+              } else { 
+                doc.setFillColor(248, 245, 240); 
+                doc.rect(dx, dy, itemMainW, dimImgH, 'F'); 
+                doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
+                doc.text('Main View', dx + itemMainW / 2, dy + dimImgH / 2, { align: 'center' });
+              }
+
+              // Vùng ẢNH PHỤ (nếu có)
+              if (itemSubW > 0) {
+                if (displayImgSub) { 
+                  addImg(displayImgSub, dx + itemMainW, dy, itemSubW, dimImgH); 
+                } else { 
+                  doc.setFillColor(248, 245, 240); 
+                  doc.rect(dx + itemMainW, dy, itemSubW, dimImgH, 'F'); 
+                  doc.setFont(fontFam, 'normal'); doc.setFontSize(6.5); doc.setTextColor(170, 165, 158);
+                  doc.text(layout === '1:1' ? 'Side View' : 'Detail', dx + itemMainW + itemSubW / 2, dy + dimImgH / 2, { align: 'center' });
+                }
+
+                // Đường phân cách giữa 2 ảnh
+                doc.setDrawColor(220, 217, 210);
+                doc.line(dx + itemMainW, dy, dx + itemMainW, dy + dimImgH);
+              }
+
+              // Đường kẻ ngang ngăn cách ảnh và vùng text
+              doc.setDrawColor(220, 217, 210);
+              doc.line(dx, dy + dimImgH, dx + dimSlotW, dy + dimImgH);
+              
+              // KHỐI DỮ LIỆU ĐÁY
+              const fy = dy + dimImgH + 2; 
+              doc.setFont(fontFam, 'bold'); doc.setFontSize(8); doc.setTextColor(50, 45, 40); 
+              doc.text(d.name || 'DIMENSION', dx + 3, fy + 3, { maxWidth: dimSlotW - 12 });
+              
+              const statusType = d.color === 'color-red' ? 'not_ok' : d.color === 'color-orange' ? 'update' : 'ok';
+              drawDimStatusShapePdf(statusType, dx + dimSlotW - 5, fy + 2, 1.8);
+              
+              doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 75, 70);
+              const actVal = formatDimensionMeasurement(d, 'actual');
+              const drwVal = formatDimensionMeasurement(d, 'drawing');
+              
+              const labelColX = dx + 3;
+              const valColX = dx + 18;
+              
+              // Dòng 1: Actual
+              doc.setFont(fontFam, 'bold');
+              doc.setTextColor(100, 95, 90);
+              doc.text('Actual:', labelColX, fy + 9.5);
+              doc.setFont(fontFam, 'normal');
+              doc.setTextColor(30, 30, 30);
+              doc.text(actVal, valColX, fy + 9.5);
+              
+              // Dòng 2: Drawing
+              doc.setFont(fontFam, 'bold');
+              doc.setTextColor(100, 95, 90);
+              doc.text('Drawing:', labelColX, fy + 14);
+              doc.setFont(fontFam, 'normal');
+              doc.setTextColor(50, 50, 50);
+              doc.text(drwVal, valColX, fy + 14);
+              
+              dx += dimSlotW + 4;
+              if ((i + 1) % dimCols === 0) {
+                  dx = M;
+                  dy += dimSlotH + 4.5;
+              }
+            });
+            if (validDims.length > 0) {
+              const lastCardBottom = (validDims.length % dimCols !== 0) ? (dy + dimSlotH) : (dy - 4.5);
+              y = lastCardBottom + 6.5;
+            }
+            if (D.dimNotes && D.dimNotes.trim()) y = addSafeTextBlock(`${modTitle} Remarks`, D.dimNotes, y);
+          }
+          return;
+        }
+
+        if (modType === 'testing') {
+          // ================= TESTING =================
+          const validBV = (D.bvRows || []).filter(r => r && (r.test || r.result || r.remark));
+          const validTestingPhotos = (D.testingPhotos || [])
+            .map((p, idx) => {
+              if (!p) return null;
+              const defaultCap = (D.bvRows && D.bvRows[idx] && D.bvRows[idx].test) ? D.bvRows[idx].test.trim() : '';
+              const cap = (p.caption !== undefined && p.caption !== null && p.caption !== '') ? p.caption : defaultCap;
+              return { ...p, caption: cap };
+            })
+            .filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
+          if (validBV.length > 0 || validTestingPhotos.length > 0 || (D.testingNotes && D.testingNotes.trim())) {
+            addHeader(modTitle);
+            if(validBV.length > 0) {
+                const tableW = W - M * 2;
                 doc.setFillColor(242, 242, 247); 
                 doc.rect(M, y, tableW, 6.5, 'F'); 
                 doc.setDrawColor(215, 215, 220);
@@ -7998,202 +8479,283 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
                 doc.text('Result', M + 106, y + 4.4, { align: 'center' }); 
                 doc.text('Remark', M + 122, y + 4.4); 
                 y += 6.5;
-              }
 
-              doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
-              doc.text(testLines, M + 3, y + 4.0); 
+                validBV.forEach(row => {
+                  const isPass = row.result === 'pass';
+                  const isFail = row.result === 'fail';
+                  const isPending = row.result === 'pending' || row.result === 'na';
+                  const rColor = isPass ? [45, 90, 61] : isFail ? [139, 32, 32] : isPending ? [180, 100, 20] : [120, 115, 110];
+                  const resText = isPending ? 'PENDING' : (row.result || '—').toUpperCase();
+                  const testLines = doc.splitTextToSize(row.test || '', 92);
+                  const remarkLines = doc.splitTextToSize(row.remark || '', 56);
+                  const maxLines = Math.max(testLines.length, remarkLines.length, 1);
+                  const rowH = maxLines * 3.8 + 3.2;
 
-              doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); 
-              doc.text(resText, M + 106, y + 4.0, { align: 'center' }); 
+                  if (y + rowH > BOTTOM_LIMIT) { 
+                    addHeader(modTitle); 
+                    doc.setFillColor(242, 242, 247); 
+                    doc.rect(M, y, tableW, 6.5, 'F'); 
+                    doc.setDrawColor(215, 215, 220);
+                    doc.setLineWidth(0.3);
+                    doc.rect(M, y, tableW, 6.5, 'S');
+                    doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(50, 45, 40);
+                    doc.text('Test Property', M + 3, y + 4.4); 
+                    doc.text('Result', M + 106, y + 4.4, { align: 'center' }); 
+                    doc.text('Remark', M + 122, y + 4.4); 
+                    y += 6.5;
+                  }
 
-              doc.setFont(fontFam, 'normal'); doc.setTextColor(70, 65, 60); 
-              doc.text(remarkLines, M + 122, y + 4.0); 
+                  doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 35, 30);
+                  doc.text(testLines, M + 3, y + 4.0); 
 
-              doc.setDrawColor(225, 220, 212); 
-              doc.setLineWidth(0.25);
-              doc.line(M, y + rowH, M + tableW, y + rowH); 
-              y += rowH;
-            }); 
-            y += 5;
-        }
+                  doc.setFont(fontFam, 'bold'); doc.setTextColor(...rColor); 
+                  doc.text(resText, M + 106, y + 4.0, { align: 'center' }); 
 
-        if (validTestingPhotos.length > 0) {
-          if (y + 40 > BOTTOM_LIMIT) {
-            addHeader('Testing Photos');
-          } else {
-            doc.setFont(fontFam, 'bold');
-            doc.setFontSize(9.5);
-            doc.setTextColor(40, 40, 40);
-            doc.text('Testing Photos', M, y);
-            y += 5.5;
-          }
+                  doc.setFont(fontFam, 'normal'); doc.setTextColor(70, 65, 60); 
+                  doc.text(remarkLines, M + 122, y + 4.0); 
 
-          const isThreeRows = validTestingPhotos.length > 4;
-          const testingCardH = isThreeRows ? 41 : (validTestingPhotos.length > 2 ? 48 : 55);
-          const testingGapY = isThreeRows ? 3.5 : 5.5;
-          renderPhotoGrid(validTestingPhotos, 'Testing Photos', testingCardH, testingGapY);
-        }
-        if (D.testingNotes && D.testingNotes.trim()) y = addSafeTextBlock('Testing Comments', D.testingNotes, y);
-      }
-
-      // ================= 7. CHECKLIST =================
-      const checklistGroups = (D.checklist && Array.isArray(D.checklist)) ? D.checklist : [];
-      const hasChecklistData = checklistGroups.some(g => g && g.items && g.items.length > 0);
-
-      if (hasChecklistData) {
-        addHeader('Check List');
-
-        // Bắt đầu ngay dưới banner (y=28mm thay vì 32mm để tận dụng tối đa chiều cao trang)
-        y = 28;
-
-        const colGroupW = 42;
-        const colItemW = 116;
-        const colYesW = 12;
-        const colNoW = 12;
-        const totalW = colGroupW + colItemW + colYesW + colNoW; // 182mm (Khớp khít chiều rộng khả dụng: 210 - 28)
-
-        // Tính tổng số dòng tiêu chí
-        let totalRows = 0;
-        checklistGroups.forEach(g => {
-          totalRows += (g.items && g.items.length > 0) ? g.items.length : 1;
-        });
-
-        const headerH = 6.2;
-        const safeBottomY = 281; // Ngay phía trên dải footer ở 285mm
-        const maxAvailableH = safeBottomY - y - headerH; // ~246.8mm
-
-        // Tính toán chiều cao hàng động: Nếu danh sách tối đa (~32-34 mục), tự động co để khớp đúng 1 trang PDF
-        const canFitSinglePage = totalRows <= 35;
-        let rowH = 7.0;
-        let fontSize = 7.3;
-        let groupFontSize = 7.5;
-
-        if (canFitSinglePage && totalRows > 0) {
-          const calcH = maxAvailableH / totalRows;
-          rowH = Math.min(Math.max(calcH, 6.5), 8.2);
-          if (totalRows >= 28) {
-            fontSize = 7.1;
-            groupFontSize = 7.3;
-          } else if (totalRows >= 20) {
-            fontSize = 7.4;
-            groupFontSize = 7.6;
-          } else {
-            fontSize = 7.8;
-            groupFontSize = 8.0;
-          }
-        }
-
-        const drawChecklistTableHeader = (curY) => {
-          doc.setFillColor(242, 242, 247);
-          doc.rect(M, curY, totalW, headerH, 'F');
-          doc.setDrawColor(200, 200, 205);
-          doc.setLineWidth(0.3);
-          doc.rect(M, curY, totalW, headerH, 'S');
-
-          // Kẻ vách ngăn giữa các cột tiêu đề
-          doc.line(M + colGroupW, curY, M + colGroupW, curY + headerH);
-          doc.line(M + colGroupW + colItemW, curY, M + colGroupW + colItemW, curY + headerH);
-          doc.line(M + colGroupW + colItemW + colYesW, curY, M + colGroupW + colItemW + colYesW, curY + headerH);
-
-          doc.setFont(fontFam, 'bold');
-          doc.setFontSize(7.8);
-          doc.setTextColor(50, 50, 55);
-          doc.text('Category', M + 2.5, curY + 4.2);
-          doc.text('Inspection Criteria', M + colGroupW + 2.5, curY + 4.2);
-          doc.text('Yes', M + colGroupW + colItemW + colYesW / 2, curY + 4.2, { align: 'center' });
-          doc.text('No', M + colGroupW + colItemW + colYesW + colNoW / 2, curY + 4.2, { align: 'center' });
-          return curY + headerH;
-        };
-
-        y = drawChecklistTableHeader(y);
-
-        checklistGroups.forEach((g, gIdx) => {
-          const groupTitle = `${gIdx + 1}. ${g.title || ''}`;
-          const items = (g.items && g.items.length > 0) ? g.items : [{ text: '—', status: null }];
-          const groupTotalRows = items.length;
-          const groupTotalH = groupTotalRows * rowH;
-
-          // Kiểm tra ngắt trang nếu vượt quá 35 mục (fallback an toàn)
-          if (!canFitSinglePage && y + rowH > BOTTOM_LIMIT) {
-            addHeader('Check List');
-            y = 28;
-            y = drawChecklistTableHeader(y);
-          }
-
-          const groupStartY = y;
-
-          // 1. Vẽ ô nhóm gộp (Merged Cell) bên cột trái giống ảnh mẫu
-          doc.setDrawColor(215, 215, 220);
-          doc.setLineWidth(0.25);
-          doc.rect(M, groupStartY, colGroupW, groupTotalH, 'S');
-
-          // Căn giữa tiêu đề nhóm theo chiều cao ô gộp
-          doc.setFont(fontFam, 'bold');
-          doc.setFontSize(groupFontSize);
-          doc.setTextColor(25, 25, 25);
-          const groupLines = doc.splitTextToSize(groupTitle, colGroupW - 5);
-          const lineSpacing = 3.3;
-          const groupTextH = (groupLines.length - 1) * lineSpacing;
-          const groupTextY = groupStartY + (groupTotalH - groupTextH) / 2 + 0.9;
-          doc.text(groupLines, M + 2.5, groupTextY);
-
-          // 2. Vẽ từng dòng tiêu chí & ô Yes / No
-          items.forEach(item => {
-            const rowY = y;
-
-            // Đặt lại màu viền xám và độ dày nét chuẩn trước khi vẽ các ô
-            doc.setDrawColor(215, 215, 220);
-            doc.setLineWidth(0.25);
-
-            // Ô tiêu chí
-            doc.rect(M + colGroupW, rowY, colItemW, rowH, 'S');
-            // Ô Yes & No
-            doc.rect(M + colGroupW + colItemW, rowY, colYesW, rowH, 'S');
-            doc.rect(M + colGroupW + colItemW + colYesW, rowY, colNoW, rowH, 'S');
-
-            // Chữ tiêu chí (căn giữa theo chiều dọc hàng)
-            doc.setFont(fontFam, 'normal');
-            doc.setFontSize(fontSize);
-            doc.setTextColor(35, 35, 35);
-            const itemText = item.text || '—';
-            const itemLines = doc.splitTextToSize(itemText, colItemW - 5);
-            const itemTextH = (itemLines.length - 1) * 3.0;
-            const itemTextY = rowY + (rowH - itemTextH) / 2 + 0.8;
-            doc.text(itemLines, M + colGroupW + 2.5, itemTextY);
-
-            // Dấu Yes / No
-            const yesCenterX = M + colGroupW + colItemW + colYesW / 2;
-            const noCenterX = M + colGroupW + colItemW + colYesW + colNoW / 2;
-            const symbolCenterY = rowY + rowH / 2;
-
-            if (item.status === 'yes') {
-              doc.setDrawColor(34, 138, 61);
-              doc.setLineWidth(0.45);
-              doc.line(yesCenterX - 1.4, symbolCenterY - 0.2, yesCenterX - 0.4, symbolCenterY + 0.9);
-              doc.line(yesCenterX - 0.4, symbolCenterY + 0.9, yesCenterX + 1.5, symbolCenterY - 1.1);
-            } else if (item.status === 'no') {
-              doc.setDrawColor(201, 42, 42);
-              doc.setLineWidth(0.45);
-              doc.line(noCenterX - 1.1, symbolCenterY - 1.1, noCenterX + 1.1, symbolCenterY + 1.1);
-              doc.line(noCenterX + 1.1, symbolCenterY - 1.1, noCenterX - 1.1, symbolCenterY + 1.1);
+                  doc.setDrawColor(225, 220, 212); 
+                  doc.setLineWidth(0.25);
+                  doc.line(M, y + rowH, M + tableW, y + rowH); 
+                  y += rowH;
+                }); 
+                y += 5;
             }
 
-            y += rowH;
-          });
-        });
+            if (validTestingPhotos.length > 0) {
+              if (y + 40 > BOTTOM_LIMIT) {
+                addHeader(`${modTitle} Photos`);
+              } else {
+                doc.setFont(fontFam, 'bold');
+                doc.setFontSize(9.5);
+                doc.setTextColor(40, 40, 40);
+                doc.text(`${modTitle} Photos`, M, y);
+                y += 5.5;
+              }
 
-        y += 6;
-      }
-
-      // Kiểm tra ảnh chụp & ghi chú checklist: nếu trang hiện tại không đủ chỗ (như bảng đầy 32 mục), tự động đẩy sang trang mới
-      const validChecklistPhotos = (D.checklistPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
-      const hasChecklistNotes = !!(D.checklistNotes && D.checklistNotes.trim());
-      if (validChecklistPhotos.length > 0 || hasChecklistNotes) {
-        if (y + 50 > BOTTOM_LIMIT) {
-          addHeader('Check List Photos');
+              const isThreeRows = validTestingPhotos.length > 4;
+              const testingCardH = isThreeRows ? 41 : (validTestingPhotos.length > 2 ? 48 : 55);
+              const testingGapY = isThreeRows ? 3.5 : 5.5;
+              renderPhotoGrid(validTestingPhotos, `${modTitle} Photos`, testingCardH, testingGapY);
+            }
+            if (D.testingNotes && D.testingNotes.trim()) y = addSafeTextBlock(`${modTitle} Comments`, D.testingNotes, y);
+          }
+          return;
         }
-        renderPhotoSection('Check List Photos', D.checklistPhotos, D.checklistNotes, 'Checklist Remarks');
-      }
+
+        if (modType === 'checklist') {
+          // ================= CHECKLIST =================
+          const checklistGroups = (D.checklist && Array.isArray(D.checklist)) ? D.checklist : [];
+          const hasChecklistData = checklistGroups.some(g => g && g.items && g.items.length > 0);
+
+          if (hasChecklistData) {
+            addHeader(modTitle);
+            y = 28;
+
+            const colGroupW = 42;
+            const colItemW = 116;
+            const colYesW = 12;
+            const colNoW = 12;
+            const totalW = colGroupW + colItemW + colYesW + colNoW;
+
+            let totalRows = 0;
+            checklistGroups.forEach(g => {
+              totalRows += (g.items && g.items.length > 0) ? g.items.length : 1;
+            });
+
+            const headerH = 6.2;
+            const safeBottomY = 281;
+            const maxAvailableH = safeBottomY - y - headerH;
+
+            const canFitSinglePage = totalRows <= 35;
+            let rowH = 7.0;
+            let fontSize = 7.3;
+            let groupFontSize = 7.5;
+
+            if (canFitSinglePage && totalRows > 0) {
+              const calcH = maxAvailableH / totalRows;
+              rowH = Math.min(Math.max(calcH, 6.5), 8.2);
+              if (totalRows >= 28) {
+                fontSize = 7.1;
+                groupFontSize = 7.3;
+              } else if (totalRows >= 20) {
+                fontSize = 7.4;
+                groupFontSize = 7.6;
+              } else {
+                fontSize = 7.8;
+                groupFontSize = 8.0;
+              }
+            }
+
+            const drawChecklistTableHeader = (curY) => {
+              doc.setFillColor(242, 242, 247);
+              doc.rect(M, curY, totalW, headerH, 'F');
+              doc.setDrawColor(200, 200, 205);
+              doc.setLineWidth(0.3);
+              doc.rect(M, curY, totalW, headerH, 'S');
+
+              doc.line(M + colGroupW, curY, M + colGroupW, curY + headerH);
+              doc.line(M + colGroupW + colItemW, curY, M + colGroupW + colItemW, curY + headerH);
+              doc.line(M + colGroupW + colItemW + colYesW, curY, M + colGroupW + colItemW + colYesW, curY + headerH);
+
+              doc.setFont(fontFam, 'bold');
+              doc.setFontSize(7.8);
+              doc.setTextColor(50, 50, 55);
+              doc.text('Category', M + 2.5, curY + 4.2);
+              doc.text('Inspection Criteria', M + colGroupW + 2.5, curY + 4.2);
+              doc.text('Yes', M + colGroupW + colItemW + colYesW / 2, curY + 4.2, { align: 'center' });
+              doc.text('No', M + colGroupW + colItemW + colYesW + colNoW / 2, curY + 4.2, { align: 'center' });
+              return curY + headerH;
+            };
+
+            y = drawChecklistTableHeader(y);
+
+            checklistGroups.forEach((g, gIdx) => {
+              const groupTitle = `${gIdx + 1}. ${g.title || ''}`;
+              const items = (g.items && g.items.length > 0) ? g.items : [{ text: '—', status: null }];
+              const groupTotalRows = items.length;
+              const groupTotalH = groupTotalRows * rowH;
+
+              if (!canFitSinglePage && y + rowH > BOTTOM_LIMIT) {
+                addHeader(modTitle);
+                y = 28;
+                y = drawChecklistTableHeader(y);
+              }
+
+              const groupStartY = y;
+
+              doc.setDrawColor(215, 215, 220);
+              doc.setLineWidth(0.25);
+              doc.rect(M, groupStartY, colGroupW, groupTotalH, 'S');
+
+              doc.setFont(fontFam, 'bold');
+              doc.setFontSize(groupFontSize);
+              doc.setTextColor(25, 25, 25);
+              const groupLines = doc.splitTextToSize(groupTitle, colGroupW - 5);
+              const lineSpacing = 3.3;
+              const groupTextH = (groupLines.length - 1) * lineSpacing;
+              const groupTextY = groupStartY + (groupTotalH - groupTextH) / 2 + 0.9;
+              doc.text(groupLines, M + 2.5, groupTextY);
+
+              items.forEach(item => {
+                const rowY = y;
+                doc.setDrawColor(215, 215, 220);
+                doc.setLineWidth(0.25);
+
+                doc.rect(M + colGroupW, rowY, colItemW, rowH, 'S');
+                doc.rect(M + colGroupW + colItemW, rowY, colYesW, rowH, 'S');
+                doc.rect(M + colGroupW + colItemW + colYesW, rowY, colNoW, rowH, 'S');
+
+                doc.setFont(fontFam, 'normal');
+                doc.setFontSize(fontSize);
+                doc.setTextColor(35, 35, 35);
+                const itemText = item.text || '—';
+                const itemLines = doc.splitTextToSize(itemText, colItemW - 5);
+                const itemTextH = (itemLines.length - 1) * 3.0;
+                const itemTextY = rowY + (rowH - itemTextH) / 2 + 0.8;
+                doc.text(itemLines, M + colGroupW + 2.5, itemTextY);
+
+                const yesCenterX = M + colGroupW + colItemW + colYesW / 2;
+                const noCenterX = M + colGroupW + colItemW + colYesW + colNoW / 2;
+                const symbolCenterY = rowY + rowH / 2;
+
+                if (item.status === 'yes') {
+                  doc.setDrawColor(34, 138, 61);
+                  doc.setLineWidth(0.45);
+                  doc.line(yesCenterX - 1.4, symbolCenterY - 0.2, yesCenterX - 0.4, symbolCenterY + 0.9);
+                  doc.line(yesCenterX - 0.4, symbolCenterY + 0.9, yesCenterX + 1.5, symbolCenterY - 1.1);
+                } else if (item.status === 'no') {
+                  doc.setDrawColor(201, 42, 42);
+                  doc.setLineWidth(0.45);
+                  doc.line(noCenterX - 1.1, symbolCenterY - 1.1, noCenterX + 1.1, symbolCenterY + 1.1);
+                  doc.line(noCenterX + 1.1, symbolCenterY - 1.1, noCenterX - 1.1, symbolCenterY + 1.1);
+                }
+
+                y += rowH;
+              });
+            });
+
+            y += 6;
+          }
+
+          const validChecklistPhotos = (D.checklistPhotos || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
+          const hasChecklistNotes = !!(D.checklistNotes && D.checklistNotes.trim());
+          if (validChecklistPhotos.length > 0 || hasChecklistNotes) {
+            if (y + 50 > BOTTOM_LIMIT) {
+              addHeader(`${modTitle} Photos`);
+            }
+            renderPhotoSection(`${modTitle} Photos`, D.checklistPhotos, D.checklistNotes, `${modTitle} Remarks`);
+          }
+          return;
+        }
+
+        if (modType === 'documents') {
+          // ================= TECHNICAL DOCUMENTS (CAD / DRAWING / PDF) =================
+          const docsList = (D.docAttachments || []).filter(doc => doc && (doc.data || doc.img));
+          const hasDocNotes = !!(D.docNotes && D.docNotes.trim());
+          if (docsList.length > 0 || hasDocNotes) {
+            addHeader(modTitle);
+            
+            // Vẽ danh sách tài liệu hoặc nhúng ảnh bản vẽ
+            docsList.forEach((att, aIdx) => {
+              const isImg = att.type && att.type.startsWith('image/');
+              const attData = att.data || att.img;
+              const attName = att.name || `Document #${aIdx + 1}`;
+
+              if (isImg && attData) {
+                // Nếu là file ảnh bản vẽ: xuất full-page hoặc khung bản vẽ to rõ nét
+                if (y + 90 > BOTTOM_LIMIT) {
+                  addHeader(modTitle);
+                }
+                doc.setFont(fontFam, 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.text(attName, M, y);
+                y += 4.5;
+
+                const drawW = W - M * 2;
+                const drawH = 100;
+                addImg(attData, M, y, drawW, drawH);
+                y += drawH + 6;
+              } else {
+                // Nếu là file PDF hoặc tài liệu khác: vẽ thẻ thông tin tệp đính kèm
+                if (y + 16 > BOTTOM_LIMIT) {
+                  addHeader(modTitle);
+                }
+                doc.setFillColor(248, 246, 242);
+                doc.setDrawColor(220, 215, 210);
+                doc.setLineWidth(0.25);
+                doc.rect(M, y, W - M * 2, 12, 'FD');
+
+                doc.setFont(fontFam, 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(30, 30, 30);
+                doc.text(`[ATTACHED FILE] ${attName}`, M + 4, y + 5.5, { maxWidth: W - M * 2 - 20 });
+
+                const sizeText = att.size ? `${(att.size / 1024).toFixed(1)} KB` : '';
+                doc.setFont(fontFam, 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(120, 115, 110);
+                doc.text(sizeText, M + 4, y + 9.5);
+                y += 15;
+              }
+            });
+
+            if (hasDocNotes) {
+              y = addSafeTextBlock(`${modTitle} Remarks`, D.docNotes, y);
+            }
+          }
+          return;
+        }
+
+        // ================= CÁC MODULE ẢNH: PHOTOS, ASSEMBLY, WATCHOUT, COMPARISON, GREENLABEL, HOẶC BẢN SAO =================
+        const photoKey = mod.key || (modType === 'photos' ? 'prodPhotos' : `${modType}Photos`);
+        const notesKey = mod.notesKey || (modType === 'photos' ? null : `${modType}Notes`);
+        const photosData = D[photoKey] || [];
+        const notesData = notesKey ? D[notesKey] : null;
+
+        renderPhotoSection(modTitle, photosData, notesData, `${modTitle} Notes`);
+      });
 
       // Đánh số trang & Footer
       const totalPages = doc.getNumberOfPages();
