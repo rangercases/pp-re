@@ -1843,7 +1843,7 @@
   <div class="screen" id="editScreen">
     
     <!-- S0: OVERALL -->
-    <div id="sec0" class="sec-block">
+    <div id="sec_overall" class="sec-block">
       <div class="sec-card">
         <div class="sec-head">Product Information</div>
         <div class="form-grid">
@@ -1892,7 +1892,7 @@
     </div>
 
     <!-- S1: PHOTOS -->
-    <div id="sec1" class="sec-block" style="display:none">
+    <div id="sec_photos" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="prodPhotos"></div>
@@ -1900,7 +1900,7 @@
     </div>
 
     <!-- S2: DIMENSIONS (2 CỘT) -->
-    <div id="sec2" class="sec-block" style="display:none">
+    <div id="sec_dimensions" class="sec-block" style="display:none">
       <div class="sec-card dimensions-card">
         <div class="sec-head">
           <span>Product Dimension & Details</span>
@@ -1925,7 +1925,7 @@
     </div>
 
     <!-- S3: PRODUCT ASSEMBLY -->
-    <div id="sec3" class="sec-block" style="display:none">
+    <div id="sec_assembly" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Product Assembly <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="assemblyPhotos"></div>
@@ -1934,7 +1934,7 @@
     </div>
 
     <!-- S4: QUALITY WATCH OUT -->
-    <div id="sec4" class="sec-block" style="display:none">
+    <div id="sec_watchout" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="watchoutPhotos"></div>
@@ -1943,7 +1943,7 @@
     </div>
 
     <!-- S5: TESTING -->
-    <div id="sec5" class="sec-block" style="display:none">
+    <div id="sec_testing" class="sec-block" style="display:none">
       <div class="sec-card">
         <div class="sec-head">Testing <span>Nhấn giữ để di chuyển hàng</span></div>
         <table class="bv-table" id="bvTable"><thead><tr><th style="width:34px; text-align:center;"></th><th style="width:44%">Test Property</th><th>Result</th><th style="width:25%">Remark</th><th style="width:34px; text-align:center;"></th></tr></thead><tbody id="bvBody"></tbody></table>
@@ -1957,7 +1957,7 @@
     </div>
 
     <!-- S6: CHECKLIST -->
-    <div id="sec6" class="sec-block" style="display:none">
+    <div id="sec_checklist" class="sec-block" style="display:none">
       <div class="apple-checklist-container">
         <!-- Overview & Actions Card -->
         <div class="apple-overview-card" id="checklistOverviewCard"></div>
@@ -3013,6 +3013,22 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true },
       { id: 'sec_greenlabel', type: 'greenlabel', name: 'Final Approved / Green Label', key: 'greenlabelPhotos', notesKey: 'greenlabelNotes', canDelete: true, canDuplicate: true }
     ];
+
+    const LEGACY_ID_MAP = {
+      'sec0': 'sec_overall', 'sec1': 'sec_photos', 'sec2': 'sec_dimensions',
+      'sec3': 'sec_assembly', 'sec4': 'sec_watchout', 'sec5': 'sec_testing', 'sec6': 'sec_checklist',
+      'sec_overall': 'sec0', 'sec_photos': 'sec1', 'sec_dimensions': 'sec2',
+      'sec_assembly': 'sec3', 'sec_watchout': 'sec4', 'sec_testing': 'sec5', 'sec_checklist': 'sec6'
+    };
+
+    function getModuleDomBlock(id) {
+      if (!id) return null;
+      let el = document.getElementById(id);
+      if (!el && LEGACY_ID_MAP[id]) {
+        el = document.getElementById(LEGACY_ID_MAP[id]);
+      }
+      return el;
+    }
 
     const FREE_PHOTO_KEYS = ['prodPhotos', 'assemblyPhotos', 'watchoutPhotos', 'testingPhotos', 'checklistPhotos', 'comparisonPhotos', 'greenlabelPhotos'];
 
@@ -5157,6 +5173,13 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function ensureReportModules() {
       if (!D.modules || !Array.isArray(D.modules) || D.modules.length === 0) {
         D.modules = JSON.parse(JSON.stringify(DEFAULT_MODULES));
+      } else {
+        // Chuẩn hóa ID cũ nếu có trong các báo cáo đã lưu trước đó (sec0 -> sec_overall)
+        D.modules.forEach(m => {
+          if (m && m.id && LEGACY_ID_MAP[m.id] && m.id.startsWith('sec') && !m.id.startsWith('sec_')) {
+            m.id = LEGACY_ID_MAP[m.id];
+          }
+        });
       }
     }
 
@@ -5219,46 +5242,46 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     function renderAllModuleHeaders() {
       ensureReportModules();
       D.modules.forEach((mod, idx) => {
-        const secBlock = document.getElementById(mod.id);
+        const secBlock = getModuleDomBlock(mod.id);
         if (!secBlock) return;
-        const secHead = secBlock.querySelector('.sec-head');
+
+        // Xác định đúng .sec-head của module (đặc biệt cho overall card ảnh bìa)
+        let secHead = null;
+        if (mod.type === 'overall') {
+          const cards = secBlock.querySelectorAll('.sec-card');
+          secHead = (cards.length > 1) ? cards[1].querySelector('.sec-head') : secBlock.querySelector('.sec-head');
+        } else {
+          secHead = secBlock.querySelector('.sec-head');
+        }
         if (!secHead) return;
 
-        // Lưu hoặc tạo cấu trúc chuẩn của header
-        let headLeft = secHead.querySelector('.module-head-left');
-        if (!headLeft) {
-          headLeft = document.createElement('div');
-          headLeft.className = 'module-head-left';
-          // Chuyển title hiện có vào headLeft
-          secHead.insertBefore(headLeft, secHead.firstChild);
-        }
-
-        headLeft.innerHTML = `
-          <input type="text" class="module-title-input" value="${escapeHtml(mod.name)}" 
-                 title="Bấm vào để đổi tên module (tự đồng bộ sang Tab & PDF)" 
-                 onchange="onModuleRename('${mod.id}', this.value)" 
-                 onkeydown="if(event.key==='Enter') this.blur()">
-        `;
-
-        let headActions = secHead.querySelector('.module-head-actions');
-        if (!headActions) {
-          headActions = document.createElement('div');
-          headActions.className = 'module-head-actions';
-          secHead.appendChild(headActions);
-        }
+        // Lấy hoặc bảo tồn các element riêng biệt
+        const dimBtn = secHead.querySelector('#btnDimSelectMode');
+        let hintSpan = secHead.querySelector('span:not(.module-title-display):not(.dim-status-icon)');
+        let hintText = hintSpan ? hintSpan.textContent.trim() : (mod.type === 'documents' ? 'PDF / Bản vẽ CAD / Lab Test' : (mod.type === 'overall' || mod.type === 'photos' || mod.type === 'assembly' || mod.type === 'watchout' || mod.type === 'comparison' || mod.type === 'greenlabel' ? 'Nhấn giữ để di chuyển' : ''));
 
         const canDup = mod.canDuplicate !== false;
         const canDel = mod.canDelete !== false;
 
-        headActions.innerHTML = `
-          ${canDup ? `<button type="button" class="module-action-btn" onclick="duplicateModule('${mod.id}')" title="Nhân bản module này">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            <span>Nhân bản</span>
-          </button>` : ''}
-          ${canDel ? `<button type="button" class="module-action-btn btn-del-mod" onclick="deleteModule('${mod.id}')" title="Xóa module này khỏi báo cáo">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            <span>Xóa</span>
-          </button>` : ''}
+        secHead.innerHTML = `
+          <div class="module-head-left">
+            <input type="text" class="module-title-input" value="${escapeHtml(mod.name)}" 
+                   title="Bấm vào để đổi tên module (tự đồng bộ sang Tab & PDF)" 
+                   onchange="onModuleRename('${mod.id}', this.value)" 
+                   onkeydown="if(event.key==='Enter') this.blur()">
+            ${hintText ? `<span style="font-size:10px; opacity:0.8; font-weight:normal; text-transform:none; margin-left:4px;">${escapeHtml(hintText)}</span>` : ''}
+          </div>
+          <div class="module-head-actions">
+            ${dimBtn ? `<button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">${dimBtn.textContent.trim() || 'Chọn'}</button>` : ''}
+            ${canDup ? `<button type="button" class="module-action-btn" onclick="duplicateModule('${mod.id}')" title="Nhân bản module này">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Nhân bản</span>
+            </button>` : ''}
+            ${canDel ? `<button type="button" class="module-action-btn btn-del-mod" onclick="deleteModule('${mod.id}')" title="Xóa module này khỏi báo cáo">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Xóa</span>
+            </button>` : ''}
+          </div>
         `;
       });
     }
@@ -5274,7 +5297,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       const tabIdx = D.modules.indexOf(mod);
       const tabEl = document.getElementById(`tab${tabIdx}`);
       if (tabEl) {
-        tabEl.querySelector('span').textContent = mod.name;
+        const span = tabEl.querySelector('span');
+        if (span) span.textContent = mod.name;
       }
       showToast(`✓ Đã đổi tên module thành: ${mod.name}`);
     }
@@ -5292,7 +5316,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       newMod.canDuplicate = true;
 
       // Nhân bản DOM block tương ứng
-      const origDom = document.getElementById(origMod.id);
+      const origDom = getModuleDomBlock(origMod.id);
       if (origDom) {
         const clonedDom = origDom.cloneNode(true);
         clonedDom.id = newId;
@@ -5331,7 +5355,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
 
       const idx = D.modules.indexOf(mod);
       D.modules.splice(idx, 1);
-      const domEl = document.getElementById(mod.id);
+      const domEl = getModuleDomBlock(mod.id);
       if (domEl) domEl.style.display = 'none';
 
       pushHistory(`Xóa module "${mod.name}"`);
@@ -7473,7 +7497,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       
       const activeMod = D.modules[curSec];
       if (activeMod) {
-        const targetBlock = document.getElementById(activeMod.id);
+        const targetBlock = getModuleDomBlock(activeMod.id);
         if (targetBlock) targetBlock.style.display = 'block';
       }
 
