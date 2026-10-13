@@ -217,9 +217,11 @@
     .topbar-back:hover:not(:disabled) { background: rgba(255, 255, 255, .3); }
     .topbar-brand { padding: 0 4px; display: flex; align-items: center; flex-shrink: 0; }
     .topbar-brand img { height: 16px; width: auto; max-width: 150px; object-fit: contain; }
-    .topbar-title { color: var(--brand-header-footer-text); font-size: 13px; font-weight: 500; flex: 1; min-width: 0; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .autosave-indicator { font-size: 10px; color: #7dcea0; margin-right: 4px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.9; flex-shrink: 0; user-select: none; cursor: default; }
-    .autosave-indicator .dot { display: inline-block; font-size: 11px; line-height: 1; }
+    .autosave-indicator { font-size: 10px; color: #a3e6be; margin-right: 4px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.95; flex-shrink: 0; user-select: none; cursor: default; transition: color 0.2s ease; }
+    .autosave-indicator.saving { color: #fde047; }
+    .autosave-indicator .dot { display: inline-block; font-size: 10px; line-height: 1; transition: transform 0.2s ease; }
+    .autosave-indicator.saving .dot { animation: dotPulse 1s infinite alternate; }
+    @keyframes dotPulse { from { opacity: 0.4; transform: scale(0.85); } to { opacity: 1; transform: scale(1.15); } }
     .topbar-btn { background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .35); color: #ffffff; border-radius: var(--rs); padding: 5px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; user-select: none; flex-shrink: 0; }
     .topbar-btn:hover:not(:disabled) { background: rgba(255, 255, 255, .28); }
     .topbar-btn:active:not(:disabled) { transform: scale(0.96); }
@@ -268,6 +270,87 @@
     }
     
     .new-btn { display: block; width: 100%; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--app-brand-text); border-radius: var(--r); color: var(--app-brand-text); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+    
+    /* APPLE-STYLE SEARCH & FILTER BAR */
+    .home-search-container {
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .home-search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: #f1f3f2;
+      border: 1px solid #e1e5e2;
+      border-radius: 12px;
+      padding: 0 10px;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .home-search-box:focus-within {
+      background: #ffffff;
+      border-color: var(--brand-theme);
+      box-shadow: 0 0 0 3px rgba(26, 58, 42, 0.12);
+    }
+    .home-search-box .search-icon {
+      color: #8c9b91;
+      flex-shrink: 0;
+      margin-right: 6px;
+    }
+    .home-search-box input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px 0;
+      font-size: 12.5px;
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+    }
+    .search-clear-btn {
+      background: #cbd3ce;
+      border: none;
+      color: #fff;
+      font-size: 10px;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: background 0.15s ease;
+    }
+    .search-clear-btn:hover { background: #95a59c; }
+    .home-filter-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .home-filter-pills::-webkit-scrollbar { display: none; }
+    .filter-pill-btn {
+      background: #f1f3f2;
+      border: 1px solid transparent;
+      color: #5d6d63;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .filter-pill-btn:hover { color: var(--text); }
+    .filter-pill-btn.active {
+      background: var(--brand-theme);
+      color: #ffffff;
+      font-weight: 600;
+    }
     
     /* REPORT CARD */
     #reportsList { user-select: none; -webkit-user-select: none; }
@@ -1482,6 +1565,23 @@
   </div>
   <div id="tabsWrap" class="tabs-wrap" style="display:none"><div class="tabs" id="tabsRow"></div></div>
 
+  <!-- UNIFIED APPLE-STYLE DRAG MODE BAR -->
+  <div id="unifiedDragBar" class="drag-mode-bar-wrap" style="display:none">
+    <div style="font-size:11px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:4px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 9l4-4 4 4"/><path d="M9 5v14"/><path d="M19 15l-4 4-4-4"/><path d="M15 19V5"/></svg>
+      <span>Kéo sắp xếp:</span>
+    </div>
+    <div class="drag-mode-segmented">
+      <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+        <span>Đổi chỗ 1-1</span>
+      </button>
+      <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+        <span>Nối đuôi</span>
+      </button>
+    </div>
+  </div>
 
   <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -1509,6 +1609,20 @@
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     <input type="file" id="restoreDbInput" accept=".json" style="display:none" onchange="restoreDatabase(event)">
     
+    <!-- APPLE-STYLE SEARCH & FILTER BAR -->
+    <div class="home-search-container" id="homeSearchWrap">
+      <div class="home-search-box">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="homeSearchInput" placeholder="Tìm theo Model, Mô tả, Factory, Reviewer..." oninput="onHomeSearchChange(this.value)">
+        <button type="button" class="search-clear-btn" id="btnSearchClear" onclick="clearHomeSearch()" title="Xóa tìm kiếm">✕</button>
+      </div>
+      <div class="home-filter-pills" id="homeFilterPills">
+        <button type="button" class="filter-pill-btn active" data-filter="all" onclick="setHomeFilter('all')">Tất cả</button>
+        <button type="button" class="filter-pill-btn" data-filter="done" onclick="setHomeFilter('done')">Đã xong (Done)</button>
+        <button type="button" class="filter-pill-btn" data-filter="wip" onclick="setHomeFilter('wip')">Đang làm (WIP)</button>
+      </div>
+    </div>
+
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
@@ -1559,19 +1673,7 @@
       <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
 
       <div class="sec-card">
-        <div class="sec-head">
-          <span>OVERVIEW</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">OVERVIEW <span>Nhấn giữ để di chuyển</span></div>
         <div class="photo-grid-2" id="coverPhotos"></div>
       </div>
     </div>
@@ -1579,19 +1681,7 @@
     <!-- S1: PHOTOS -->
     <div id="sec1" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">
-          <span>Product Photos</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="prodPhotos"></div>
       </div>
     </div>
@@ -1601,19 +1691,7 @@
       <div class="sec-card dimensions-card">
         <div class="sec-head">
           <span>Product Dimension & Details</span>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-            <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
-          </div>
+          <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
         </div>
         
         <div class="legend-row">
@@ -1636,19 +1714,7 @@
     <!-- S3: PRODUCT ASSEMBLY -->
     <div id="sec3" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">
-          <span>Product Assembly</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">Product Assembly <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="assemblyPhotos"></div>
         <div class="note-area"><textarea id="assemblyNotes" placeholder="Product assembly steps, notes..." oninput="as()"></textarea></div>
       </div>
@@ -1657,19 +1723,7 @@
     <!-- S4: QUALITY WATCH OUT -->
     <div id="sec4" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">
-          <span>Quality Watch Out</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="watchoutPhotos"></div>
         <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, critical quality points..." oninput="as()"></textarea></div>
       </div>
@@ -1683,19 +1737,7 @@
         <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
       </div>
       <div class="sec-card">
-        <div class="sec-head">
-          <span>Testing Photo</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">Testing Photo <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="testingPhotos"></div>
         <div class="note-area"><textarea id="testingNotes" placeholder="Testing photos notes, test remarks..." oninput="as()"></textarea></div>
       </div>
@@ -1713,19 +1755,7 @@
 
       <!-- Checklist Photos & Remarks Card -->
       <div class="sec-card" style="margin-top: 16px;">
-        <div class="sec-head">
-          <span>Check List Photos</span>
-          <div class="drag-mode-segmented">
-            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-              <span>Đổi chỗ</span>
-            </button>
-            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-              <span>Nối đuôi</span>
-            </button>
-          </div>
-        </div>
+        <div class="sec-head">Check List Photos <span>Nhấn giữ để di chuyển</span></div>
         <div class="free-photos" id="checklistPhotos"></div>
         <div class="note-area"><textarea id="checklistNotes" placeholder="Checklist remarks, final inspections..." oninput="as()"></textarea></div>
       </div>
@@ -4702,7 +4732,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
-      ['tabsWrap', 'progressBar', 'saveBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+      ['tabsWrap', 'unifiedDragBar', 'progressBar', 'saveBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
         const el = document.getElementById(elemId);
         if (el) el.style.display = 'none';
       });
@@ -4713,6 +4743,30 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       await renderHome();
     }
 
+    let homeSearchQuery = '';
+    let homeFilterMode = 'all';
+
+    function onHomeSearchChange(val) {
+      homeSearchQuery = (val || '').trim().toLowerCase();
+      const clearBtn = document.getElementById('btnSearchClear');
+      if (clearBtn) clearBtn.style.display = homeSearchQuery ? 'inline-flex' : 'none';
+      renderHome();
+    }
+
+    function clearHomeSearch() {
+      const inp = document.getElementById('homeSearchInput');
+      if (inp) inp.value = '';
+      onHomeSearchChange('');
+    }
+
+    function setHomeFilter(mode) {
+      homeFilterMode = mode;
+      document.querySelectorAll('.filter-pill-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-filter') === mode);
+      });
+      renderHome();
+    }
+
     async function renderHome() {
       try {
         reports = await dbGetAll();
@@ -4721,13 +4775,43 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         list.innerHTML = '';
         if (!reports.length) { 
           empty.style.display = 'block'; 
+          empty.innerHTML = 'Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.';
           document.getElementById('btnSelectMode').style.display = 'none';
           return; 
         }
-        empty.style.display = 'none';
         document.getElementById('btnSelectMode').style.display = 'block';
         
-        [...reports].reverse().forEach(r => {
+        let filteredReports = [...reports].reverse();
+
+        // Lọc theo từ khóa tìm kiếm (Model, Description, Factory, Reviewer, Title)
+        if (homeSearchQuery) {
+          filteredReports = filteredReports.filter(r => {
+            const title = (getReportTitle(r) || '').toLowerCase();
+            const model = (r.model || '').toLowerCase();
+            const desc = (r.desc || '').toLowerCase();
+            const factory = (r.factory || '').toLowerCase();
+            const reviewer = (r.reviewer || '').toLowerCase();
+            return title.includes(homeSearchQuery) || model.includes(homeSearchQuery) || desc.includes(homeSearchQuery) || factory.includes(homeSearchQuery) || reviewer.includes(homeSearchQuery);
+          });
+        }
+
+        // Lọc theo trạng thái (all, done, wip)
+        if (homeFilterMode !== 'all') {
+          filteredReports = filteredReports.filter(r => {
+            const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+            const done = photos >= 4;
+            return homeFilterMode === 'done' ? done : !done;
+          });
+        }
+
+        if (!filteredReports.length) {
+          empty.style.display = 'block';
+          empty.innerHTML = '🔍 Không tìm thấy báo cáo phù hợp.<br><span style="font-size:11px;color:#888;">Thử đổi từ khóa hoặc bộ lọc trạng thái.</span>';
+          return;
+        }
+        empty.style.display = 'none';
+
+        filteredReports.forEach(r => {
           const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
           const done = photos >= 4;
           const d = document.createElement('div');
@@ -6829,6 +6913,12 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
       const tab = document.getElementById(`tab${i}`); if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
       document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / TABS.length) * 100) + '%';
+      
+      // Hiện Unified Drag Bar ở các tab có ảnh (Tab 0 đến Tab 6)
+      const uDragBar = document.getElementById('unifiedDragBar');
+      if (uDragBar) {
+        uDragBar.style.display = (curSec >= 0 && curSec <= 6) ? 'flex' : 'none';
+      }
       updateDragModeUI();
       window.scrollTo(0, 0);
     }
@@ -6860,7 +6950,11 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       if (!currentId) return;
       D.updatedAt = Date.now();
       const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
-      const saveIndicator = document.getElementById('saveIndicator'); if (saveIndicator) saveIndicator.title = 'Đang lưu dữ liệu...';
+      const saveIndicator = document.getElementById('saveIndicator'); 
+      if (saveIndicator) {
+        saveIndicator.title = 'Đang lưu dữ liệu...';
+        saveIndicator.classList.add('saving');
+      }
       Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
       D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
       renderOverviewSummary();
@@ -6868,7 +6962,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       saveTimeout = setTimeout(async () => {
         await dbPut(D);
         if (saveText) saveText.textContent = 'Saved';
-        if (saveIndicator) saveIndicator.title = 'Đã lưu & đồng bộ';
+        if (saveIndicator) {
+          saveIndicator.title = 'Đã lưu & đồng bộ';
+          saveIndicator.classList.remove('saving');
+        }
         updateTopbar();
       }, 400);
     }
@@ -6910,9 +7007,9 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         resetHistory();
         buildUI(); loadData(); showSection(0);
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+        ['tabsWrap', 'unifiedDragBar', 'progressBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
-          if (el) el.style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':'inline-flex';
+          if (el) el.style.display = elemId==='tabsWrap'||elemId==='progressBar'?'block':(elemId==='unifiedDragBar'?'flex':'inline-flex');
         });
         const btnStyler = document.getElementById('btnStyler');
         if (btnStyler) btnStyler.style.display = 'none';
