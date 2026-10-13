@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#1a3a2a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="DIGITAL REPORT">
+  <meta name="apple-mobile-web-app-title" content="SUPER REPORT">
   
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
-  <title>DIGITAL REPORT</title>
+  <title>SUPER REPORT</title>
   
   <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -326,7 +326,66 @@
 
     /* CARDS & FORMS */
     .sec-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
-    .sec-head { background: var(--brand-theme); color: var(--brand-header-footer-text); padding: 9px 14px; font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .sec-head { 
+      background: var(--brand-theme); 
+      color: var(--brand-header-footer-text); 
+      padding: 7px 12px; 
+      font-size: 10.5px; 
+      letter-spacing: 1.5px; 
+      text-transform: uppercase; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      gap: 6px; 
+    }
+    .sec-head .drag-mode-segmented {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 14px;
+      padding: 2px;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .sec-head .drag-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      background: transparent;
+      border: none;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      line-height: 1;
+      user-select: none;
+    }
+    .sec-head .drag-mode-btn svg {
+      opacity: 0.85;
+      stroke: #ffffff;
+      flex-shrink: 0;
+    }
+    .sec-head .drag-mode-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .sec-head .drag-mode-btn.active {
+      background: #ffffff;
+      color: var(--brand-theme, #1a3a2a);
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    }
+    .sec-head .drag-mode-btn.active svg {
+      opacity: 1;
+      stroke: var(--brand-theme, #1a3a2a);
+    }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; }
     .fcell { padding: 9px 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
     .fcell:nth-child(even) { border-right: none; }
@@ -1400,7 +1459,7 @@
       <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Trạng thái đồng bộ"><span class="dot">●</span> <span id="saveText">Synced</span></div>
     </div>
 
-    <div class="topbar-title" id="topTitle">DIGITAL REPORT</div>
+    <div class="topbar-title" id="topTitle">SUPER REPORT</div>
 
     <div class="topbar-actions">
       <button class="topbar-btn icon-btn" id="btnUndo" onclick="undo()" title="Hoàn tác (Ctrl+Z)" style="display:none" disabled>
@@ -1422,19 +1481,7 @@
     </div>
   </div>
   <div id="tabsWrap" class="tabs-wrap" style="display:none"><div class="tabs" id="tabsRow"></div></div>
-    <!-- DRAG MODE SEGMENTED CONTROL -->
-  <div class="drag-mode-bar-wrap" id="dragModeWrap" style="display:none">
-    <div class="drag-mode-segmented">
-      <button type="button" class="drag-mode-btn active" id="btnDragModeSwap" onclick="setDragMode('swap')" title="Kéo ô A thả vào ô B: Chỉ 2 ô đổi chỗ cho nhau">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
-        <span>Đổi chỗ 1-1</span>
-      </button>
-      <button type="button" class="drag-mode-btn" id="btnDragModeInsert" onclick="setDragMode('insert')" title="Kéo ô A chèn vào danh sách: Các ô phía sau tự động dạt ra nối đuôi">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
-        <span>Nối đuôi</span>
-      </button>
-    </div>
-  </div>
+
 
   <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -1444,7 +1491,7 @@
       <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Chọn</button>
       <div style="font-size:26px;margin-bottom:6px">📋</div>
       <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-        <h1 style="margin:0;">DIGITAL REPORT</h1>
+        <h1 style="margin:0;">SUPER REPORT</h1>
         <span style="font-size:11px; font-weight:700; color:var(--accent); background:rgba(0,0,0,0.06); padding:2px 8px; border-radius:12px; letter-spacing:0.5px;">v3.0.0</span>
       </div>
       <p style="margin-top:6px;">Overall · Photos · Dimensions · Assembly · Watch Out · Testing · Checklist</p>
@@ -1512,7 +1559,19 @@
       <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
 
       <div class="sec-card">
-        <div class="sec-head">OVERVIEW <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>OVERVIEW</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="photo-grid-2" id="coverPhotos"></div>
       </div>
     </div>
@@ -1520,7 +1579,19 @@
     <!-- S1: PHOTOS -->
     <div id="sec1" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Product Photos <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>Product Photos</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="free-photos" id="prodPhotos"></div>
       </div>
     </div>
@@ -1530,7 +1601,19 @@
       <div class="sec-card dimensions-card">
         <div class="sec-head">
           <span>Product Dimension & Details</span>
-          <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+            <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">Chọn</button>
+          </div>
         </div>
         
         <div class="legend-row">
@@ -1553,7 +1636,19 @@
     <!-- S3: PRODUCT ASSEMBLY -->
     <div id="sec3" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Product Assembly <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>Product Assembly</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="free-photos" id="assemblyPhotos"></div>
         <div class="note-area"><textarea id="assemblyNotes" placeholder="Product assembly steps, notes..." oninput="as()"></textarea></div>
       </div>
@@ -1562,7 +1657,19 @@
     <!-- S4: QUALITY WATCH OUT -->
     <div id="sec4" class="sec-block" style="display:none">
       <div class="sec-card">
-        <div class="sec-head">Quality Watch Out <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>Quality Watch Out</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="free-photos" id="watchoutPhotos"></div>
         <div class="note-area"><textarea id="watchoutNotes" placeholder="Production watchout, critical quality points..." oninput="as()"></textarea></div>
       </div>
@@ -1576,7 +1683,19 @@
         <button class="add-row-btn" onclick="addBVRow()">+ Add Test Row</button>
       </div>
       <div class="sec-card">
-        <div class="sec-head">Testing Photo <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>Testing Photo</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="free-photos" id="testingPhotos"></div>
         <div class="note-area"><textarea id="testingNotes" placeholder="Testing photos notes, test remarks..." oninput="as()"></textarea></div>
       </div>
@@ -1594,7 +1713,19 @@
 
       <!-- Checklist Photos & Remarks Card -->
       <div class="sec-card" style="margin-top: 16px;">
-        <div class="sec-head">Check List Photos <span>Nhấn giữ để di chuyển</span></div>
+        <div class="sec-head">
+          <span>Check List Photos</span>
+          <div class="drag-mode-segmented">
+            <button type="button" class="drag-mode-btn" data-mode="swap" onclick="setDragMode('swap')" title="Đổi chỗ 1-1: Kéo ô A thả vào ô B, 2 ô đổi vị trí">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>Đổi chỗ</span>
+            </button>
+            <button type="button" class="drag-mode-btn" data-mode="insert" onclick="setDragMode('insert')" title="Nối đuôi: Kéo ô A chèn vào danh sách, các ô tự dạt ra">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6"/></svg>
+              <span>Nối đuôi</span>
+            </button>
+          </div>
+        </div>
         <div class="free-photos" id="checklistPhotos"></div>
         <div class="note-area"><textarea id="checklistNotes" placeholder="Checklist remarks, final inspections..." oninput="as()"></textarea></div>
       </div>
@@ -2282,12 +2413,10 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
     }
 
     function updateDragModeUI() {
-      const btnSwap = document.getElementById('btnDragModeSwap');
-      const btnInsert = document.getElementById('btnDragModeInsert');
-      if (btnSwap && btnInsert) {
-        btnSwap.classList.toggle('active', globalDragMode === 'swap');
-        btnInsert.classList.toggle('active', globalDragMode === 'insert');
-      }
+      document.querySelectorAll('.drag-mode-btn').forEach(btn => {
+        const mode = btn.getAttribute('data-mode');
+        btn.classList.toggle('active', mode === globalDragMode);
+      });
     }
 
     function applyDragModeToSortables() {
@@ -2299,7 +2428,8 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
         document.getElementById('prodPhotos'),
         document.getElementById('watchoutPhotos'),
         document.getElementById('testingPhotos'),
-        document.getElementById('assemblyPhotos')
+        document.getElementById('assemblyPhotos'),
+        document.getElementById('checklistPhotos')
       ];
       sortableContainers.forEach(c => {
         if (c && c._sortable) {
@@ -4578,7 +4708,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       });
       const btnStyler = document.getElementById('btnStyler');
       if (btnStyler) btnStyler.style.display = 'inline-flex';
-      document.getElementById('topTitle').textContent = 'DIGITAL REPORT';
+      document.getElementById('topTitle').textContent = 'SUPER REPORT';
       resetHistory();
       await renderHome();
     }
@@ -6699,12 +6829,7 @@ const LOGO_BLACK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AAAAC9CAQAAA
       document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
       const tab = document.getElementById(`tab${i}`); if (tab) tab.scrollIntoView({ inline: 'center', behavior: 'smooth' });
       document.getElementById('progressFill').style.width = Math.round(((curSec + 1) / TABS.length) * 100) + '%';
-      const dmWrap = document.getElementById('dragModeWrap');
-      if (dmWrap) {
-        // Chỉ hiện thanh Drag Mode khi ở các tab có ảnh (Tab 0 đến Tab 5)
-        dmWrap.style.display = (curSec >= 0 && curSec <= 5) ? 'flex' : 'none';
-        updateDragModeUI();
-      }
+      updateDragModeUI();
       window.scrollTo(0, 0);
     }
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }

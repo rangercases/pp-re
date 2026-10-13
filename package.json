@@ -1,7 +1,7 @@
 {
-  "name": "sample-review-report-digi",
+  "name": "super-report",
   "version": "1.0.0",
-  "description": "Digital Sample Review Report PWA App - SOFACOMPANY",
+  "description": "Super Report PWA App - SOFACOMPANY",
   "type": "module",
   "scripts": {
     "dev": "vite",
