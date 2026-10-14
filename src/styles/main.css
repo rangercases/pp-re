@@ -20,6 +20,7 @@
       --red-bg: #fdf0f0;
       --r: 10px;
       --rs: 6px;
+      --apple-radius-sm: 10px;
       --shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 4px 12px rgba(0, 0, 0, .03);
     }
 

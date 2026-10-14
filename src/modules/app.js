@@ -1,11 +1,12 @@
 // Main Application Logic
 import { LOGO_WHITE, LOGO_BLACK } from './logo.js';
-import { FONT_ROBOTO } from './font.js';
+import { FONT_ROBOTO, FONT_ROBOTO_BOLD } from './font.js';
 
 // Gắn logo & font vào window scope để các hàm render/pdf hiện có sử dụng mượt mà
 window.LOGO_WHITE = LOGO_WHITE;
 window.LOGO_BLACK = LOGO_BLACK;
 window.FONT_ROBOTO = FONT_ROBOTO;
+window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
 
 
     // ═══════════════ PDF & HEADER VISUAL STYLER CONTROLLER ═══════════════
@@ -833,6 +834,7 @@ window.FONT_ROBOTO = FONT_ROBOTO;
     async function normalizeReportPhotos(rep) {
       if (!rep || typeof rep !== 'object') return rep;
       try {
+        // 1. Chuẩn hóa ảnh trang bìa (coverPhotos)
         if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
           for (const k of Object.keys(rep.coverPhotos)) {
             const p = rep.coverPhotos[k];
@@ -841,16 +843,39 @@ window.FONT_ROBOTO = FONT_ROBOTO;
                 p.original = await normalizeMasterPhoto(p.original);
               }
               if (p.img && typeof p.img === 'string' && p.img.length > 400000) {
-                p.img = await resizeImage(p.img, 1280, 0.72);
+                p.img = await resizeImage(p.img, 1280, 0.75);
               }
             }
           }
         }
-        const photoKeys = ['prodPhotos', 'hardwarePhotos', 'cartonPhotos', 'markingPhotos', 'internalPhotos', 'testingPhotos', 'watchoutPhotos', 'assemblyPhotos'];
-        for (const arrKey of photoKeys) {
+
+        // 2. Chuẩn hóa toàn bộ các danh sách ảnh tự do, ảnh kép (3:1, 1:1) và Dimensions
+        const photoArrayKeys = [
+          'prodPhotos',
+          'assemblyPhotos',
+          'watchoutPhotos',
+          'testingPhotos',
+          'checklistPhotos',
+          'dimensions'
+        ];
+
+        for (const arrKey of photoArrayKeys) {
           if (Array.isArray(rep[arrKey])) {
             for (const p of rep[arrKey]) {
               if (p && typeof p === 'object') {
+                if (p.original && typeof p.original === 'string' && p.original.length > 400000) {
+                  p.original = await normalizeMasterPhoto(p.original);
+                }
+                if (p.img && typeof p.img === 'string' && p.img.length > 400000) {
+                  p.img = await resizeImage(p.img, 1280, 0.75);
+                }
+                if (p.originalSub && typeof p.originalSub === 'string' && p.originalSub.length > 400000) {
+                  p.originalSub = await normalizeMasterPhoto(p.originalSub);
+                }
+                if (p.imgSub && typeof p.imgSub === 'string' && p.imgSub.length > 400000) {
+                  p.imgSub = await resizeImage(p.imgSub, 1280, 0.75);
+                }
+                // Hỗ trợ trường cũ nếu có (master/src)
                 if (p.master && typeof p.master === 'string' && p.master.length > 400000) {
                   p.master = await normalizeMasterPhoto(p.master);
                 }
@@ -866,6 +891,7 @@ window.FONT_ROBOTO = FONT_ROBOTO;
       }
       return rep;
     }
+
 
     function resizeImage(imageSource, maxDimension = 1280, quality = 0.88) {
       return new Promise((resolve) => {
@@ -1639,7 +1665,8 @@ window.FONT_ROBOTO = FONT_ROBOTO;
     function pushHistorySnapshot(snapshotData, desc = 'Thao tác') {
       if (isHistoryNavigating || !currentId) return;
       undoStack.push({ data: snapshotData, desc });
-      if (undoStack.length > MAX_HISTORY) {
+      const currentMax = (typeof snapshotData === 'string' && snapshotData.length > 4000000) ? 3 : MAX_HISTORY;
+      while (undoStack.length > currentMax) {
         undoStack.shift();
       }
       redoStack = [];
@@ -1652,7 +1679,9 @@ window.FONT_ROBOTO = FONT_ROBOTO;
       try {
         const snapshot = JSON.stringify(D);
         undoStack.push({ data: snapshot, desc });
-        if (undoStack.length > MAX_HISTORY) {
+        // Nếu bản snapshot nặng > 4MB (chứa nhiều ảnh), tự động hạ giới hạn lưu trữ xuống 3-4 bản để bảo toàn RAM
+        const currentMax = snapshot.length > 4000000 ? 3 : MAX_HISTORY;
+        while (undoStack.length > currentMax) {
           undoStack.shift();
         }
         redoStack = [];
@@ -2686,85 +2715,152 @@ window.FONT_ROBOTO = FONT_ROBOTO;
       await renderHome();
     }
 
+    let homeFilterStatus = 'all';
+    let homeSearchQuery = '';
+
+    function handleHomeSearch() {
+      const input = document.getElementById('homeSearchInput');
+      homeSearchQuery = input ? input.value.trim().toLowerCase() : '';
+      renderFilteredHomeList();
+    }
+
+    function setHomeStatusFilter(status) {
+      homeFilterStatus = status;
+      const buttons = document.querySelectorAll('#homeFilterButtons .filter-chip');
+      buttons.forEach(btn => {
+        if (btn.dataset.filter === status) {
+          btn.style.background = 'var(--accent)';
+          btn.style.color = '#fff';
+        } else {
+          btn.style.background = '#fff';
+          btn.style.color = 'var(--muted)';
+        }
+      });
+      renderFilteredHomeList();
+    }
+
+    function renderFilteredHomeList() {
+      const list = document.getElementById('reportsList');
+      const empty = document.getElementById('emptyState');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!reports.length) {
+        if (empty) {
+          empty.innerHTML = 'Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.';
+          empty.style.display = 'block';
+        }
+        const btnSelectMode = document.getElementById('btnSelectMode');
+        if (btnSelectMode) btnSelectMode.style.display = 'none';
+        return;
+      }
+
+      const filtered = [...reports].reverse().filter(r => {
+        const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+        const done = photos >= 4;
+
+        if (homeFilterStatus === 'done' && !done) return false;
+        if (homeFilterStatus === 'in-progress' && done) return false;
+
+        if (homeSearchQuery) {
+          const reportTitle = getReportTitle(r).toLowerCase();
+          const factory = (r.factory || '').toLowerCase();
+          const reviewer = (r.reviewer || '').toLowerCase();
+          const model = (r.model || '').toLowerCase();
+          const desc = (r.desc || '').toLowerCase();
+          const matches = reportTitle.includes(homeSearchQuery) ||
+                          factory.includes(homeSearchQuery) ||
+                          reviewer.includes(homeSearchQuery) ||
+                          model.includes(homeSearchQuery) ||
+                          desc.includes(homeSearchQuery);
+          if (!matches) return false;
+        }
+        return true;
+      });
+
+      if (!filtered.length) {
+        if (empty) {
+          empty.innerHTML = 'Không tìm thấy báo cáo phù hợp với bộ lọc.';
+          empty.style.display = 'block';
+        }
+        return;
+      }
+
+      if (empty) empty.style.display = 'none';
+      const btnSelectMode = document.getElementById('btnSelectMode');
+      if (btnSelectMode) btnSelectMode.style.display = 'block';
+
+      filtered.forEach(r => {
+        const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+        const done = photos >= 4;
+        const d = document.createElement('div');
+        d.className = 'report-card';
+        d.dataset.id = String(r.id);
+        
+        if (isSelectMode) d.classList.add('selecting');
+        if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
+
+        const reportTitle = getReportTitle(r);
+        const safeTitle = escapeHtml(reportTitle);
+        const safeDate = escapeHtml(r.date || '');
+        const safeFactory = escapeHtml(r.factory || '');
+        const safeReviewer = escapeHtml(r.reviewer || '');
+
+        d.innerHTML = `
+          <div class="rc-left">
+            <div class="rc-select-circle"></div>
+            <div>
+              <div class="rc-title">${safeTitle}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
+              <div class="rc-sub">${safeDate} · ${safeFactory} · ${safeReviewer}</div>
+            </div>
+          </div>
+          <div class="rc-right" style="${isSelectMode ? 'display:none' : 'display:flex; align-items:center; gap:6px;'}">
+            <button class="rc-action-btn btn-share-report" title="Chia sẻ file JSON">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </button>
+            <button class="rc-action-btn btn-dup-report" title="Nhân bản báo cáo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <div class="rc-arrow" style="color:var(--muted); font-size:18px; line-height:1;">›</div>
+          </div>
+        `;
+
+        const shareBtn = d.querySelector('.btn-share-report');
+        if (shareBtn) {
+          shareBtn.onclick = (e) => {
+            e.stopPropagation();
+            shareReportById(r.id);
+          };
+        }
+        const dupBtn = d.querySelector('.btn-dup-report');
+        if (dupBtn) {
+          dupBtn.onclick = (e) => {
+            e.stopPropagation();
+            duplicateReportById(r.id);
+          };
+        }
+        
+        d.onclick = (e) => {
+          if (isSelectMode) {
+            const id = String(r.id);
+            if (selectedReportIds.has(id)) selectedReportIds.delete(id);
+            else selectedReportIds.add(id);
+            updateBatchUI();
+          } else {
+            openReport(r.id);
+          }
+        };
+        
+        list.appendChild(d);
+      });
+    }
+
     async function renderHome() {
       try {
         reports = await dbGetAll();
-        const list = document.getElementById('reportsList');
-        const empty = document.getElementById('emptyState');
-        list.innerHTML = '';
-        if (!reports.length) { 
-          empty.style.display = 'block'; 
-          document.getElementById('btnSelectMode').style.display = 'none';
-          return; 
-        }
-        empty.style.display = 'none';
-        document.getElementById('btnSelectMode').style.display = 'block';
-        
-        [...reports].reverse().forEach(r => {
-          const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
-          const done = photos >= 4;
-          const d = document.createElement('div');
-          d.className = 'report-card';
-          d.dataset.id = String(r.id);
-          
-          if (isSelectMode) d.classList.add('selecting');
-          if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
-
-          const reportTitle = getReportTitle(r);
-          const safeTitle = escapeHtml(reportTitle);
-          const safeDate = escapeHtml(r.date || '');
-          const safeFactory = escapeHtml(r.factory || '');
-          const safeReviewer = escapeHtml(r.reviewer || '');
-
-          d.innerHTML = `
-            <div class="rc-left">
-              <div class="rc-select-circle"></div>
-              <div>
-                <div class="rc-title">${safeTitle}<span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'Done' : 'In Progress'}</span></div>
-                <div class="rc-sub">${safeDate} · ${safeFactory} · ${safeReviewer}</div>
-              </div>
-            </div>
-            <div class="rc-right" style="${isSelectMode ? 'display:none' : 'display:flex; align-items:center; gap:6px;'}">
-              <button class="rc-action-btn btn-share-report" title="Chia sẻ file JSON">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              </button>
-              <button class="rc-action-btn btn-dup-report" title="Nhân bản báo cáo">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              </button>
-              <div class="rc-arrow" style="color:var(--muted); font-size:18px; line-height:1;">›</div>
-            </div>
-          `;
-
-          const shareBtn = d.querySelector('.btn-share-report');
-          if (shareBtn) {
-            shareBtn.onclick = (e) => {
-              e.stopPropagation();
-              shareReportById(r.id);
-            };
-          }
-          const dupBtn = d.querySelector('.btn-dup-report');
-          if (dupBtn) {
-            dupBtn.onclick = (e) => {
-              e.stopPropagation();
-              duplicateReportById(r.id);
-            };
-          }
-          
-          d.onclick = (e) => {
-            if (isSelectMode) {
-              const id = String(r.id);
-              if (selectedReportIds.has(id)) selectedReportIds.delete(id);
-              else selectedReportIds.add(id);
-              updateBatchUI();
-            } else {
-              openReport(r.id);
-            }
-          };
-          
-          list.appendChild(d);
-        });
+        renderFilteredHomeList();
       } catch (err) {
-          alert("Lỗi tải màn hình chính: " + err.message);
+        alert("Lỗi tải màn hình chính: " + err.message);
       }
     }
 
@@ -3136,7 +3232,14 @@ window.FONT_ROBOTO = FONT_ROBOTO;
       const actual = Number.parseFloat(dimension.actual);
       const drawing = Number.parseFloat(dimension.drawing);
       if (!Number.isFinite(actual) || !Number.isFinite(drawing)) return null;
-      return Math.abs(actual - drawing) > 10 ? 'color-red' : 'color-blue';
+
+      const unit = (dimension.actualUnit || dimension.drawingUnit || 'mm').trim().toLowerCase();
+      const diff = Math.abs(actual - drawing);
+
+      // Nếu đơn vị là cm thì ngưỡng dung sai là 1 cm (tương đương 10 mm)
+      // Nếu là mm thì ngưỡng là 10 mm
+      const threshold = (unit === 'cm') ? 1 : 10;
+      return diff > threshold ? 'color-red' : 'color-blue';
     }
 
     function normalizeDimensionMeasurement(dimension, field) {
@@ -5991,10 +6094,12 @@ window.initBVSortable = initBVSortable;
 window.initCachedLogos = initCachedLogos;
 window.initChecklistSortable = initChecklistSortable;
 window.initCropper = initCropper;
+window.as = as;
+window.handleHomeSearch = handleHomeSearch;
+window.setHomeStatusFilter = setHomeStatusFilter;
 window.initDB = initDB;
 window.initHomeDragAndDrop = initHomeDragAndDrop;
 window.isColorDark = isColorDark;
-window.isFileDrag = isFileDrag;
 window.isHeicFile = isHeicFile;
 window.isImageFile = isImageFile;
 window.loadData = loadData;

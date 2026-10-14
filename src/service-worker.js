@@ -1,10 +1,15 @@
 // Service Worker for PP Sample Review (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v3.0.1';
+const CACHE_NAME = 'pp-review-v3.0.2';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './styles/main.css',
+  './modules/app.js',
+  './modules/font.js',
+  './modules/logo.js',
+  './modules/sortable-plugin.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js',

@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DIGITAL REPORT">
   
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
   <title>DIGITAL REPORT</title>
   
@@ -23,9 +23,6 @@
   <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-</head>
-
-<body>
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-left">
@@ -33,7 +30,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         <span class="btn-lbl">Reports</span>
       </button>
-      <div class="topbar-brand"><img id="topbarBrandLogo" src="SOFACOMPANY_White.png" alt="SOFACOMPANY"></div>
+      <div class="topbar-brand"><img id="topbarBrandLogo" alt="SOFACOMPANY"></div>
       <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Trạng thái đồng bộ"><span class="dot">●</span> <span id="saveText">Synced</span></div>
     </div>
 
@@ -85,6 +82,18 @@
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
     <input type="file" id="restoreDbInput" accept=".json" style="display:none" onchange="restoreDatabase(event)">
     
+    <!-- SEARCH & STATUS FILTER STRIP -->
+    <div class="home-search-container" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+      <div style="position:relative; width:100%;">
+        <input type="text" id="homeSearchInput" placeholder="🔍 Tìm theo Model, Tên sản phẩm, Nhà máy, QC..." oninput="handleHomeSearch()" style="width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--apple-radius-sm); font-size:13.5px; outline:none; background:#fff; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex; gap:6px;" id="homeFilterButtons">
+        <button class="filter-chip active" onclick="setHomeStatusFilter('all')" data-filter="all" style="padding:5px 12px; font-size:12px; font-weight:600; border-radius:14px; border:1px solid var(--border); background:var(--accent); color:#fff; cursor:pointer;">Tất cả</button>
+        <button class="filter-chip" onclick="setHomeStatusFilter('in-progress')" data-filter="in-progress" style="padding:5px 12px; font-size:12px; font-weight:600; border-radius:14px; border:1px solid var(--border); background:#fff; color:var(--muted); cursor:pointer;">In Progress</button>
+        <button class="filter-chip" onclick="setHomeStatusFilter('done')" data-filter="done" style="padding:5px 12px; font-size:12px; font-weight:600; border-radius:14px; border:1px solid var(--border); background:#fff; color:var(--muted); cursor:pointer;">Done</button>
+      </div>
+    </div>
+
     <div id="reportsList"></div>
     <div class="empty-state" id="emptyState">Chưa có report nào.<br>Nhấn "+ New Report" để bắt đầu.</div>
   </div>
