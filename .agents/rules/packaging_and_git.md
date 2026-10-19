@@ -11,4 +11,10 @@
   - File dữ liệu JSON, CSV, Excel (ví dụ: `*.json`, `*.xlsx`, `*.csv`).
   - File tài liệu xuất ra: `*.pdf`.
   - File tài nguyên rời: `*.png`, `*.jpg`, `*.svg`, `font_*.js`.
-  - File cấu hình IDE hoặc tạm: `.vscode/`, `scratch/`, `*.log`.
+## 3. Mandatory Version Auto-Increment (+0.1 per Git Push)
+* **BẮT BUỘC:** Mỗi khi người dùng yêu cầu commit / push Git hoặc khi thực hiện một đợt phát hành mới:
+  - Phiên bản ứng dụng BẮT BUỘC phải tăng lên đúng `+0.1` (Ví dụ: `V2.0` ➔ `V2.1` ➔ `V2.2` ➔ ...).
+  - Phải cập nhật đồng bộ ở 3 nơi:
+    1. Huy hiệu phiên bản trong `index.html`: `<span id="appVersionBadge">[V2.x]</span>` (viết liền, không có khoảng trắng).
+    2. Trường `"version"` trong `package.json`.
+    3. Tiêu đề commit message (Ví dụ: `feat: release V2.1 ...`).

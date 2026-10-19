@@ -3,7 +3,6 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 import { resolve } from 'path';
 
 export default defineConfig({
-  root: 'src',
   plugins: [viteSingleFile()],
   build: {
     target: 'esnext',

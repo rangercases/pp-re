@@ -11,6 +11,7 @@ attention, and crafting experiences that feel effortless.
 
 Analyze this Prototype Sample Review Report (MD 2756 - Ricardo Coffee Table D1000) 
 as if you were tasked with redesigning it for SOFACOMPANY's internal design system.
+Always adhere to and consult the ElevenLabs Design System rules in `elevenlabs-design-system-rules.md`.
 
 Provide your assessment following this framework:
 
