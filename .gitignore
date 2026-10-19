@@ -13,6 +13,8 @@
 !package.json
 !package-lock.json
 !vite.config.js
+!pre_prod_logo.png
+!pre_prod_logo.jpg
 !src/
 !src/**
 
