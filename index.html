@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#1a3a2a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1934,7 +1934,7 @@
       aspect-ratio: 4/3;
       position: relative;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     .photo-slot:hover {
@@ -2184,7 +2184,7 @@
       border: 1px solid var(--line);
       box-shadow: var(--ring-card);
       background: #ffffff;
-      touch-action: none;
+      touch-action: pan-y;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -2425,7 +2425,7 @@
       font-size: 10.5px;
       user-select: none;
       cursor: grab;
-      touch-action: none;
+      touch-action: pan-y;
       transition: background 0.15s ease;
     }
 
@@ -2446,6 +2446,7 @@
       font-size: 11px;
       cursor: grab;
       letter-spacing: 0.5px;
+      touch-action: none;
     }
 
     .dim-drag-handle:active {
@@ -3683,26 +3684,38 @@
       border-color: var(--line);
     }
 
-    /* SAVE BAR */
+    /* SAVE BAR (ELEVENLABS FLOATING PILL DOCK) */
     .save-bar {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-      padding: 8px 14px max(12px, env(safe-area-inset-bottom));
-      min-height: calc(64px + env(safe-area-inset-bottom));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 460px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--line);
+      border-radius: var(--r-pill, 9999px);
+      padding: 6px 8px;
       z-index: 55;
       display: flex;
+      align-items: center;
       gap: 8px;
-      max-width: 760px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
       margin: 0 auto;
+      box-sizing: border-box;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
     }
 
     .sbar-btn {
       flex: 1;
-      padding: 11px 16px;
+      height: 42px;
+      min-height: 42px;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: var(--r-pill, 9999px);
       font-size: 12px;
       font-weight: 700;
@@ -3713,7 +3726,7 @@
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .sbar-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
     }
 
     .sbar-btn.sec {
@@ -4120,13 +4133,11 @@
     @media (display-mode: standalone),
     (display-mode: fullscreen) {
       .batch-bar {
-        padding-bottom: 30px;
-        min-height: 70px;
+        bottom: max(24px, env(safe-area-inset-bottom));
       }
 
       .save-bar {
-        padding-bottom: 30px;
-        min-height: 82px;
+        bottom: max(20px, env(safe-area-inset-bottom));
       }
 
       .screen {
@@ -4134,6 +4145,12 @@
       }
     }
 
+    /* ════════════════════════════════════════════════════════════════════════════
+       📱 IPHONE & MOBILE OPTIMIZATIONS (< 640px)
+       - Chặn Safari Auto-Zoom bằng font-size 16px trên mobile
+       - Single-column cho Dimension Cards và Form fields
+       - Touch targets chuẩn Apple HIG (≥ 44px tap area)
+       ════════════════════════════════════════════════════════════════════════════ */
     @media (max-width: 640px) {
       .topbar {
         height: calc(46px + env(safe-area-inset-top));
@@ -4187,8 +4204,8 @@
         padding: 5px 9px;
         font-size: 11px;
         border-radius: var(--r-pill, 9999px);
-        min-width: 28px;
-        height: 28px;
+        min-width: 32px;
+        height: 32px;
         gap: 3px;
       }
 
@@ -4207,11 +4224,118 @@
       }
 
       .screen {
-        padding: 10px;
+        padding: 10px 10px calc(85px + env(safe-area-inset-bottom));
+      }
+
+      /* Single Column Dynamic Dimensions trên iPhone */
+      .dim-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+        padding: 4px;
+      }
+
+      /* Form Fields thoải mái, không chèn ép trên iPhone */
+      .form-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .fcell {
+        border-right: none !important;
+      }
+
+      .fcell[style*="grid-column: span 2"] {
+        grid-column: span 1 !important;
+      }
+
+      .fcell:last-child {
+        border-bottom: none !important;
+      }
+
+      /* Module Cards danh sách báo cáo vừa khít iPhone */
+      .module-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+
+      .tabs-wrap {
+        padding: 0 12px;
+      }
+
+      .tab {
+        height: 32px;
+        padding: 6px 12px;
+        font-size: 10.5px;
+      }
+
+      .add-photo-btn {
+        min-height: 44px;
+        padding: 12px;
       }
 
       .dim-batch-bar {
         top: calc(46px + env(safe-area-inset-top));
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+       🔍 CHẶN IOS SAFARI AUTO-ZOOM TRÊN THIẾT BỊ CẢM ỨNG (≤ 768px)
+       ════════════════════════════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      input,
+      textarea,
+      select,
+      .fcell input,
+      .fcell textarea,
+      .fcell select,
+      .home-search-box input,
+      .dim-name-input,
+      .dim-value-input,
+      .dim-unit-input,
+      .free-caption input,
+      .watchout-note-input,
+      .assembly-step-input,
+      .bv-table input,
+      .modal-box input,
+      .modal-box textarea,
+      .batch-input {
+        font-size: 16px !important;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+       📱 IPAD & TABLET BENTO RESPONSIVE (641px - 1024px)
+       - Mở rộng container screen lên 960px để Bento phát huy tối đa không gian
+       - 2 cột Dimensions cân đối, Bento cards thoáng đãng
+       - Thanh điều hướng nổi phù hợp ngón tay cái cầm tablet
+       ════════════════════════════════════════════════════════════════════════════ */
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .screen {
+        max-width: 960px;
+        padding: 16px 20px calc(85px + env(safe-area-inset-bottom));
+      }
+
+      .dim-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .module-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 14px;
+      }
+
+      .bento-metrics-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .topbar {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+      }
+
+      .save-bar {
+        max-width: 520px;
       }
     }
 
@@ -5627,6 +5751,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyThemeToWeb();
       initCachedLogos();
+      initTouchSwipeNavigation();
     });
 
 
@@ -8883,9 +9008,9 @@
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
           animation: 180,
-          delay: 150,
+          delay: 220,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 10,
           draggable: '.photo-slot',
           handle: '.free-drag-handle, .photo-slot',
           filter: 'input, textarea, select, button, .pact, .tap-option, .dual-tap-box, .ignore-drag',
@@ -9156,9 +9281,9 @@
         if (!isDimSelectMode) {
           grid._sortable = new Sortable(grid, {
             animation: 180,
-            delay: 200,
+            delay: 220,
             delayOnTouchOnly: true,
-            touchStartThreshold: 5,
+            touchStartThreshold: 10,
             draggable: '.dim-slot:not(.add-dim-btn)',
             handle: '.dim-slot-topbar, .dim-drag-handle',
             filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
@@ -9454,9 +9579,9 @@
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
           animation: 180,
-          delay: 200,
+          delay: 220,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 10,
           draggable: '.free-photo-item',
           handle: '.free-drag-handle, .free-photo-item',
           filter: 'input, textarea, select, button, .pact, .free-caption, .free-caption input, .ignore-drag',
@@ -9627,9 +9752,9 @@
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
           animation: 180,
-          delay: 200,
+          delay: 220,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 10,
           draggable: '.watchout-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
@@ -9861,9 +9986,9 @@
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
           animation: 180,
-          delay: 200,
+          delay: 220,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 10,
           draggable: '.testing-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
@@ -10095,9 +10220,9 @@
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
           animation: 180,
-          delay: 200,
+          delay: 220,
           delayOnTouchOnly: true,
-          touchStartThreshold: 5,
+          touchStartThreshold: 10,
           draggable: '.assembly-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
@@ -10957,6 +11082,57 @@
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }
     function nextSection() { if (curSec < D.modules.length - 1) showSection(curSec + 1); }
 
+    // ═══════════════ TOUCH SWIPE GESTURE NAVIGATION (IPHONE / IPAD) ═══════════════
+    function initTouchSwipeNavigation() {
+      const screen = document.getElementById('editScreen');
+      if (!screen || screen._hasSwipeInit) return;
+      screen._hasSwipeInit = true;
+
+      let startX = 0, startY = 0, startTime = 0;
+      let isSwiping = false;
+
+      screen.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) { isSwiping = false; return; }
+        const target = e.target;
+        // Bỏ qua khi chạm vào ô nhập liệu, nút bấm, modal, cropper, thanh tabs hoặc thanh kéo thả
+        if (target.closest('input, textarea, select, button, .dim-drag-handle, .sortable-handle, .modal-box, .cropper-container, .tabs-wrap, .color-picker-dock, .ws-theme-dock, .save-bar, .batch-bar')) {
+          isSwiping = false;
+          return;
+        }
+        // Bỏ qua nếu có modal đang mở
+        const camModal = document.getElementById('camModal');
+        if (camModal && !camModal.classList.contains('hidden')) { isSwiping = false; return; }
+        const stylerModal = document.getElementById('stylerModal');
+        if (stylerModal && !stylerModal.classList.contains('hidden')) { isSwiping = false; return; }
+
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+        isSwiping = true;
+      }, { passive: true });
+
+      screen.addEventListener('touchend', (e) => {
+        if (!isSwiping || e.changedTouches.length !== 1) return;
+        isSwiping = false;
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+        const elapsed = Date.now() - startTime;
+
+        // Chuẩn cử chỉ vuốt ngang: thời gian < 500ms, khoảng cách ngang >= 60px, lệch dọc <= 45px
+        if (elapsed < 500 && Math.abs(diffX) >= 60 && Math.abs(diffY) <= 45) {
+          if (diffX < 0) {
+            // Vuốt từ phải sang trái -> Module tiếp theo
+            nextSection();
+          } else {
+            // Vuốt từ trái sang phải -> Module trước đó
+            prevSection();
+          }
+        }
+      }, { passive: true });
+    }
+
     function updateTopbar() {
       document.getElementById('topTitle').textContent = getReportTitle(D);
       const brandLogo = document.getElementById('topbarBrandLogo');
@@ -11142,7 +11318,7 @@
         if (btnStyler) btnStyler.style.display = 'none';
         const wrapEl = document.getElementById('tabsWrap');
         if (wrapEl) wrapEl.scrollLeft = 0;
-        document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); window.scrollTo(0, 0);
+        document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); initTouchSwipeNavigation(); window.scrollTo(0, 0);
       } catch (err) {
         alert("Error opening report: " + err.message);
       }

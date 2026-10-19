@@ -24,3 +24,10 @@ dist/
 scratch/
 graphify-out/
 backup_index_monolith.html
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
