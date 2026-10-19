@@ -302,8 +302,8 @@
     .topbar-left {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
+      gap: 8px;
+      flex: 1 1 0;
       min-width: 0;
     }
 
@@ -316,15 +316,16 @@
       background: var(--card);
       border: 1px solid var(--line-strong);
       color: var(--ink);
-      padding: 0 14px;
+      padding: 0 12px;
       height: 32px;
       border-radius: var(--r-pill);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
     }
 
     .topbar-back:hover:not(:disabled) {
@@ -346,27 +347,35 @@
     }
 
     .topbar-brand img {
-      height: 18px;
+      height: 16px;
       width: auto;
-      max-width: 140px;
+      max-width: 120px;
       object-fit: contain;
       filter: invert(1) brightness(0.2);
     }
 
+    .topbar-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 2 1 0;
+      min-width: 0;
+      text-align: center;
+    }
+
     .topbar-title {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
       font-family: var(--font-display);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--ink-strong);
       user-select: none;
-      pointer-events: none;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
 
     .autosave-indicator {
@@ -490,12 +499,15 @@
 
     /* ELEVENLABS EDITORIAL TABS */
     .tabs-wrap {
+      position: sticky;
+      top: calc(var(--header-h, 48px) + env(safe-area-inset-top));
+      z-index: 55;
       width: 100%;
       max-width: 100vw;
       box-sizing: border-box;
-      background: rgba(245, 243, 241, 0.96);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(245, 243, 241, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--line);
       overflow-x: auto;
       scroll-behavior: smooth;
@@ -557,7 +569,7 @@
       max-width: 760px;
       margin: 0 auto;
       box-sizing: border-box;
-      padding-bottom: calc(85px + env(safe-area-inset-bottom));
+      padding-bottom: calc(140px + env(safe-area-inset-bottom));
     }
 
     .screen.active {
@@ -566,7 +578,7 @@
 
     #homeScreen {
       max-width: 100%;
-      padding: 24px 24px calc(85px + env(safe-area-inset-bottom)) 24px;
+      padding: 24px 24px calc(140px + env(safe-area-inset-bottom)) 24px;
     }
 
     #moduleWorkspaceView {
@@ -1861,60 +1873,90 @@
       box-shadow: 0 0 8px rgba(26, 58, 42, 0.12);
     }
 
-    /* CHECKBOXES */
+    /* CHECKBOXES & ELEVENLABS TOUCH PILL CHIPS */
     .check-row {
-      padding: 9px 12px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border-light);
       display: flex;
-      gap: 10px;
+      align-items: center;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
     .check-row-label {
       font-size: 10px;
+      font-weight: 700;
       color: var(--muted);
-      min-width: 64px;
+      min-width: 74px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding-top: 2px;
+      padding-top: 1px;
     }
 
     .checks {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .chk {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 8px;
       font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
+      user-select: none;
+      padding: 6px 13px;
+      min-height: 38px;
+      border-radius: var(--r-pill, 9999px);
+      background: var(--sunken, #f7f6f4);
+      border: 1px solid var(--line, #e6e3df);
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    .chk:hover {
+      background: #ffffff;
+      border-color: var(--line-strong, #ccc);
+    }
+
+    .chk:active {
+      transform: scale(0.97);
+    }
+
+    .chk:has(.chkbox.on) {
+      background: var(--module-theme-light, #e8f6f0);
+      border-color: var(--module-theme, #0A7E5C);
+      color: var(--module-theme, #0A7E5C);
     }
 
     .chkbox {
-      width: 15px;
-      height: 15px;
-      border: 1.5px solid var(--border);
-      border-radius: 4px;
+      width: 17px;
+      height: 17px;
+      border: 1.5px solid var(--border, #c0bbb4);
+      border-radius: 5px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: #fff;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
 
     .chkbox.on {
-      background: var(--module-theme, var(--accent));
-      border-color: var(--module-theme, var(--accent));
+      background: var(--module-theme, #0A7E5C);
+      border-color: var(--module-theme, #0A7E5C);
     }
 
     .chkbox.on::after {
       content: '✓';
       color: #fff;
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 800;
-      filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+      line-height: 1;
     }
 
     /* PHOTO GRID */
@@ -2766,8 +2808,10 @@
     }
 
     .dim-row .dim-unit-input {
-      width: 34px;
+      width: 44px;
+      min-width: 44px;
       text-align: left;
+      padding: 3px 4px;
     }
 
     .dim-row .color-dot {
@@ -4164,8 +4208,9 @@
       }
 
       .topbar-back {
-        padding: 5px 10px;
+        padding: 5px 9px;
         border-radius: var(--r-pill, 9999px);
+        font-size: 10.5px;
       }
 
       .topbar-brand {
@@ -4177,13 +4222,36 @@
         max-width: 66px;
       }
 
-      .topbar-title {
+      /* In Editor mode on mobile, hide logo to give room for back button and title */
+      body.in-editor .topbar-brand {
         display: none !important;
+      }
+
+      .topbar-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .topbar-title {
+        display: block !important;
+        max-width: 135px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .autosave-indicator {
         margin-right: 0;
-        padding: 0 2px;
+        padding: 0;
+        gap: 2px;
       }
 
       .autosave-indicator #saveText {
@@ -4191,7 +4259,7 @@
       }
 
       .topbar-actions {
-        gap: 5px;
+        gap: 4px;
         padding: 0 2px 0 0;
       }
 
@@ -4201,7 +4269,7 @@
       }
 
       .topbar-btn {
-        padding: 5px 9px;
+        padding: 5px 8px;
         font-size: 11px;
         border-radius: var(--r-pill, 9999px);
         min-width: 32px;
@@ -4224,7 +4292,19 @@
       }
 
       .screen {
-        padding: 10px 10px calc(85px + env(safe-area-inset-bottom));
+        padding: 10px 10px calc(140px + env(safe-area-inset-bottom)) !important;
+      }
+
+      #homeScreen {
+        max-width: 100vw;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        padding: 14px 12px calc(140px + env(safe-area-inset-bottom)) 12px;
+      }
+
+      .workspace-body {
+        max-width: 100%;
+        overflow-x: hidden;
       }
 
       /* Single Column Dynamic Dimensions trên iPhone */
@@ -4258,7 +4338,8 @@
       }
 
       .tabs-wrap {
-        padding: 0 12px;
+        top: calc(46px + env(safe-area-inset-top));
+        padding: 0 10px;
       }
 
       .tab {
@@ -4274,6 +4355,33 @@
 
       .dim-batch-bar {
         top: calc(46px + env(safe-area-inset-top));
+      }
+
+      /* Apple Checklist layout on iPhone */
+      .apple-criterion-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        padding: 9px 10px;
+        gap: 6px 8px;
+      }
+
+      .apple-criterion-row .criterion-bullet {
+        margin-top: 3px;
+      }
+
+      .apple-criterion-row .criterion-text-input {
+        flex: 1 1 calc(100% - 32px);
+        min-width: 0;
+        font-size: 13.5px !important;
+        line-height: 1.35;
+      }
+
+      .apple-criterion-row .apple-seg-toggle {
+        margin-left: 20px;
+      }
+
+      .apple-criterion-row .criterion-del-btn {
+        margin-left: auto;
       }
     }
 
@@ -4300,6 +4408,20 @@
       .batch-input {
         font-size: 16px !important;
       }
+
+      /* Ẩn tùy chọn Paste trên mobile, nhường chỗ cho 2 nút lớn Camera và Library */
+      .dual-tap-box .tap-option:nth-child(3) {
+        display: none !important;
+      }
+
+      .sec-head {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .module-head-actions {
+        flex-shrink: 0;
+      }
     }
 
     /* ════════════════════════════════════════════════════════════════════════════
@@ -4311,7 +4433,7 @@
     @media (min-width: 641px) and (max-width: 1024px) {
       .screen {
         max-width: 960px;
-        padding: 16px 20px calc(85px + env(safe-area-inset-bottom));
+        padding: 16px 20px calc(140px + env(safe-area-inset-bottom)) !important;
       }
 
       .dim-grid {
@@ -4336,6 +4458,25 @@
 
       .save-bar {
         max-width: 520px;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+       👆 TOUCH & NON-HOVER INTERACTION FIXES (IPHONE / IPAD)
+       - Luôn hiển thị các nút thao tác ảnh (.pactions) và nút xóa (.criterion-del-btn)
+       - Tránh trường hợp người dùng cảm ứng không có chuột hover nên không thấy nút
+       ════════════════════════════════════════════════════════════════════════════ */
+    @media (hover: none), (max-width: 1024px) {
+      .pactions {
+        opacity: 0.95 !important;
+        pointer-events: auto !important;
+      }
+
+      .criterion-del-btn,
+      .group-del-btn,
+      .dim-del-slot-btn {
+        opacity: 0.85 !important;
+        pointer-events: auto !important;
       }
     }
 
@@ -4674,11 +4815,13 @@
         <span class="btn-lbl">REPORTS</span>
       </button>
       <div class="topbar-brand"><img id="topbarBrandLogo" src="SOFACOMPANY_White.png" alt="SOFACOMPANY"></div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="topbar-title" id="topTitle">SUPER REPORT</div>
       <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Sync Status"><span
           class="dot">●</span> <span id="saveText">SYNCED</span></div>
     </div>
-
-    <div class="topbar-title" id="topTitle">SUPER REPORT</div>
 
     <div class="topbar-actions">
       <!-- Workspace Actions (Level 2: Pre-Production List) -->
@@ -4821,7 +4964,7 @@
             onclick="document.getElementById('importInput').click()"
             title="Import JSON report or press Ctrl+V" style="flex:1;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            <span>IMPORT (OR CTRL+V)</span>
+            <span>IMPORT FILE</span>
           </button>
         </div>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
@@ -8172,6 +8315,7 @@
     async function goHome() {
       currentId = null; curSec = 0;
       D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
+      document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
       ['tabsWrap', 'saveBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
@@ -11303,6 +11447,7 @@
         selectedDimIndices.clear();
         resetHistory();
         buildUI(); loadData(); showSection(0);
+        document.body.classList.add('in-editor');
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
         ['tabsWrap', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
