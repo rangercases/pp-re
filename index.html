@@ -3863,6 +3863,14 @@
       background: #fee2e2;
     }
 
+    /* Scroll Lock for Modals */
+    html.scroll-locked,
+    body.scroll-locked {
+      overflow: hidden !important;
+      touch-action: none !important;
+      -webkit-overflow-scrolling: auto !important;
+    }
+
     /* CROPPER MODAL */
     .modal-overlay {
       position: fixed;
@@ -3875,6 +3883,7 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      overscroll-behavior: contain;
     }
 
     .modal-overlay.hidden,
@@ -6045,6 +6054,7 @@
     function closePdfStyler() {
       stylerModalOpen = false;
       document.getElementById('pdfStylerModal').classList.add('hidden');
+      unlockBodyScroll();
     }
 
     function populateStylerUI() {
@@ -8299,6 +8309,7 @@
     }
 
     function closeCamera() {
+      unlockBodyScroll();
       if (cropper) { cropper.destroy(); cropper = null; }
       currentOriginalImg = null;
       const image = document.getElementById('cropperImage');
@@ -9370,17 +9381,33 @@
       showToast(`✓ Removed module "${mod.name}"`);
     }
 
+    // ═══════════════ MODAL SCROLL LOCK HELPERS ═══════════════
+    function lockBodyScroll() {
+      document.body.classList.add('scroll-locked');
+      document.documentElement.classList.add('scroll-locked');
+    }
+
+    function unlockBodyScroll() {
+      const hasOpenModal = document.querySelector('.modal-overlay:not(.hidden)');
+      if (!hasOpenModal) {
+        document.body.classList.remove('scroll-locked');
+        document.documentElement.classList.remove('scroll-locked');
+      }
+    }
+
     // ═══════════════ ADD & RESTORE MODULE CONTROLLER ═══════════════
     function openAddModuleModal() {
       const modal = document.getElementById('addModuleModal');
       if (!modal) return;
       renderAddModuleList();
       modal.classList.remove('hidden');
+      lockBodyScroll();
     }
 
     function closeAddModuleModal() {
       const modal = document.getElementById('addModuleModal');
       if (modal) modal.classList.add('hidden');
+      unlockBodyScroll();
     }
 
     function switchModule(modType) {
@@ -9683,13 +9710,18 @@
       `;
     }
 
-        // Close Add Module modal on overlay backdrop click
+        // Close Add Module modal on overlay backdrop click & prevent touchmove on backdrop
     document.addEventListener('DOMContentLoaded', () => {
       const addModal = document.getElementById('addModuleModal');
       if (addModal) {
         addModal.addEventListener('click', (e) => {
           if (e.target.id === 'addModuleModal') closeAddModuleModal();
         });
+        addModal.addEventListener('touchmove', (e) => {
+          if (e.target.id === 'addModuleModal') {
+            e.preventDefault();
+          }
+        }, { passive: false });
       }
     });
 
