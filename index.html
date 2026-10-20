@@ -283,10 +283,10 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       color: var(--ink);
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
-      gap: 0;
+      gap: 12px;
       height: calc(var(--header-h) + env(safe-area-inset-top));
       padding-top: env(safe-area-inset-top);
       padding-left: max(16px, env(safe-area-inset-left));
@@ -302,9 +302,10 @@
     .topbar-left {
       display: flex;
       align-items: center;
+      justify-content: flex-start;
       gap: 8px;
-      flex: 1 1 0;
       min-width: 0;
+      justify-self: start;
     }
 
     .topbar-back {
@@ -359,9 +360,9 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      flex: 2 1 0;
       min-width: 0;
       text-align: center;
+      justify-self: center;
     }
 
     .topbar-title {
@@ -491,10 +492,12 @@
 
     .topbar-actions {
       display: flex;
+      align-items: center;
+      justify-content: flex-end;
       gap: 6px;
       padding: 0;
-      align-items: center;
-      flex-shrink: 0;
+      min-width: 0;
+      justify-self: end;
     }
 
     /* ELEVENLABS EDITORIAL TABS */
@@ -4200,6 +4203,11 @@
         height: calc(46px + env(safe-area-inset-top));
         padding-left: max(4px, env(safe-area-inset-left));
         padding-right: max(6px, env(safe-area-inset-right));
+        gap: 6px;
+      }
+
+      body.in-editor .topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
       }
 
       .topbar-left {
@@ -4232,7 +4240,6 @@
         align-items: center;
         justify-content: center;
         gap: 4px;
-        flex: 1 1 auto;
         min-width: 0;
         overflow: hidden;
       }
@@ -8400,6 +8407,7 @@
 
     function backToLauncherHub() {
       currentActiveModule = null;
+      document.body.classList.remove('in-editor');
       document.documentElement.style.removeProperty('--module-theme');
       document.documentElement.style.removeProperty('--module-theme-light');
 
