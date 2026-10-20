@@ -12850,7 +12850,7 @@
         drawPdfBadge(`${dimTotal} Dim Issue${dimTotal > 1 ? 's' : ''}`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
       }
 
-      y += sumBoxH + 4;
+      y += sumBoxH + 8.5;
 
       const cp = D.coverPhotos || {};
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
@@ -12874,15 +12874,15 @@
       const totalContentW = W - M * 2; // ~182mm
 
       if (validCovers.length > 0) {
-        doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 4;
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 6.5;
 
         if (validCovers.length === 1) {
-          // 1 ẢNH DUY NHẤT: CÂN ĐỐI, CĂN CHÍNH GIỮA TRANG BÌA (KHÔNG BÈ 100% OVER)
+          // 1 ẢNH DUY NHẤT: CÂN ĐỐI, CĂN CHÍNH GIỮA TRỌNG TÂM THỊ GIÁC (KHÔNG BÈ 100% OVER, KHÔNG BỊ HẪNG TRÊN DƯỚI)
           const c = validCovers[0];
-          const pw = 118; // Chiều rộng cân đối (~65% trang)
-          const ph = 80;  // Chiều cao cân đối
+          const pw = 126; // Chiều rộng cân đối (~69% trang)
+          const ph = 88;  // Chiều cao cân đối, sắc nét
           const px = (W - pw) / 2; // Căn chính giữa trang bìa
-          const py = y;
+          const py = y + 10; // Hạ nhẹ xuống trọng tâm quang học (Optical Center) để trang bìa thuận mắt
 
           let barX = px;
           let barY = py + ph;
@@ -12906,7 +12906,7 @@
         } else if (validCovers.length === 2) {
           // 2 ẢNH: XẾP SONG SONG 2 BÊN CÂN ĐỐI
           const pw = (totalContentW - gapX) / 2;
-          const ph = 76;
+          const ph = 80;
           let maxY = y;
 
           validCovers.forEach((c, idx) => {
