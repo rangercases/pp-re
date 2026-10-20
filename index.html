@@ -5519,7 +5519,7 @@
         <div class="form-grid">
           <div class="fcell" style="grid-column: span 2;">
             <div class="flabel">REPORT TITLE</div>
-            <input id="fReportTitle" placeholder="PP SAMPLE REVIEW REPORT" oninput="as()">
+            <input id="fReportTitle" placeholder="PRE-PRODUCTION SAMPLE REVIEW REPORT" oninput="as()">
           </div>
           <div class="fcell">
             <div class="flabel">Model No.</div><input id="fModel" placeholder="MD 2741" oninput="as()">
@@ -5877,7 +5877,7 @@
               <label style="font-weight: 600; color: #222;">Cover Title Text:</label>
               <input type="text" id="cfg_reportTitle"
                 style="width: 100%; border: 1px solid #ccc; border-radius: var(--rs, 6px); padding: 5px 8px; font-size: 11.5px; font-weight: 600; color: #1a3a2a;"
-                placeholder="PP SAMPLE REVIEW REPORT" oninput="onStylerTitleChange(this.value)">
+                placeholder="PRE-PRODUCTION SAMPLE REVIEW REPORT" oninput="onStylerTitleChange(this.value)">
             </div>
             <div class="styler-control">
               <label>Logo Size:</label>
@@ -6015,7 +6015,7 @@
     // ═══════════════ PDF & HEADER VISUAL STYLER CONTROLLER ═══════════════
     // Locked default configuration extracted from "PP_OUTDOOR CHAIR COVER" standard
     const DEFAULT_PDF_CONFIG = {
-      reportTitle: 'PP SAMPLE REVIEW REPORT',
+      reportTitle: 'PRE-PRODUCTION SAMPLE REVIEW REPORT',
       themeColor: '#ffffff',      // Light clean header background
       headerTextColor: '#2d2a2a', // High-contrast technical text
       bannerH: 24,                // 24mm standard banner height
@@ -6090,7 +6090,7 @@
 
     function populateStylerUI() {
       const c = pdfConfig;
-      setVal('cfg_reportTitle', c.reportTitle || 'PP SAMPLE REVIEW REPORT');
+      setVal('cfg_reportTitle', c.reportTitle || 'PRE-PRODUCTION SAMPLE REVIEW REPORT');
       setVal('cfg_themeColor', c.themeColor);
       setText('val_themeColor', c.themeColor);
       setVal('cfg_headerTextColor', c.headerTextColor);
@@ -6223,7 +6223,7 @@
         ctx.font = `bold ${fontPx}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const displayTitle = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (pdfConfig.reportTitle || 'PP SAMPLE REVIEW REPORT');
+        const displayTitle = (D && D.reportTitle && D.reportTitle.trim()) ? D.reportTitle.trim() : (pdfConfig.reportTitle || 'PRE-PRODUCTION SAMPLE REVIEW REPORT');
         ctx.fillText(displayTitle, canvas.width / 2, (pdfConfig.titleY || 16) * scale);
 
         // Render mô phỏng phần thông tin sản phẩm và ô tick bên dưới giống hệt PDF thực tế
@@ -8902,7 +8902,7 @@
         themeColor: '#0A7E5C',
         lightColor: '#E8F6F0',
         title: 'PRE-PRODUCTION',
-        pdfTitle: 'PP SAMPLE REVIEW REPORT',
+        pdfTitle: 'PRE-PRODUCTION SAMPLE REVIEW REPORT',
         defaultModules: DEFAULT_MODULES_PREPROD
       },
       'prototype': {
@@ -13652,7 +13652,7 @@
         setPdfTextOpacity(1);
       }
 
-      const repTitle = (D.reportTitle && D.reportTitle.trim()) || (typeof pdfConfig !== 'undefined' && pdfConfig.reportTitle) || 'PP SAMPLE REVIEW REPORT';
+      const repTitle = (D.reportTitle && D.reportTitle.trim()) || (typeof pdfConfig !== 'undefined' && pdfConfig.reportTitle) || 'PRE-PRODUCTION SAMPLE REVIEW REPORT';
       const parts = [repTitle, D.model, D.desc, D.date].map(s => (s || '').trim()).filter(Boolean);
       const rawFileName = parts.join('_') || 'report';
       const safeFileName = rawFileName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
