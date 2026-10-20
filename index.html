@@ -567,16 +567,21 @@
     }
 
     .tab.sortable-chosen {
-      transform: scale(1.06);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
       z-index: 10 !important;
-      opacity: 0.95;
+      cursor: grabbing !important;
+    }
+
+    .tab.sortable-ghost {
+      opacity: 0.35 !important;
+      background: rgba(45, 90, 61, 0.1) !important;
+      border: 1.5px dashed var(--accent, #2d5a3d) !important;
     }
 
     /* Tab khi đang bám ngón tay di chuyển trên iOS */
     .tab.sortable-fallback {
       opacity: 0.95 !important;
-      transform: scale(1.08) !important;
+      transform: scale(1.06) !important;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
       cursor: grabbing !important;
       z-index: 99999 !important;
@@ -9176,6 +9181,7 @@
       // Kích hoạt Sortable cho các Tab để người dùng kéo thả đổi vị trí module
       if (typeof Sortable !== 'undefined') {
         if (tabsRow._sortable) tabsRow._sortable.destroy();
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
         tabsRow._sortable = new Sortable(tabsRow, {
           draggable: '.tab:not(.ignore-tab-drag)',
           filter: '.ignore-tab-drag',
@@ -9183,13 +9189,13 @@
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
-          forceFallback: true,
+          forceFallback: isTouchDevice,
           fallbackClass: 'sortable-fallback',
-          fallbackOnBody: true,
-          fallbackTolerance: 3,
-          delay: 300,
+          fallbackOnBody: isTouchDevice,
+          fallbackTolerance: isTouchDevice ? 3 : 0,
+          delay: isTouchDevice ? 250 : 0,
           delayOnTouchOnly: true,
-          touchStartThreshold: 7,
+          touchStartThreshold: isTouchDevice ? 7 : 0,
           onMove: function (evt) {
             if (evt.related && evt.related.classList.contains('ignore-tab-drag')) {
               return false;
