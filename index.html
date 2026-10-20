@@ -598,6 +598,40 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
+    /* Add Module Tab Button */
+    .add-module-tab-btn {
+      background: rgba(255, 255, 255, 0.82) !important;
+      border: 1px dashed var(--line-strong, #ccc) !important;
+      color: var(--ink-strong) !important;
+      font-weight: 700 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
+      cursor: pointer !important;
+      padding: 6px 13px !important;
+      height: 30px !important;
+      font-size: 11px !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+      border-radius: var(--r-pill, 9999px) !important;
+      transition: all 0.16s ease !important;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .add-module-tab-btn:hover {
+      background: #ffffff !important;
+      border-color: var(--brand-theme, #0A7E5C) !important;
+      color: var(--brand-theme, #0A7E5C) !important;
+      box-shadow: 0 2px 8px rgba(10, 126, 92, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .add-module-tab-btn:active {
+      transform: scale(0.96);
+    }
+
     /* SCREENS */
     .screen {
       display: none;
@@ -3954,6 +3988,271 @@
       gap: 8px;
     }
 
+    /* ═══════════════ ADD & RESTORE MODULE MODAL STYLES ═══════════════ */
+    .add-module-box {
+      max-width: 540px;
+      width: 100%;
+      background: var(--bg, #f7f6f4);
+      border-radius: var(--r-xl, 18px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+      border: 1px solid var(--line-strong, #ddd);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .add-module-box .modal-head {
+      background: var(--surface, #fff);
+      color: var(--ink-strong, #111);
+      border-bottom: 1px solid var(--line, #e5e5e5);
+      padding: 14px 18px;
+    }
+
+    .add-module-box .modal-head h3 {
+      font-family: var(--font-hud);
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-strong);
+      margin: 0;
+    }
+
+    .add-module-box .modal-head .modal-close {
+      color: var(--ink-strong);
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .add-module-box .modal-head .modal-close:hover {
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .add-module-body {
+      background: var(--bg, #f7f6f4);
+      padding: 16px 18px;
+      max-height: 72vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .add-module-desc-lead {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .module-select-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--r, 12px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: all 0.16s ease;
+    }
+
+    .module-select-card:hover {
+      border-color: var(--brand-theme);
+      box-shadow: 0 3px 10px rgba(10, 126, 92, 0.08);
+    }
+
+    .module-select-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(10, 126, 92, 0.08);
+      color: var(--brand-theme);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .module-select-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .module-select-name {
+      font-family: var(--font-hud);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-strong);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .module-select-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .module-btn-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 14px;
+      min-height: 34px;
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: var(--r-pill, 9999px);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .module-btn-action.btn-restore {
+      background: var(--brand-theme);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(10, 126, 92, 0.22);
+    }
+
+    .module-btn-action.btn-restore:hover {
+      opacity: 0.92;
+      transform: scale(1.02);
+    }
+
+    .module-btn-action.btn-active {
+      background: rgba(10, 126, 92, 0.08);
+      color: var(--brand-theme);
+      border-color: rgba(10, 126, 92, 0.22);
+    }
+
+    .module-btn-action.btn-active:hover {
+      background: rgba(10, 126, 92, 0.15);
+    }
+
+    .photos-subgroup {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--r, 12px);
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .photos-subhead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .photos-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .photo-restore-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: rgba(10, 126, 92, 0.08);
+      color: var(--brand-theme);
+      border: 1px solid rgba(10, 126, 92, 0.2);
+      border-radius: var(--r-pill, 9999px);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .photo-restore-chip:hover {
+      background: var(--brand-theme);
+      color: #fff;
+    }
+
+    .photo-all-active-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--muted);
+      border-radius: var(--r-pill, 9999px);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .custom-photo-create-box {
+      border-top: 1px dashed var(--line);
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .custom-photo-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .custom-photo-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .custom-photo-input {
+      flex: 1;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--r, 8px);
+      font-size: 12px;
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .custom-photo-input:focus {
+      border-color: var(--brand-theme);
+      background: #fff;
+    }
+
+    @media (max-width: 600px) {
+      .add-module-tab-btn {
+        height: 32px !important;
+        padding: 6px 12px !important;
+        font-size: 10.5px !important;
+      }
+      .modal-overlay#addModuleModal {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .add-module-box {
+        max-width: 100%;
+        border-radius: 18px 18px 0 0;
+        max-height: 85vh;
+      }
+      .module-select-card {
+        padding: 10px 12px;
+        gap: 10px;
+      }
+      .module-btn-action {
+        min-height: 38px;
+        padding: 6px 12px;
+      }
+    }
+
     /* ElevenLabs Standard Button (CONTROL_H: 34px) */
     .craft-btn {
       height: 34px;
@@ -5147,7 +5446,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.0.4]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.1.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -5734,6 +6033,25 @@
         <button class="mbtn sec" onclick="handleConflictAction(true)"
           style="color: #c0392b; border-color: #f5c6cb; background: #fff5f5;">Overwrite (Replace)</button>
         <button class="mbtn pri" id="btnConflictCopy" onclick="handleConflictAction(false)">Create Copy (1)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / RESTORE MODULE -->
+  <div class="modal-overlay hidden" id="addModuleModal" style="z-index: 106;">
+    <div class="modal-box add-module-box">
+      <div class="modal-head">
+        <h3 style="display:flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add / Restore Module
+        </h3>
+        <button class="modal-close" onclick="closeAddModuleModal()">✕</button>
+      </div>
+      <div class="add-module-body" id="addModuleBody">
+        <!-- Rendered dynamically by renderAddModuleList() -->
       </div>
     </div>
   </div>
@@ -8922,10 +9240,31 @@
         tabsRow.appendChild(d);
       });
 
+      // Add Module button at the end of tabs
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'tab add-module-tab-btn ignore-tab-drag';
+      addBtn.id = 'btnAddModuleTab';
+      addBtn.title = 'Add or restore a module';
+      addBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Module</span>
+      `;
+      addBtn.onclick = (e) => {
+        e.stopPropagation();
+        openAddModuleModal();
+      };
+      tabsRow.appendChild(addBtn);
+
       // Kích hoạt Sortable cho các Tab để người dùng kéo thả đổi vị trí module
       if (typeof Sortable !== 'undefined') {
         if (tabsRow._sortable) tabsRow._sortable.destroy();
         tabsRow._sortable = new Sortable(tabsRow, {
+          draggable: '.tab:not(.ignore-tab-drag)',
+          filter: '.ignore-tab-drag',
           animation: 180,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -8937,7 +9276,11 @@
           delay: 300,
           delayOnTouchOnly: true,
           touchStartThreshold: 7,
-          filter: '.ignore-tab-drag',
+          onMove: function (evt) {
+            if (evt.related && evt.related.classList.contains('ignore-tab-drag')) {
+              return false;
+            }
+          },
           onStart: function () {
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
               navigator.vibrate(40);
@@ -8945,12 +9288,14 @@
           },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
+            const targetIdx = Math.min(evt.newIndex, D.modules.length - 1);
+            if (evt.oldIndex >= D.modules.length || targetIdx < 0) return;
             const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
-            D.modules.splice(evt.newIndex, 0, movedMod);
+            D.modules.splice(targetIdx, 0, movedMod);
             pushHistory(`Reorder module "${movedMod.name}"`);
             as();
             buildUI();
-            showSection(evt.newIndex);
+            showSection(targetIdx);
             showToast(`✓ Reordered module "${movedMod.name}"`);
           }
         });
@@ -9121,6 +9466,401 @@
       showSection(Math.max(0, idx - 1));
       showToast(`✓ Removed module "${mod.name}"`);
     }
+
+    // ═══════════════ ADD & RESTORE MODULE CONTROLLER ═══════════════
+    function openAddModuleModal() {
+      const modal = document.getElementById('addModuleModal');
+      if (!modal) return;
+      renderAddModuleList();
+      modal.classList.remove('hidden');
+    }
+
+    function closeAddModuleModal() {
+      const modal = document.getElementById('addModuleModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function switchModule(modType) {
+      ensureReportModules();
+      const idx = D.modules.findIndex(m => m.type === modType);
+      if (idx !== -1) {
+        showSection(idx);
+        closeAddModuleModal();
+        showToast(`✓ Switched to "${D.modules[idx].name}"`);
+      }
+    }
+
+    function switchModuleById(moduleId) {
+      ensureReportModules();
+      const idx = D.modules.findIndex(m => m.id === moduleId);
+      if (idx !== -1) {
+        showSection(idx);
+        closeAddModuleModal();
+        showToast(`✓ Switched to "${D.modules[idx].name}"`);
+      }
+    }
+
+    function restoreStandardModule(modType) {
+      ensureReportModules();
+      const existingIdx = D.modules.findIndex(m => m.type === modType);
+      if (existingIdx !== -1) {
+        switchModule(modType);
+        return;
+      }
+
+      const defaultDef = DEFAULT_MODULES.find(m => m.type === modType);
+      if (!defaultDef) {
+        showToast('Module template not found');
+        return;
+      }
+
+      const newMod = JSON.parse(JSON.stringify(defaultDef));
+
+      // Calculate appropriate insertion index
+      const defIdx = DEFAULT_MODULES.findIndex(m => m.type === modType);
+      let insertIdx = D.modules.length;
+      for (let i = 0; i < D.modules.length; i++) {
+        const curDefIdx = DEFAULT_MODULES.findIndex(m => m.type === D.modules[i].type || m.id === D.modules[i].id);
+        if (curDefIdx > defIdx) {
+          insertIdx = i;
+          break;
+        }
+      }
+
+      D.modules.splice(insertIdx, 0, newMod);
+
+      const domBlock = getModuleDomBlock(newMod.id);
+      if (domBlock) {
+        domBlock.style.display = 'block';
+      }
+
+      if (modType === 'dimensions' && !D.dimensions) D.dimensions = [];
+      if (modType === 'testing') {
+        if (!D.bvRows) D.bvRows = [];
+        if (!D.testingPhotos) D.testingPhotos = [];
+      }
+      if (modType === 'checklist' && !D.checklist) D.checklist = {};
+      if (modType === 'documents' && !D.docAttachments) D.docAttachments = [];
+
+      pushHistory(`Restore module "${newMod.name}"`);
+      as();
+      buildUI();
+      showSection(insertIdx);
+      closeAddModuleModal();
+      showToast(`✓ Restored module "${newMod.name}"`);
+    }
+
+    function restorePhotoModule(moduleId) {
+      ensureReportModules();
+      const existingIdx = D.modules.findIndex(m => m.id === moduleId);
+      if (existingIdx !== -1) {
+        switchModuleById(moduleId);
+        return;
+      }
+
+      const defaultDef = DEFAULT_MODULES.find(m => m.id === moduleId);
+      if (!defaultDef) return;
+
+      const newMod = JSON.parse(JSON.stringify(defaultDef));
+
+      const defIdx = DEFAULT_MODULES.findIndex(m => m.id === moduleId);
+      let insertIdx = D.modules.length;
+      for (let i = 0; i < D.modules.length; i++) {
+        const curDefIdx = DEFAULT_MODULES.findIndex(m => m.id === D.modules[i].id);
+        if (curDefIdx > defIdx) {
+          insertIdx = i;
+          break;
+        }
+      }
+
+      D.modules.splice(insertIdx, 0, newMod);
+      const domBlock = getModuleDomBlock(newMod.id);
+      if (domBlock) domBlock.style.display = 'block';
+
+      if (newMod.key && !D[newMod.key]) D[newMod.key] = [];
+
+      pushHistory(`Restore module "${newMod.name}"`);
+      as();
+      buildUI();
+      showSection(insertIdx);
+      closeAddModuleModal();
+      showToast(`✓ Restored module "${newMod.name}"`);
+    }
+
+    function createCustomPhotoModule(customName) {
+      ensureReportModules();
+      const name = (customName || '').trim() || 'Custom Photos';
+      const newId = `photos_custom_${Date.now()}`;
+      const newKey = `customPhotos_${Date.now()}`;
+      const newNotesKey = `customNotes_${Date.now()}`;
+
+      // Clone DOM block from sec_photos
+      const baseDom = document.getElementById('sec_photos');
+      if (baseDom) {
+        const clonedDom = baseDom.cloneNode(true);
+        clonedDom.id = newId;
+        clonedDom.style.display = 'none';
+
+        const head = clonedDom.querySelector('.sec-head');
+        if (head) head.textContent = name;
+
+        const photosDiv = clonedDom.querySelector('.free-photos');
+        if (photosDiv) {
+          photosDiv.id = newKey;
+          photosDiv.innerHTML = '';
+        }
+
+        let noteArea = clonedDom.querySelector('.note-area');
+        if (!noteArea) {
+          noteArea = document.createElement('div');
+          noteArea.className = 'note-area';
+          const card = clonedDom.querySelector('.sec-card') || clonedDom;
+          card.appendChild(noteArea);
+        }
+        noteArea.innerHTML = `<textarea id="${newNotesKey}" placeholder="Notes for ${escapeHtml(name)}..." oninput="as()"></textarea>`;
+
+        const editScreen = document.getElementById('editScreen');
+        if (editScreen) editScreen.appendChild(clonedDom);
+      }
+
+      D[newKey] = [];
+      D[newNotesKey] = '';
+      if (!FREE_PHOTO_KEYS.includes(newKey)) FREE_PHOTO_KEYS.push(newKey);
+
+      const newMod = {
+        id: newId,
+        type: 'photos',
+        name: name,
+        key: newKey,
+        notesKey: newNotesKey,
+        canDelete: true,
+        canDuplicate: true
+      };
+
+      D.modules.push(newMod);
+      pushHistory(`Add photo module "${name}"`);
+      as();
+      buildUI();
+      const newIdx = D.modules.length - 1;
+      showSection(newIdx);
+      closeAddModuleModal();
+      showToast(`✓ Added photo module "${name}"`);
+    }
+
+    function renderAddModuleList() {
+      ensureReportModules();
+      const body = document.getElementById('addModuleBody');
+      if (!body) return;
+
+      const isOverallActive = D.modules.some(m => m.type === 'overall');
+      const isDimActive = D.modules.some(m => m.type === 'dimensions');
+      const isTestingActive = D.modules.some(m => m.type === 'testing');
+      const isChecklistActive = D.modules.some(m => m.type === 'checklist');
+      const isDocActive = D.modules.some(m => m.type === 'documents');
+
+      const defaultPhotoModules = [
+        { id: 'sec_photos', name: 'Product Photos' },
+        { id: 'sec_assembly', name: 'Product Assembly' },
+        { id: 'sec_watchout', name: 'Quality Watch Out' },
+        { id: 'sec_comparison', name: 'Product Comparison' },
+        { id: 'sec_greenlabel', name: 'Final Approved / Green Label' }
+      ];
+
+      const missingPhotoMods = defaultPhotoModules.filter(pm => !D.modules.some(m => m.id === pm.id));
+
+      let photoChipsHtml = '';
+      if (missingPhotoMods.length > 0) {
+        photoChipsHtml = missingPhotoMods.map(pm => `
+          <button type="button" class="photo-restore-chip" onclick="restorePhotoModule('${pm.id}')" title="Restore ${escapeHtml(pm.name)}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Restore ${escapeHtml(pm.name)}
+          </button>
+        `).join('');
+      } else {
+        photoChipsHtml = `
+          <span class="photo-all-active-chip">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            All 5 Standard Photo Modules Active
+          </span>
+        `;
+      }
+
+      body.innerHTML = `
+        <div class="add-module-desc-lead">Select a standard module to restore, or create a new custom photo inspection section.</div>
+
+        <!-- 1. OVERVIEW -->
+        <div class="module-select-card">
+          <div class="module-select-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+          </div>
+          <div class="module-select-info">
+            <div class="module-select-name">Overview</div>
+            <div class="module-select-desc">Report cover, factory, model specs & inspection summary</div>
+          </div>
+          ${isOverallActive ? `
+            <button type="button" class="module-btn-action btn-active" onclick="switchModule('overall')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Active
+            </button>
+          ` : `
+            <button type="button" class="module-btn-action btn-restore" onclick="restoreStandardModule('overall')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Restore
+            </button>
+          `}
+        </div>
+
+        <!-- 2. DIMENSIONS -->
+        <div class="module-select-card">
+          <div class="module-select-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 3L3 21"></path>
+              <path d="M21 3h-6"></path>
+              <path d="M21 3v6"></path>
+              <path d="M3 21h6"></path>
+              <path d="M3 21v-6"></path>
+            </svg>
+          </div>
+          <div class="module-select-info">
+            <div class="module-select-name">Dimensions</div>
+            <div class="module-select-desc">Measurements, tolerances, 3:1 dual photos & drawings</div>
+          </div>
+          ${isDimActive ? `
+            <button type="button" class="module-btn-action btn-active" onclick="switchModule('dimensions')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Active
+            </button>
+          ` : `
+            <button type="button" class="module-btn-action btn-restore" onclick="restoreStandardModule('dimensions')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Restore
+            </button>
+          `}
+        </div>
+
+        <!-- 3. TESTING -->
+        <div class="module-select-card">
+          <div class="module-select-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2v7.31L4.69 17.7a2 2 0 0 0 1.62 2.9h11.38a2 2 0 0 0 1.62-2.9L14 9.31V2"></path>
+              <line x1="8.5" y1="2" x2="15.5" y2="2"></line>
+              <line x1="14" y1="13" x2="10" y2="13"></line>
+            </svg>
+          </div>
+          <div class="module-select-info">
+            <div class="module-select-name">Testing</div>
+            <div class="module-select-desc">Laboratory tests, ANSI/BIFMA & mechanical test photos</div>
+          </div>
+          ${isTestingActive ? `
+            <button type="button" class="module-btn-action btn-active" onclick="switchModule('testing')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Active
+            </button>
+          ` : `
+            <button type="button" class="module-btn-action btn-restore" onclick="restoreStandardModule('testing')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Restore
+            </button>
+          `}
+        </div>
+
+        <!-- 4. CHECKLIST -->
+        <div class="module-select-card">
+          <div class="module-select-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <div class="module-select-info">
+            <div class="module-select-name">Checklist</div>
+            <div class="module-select-desc">13 QC inspection categories & Bento checklist cards</div>
+          </div>
+          ${isChecklistActive ? `
+            <button type="button" class="module-btn-action btn-active" onclick="switchModule('checklist')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Active
+            </button>
+          ` : `
+            <button type="button" class="module-btn-action btn-restore" onclick="restoreStandardModule('checklist')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Restore
+            </button>
+          `}
+        </div>
+
+        <!-- 5. DOCUMENTS -->
+        <div class="module-select-card">
+          <div class="module-select-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="module-select-info">
+            <div class="module-select-name">Documents</div>
+            <div class="module-select-desc">Technical PDF drawings, specs & multi-format attachments</div>
+          </div>
+          ${isDocActive ? `
+            <button type="button" class="module-btn-action btn-active" onclick="switchModule('documents')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Active
+            </button>
+          ` : `
+            <button type="button" class="module-btn-action btn-restore" onclick="restoreStandardModule('documents')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Restore
+            </button>
+          `}
+        </div>
+
+        <!-- 6. PHOTOS & NOTES -->
+        <div class="photos-subgroup">
+          <div class="photos-subhead">
+            <div class="module-select-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </div>
+            <div class="module-select-info">
+              <div class="module-select-name">Photos & Notes</div>
+              <div class="module-select-desc">Freeform photo galleries with inspection notes</div>
+            </div>
+          </div>
+
+          <div class="photos-chips-row">
+            ${photoChipsHtml}
+          </div>
+
+          <div class="custom-photo-create-box">
+            <div class="custom-photo-label">+ Add Custom Photo Section</div>
+            <div class="custom-photo-input-group">
+              <input type="text" id="customPhotoSecInput" class="custom-photo-input" placeholder="e.g. Hardware, Packaging..." onkeydown="if(event.key==='Enter') createCustomPhotoModule(this.value)" />
+              <button type="button" class="module-btn-action btn-restore" onclick="createCustomPhotoModule(document.getElementById('customPhotoSecInput').value)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Close Add Module modal on overlay backdrop click
+    document.addEventListener('DOMContentLoaded', () => {
+      const addModal = document.getElementById('addModuleModal');
+      if (addModal) {
+        addModal.addEventListener('click', (e) => {
+          if (e.target.id === 'addModuleModal') closeAddModuleModal();
+        });
+      }
+    });
 
     // ═══════════════ TECHNICAL DOCUMENTS ATTACHMENTS CONTROLLER ═══════════════
     async function ensureDocAttachmentRendered(doc) {
@@ -11464,7 +12204,7 @@
         if (targetBlock) targetBlock.style.display = 'block';
       }
 
-      document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === curSec));
+      document.querySelectorAll('.tab:not(.add-module-tab-btn)').forEach((t, idx) => t.classList.toggle('active', idx === curSec));
       const tab = document.getElementById(`tab${curSec}`);
       const pFill = document.getElementById('progressFill');
       if (pFill) pFill.style.width = Math.round(((curSec + 1) / D.modules.length) * 100) + '%';
