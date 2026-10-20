@@ -552,7 +552,14 @@
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .tab:hover {
+        .tab.sortable-chosen {
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+      z-index: 10 !important;
+      opacity: 0.95;
+    }
+
+.tab:hover {
       background: rgba(0, 0, 0, 0.04);
       color: var(--ink);
     }
@@ -5113,7 +5120,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.0.2]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.0.3]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8895,7 +8902,15 @@
           animation: 180,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
+          delay: 350,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 8,
           filter: '.ignore-tab-drag',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(40);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
             const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
