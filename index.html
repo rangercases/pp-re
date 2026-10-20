@@ -12852,59 +12852,177 @@
 
       y += sumBoxH + 4;
 
-      doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 4;
       const cp = D.coverPhotos || {};
       const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+
+      // Tự động lọc các ảnh thực tế có trong Overview (Không có ảnh -> Tuyệt đối không hiện ô và không hiện chữ)
+      const validCovers = [];
+      ckeys.forEach((key, i) => {
+        const dataObj = cp[key];
+        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
+        if (img) {
+          const slotTitle = (D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) 
+            ? D.coverTitles[key].trim() 
+            : COVER_SLOTS[i];
+          validCovers.push({ key, img, title: slotTitle });
+        }
+      });
 
       const gapX = 4;
       const gapY = 4.5;
       const barH = 5.2;
-      const pw = (W - M * 2 - gapX) / 2;
-      const ph = 74;
+      const totalContentW = W - M * 2; // ~182mm
 
-      const gridCoords = [
-        [M, y],
-        [M + pw + gapX, y],
-        [M, y + ph + barH + gapY],
-        [M + pw + gapX, y + ph + barH + gapY]
-      ];
+      if (validCovers.length > 0) {
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 4;
 
-      gridCoords.forEach(([px, py], i) => {
-        const key = ckeys[i];
-        const dataObj = cp[key];
-        const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
-        const slotTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : COVER_SLOTS[i];
+        if (validCovers.length === 1) {
+          // 1 ẢNH DUY NHẤT: CÂN ĐỐI, CĂN CHÍNH GIỮA TRANG BÌA (KHÔNG BÈ 100% OVER)
+          const c = validCovers[0];
+          const pw = 118; // Chiều rộng cân đối (~65% trang)
+          const ph = 80;  // Chiều cao cân đối
+          const px = (W - pw) / 2; // Căn chính giữa trang bìa
+          const py = y;
 
-        let barX = px;
-        let barY = py + ph;
-        let barW = pw;
+          let barX = px;
+          let barY = py + ph;
+          let barW = pw;
 
-        if (img) {
-          const bounds = addImg(img, px, py, pw, ph);
+          const bounds = addImg(c.img, px, py, pw, ph);
           if (bounds) {
             barX = bounds.x;
             barW = bounds.w;
             barY = bounds.y + bounds.h;
           }
-        } else {
+
           doc.setFillColor(245, 242, 237);
-          doc.rect(px, py, pw, ph, 'F');
-          doc.setTextColor(170, 165, 158);
-          doc.setFontSize(8);
-          doc.setFont(fontFam, 'normal');
-          doc.text('No Photo', px + pw / 2, py + ph / 2, { align: 'center' });
+          doc.rect(barX, barY, barW, barH, 'F');
+          doc.setTextColor(80, 75, 70);
+          doc.setFont(fontFam, 'bold');
+          doc.setFontSize(7.5);
+          doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+
+          y = barY + barH + 6;
+        } else if (validCovers.length === 2) {
+          // 2 ẢNH: XẾP SONG SONG 2 BÊN CÂN ĐỐI
+          const pw = (totalContentW - gapX) / 2;
+          const ph = 76;
+          let maxY = y;
+
+          validCovers.forEach((c, idx) => {
+            const px = M + idx * (pw + gapX);
+            const py = y;
+            let barX = px;
+            let barY = py + ph;
+            let barW = pw;
+
+            const bounds = addImg(c.img, px, py, pw, ph);
+            if (bounds) {
+              barX = bounds.x;
+              barW = bounds.w;
+              barY = bounds.y + bounds.h;
+            }
+
+            doc.setFillColor(245, 242, 237);
+            doc.rect(barX, barY, barW, barH, 'F');
+            doc.setTextColor(80, 75, 70);
+            doc.setFont(fontFam, 'bold');
+            doc.setFontSize(7.5);
+            doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+
+            if (barY + barH > maxY) maxY = barY + barH;
+          });
+
+          y = maxY + 6;
+        } else if (validCovers.length === 3) {
+          // 3 ẢNH: 2 ẢNH TRÊN + 1 ẢNH DƯỚI CĂN GIỮA
+          const pw = (totalContentW - gapX) / 2;
+          const ph = 68;
+          let maxY = y;
+
+          // Ảnh 1 & 2 hàng trên
+          [validCovers[0], validCovers[1]].forEach((c, idx) => {
+            const px = M + idx * (pw + gapX);
+            const py = y;
+            let barX = px;
+            let barY = py + ph;
+            let barW = pw;
+
+            const bounds = addImg(c.img, px, py, pw, ph);
+            if (bounds) {
+              barX = bounds.x;
+              barW = bounds.w;
+              barY = bounds.y + bounds.h;
+            }
+
+            doc.setFillColor(245, 242, 237);
+            doc.rect(barX, barY, barW, barH, 'F');
+            doc.setTextColor(80, 75, 70);
+            doc.setFont(fontFam, 'bold');
+            doc.setFontSize(7.5);
+            doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+
+            if (barY + barH > maxY) maxY = barY + barH;
+          });
+
+          // Ảnh 3 hàng dưới căn giữa
+          const c3 = validCovers[2];
+          const py3 = maxY + gapY;
+          const px3 = (W - pw) / 2;
+          let barX3 = px3;
+          let barY3 = py3 + ph;
+          let barW3 = pw;
+
+          const bounds3 = addImg(c3.img, px3, py3, pw, ph);
+          if (bounds3) {
+            barX3 = bounds3.x;
+            barW3 = bounds3.w;
+            barY3 = bounds3.y + bounds3.h;
+          }
+
+          doc.setFillColor(245, 242, 237);
+          doc.rect(barX3, barY3, barW3, barH, 'F');
+          doc.setTextColor(80, 75, 70);
+          doc.setFont(fontFam, 'bold');
+          doc.setFontSize(7.5);
+          doc.text(c3.title.toUpperCase(), barX3 + barW3 / 2, barY3 + (barH / 2) + 1, { align: 'center', maxWidth: barW3 - 2 });
+
+          y = barY3 + barH + 6;
+        } else {
+          // 4 ẢNH TRỞ LÊN: LƯỚI 2x2 TIÊU CHUẨN
+          const pw = (totalContentW - gapX) / 2;
+          const ph = 74;
+          const gridCoords = [
+            [M, y],
+            [M + pw + gapX, y],
+            [M, y + ph + barH + gapY],
+            [M + pw + gapX, y + ph + barH + gapY]
+          ];
+
+          validCovers.slice(0, 4).forEach((c, idx) => {
+            const [px, py] = gridCoords[idx];
+            let barX = px;
+            let barY = py + ph;
+            let barW = pw;
+
+            const bounds = addImg(c.img, px, py, pw, ph);
+            if (bounds) {
+              barX = bounds.x;
+              barW = bounds.w;
+              barY = bounds.y + bounds.h;
+            }
+
+            doc.setFillColor(245, 242, 237);
+            doc.rect(barX, barY, barW, barH, 'F');
+            doc.setTextColor(80, 75, 70);
+            doc.setFont(fontFam, 'bold');
+            doc.setFontSize(7.5);
+            doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+          });
+
+          y += (ph + barH) * 2 + gapY + 4;
         }
-
-        // Thanh màu nền: độ dài cạnh bằng chính xác 2 cạnh của ảnh, không bị lồi ra ngoài
-        doc.setFillColor(245, 242, 237);
-        doc.rect(barX, barY, barW, barH, 'F');
-        doc.setTextColor(80, 75, 70);
-        doc.setFont(fontFam, 'bold');
-        doc.setFontSize(7.5);
-        doc.text(slotTitle.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
-      });
-
-      y += (ph + barH) * 2 + gapY + 4;
+      }
 
       // Đảm bảo toàn bộ tài liệu kỹ thuật/PDF đã được giải phóng sang ảnh chất lượng cao trước khi in
       if (D.docAttachments && D.docAttachments.length > 0) {
