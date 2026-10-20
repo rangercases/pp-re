@@ -552,11 +552,38 @@
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-        .tab.sortable-chosen {
+    /* Khóa triệt để popup tô đen / phóng to của Safari iOS khi Long-Press */
+    .tabs-wrap,
+    .tabs,
+    .tab,
+    .tab span,
+    .tab * {
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      -khtml-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+    }
+
+    .tab.sortable-chosen {
       transform: scale(1.06);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
       z-index: 10 !important;
       opacity: 0.95;
+    }
+
+    /* Tab khi đang bám ngón tay di chuyển trên iOS */
+    .tab.sortable-fallback {
+      opacity: 0.95 !important;
+      transform: scale(1.08) !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
+      cursor: grabbing !important;
+      z-index: 99999 !important;
+      pointer-events: none !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      border: 1px solid var(--line-strong) !important;
     }
 
 .tab:hover {
@@ -5120,7 +5147,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.0.3]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.0.4]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8902,9 +8929,14 @@
           animation: 180,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
-          delay: 350,
+          dragClass: 'sortable-drag',
+          forceFallback: true,
+          fallbackClass: 'sortable-fallback',
+          fallbackOnBody: true,
+          fallbackTolerance: 3,
+          delay: 300,
           delayOnTouchOnly: true,
-          touchStartThreshold: 8,
+          touchStartThreshold: 7,
           filter: '.ignore-tab-drag',
           onStart: function () {
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
