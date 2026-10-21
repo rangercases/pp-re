@@ -8669,11 +8669,281 @@
       }
     }
 
+    // ═══════════════ PHOTO MARKUP ENGINE (ARROW, CIRCLE, RECT, TEXT) ═══════════════
+    let isMarkupMode = false;
+    let markupTool = 'arrow'; // 'arrow' | 'circle' | 'rect' | 'text'
+    let markupColor = '#e24b4b';
+    let markupShapes = [];
+    let markupBaseCanvas = null;
+    let isDrawingMarkup = false;
+    let currentDraftShape = null;
+    let markupEventsBound = false;
+
+    function toggleMarkupMode() {
+      if (!cropper) return;
+      isMarkupMode = !isMarkupMode;
+
+      const btnToggle = document.getElementById('btnToggleMarkup');
+      const toolbar = document.getElementById('markupToolbar');
+      const ratioSeg = document.getElementById('ratioSegmented');
+      const strBox = document.getElementById('straightenBox');
+      const canvas = document.getElementById('markupCanvas');
+      const cropHint = document.getElementById('cropHint');
+
+      if (isMarkupMode) {
+        if (btnToggle) {
+          btnToggle.classList.add('active');
+          btnToggle.textContent = '📐 CROP';
+        }
+        if (toolbar) toolbar.style.display = 'block';
+        if (ratioSeg) ratioSeg.style.display = 'none';
+        if (strBox) strBox.style.display = 'none';
+        if (cropHint) cropHint.textContent = 'Chạm/Kéo để vẽ mũi tên, khoanh tròn, chữ. Bấm APPLY để lưu.';
+
+        markupBaseCanvas = cropper.getCroppedCanvas({
+          maxWidth: 1280,
+          maxHeight: 1280,
+          fillColor: '#ffffff',
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+
+        const cropperContainer = document.querySelector('.cropper-container');
+        if (cropperContainer) cropperContainer.style.display = 'none';
+
+        const wrapper = document.getElementById('cropperWrapper');
+        const wrapW = wrapper.clientWidth;
+        const wrapH = wrapper.clientHeight;
+
+        canvas.style.display = 'block';
+        canvas.width = markupBaseCanvas.width;
+        canvas.height = markupBaseCanvas.height;
+
+        const scale = Math.min(wrapW / canvas.width, wrapH / canvas.height);
+        const dispW = Math.round(canvas.width * scale);
+        const dispH = Math.round(canvas.height * scale);
+        canvas.style.width = `${dispW}px`;
+        canvas.style.height = `${dispH}px`;
+        canvas.style.position = 'absolute';
+        canvas.style.left = `${Math.round((wrapW - dispW) / 2)}px`;
+        canvas.style.top = `${Math.round((wrapH - dispH) / 2)}px`;
+
+        initMarkupPointerEvents(canvas);
+        redrawMarkup();
+      } else {
+        if (btnToggle) {
+          btnToggle.classList.remove('active');
+          btnToggle.textContent = '✏️ MARKUP';
+        }
+        if (toolbar) toolbar.style.display = 'none';
+        if (ratioSeg) ratioSeg.style.display = 'flex';
+        if (strBox) strBox.style.display = 'flex';
+        if (cropHint) cropHint.textContent = 'Cuộn / Kẹp hai ngón để phóng to. Kéo để cắt ảnh.';
+
+        canvas.style.display = 'none';
+        const cropperContainer = document.querySelector('.cropper-container');
+        if (cropperContainer) cropperContainer.style.display = 'block';
+      }
+    }
+
+    function setMarkupTool(tool, btn) {
+      markupTool = tool;
+      document.querySelectorAll('#markupToolbar .tools-row .tool-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    function setMarkupColor(color, btn) {
+      markupColor = color;
+      document.querySelectorAll('.markup-color-dot').forEach(d => d.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    function undoMarkupShape() {
+      if (markupShapes.length > 0) {
+        markupShapes.pop();
+        redrawMarkup();
+      }
+    }
+
+    function clearMarkupShapes() {
+      if (markupShapes.length > 0) {
+        markupShapes = [];
+        redrawMarkup();
+      }
+    }
+
+    function getMarkupCanvasCoords(canvas, e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function initMarkupPointerEvents(canvas) {
+      if (markupEventsBound) return;
+      markupEventsBound = true;
+
+      const onStart = (e) => {
+        if (!isMarkupMode) return;
+        e.preventDefault();
+        const pos = getMarkupCanvasCoords(canvas, e);
+        if (markupTool === 'text') {
+          const text = prompt('Nhập nội dung ghi chú / Remark:');
+          if (text && text.trim()) {
+            markupShapes.push({
+              type: 'text',
+              x: pos.x,
+              y: pos.y,
+              text: text.trim(),
+              color: markupColor
+            });
+            redrawMarkup();
+          }
+          return;
+        }
+        isDrawingMarkup = true;
+        currentDraftShape = {
+          type: markupTool,
+          color: markupColor,
+          x1: pos.x,
+          y1: pos.y,
+          x2: pos.x,
+          y2: pos.y
+        };
+      };
+
+      const onMove = (e) => {
+        if (!isDrawingMarkup || !currentDraftShape) return;
+        e.preventDefault();
+        const pos = getMarkupCanvasCoords(canvas, e);
+        currentDraftShape.x2 = pos.x;
+        currentDraftShape.y2 = pos.y;
+        redrawMarkup(currentDraftShape);
+      };
+
+      const onEnd = (e) => {
+        if (!isDrawingMarkup || !currentDraftShape) return;
+        isDrawingMarkup = false;
+        const dist = Math.hypot(currentDraftShape.x2 - currentDraftShape.x1, currentDraftShape.y2 - currentDraftShape.y1);
+        if (dist > 8) {
+          markupShapes.push(currentDraftShape);
+        }
+        currentDraftShape = null;
+        redrawMarkup();
+      };
+
+      canvas.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+
+      canvas.addEventListener('touchstart', onStart, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
+    }
+
+    function redrawMarkup(draftShape = null) {
+      const canvas = document.getElementById('markupCanvas');
+      if (!canvas || !markupBaseCanvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(markupBaseCanvas, 0, 0);
+
+      const allShapes = draftShape ? [...markupShapes, draftShape] : markupShapes;
+      const baseScale = Math.max(1, Math.min(canvas.width, canvas.height) / 600);
+
+      allShapes.forEach(shape => {
+        ctx.save();
+        ctx.strokeStyle = shape.color;
+        ctx.fillStyle = shape.color;
+        ctx.lineWidth = 4 * baseScale;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (shape.type === 'arrow') {
+          const dx = shape.x2 - shape.x1;
+          const dy = shape.y2 - shape.y1;
+          const angle = Math.atan2(dy, dx);
+          const headLen = Math.max(16 * baseScale, Math.min(36 * baseScale, Math.hypot(dx, dy) * 0.28));
+
+          ctx.beginPath();
+          ctx.moveTo(shape.x1, shape.y1);
+          ctx.lineTo(shape.x2, shape.y2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(shape.x2, shape.y2);
+          ctx.lineTo(
+            shape.x2 - headLen * Math.cos(angle - Math.PI / 7),
+            shape.y2 - headLen * Math.sin(angle - Math.PI / 7)
+          );
+          ctx.lineTo(
+            shape.x2 - headLen * Math.cos(angle + Math.PI / 7),
+            shape.y2 - headLen * Math.sin(angle + Math.PI / 7)
+          );
+          ctx.closePath();
+          ctx.fill();
+        } else if (shape.type === 'circle') {
+          const rx = Math.abs(shape.x2 - shape.x1) / 2;
+          const ry = Math.abs(shape.y2 - shape.y1) / 2;
+          const cx = (shape.x1 + shape.x2) / 2;
+          const cy = (shape.y1 + shape.y2) / 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (shape.type === 'rect') {
+          const x = Math.min(shape.x1, shape.x2);
+          const y = Math.min(shape.y1, shape.y2);
+          const w = Math.abs(shape.x2 - shape.x1);
+          const h = Math.abs(shape.y2 - shape.y1);
+          ctx.strokeRect(x, y, w, h);
+        } else if (shape.type === 'text') {
+          const fontSize = Math.round(18 * baseScale);
+          ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          const textMetrics = ctx.measureText(shape.text);
+          const padX = 8 * baseScale;
+          const padY = 5 * baseScale;
+          const boxW = textMetrics.width + padX * 2;
+          const boxH = fontSize + padY * 2;
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(shape.x - padX, shape.y - fontSize, boxW, boxH, 4 * baseScale);
+          } else {
+            ctx.rect(shape.x - padX, shape.y - fontSize, boxW, boxH);
+          }
+          ctx.fill();
+
+          ctx.strokeStyle = shape.color;
+          ctx.lineWidth = 1.5 * baseScale;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(shape.text, shape.x, shape.y + (padY / 2));
+        }
+        ctx.restore();
+      });
+    }
+
     async function usePhoto() {
       if (!cropper) { showToast('Error: No image data ready!'); return; }
-      const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
-      const finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.75);
-      croppedCanvas.width = 0; croppedCanvas.height = 0; // Giải phóng ngay bộ nhớ Canvas
+      let finalDataUrl;
+      if (markupShapes && markupShapes.length > 0 && markupBaseCanvas) {
+        redrawMarkup();
+        const canvas = document.getElementById('markupCanvas');
+        finalDataUrl = canvas.toDataURL('image/jpeg', 0.80);
+      } else {
+        const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+        finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.75);
+        croppedCanvas.width = 0; croppedCanvas.height = 0;
+      }
+
       savePhoto(finalDataUrl, currentOriginalImg);
       closeCamera();
     }
@@ -8722,6 +8992,27 @@
       unlockBodyScroll();
       if (cropper) { cropper.destroy(); cropper = null; }
       currentOriginalImg = null;
+      markupShapes = [];
+      isMarkupMode = false;
+      if (markupBaseCanvas) {
+        markupBaseCanvas.width = 0;
+        markupBaseCanvas.height = 0;
+        markupBaseCanvas = null;
+      }
+      const canvas = document.getElementById('markupCanvas');
+      if (canvas) canvas.style.display = 'none';
+      const toolbar = document.getElementById('markupToolbar');
+      if (toolbar) toolbar.style.display = 'none';
+      const btnToggle = document.getElementById('btnToggleMarkup');
+      if (btnToggle) {
+        btnToggle.classList.remove('active');
+        btnToggle.textContent = '✏️ MARKUP';
+      }
+      const ratioSeg = document.getElementById('ratioSegmented');
+      if (ratioSeg) ratioSeg.style.display = 'flex';
+      const strBox = document.getElementById('straightenBox');
+      if (strBox) strBox.style.display = 'flex';
+
       const image = document.getElementById('cropperImage');
       if (image) {
         image.onload = null;
@@ -8729,7 +9020,8 @@
         image.removeAttribute('src');
         image.src = '';
       }
-      document.getElementById('camModal').classList.add('hidden');
+      const modal = document.getElementById('camModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     // ═══════════════ BATCH SELECT CHO REPORT ═══════════════
