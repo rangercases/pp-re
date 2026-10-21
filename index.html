@@ -2316,6 +2316,8 @@
     /* FULL-WIDTH PHOTO CELL */
     .free-photo-item.is-fullwidth,
     .photo-slot.is-fullwidth,
+    .photo-slot.is-lone-center,
+    .add-photo-btn.is-lone-center,
     .watchout-slot.is-fullwidth,
     .assembly-slot.is-fullwidth,
     .testing-slot.is-fullwidth {
@@ -2323,6 +2325,13 @@
       justify-self: center !important;
       margin-left: auto !important;
       margin-right: auto !important;
+    }
+
+    .photo-slot.is-lone-center,
+    .add-photo-btn.is-lone-center {
+      aspect-ratio: 4 / 3;
+      width: calc(50% - 6px) !important;
+      max-width: 480px;
     }
 
     .free-photo-item.is-fullwidth {
@@ -2347,6 +2356,10 @@
       .free-photo-item.is-fullwidth,
       .photo-slot.is-fullwidth {
         width: 95% !important;
+      }
+      .photo-slot.is-lone-center,
+      .add-photo-btn.is-lone-center {
+        width: 100% !important;
       }
     }
 
@@ -10178,8 +10191,46 @@
         // Đang là ảnh nhỏ muốn phóng to -> tăng 1 điểm: kiểm tra giới hạn tối đa 4 điểm
         const currentUsage = getCoverCapacityUsage();
         if (currentUsage + 1 > 4) {
-          showToast('Overview tối đa: 2 ảnh lớn, 1 lớn + 2 nhỏ, hoặc 4 ảnh nhỏ (đủ 1 trang)');
-          return;
+          // CO NGÓT THÔNG MINH: Đang 4 điểm mà phóng to -> tự động bỏ bớt 1 ô nhỏ thừa
+          const ckeys = getCoverSlotKeys();
+          const otherSmallKeys = ckeys.filter(k => k !== key && !isCoverSlotFull(k));
+          if (otherSmallKeys.length === 0) {
+            showToast('Overview tối đa: 2 ảnh lớn, 1 lớn + 2 nhỏ, hoặc 4 ảnh nhỏ');
+            return;
+          }
+
+          // Ưu tiên 1: Tìm ô nhỏ TRỐNG (chưa có ảnh) cuối cùng để tự động xóa
+          let pruneKey = null;
+          for (let i = otherSmallKeys.length - 1; i >= 0; i--) {
+            const k = otherSmallKeys[i];
+            const data = D.coverPhotos && D.coverPhotos[k];
+            const hasImg = !!(data && (typeof data === 'string' ? data : data.img));
+            if (!hasImg) {
+              pruneKey = k;
+              break;
+            }
+          }
+
+          if (pruneKey) {
+            const idx = ckeys.indexOf(pruneKey);
+            if (idx !== -1) ckeys.splice(idx, 1);
+            if (D.coverPhotos) delete D.coverPhotos[pruneKey];
+            if (D.coverTitles) delete D.coverTitles[pruneKey];
+            if (D.coverSizes) delete D.coverSizes[pruneKey];
+            showToast('Đã tự động rút gọn 1 ô trống để vừa vặn 1 trang bìa');
+          } else {
+            // Tất cả đều có ảnh: hỏi xác nhận trước khi bỏ ô nhỏ cuối cùng
+            const lastSmall = otherSmallKeys[otherSmallKeys.length - 1];
+            const slotTitle = (D.coverTitles && D.coverTitles[lastSmall]) || lastSmall.replace(/_/g, ' ');
+            if (!confirm(`Để phóng to ảnh này thành ảnh lớn, cần bỏ bớt ô "${slotTitle}". Bạn có đồng ý xóa không?`)) {
+              return;
+            }
+            const idx = ckeys.indexOf(lastSmall);
+            if (idx !== -1) ckeys.splice(idx, 1);
+            if (D.coverPhotos) delete D.coverPhotos[lastSmall];
+            if (D.coverTitles) delete D.coverTitles[lastSmall];
+            if (D.coverSizes) delete D.coverSizes[lastSmall];
+          }
         }
       }
       if (!D.coverSizes) D.coverSizes = {};
@@ -10255,7 +10306,7 @@
       // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
       if (getCoverCapacityUsage() < 4) {
         const addBtn = document.createElement('div');
-        addBtn.className = 'add-photo-btn ignore-drag';
+        addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
         addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
         addBtn.innerHTML = `
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -10273,10 +10324,36 @@
 
     function buildSlotGrid(containerId, slots, type, section) {
       const el = document.getElementById(containerId); if (!el) return; el.innerHTML = '';
+
+      // Xác định các ô nhỏ đứng lẻ hàng để tự động căn giữa (.is-lone-center)
+      const loneKeys = new Set();
+      if (containerId === 'coverPhotos') {
+        let pendingSmallKey = null;
+        slots.forEach(s => {
+          const isFull = isCoverSlotFull(s.key);
+          if (isFull) {
+            if (pendingSmallKey) {
+              loneKeys.add(pendingSmallKey);
+              pendingSmallKey = null;
+            }
+          } else {
+            if (!pendingSmallKey) {
+              pendingSmallKey = s.key;
+            } else {
+              pendingSmallKey = null;
+            }
+          }
+        });
+        if (pendingSmallKey) {
+          loneKeys.add(pendingSmallKey);
+        }
+      }
+
       slots.forEach(s => {
         const div = document.createElement('div');
         const isFull = (containerId === 'coverPhotos') ? isCoverSlotFull(s.key) : false;
-        div.className = 'photo-slot' + (isFull ? ' is-fullwidth' : '');
+        const isLone = (containerId === 'coverPhotos') ? loneKeys.has(s.key) : false;
+        div.className = 'photo-slot' + (isFull ? ' is-fullwidth' : '') + (isLone ? ' is-lone-center' : '');
         div.id = `ps_${containerId}_${s.key}`;
         div.dataset.key = s.key;
         div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section);
