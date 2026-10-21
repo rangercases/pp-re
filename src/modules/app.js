@@ -3008,7 +3008,7 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
       }
       inner += `
         <div class="pbar">
-          <input type="text" value="${currentTitle}" placeholder="TÊN GÓC CHỤP..." onclick="event.stopPropagation()" oninput="updateCoverLabel('${key}', this.value)">
+          <input type="text" value="${escapeHtml(currentTitle)}" placeholder="TÊN GÓC CHỤP..." onclick="event.stopPropagation()" oninput="updateCoverLabel('${key}', this.value)">
         </div>`; 
       return inner;
     }
@@ -3126,13 +3126,13 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
         <!-- KHỐI DỮ LIỆU ĐÁY -->
         <div class="dim-fields">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
-            <input class="dim-name-input" value="${d.name}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)" style="margin-bottom:0;">
+            <input class="dim-name-input" value="${escapeHtml(d.name || '')}" placeholder="TÊN KÍCH THƯỚC..." oninput="updateDimField(${i}, 'name', this.value)" style="margin-bottom:0;">
             <span class="dim-status-icon-badge" id="dimStatusBadge_${i}">
               ${renderDimStatusShape(d.color || 'color-blue')}
             </span>
           </div>
-          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.actual || ''}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${d.actualUnit || 'mm'}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div></div>
-          <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${d.drawing || ''}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" value="${d.drawingUnit || 'mm'}" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
+          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.actual || '')}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${escapeHtml(d.actualUnit || 'mm')}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div></div>
+          <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.drawing || '')}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" value="${escapeHtml(d.drawingUnit || 'mm')}" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
           <div class="dim-row"><label>Status</label>
             <select onchange="updateDimField(${i},'color',this.value)">
               <option value="color-blue" ${(d.color || 'color-blue') === 'color-blue' ? 'selected' : ''}>✓ OK</option>
