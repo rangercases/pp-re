@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif-wasm/libheif-bundle.js"></script>
 
   <!-- SortableJS Library -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script>
     // Tích hợp Swap Plugin tiêu chuẩn cho SortableJS: Tự động đổi chỗ 1-1 sạch sẽ khi bật chế độ Swap
     (function () {
@@ -5359,6 +5359,33 @@
       background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
       border-radius: var(--rs, 8px) !important;
     }
+
+    /* PHOTO MARKUP TOOLBAR & CANVAS */
+    .markup-canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      touch-action: none;
+      cursor: crosshair;
+      z-index: 20;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      border-radius: 4px;
+    }
+    .markup-color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      transition: transform 0.15s ease;
+    }
+    .markup-color-dot.active {
+      transform: scale(1.25);
+      box-shadow: 0 0 0 2px var(--brand-theme);
+    }
   </style>
 </head>
 
@@ -5721,7 +5748,10 @@
       <div class="sec-card dimensions-card">
         <div class="sec-head">
           <span>Product Dimension & Details</span>
-          <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">SELECT</button>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button class="dim-head-btn" id="btnCopyDims" onclick="copyDimensionsFromLatestReport()" title="Sync dimension template from latest report">📥 Lấy mẫu đo gần nhất</button>
+            <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">SELECT</button>
+          </div>
         </div>
 
         <div class="legend-row">
@@ -5898,10 +5928,11 @@
       <div class="modal-body">
         <div id="cropperWrapper" class="cropper-wrapper">
           <img id="cropperImage" alt="Cropper Preview">
+          <canvas id="markupCanvas" class="markup-canvas-overlay" style="display:none;"></canvas>
         </div>
 
         <div id="editorToolbar" class="cropper-tools">
-          <div class="tools-row cropper-segmented">
+          <div class="tools-row cropper-segmented" id="ratioSegmented">
             <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">FREE</button>
             <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
             <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
@@ -5909,18 +5940,41 @@
             <button class="tool-btn" id="ratio_4_9" onclick="setCropRatio(4/9, this)">4:9 (SUB)</button>
           </div>
 
-          <div class="tools-row cropper-segmented">
+          <div class="tools-row cropper-segmented" id="transformSegmented">
             <button class="tool-btn" type="button" onclick="rotate90()">ROTATE 90°</button>
             <button class="tool-btn" type="button" onclick="flipImage('x')">FLIP H</button>
             <button class="tool-btn" type="button" onclick="flipImage('y')">FLIP V</button>
             <button class="tool-btn" type="button" onclick="resetTransforms()">RESET</button>
+            <button class="tool-btn" id="btnToggleMarkup" type="button" onclick="toggleMarkupMode()" style="font-weight:700;">✏️ MARKUP</button>
           </div>
 
-          <div class="straighten-box">
+          <div class="straighten-box" id="straightenBox">
             <span class="title">STRAIGHTEN:</span>
             <input type="range" class="straighten-slider" id="straightenRange" min="-45" max="45" step="0.5" value="0"
               oninput="applyStraighten(this.value)">
             <span class="straighten-val" id="straightenVal">0.0°</span>
+          </div>
+
+          <!-- PHOTO MARKUP CONTROLS (EXPANDED IN MARKUP MODE) -->
+          <div class="markup-toolbar" id="markupToolbar" style="display:none; margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
+            <div class="tools-row cropper-segmented" style="margin-bottom:6px;">
+              <button type="button" class="tool-btn active" id="btnToolArrow" onclick="setMarkupTool('arrow', this)">↗️ Arrow</button>
+              <button type="button" class="tool-btn" id="btnToolCircle" onclick="setMarkupTool('circle', this)">⭕ Circle</button>
+              <button type="button" class="tool-btn" id="btnToolRect" onclick="setMarkupTool('rect', this)">⬜ Rect</button>
+              <button type="button" class="tool-btn" id="btnToolText" onclick="setMarkupTool('text', this)">🔤 Text</button>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Color:</span>
+                <button type="button" class="markup-color-dot active" style="background:#e24b4b;" onclick="setMarkupColor('#e24b4b', this)" title="Red"></button>
+                <button type="button" class="markup-color-dot" style="background:#f59e0b;" onclick="setMarkupColor('#f59e0b', this)" title="Orange"></button>
+                <button type="button" class="markup-color-dot" style="background:#22c55e;" onclick="setMarkupColor('#22c55e', this)" title="Green"></button>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="tool-btn" onclick="undoMarkupShape()" title="Undo last markup shape">↩️ Undo</button>
+                <button type="button" class="tool-btn" onclick="clearMarkupShapes()" title="Clear all markup">🗑️ Clear</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="crop-hint" id="cropHint">Scroll / Pinch to zoom. Drag to crop.</div>
@@ -6549,6 +6603,13 @@
 
     // Tự động áp dụng theme khi tải trang
     document.addEventListener('DOMContentLoaded', () => {
+      const revInput = document.getElementById('fReviewer');
+      if (revInput) {
+        revInput.addEventListener('input', (e) => {
+          const val = (e.target.value || '').trim();
+          if (val) localStorage.setItem('DEFAULT_REVIEWER_NAME', val);
+        });
+      }
       applyThemeToWeb();
       initCachedLogos();
       initTouchSwipeNavigation();
@@ -7072,7 +7133,7 @@
     // History Manager (Undo / Redo)
     let undoStack = [];
     let redoStack = [];
-    const MAX_HISTORY = 8;
+    const MAX_HISTORY = 30;
     let isHistoryNavigating = false;
     let textInputUndoTimeout = null;
     let preTypingSnapshot = null;
@@ -7988,20 +8049,67 @@
       }
     });
 
-    // ═══════════════ HISTORY MANAGER (UNDO / REDO) ═══════════════
+    // ═══════════════ LIGHTWEIGHT HISTORY MANAGER (PHOTO VAULT & UNDO/REDO) ═══════════════
+    const photoVault = new Map();
+
+    function getVaultKey(base64Str) {
+      const len = base64Str.length;
+      const p1 = base64Str.slice(30, 60);
+      const p2 = base64Str.slice(Math.floor(len / 2), Math.floor(len / 2) + 30);
+      const p3 = base64Str.slice(-30);
+      const fp = (p1 + p2 + p3).replace(/[^a-zA-Z0-9]/g, '');
+      return `__vault_img_${len}_${fp}`;
+    }
+
+    function dehydrateReportForHistory(reportObj) {
+      if (!reportObj) return null;
+      try {
+        return JSON.stringify(reportObj, (key, value) => {
+          if (typeof value === 'string' && value.length > 200 && value.startsWith('data:image')) {
+            const vKey = getVaultKey(value);
+            if (!photoVault.has(vKey)) {
+              photoVault.set(vKey, value);
+            }
+            return vKey;
+          }
+          return value;
+        });
+      } catch (err) {
+        console.warn('Dehydrate failed', err);
+        return null;
+      }
+    }
+
+    function hydrateReportFromHistory(snapshotJson) {
+      if (!snapshotJson) return null;
+      try {
+        return JSON.parse(snapshotJson, (key, value) => {
+          if (typeof value === 'string' && value.startsWith('__vault_img_')) {
+            const original = photoVault.get(value);
+            return original !== undefined ? original : value;
+          }
+          return value;
+        });
+      } catch (err) {
+        console.error('Hydrate failed', err);
+        return null;
+      }
+    }
+
     function resetHistory() {
       undoStack = [];
       redoStack = [];
       preTypingSnapshot = null;
       clearTimeout(textInputUndoTimeout);
+      photoVault.clear();
       updateUndoRedoUI();
     }
 
     function flushPendingTextUndo() {
       if (preTypingSnapshot && D && currentId) {
         clearTimeout(textInputUndoTimeout);
-        const currentSnap = JSON.stringify(D);
-        if (currentSnap !== preTypingSnapshot) {
+        const currentSnap = dehydrateReportForHistory(D);
+        if (currentSnap && currentSnap !== preTypingSnapshot) {
           pushHistorySnapshot(preTypingSnapshot, 'Text input');
         }
         preTypingSnapshot = null;
@@ -8022,7 +8130,8 @@
       if (isHistoryNavigating || !currentId || !D) return;
       flushPendingTextUndo();
       try {
-        const snapshot = JSON.stringify(D);
+        const snapshot = dehydrateReportForHistory(D);
+        if (!snapshot) return;
         undoStack.push({ data: snapshot, desc });
         if (undoStack.length > MAX_HISTORY) {
           undoStack.shift();
@@ -8061,15 +8170,20 @@
 
       isHistoryNavigating = true;
       try {
-        const currentSnap = JSON.stringify(D);
+        const currentSnap = dehydrateReportForHistory(D);
         const item = undoStack.pop();
-        redoStack.push({ data: currentSnap, desc: item.desc });
+        if (currentSnap) {
+          redoStack.push({ data: currentSnap, desc: item.desc });
+        }
 
-        D = JSON.parse(item.data);
-        loadData();
-        updateTopbar();
-        await dbPut(D);
-        showToast(`↩️ Undo: ${item.desc}`);
+        const restored = hydrateReportFromHistory(item.data);
+        if (restored) {
+          D = restored;
+          loadData();
+          updateTopbar();
+          await dbPut(D);
+          showToast(`↩️ Undo: ${item.desc}`);
+        }
       } catch (err) {
         console.error('Undo failed', err);
         showToast('Undo failed');
@@ -8089,15 +8203,20 @@
 
       isHistoryNavigating = true;
       try {
-        const currentSnap = JSON.stringify(D);
+        const currentSnap = dehydrateReportForHistory(D);
         const item = redoStack.pop();
-        undoStack.push({ data: currentSnap, desc: item.desc });
+        if (currentSnap) {
+          undoStack.push({ data: currentSnap, desc: item.desc });
+        }
 
-        D = JSON.parse(item.data);
-        loadData();
-        updateTopbar();
-        await dbPut(D);
-        showToast(`↪️ Redo: ${item.desc}`);
+        const restored = hydrateReportFromHistory(item.data);
+        if (restored) {
+          D = restored;
+          loadData();
+          updateTopbar();
+          await dbPut(D);
+          showToast(`↪️ Redo: ${item.desc}`);
+        }
       } catch (err) {
         console.error('Redo failed', err);
         showToast('Redo failed');
@@ -8201,18 +8320,18 @@
       }
     });
 
-    // Auto-capture text changes for input and textarea
+    // Auto-capture text changes for input and textarea (Lightweight Dehydrated Snapshots)
     document.addEventListener('input', (e) => {
       if (!currentId || isHistoryNavigating) return;
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
         if (!preTypingSnapshot && D) {
-          preTypingSnapshot = JSON.stringify(D);
+          preTypingSnapshot = dehydrateReportForHistory(D);
         }
         clearTimeout(textInputUndoTimeout);
         textInputUndoTimeout = setTimeout(() => {
           if (preTypingSnapshot) {
-            const currentSnap = JSON.stringify(D);
-            if (currentSnap !== preTypingSnapshot) {
+            const currentSnap = dehydrateReportForHistory(D);
+            if (currentSnap && currentSnap !== preTypingSnapshot) {
               pushHistorySnapshot(preTypingSnapshot, 'Text input');
             }
             preTypingSnapshot = null;
@@ -8226,8 +8345,8 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
         if (preTypingSnapshot) {
           clearTimeout(textInputUndoTimeout);
-          const currentSnap = JSON.stringify(D);
-          if (currentSnap !== preTypingSnapshot) {
+          const currentSnap = dehydrateReportForHistory(D);
+          if (currentSnap && currentSnap !== preTypingSnapshot) {
             pushHistorySnapshot(preTypingSnapshot, 'Text input');
           }
           preTypingSnapshot = null;
@@ -9621,6 +9740,7 @@
                    onkeydown="if(event.key==='Enter') this.blur()">
           </div>
           <div class="module-head-actions">
+            ${mod.type === 'dimensions' ? `<button type="button" class="dim-head-btn" id="btnCopyDims" onclick="copyDimensionsFromLatestReport()" title="Sync dimension template from latest report">📥 Lấy mẫu đo gần nhất</button>` : ''}
             ${dimBtn ? `<button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">${dimBtn.textContent.trim() === 'DONE' ? 'Done' : (dimBtn.textContent.trim() === 'SELECT' ? 'Select' : dimBtn.textContent.trim()) || 'Select'}</button>` : ''}
             ${hasDrag ? `
               <div class="drag-mode-segmented" title="Photo drag mode (Drag & Sort)">
@@ -12380,6 +12500,71 @@
       as();
     }
 
+    async function copyDimensionsFromLatestReport() {
+      try {
+        const metadataList = await dbGetAllMetadata();
+        if (!metadataList || metadataList.length === 0) {
+          showToast('No other reports found');
+          return;
+        }
+
+        const otherReports = metadataList.filter(r => String(r.id) !== String(currentId));
+        if (otherReports.length === 0) {
+          showToast('No other reports available to copy');
+          return;
+        }
+
+        otherReports.sort((a, b) => {
+          const timeA = a.updatedAt || parseInt(a.id) || 0;
+          const timeB = b.updatedAt || parseInt(b.id) || 0;
+          return timeB - timeA;
+        });
+
+        let sourceReport = null;
+        for (const meta of otherReports) {
+          const fullRep = await dbGet(meta.id);
+          if (fullRep && Array.isArray(fullRep.dimensions) && fullRep.dimensions.length > 0) {
+            sourceReport = fullRep;
+            break;
+          }
+        }
+
+        if (!sourceReport) {
+          showToast('No reports found with dimensions data');
+          return;
+        }
+
+        const sourceTitle = getReportTitle(sourceReport);
+        const countDims = sourceReport.dimensions.length;
+
+        const confirmed = confirm(
+          `Found latest saved report:\n"${sourceTitle}" (${countDims} dimensions).\n\n` +
+          `Do you want to copy dimension names and drawing specs into your current report?`
+        );
+        if (!confirmed) return;
+
+        pushHistory('Import dimension template');
+        D.dimensions = sourceReport.dimensions.map(d => ({
+          name: d.name || '',
+          drawing: d.drawing || '',
+          drawingUnit: d.drawingUnit || 'cm',
+          actual: '',
+          actualUnit: d.actualUnit || 'cm',
+          color: 'color-blue',
+          img: null,
+          imgSub: null,
+          photoLayout: d.photoLayout || '3:1'
+        }));
+
+        buildDimGrid();
+        as();
+        showToast(`✓ Copied ${D.dimensions.length} dimensions from "${sourceTitle}"`);
+      } catch (err) {
+        console.error('Error copying dimensions:', err);
+        showToast('Error copying dimensions: ' + err.message);
+      }
+    }
+
     async function copyChecklistFromLatestReport() {
       try {
         const allReports = await dbGetAll();
@@ -12509,7 +12694,7 @@
           const el = document.getElementById(id);
           if (el) {
             if (keys[i] === 'reviewer' && !D[keys[i]]) {
-              D[keys[i]] = 'Quoc Hung';
+              D[keys[i]] = localStorage.getItem('DEFAULT_REVIEWER_NAME') || 'Quoc Hung';
             }
             el.value = D[keys[i]] || '';
           }
@@ -12867,7 +13052,7 @@
           id, 
           moduleType: modKey,
           reportTitle: modCfg.pdfTitle,
-          model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: 'Quoc Hung', numS: 1, numR: 1,
+          model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: localStorage.getItem('DEFAULT_REVIEWER_NAME') || 'Quoc Hung', numS: 1, numR: 1,
           checks: { stage: {}, sample: {}, comfort: {}, rating: {} },
           coverPhotos: {},
           coverTitles: {},
@@ -13315,10 +13500,62 @@
       };
       ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 2.5;
 
-      // ================= EXECUTIVE QUALITY SUMMARY STRIP =================
+      // ================= EXECUTIVE QUALITY SUMMARY STRIP (DYNAMIC WRAP & AUTO-HEIGHT) =================
       const qm = getReportQuickMetrics(D);
       const sumBoxW = W - M * 2;
-      const sumBoxH = 13.5;
+      const badgeH = 5.6;
+
+      const pdfBadges = [];
+      // 1. Watch-out
+      if (qm.watchCount > 0) {
+        pdfBadges.push({ text: `${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
+      } else {
+        pdfBadges.push({ text: "0 Watch-outs", bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+      }
+
+      // 2. Testing BV
+      if (qm.totalTests === 0) {
+        pdfBadges.push({ text: "No Lab Tests", bg: [240, 237, 232], border: [140, 135, 130], textCol: [70, 65, 60], isAlert: false });
+      } else if (qm.failedTests > 0) {
+        pdfBadges.push({ text: `${qm.failedTests}/${qm.totalTests} Tests Failed`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
+      } else if (qm.passedTests === qm.totalTests) {
+        pdfBadges.push({ text: `All Tests Passed (${qm.passedTests}/${qm.totalTests})`, bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+      } else {
+        pdfBadges.push({ text: `${qm.passedTests}/${qm.totalTests} Passed (${qm.pendingTests || (qm.totalTests - qm.passedTests)} Pending)`, bg: [253, 247, 236], border: [232, 144, 32], textCol: [180, 83, 9], isAlert: true });
+      }
+
+      // 3. Checklist
+      if (qm.totalCriteria > 0) {
+        if (qm.passCriteria === qm.totalCriteria) {
+          pdfBadges.push({ text: `Checklist (${qm.totalCriteria}/${qm.totalCriteria})`, bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+        } else {
+          const pendingCount = qm.pendingCriteria !== undefined ? qm.pendingCriteria : (qm.totalCriteria - qm.passCriteria);
+          pdfBadges.push({ text: `Checklist: ${qm.passCriteria}/${qm.totalCriteria} (${pendingCount} Pending)`, bg: [253, 247, 236], border: [232, 144, 32], textCol: [180, 83, 9], isAlert: true });
+        }
+      }
+
+      // 4. Dimension (nếu có vấn đề phát hiện)
+      if (qm.redDims > 0 || qm.orangeDims > 0) {
+        const dimTotal = qm.redDims + qm.orangeDims;
+        pdfBadges.push({ text: `${dimTotal} Dim Issue${dimTotal > 1 ? 's' : ''}`, bg: [253, 247, 236], border: [232, 144, 32], textCol: [180, 83, 9], isAlert: true });
+      }
+
+      // Tính toán trước chiều rộng và số dòng để không bao giờ bị tràn lề phải (W - M)
+      doc.setFont(fontFam, 'bold');
+      doc.setFontSize(7.5);
+      let calcX = M + 3;
+      let lineCount = 1;
+      pdfBadges.forEach(b => {
+        b.width = doc.getTextWidth(b.text) + 8;
+        if (calcX + b.width > W - M - 3 && calcX > M + 3) {
+          lineCount++;
+          calcX = M + 3 + b.width + 3;
+        } else {
+          calcX += b.width + 3;
+        }
+      });
+
+      const sumBoxH = lineCount === 1 ? 13.5 : (13.5 + (lineCount - 1) * (badgeH + 2));
       doc.setFillColor(248, 246, 242);
       doc.setDrawColor(225, 220, 212);
       doc.setLineWidth(0.25);
@@ -13330,63 +13567,29 @@
       doc.setTextColor(140, 130, 122);
       doc.text("QUALITY SUMMARY", M + 3, y + 3.8);
 
-      // Vẽ các Badges / Status Pills
-      let badgeX = M + 3;
-      const badgeY = y + 5.5;
-      const badgeH = 5.6;
+      // Vẽ các Badges xuống dòng mượt mà
+      let bX = M + 3;
+      let bY = y + 5.5;
+      pdfBadges.forEach(b => {
+        if (bX + b.width > W - M - 3 && bX > M + 3) {
+          bX = M + 3;
+          bY += badgeH + 2;
+        }
+        doc.setFillColor(...b.bg);
+        doc.setDrawColor(...b.border);
+        doc.setLineWidth(0.2);
+        doc.rect(bX, bY, b.width, badgeH, 'FD');
 
-      const drawPdfBadge = (text, bgRgb, borderRgb, textRgb, isAlert = false) => {
+        doc.setFillColor(...b.border);
+        doc.circle(bX + 3.2, bY + badgeH / 2, 1.1, 'F');
+
+        doc.setTextColor(...b.textCol);
         doc.setFont(fontFam, 'bold');
         doc.setFontSize(7.5);
-        const textW = doc.getTextWidth(text);
-        const bW = textW + 8;
-        doc.setFillColor(...bgRgb);
-        doc.setDrawColor(...borderRgb);
-        doc.setLineWidth(0.2);
-        doc.rect(badgeX, badgeY, bW, badgeH, 'FD');
+        doc.text(b.text, bX + 6.2, bY + 4.0);
 
-        // Vẽ chấm tròn nhỏ biểu trưng trạng thái
-        doc.setFillColor(...borderRgb);
-        doc.circle(badgeX + 3.2, badgeY + badgeH / 2, 1.1, 'F');
-
-        doc.setTextColor(...textRgb);
-        doc.text(text, badgeX + 6.2, badgeY + 4.0);
-        badgeX += bW + 3;
-      };
-
-      // 1. Watch-out
-      if (qm.watchCount > 0) {
-        drawPdfBadge(`${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
-      } else {
-        drawPdfBadge("0 Watch-outs", [237, 247, 238], [52, 168, 83], [30, 120, 50]);
-      }
-
-      // 2. Testing BV
-      if (qm.totalTests === 0) {
-        drawPdfBadge("No Lab Tests", [240, 237, 232], [140, 135, 130], [70, 65, 60]);
-      } else if (qm.failedTests > 0) {
-        drawPdfBadge(`${qm.failedTests}/${qm.totalTests} Tests Failed`, [253, 240, 240], [226, 75, 74], [180, 40, 40], true);
-      } else if (qm.passedTests === qm.totalTests) {
-        drawPdfBadge(`All Tests Passed (${qm.passedTests}/${qm.totalTests})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
-      } else {
-        drawPdfBadge(`${qm.passedTests}/${qm.totalTests} Passed (${qm.pendingTests || (qm.totalTests - qm.passedTests)} Pending)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
-      }
-
-      // 3. Checklist
-      if (qm.totalCriteria > 0) {
-        if (qm.passCriteria === qm.totalCriteria) {
-          drawPdfBadge(`Checklist (${qm.totalCriteria}/${qm.totalCriteria})`, [237, 247, 238], [52, 168, 83], [30, 120, 50]);
-        } else {
-          const pendingCount = qm.pendingCriteria !== undefined ? qm.pendingCriteria : (qm.totalCriteria - qm.passCriteria);
-          drawPdfBadge(`Checklist: ${qm.passCriteria}/${qm.totalCriteria} (${pendingCount} Pending)`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
-        }
-      }
-
-      // 4. Dimension (nếu có vấn đề phát hiện)
-      if (qm.redDims > 0 || qm.orangeDims > 0) {
-        const dimTotal = qm.redDims + qm.orangeDims;
-        drawPdfBadge(`${dimTotal} Dim Issue${dimTotal > 1 ? 's' : ''}`, [253, 247, 236], [232, 144, 32], [180, 83, 9], true);
-      }
+        bX += b.width + 3;
+      });
 
       y += sumBoxH + 8.5;
 
