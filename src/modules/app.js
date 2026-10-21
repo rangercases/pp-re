@@ -2653,7 +2653,7 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
       as(); showToast('✓ Đã lưu ảnh');
     }
 
-    function closeCamera() { 
+        function closeCamera() {
       if (cropper) { cropper.destroy(); cropper = null; }
       currentOriginalImg = null;
       markupShapes = [];
@@ -2684,7 +2684,9 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
         image.removeAttribute('src');
         image.src = '';
       }
-      document.getElementById('camModal').classList.add('hidden'); 
+      const modal = document.getElementById('camModal');
+      if (modal) modal.classList.add('hidden');
+      unlockBodyScroll();
     }
 
     // ═══════════════ BATCH SELECT CHO REPORT ═══════════════

@@ -6606,6 +6606,13 @@
 
     // Tự động áp dụng theme khi tải trang
     document.addEventListener('DOMContentLoaded', () => {
+      const camModalWheel = document.getElementById('camModal');
+      if (camModalWheel) {
+        camModalWheel.addEventListener('wheel', (e) => {
+          // Ngăn chuột lăn xuyên thấu làm cuộn trang nền khi đang ở modal
+          e.stopPropagation();
+        }, { passive: true });
+      }
       const revInput = document.getElementById('fReviewer');
       if (revInput) {
         revInput.addEventListener('input', (e) => {
@@ -8993,8 +9000,7 @@
       as(); showToast('✓ Photo applied');
     }
 
-    function closeCamera() {
-      unlockBodyScroll();
+        function closeCamera() {
       if (cropper) { cropper.destroy(); cropper = null; }
       currentOriginalImg = null;
       markupShapes = [];
@@ -9027,6 +9033,7 @@
       }
       const modal = document.getElementById('camModal');
       if (modal) modal.classList.add('hidden');
+      unlockBodyScroll();
     }
 
     // ═══════════════ BATCH SELECT CHO REPORT ═══════════════
@@ -10145,9 +10152,9 @@
       document.documentElement.classList.add('scroll-locked');
     }
 
-    function unlockBodyScroll() {
-      const hasOpenModal = document.querySelector('.modal-overlay:not(.hidden)');
-      if (!hasOpenModal) {
+        function unlockBodyScroll() {
+      const openModals = Array.from(document.querySelectorAll('.modal-overlay')).filter(m => !m.classList.contains('hidden'));
+      if (openModals.length === 0) {
         document.body.classList.remove('scroll-locked');
         document.documentElement.classList.remove('scroll-locked');
       }
