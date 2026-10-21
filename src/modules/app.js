@@ -496,10 +496,100 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
       }); 
     }
 
+    function dbGetAllMetadata() {
+      return new Promise((res, rej) => {
+        if (!db) {
+          initDB().then(() => dbGetAllMetadata()).then(res).catch(rej);
+          return;
+        }
+        const list = [];
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.openCursor();
+        req.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            const r = cursor.value;
+            if (r) {
+              let coverCount = 0;
+              let firstThumb = '';
+              if (r.coverPhotos && typeof r.coverPhotos === 'object') {
+                const vals = Object.values(r.coverPhotos);
+                for (let i = 0; i < vals.length; i++) {
+                  const val = vals[i];
+                  const img = (typeof val === 'string') ? val : (val && val.img);
+                  if (img) {
+                    coverCount++;
+                    if (!firstThumb && typeof img === 'string' && img.startsWith('data:image')) {
+                      firstThumb = img;
+                    }
+                  }
+                }
+              }
+              let prodCount = 0;
+              if (Array.isArray(r.prodPhotos)) {
+                for (let i = 0; i < r.prodPhotos.length; i++) {
+                  const p = r.prodPhotos[i];
+                  const img = (typeof p === 'string') ? p : (p && (p.data || p.img));
+                  if (img) {
+                    prodCount++;
+                    if (!firstThumb && typeof img === 'string' && img.startsWith('data:image')) {
+                      firstThumb = img;
+                    }
+                  }
+                }
+              }
+              list.push({
+                id: r.id,
+                moduleType: r.moduleType || 'pre-production',
+                reportTitle: r.reportTitle || '',
+                model: r.model || '',
+                desc: r.desc || '',
+                date: r.date || '',
+                factory: r.factory || '',
+                reviewer: r.reviewer || '',
+                updatedAt: r.updatedAt || r.date || '',
+                photoCount: coverCount + prodCount,
+                thumbSrc: firstThumb
+              });
+            }
+            cursor.continue();
+          } else {
+            res(list);
+          }
+        };
+        req.onerror = () => rej(req.error);
+      });
+    }
+
     function dbGet(id) { 
       return new Promise((res, rej) => { 
-        const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(id); 
-        req.onsuccess = () => res(req.result || null); 
+        if (!db) {
+          initDB().then(() => dbGet(id)).then(res).catch(rej);
+          return;
+        }
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id); 
+        req.onsuccess = () => {
+          if (req.result) {
+            res(req.result);
+            return;
+          }
+          let altId = null;
+          if (typeof id === 'string' && !isNaN(Number(id)) && id.trim() !== '') {
+            altId = Number(id);
+          } else if (typeof id === 'number') {
+            altId = String(id);
+          }
+          if (altId !== null) {
+            const altReq = store.get(altId);
+            altReq.onsuccess = () => res(altReq.result || null);
+            altReq.onerror = () => res(null);
+          } else {
+            res(null);
+          }
+        }; 
         req.onerror = () => rej(req.error); 
       }); 
     }
@@ -2443,8 +2533,11 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
 
     async function duplicateReportById(id) {
       try {
-        const allReps = await dbGetAll();
-        const source = allReps.find(r => String(r.id) === String(id));
+        let source = await dbGet(id);
+        if (!source) {
+          const allReps = await dbGetAll();
+          source = allReps.find(r => String(r.id) === String(id));
+        }
         if (!source) {
           showToast('Không tìm thấy báo cáo để nhân bản!');
           return;
@@ -2460,7 +2553,7 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
       const cloned = JSON.parse(JSON.stringify(source));
       cloned.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
 
-      const allReports = await dbGetAll();
+      const allReports = await dbGetAllMetadata();
       const baseTitle = getReportTitle(cloned).trim();
       const suffix = findNextCopySuffix(baseTitle, allReports);
 
@@ -2488,10 +2581,13 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
         return;
       }
       try {
-        const allReports = await dbGetAll();
         const ids = Array.from(selectedReportIds);
         for (const id of ids) {
-          const source = allReports.find(r => String(r.id) === String(id));
+          let source = await dbGet(id);
+          if (!source) {
+            const allReports = await dbGetAll();
+            source = allReports.find(r => String(r.id) === String(id));
+          }
           if (source) {
             await doDuplicateReport(source);
           }
@@ -2520,8 +2616,11 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
 
     async function shareReportById(id) {
       try {
-        const reports = await dbGetAll();
-        const rep = reports.find(r => String(r.id) === String(id));
+        let rep = await dbGet(id);
+        if (!rep) {
+          const reports = await dbGetAllMetadata();
+          rep = reports.find(r => String(r.id) === String(id));
+        }
         if (!rep) {
           showToast('Không tìm thấy báo cáo!');
           return;
@@ -2540,18 +2639,18 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
         return;
       }
       try {
-        const allReports = await dbGetAll();
-        const selectedReps = allReports.filter(r => selectedReportIds.has(String(r.id)));
-        if (selectedReps.length === 0) return;
-
-        showToast(`Đang tải ${selectedReps.length} file JSON...`);
-        for (let i = 0; i < selectedReps.length; i++) {
-          setTimeout(() => {
-            downloadReportJson(selectedReps[i]);
-            if (i === selectedReps.length - 1) {
-              showToast(`✓ Đã tải xong ${selectedReps.length} file JSON!`);
-            }
-          }, i * 300);
+        const ids = Array.from(selectedReportIds);
+        showToast(`Đang tải ${ids.length} file JSON...`);
+        for (let i = 0; i < ids.length; i++) {
+          const rep = await dbGet(ids[i]);
+          if (rep) {
+            setTimeout(() => {
+              downloadReportJson(rep);
+              if (i === ids.length - 1) {
+                showToast(`✓ Đã tải xong ${ids.length} file JSON!`);
+              }
+            }, i * 300);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -2561,7 +2660,7 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
 
     async function processJsonData(data) {
       try {
-        const existingReports = await dbGetAll();
+        const existingReports = await dbGetAllMetadata();
 
         const targetTitle = getReportTitle(data).trim();
         const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
@@ -2582,8 +2681,8 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
           const newNameEl = document.getElementById('conflictNewName');
           const btnCopy = document.getElementById('btnConflictCopy');
           if (nameEl) nameEl.textContent = `"${targetTitle}"`;
-          if (newNameEl) newNameEl.textContent = `bản ${pendingCopySuffix}`;
-          if (btnCopy) btnCopy.textContent = `Tạo bản ${pendingCopySuffix}`;
+          if (newNameEl) newNameEl.textContent = `copy ${pendingCopySuffix}`;
+          if (btnCopy) btnCopy.textContent = `Tạo bản copy ${pendingCopySuffix}`;
 
           const m = document.getElementById('importConflictModal');
           if (m) m.classList.remove('hidden');
@@ -2598,12 +2697,12 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
 
         const normalizedData = await normalizeReportPhotos(data);
         await dbPut(normalizedData);
-        showToast('✓ Nhập báo cáo thành công!');
+        showToast('✓ Đã nhập báo cáo thành công!');
         await renderHome();
         openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
-        alert('Lỗi nhập dữ liệu: File JSON không hợp lệ!');
+        alert('Lỗi nhập dữ liệu: Định dạng file JSON không hợp lệ!');
       }
     }
 
@@ -2756,7 +2855,7 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
       }
 
       const filtered = [...reports].reverse().filter(r => {
-        const photos = Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length;
+        const photos = (typeof r.photoCount === "number") ? r.photoCount : (Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length);
         const done = photos >= 4;
 
         if (homeFilterStatus === 'done' && !done) return false;
