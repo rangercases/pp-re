@@ -603,6 +603,61 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
+    /* Tab Hover Actions (Duplicate & Delete inherited icons) */
+    .tab-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, margin-left 0.15s ease;
+      margin-left: 0;
+    }
+
+    .tab:hover .tab-actions {
+      max-width: 50px;
+      opacity: 1;
+      pointer-events: auto;
+      margin-left: 6px;
+    }
+
+    .tab-action-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+
+    .tab-action-btn:hover {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--ink);
+      transform: scale(1.12);
+    }
+
+    .tab-action-btn.tab-btn-del:hover {
+      background: var(--bad, #dc2626);
+      color: #ffffff;
+    }
+
+    @media (hover: none) {
+      .tab.active .tab-actions {
+        max-width: 50px;
+        opacity: 1;
+        pointer-events: auto;
+        margin-left: 6px;
+      }
+    }
+
     /* Add Module Tab Button */
     .add-module-tab-btn {
       background: rgba(255, 255, 255, 0.82) !important;
@@ -9312,7 +9367,28 @@
         d.id = `tab${i}`;
         d.dataset.moduleId = mod.id;
         d.dataset.index = i;
-        d.innerHTML = `<span>${escapeHtml(mod.name)}</span>`;
+
+        const canDup = mod.canDuplicate !== false;
+        const canDel = mod.canDelete !== false;
+        let actionsHtml = '';
+        if (canDup || canDel) {
+          actionsHtml = `
+            <div class="tab-actions">
+              ${canDup ? `
+                <button type="button" class="tab-action-btn tab-btn-dup" title="Duplicate module" onclick="event.stopPropagation(); duplicateModule('${mod.id}');">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              ` : ''}
+              ${canDel ? `
+                <button type="button" class="tab-action-btn tab-btn-del" title="Delete module" onclick="event.stopPropagation(); deleteModule('${mod.id}');">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        d.innerHTML = `<span>${escapeHtml(mod.name)}</span>${actionsHtml}`;
         d.onclick = () => showSection(i);
         tabsRow.appendChild(d);
       });
@@ -9437,14 +9513,6 @@
           </div>
           <div class="module-head-actions">
             ${dimBtn ? `<button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">${dimBtn.textContent.trim() === 'DONE' ? 'Done' : (dimBtn.textContent.trim() === 'SELECT' ? 'Select' : dimBtn.textContent.trim()) || 'Select'}</button>` : ''}
-            ${canDup ? `<button type="button" class="module-action-btn" onclick="duplicateModule('${mod.id}')" title="Duplicate this module">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              <span>Duplicate</span>
-            </button>` : ''}
-            ${canDel ? `<button type="button" class="module-action-btn btn-del-mod" onclick="deleteModule('${mod.id}')" title="Delete this module">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              <span>Delete</span>
-            </button>` : ''}
             ${hasDrag ? `
               <div class="drag-mode-segmented" title="Photo drag mode (Drag & Sort)">
                 <button type="button" class="drag-mode-btn ${globalDragMode === 'swap' ? 'active' : ''}" data-mode="swap" onclick="setDragMode('swap'); event.stopPropagation();" title="1-to-1 Swap (Keep other slots in place)">
@@ -11973,10 +12041,6 @@
               <span class="stat-sep">·</span>
               <span class="stat-item pend"><span class="stat-dot pend">■</span> ${pendingCount} Pending (${pct}%)</span>
             </div>
-            <button type="button" class="module-action-btn btn-del-mod" onclick="deleteModule('sec_checklist')" title="Delete Check List module">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              <span>Delete</span>
-            </button>
           </div>
         </div>
         <div class="apple-progress-wrap">
