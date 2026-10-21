@@ -4365,6 +4365,8 @@
     }
 
     .cropper-wrapper {
+      position: relative !important;
+      overflow: hidden !important;
       width: 100%;
       height: 42vh;
       min-height: 260px;
@@ -5362,13 +5364,14 @@
 
     /* PHOTO MARKUP TOOLBAR & CANVAS */
     .markup-canvas-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      touch-action: none;
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      touch-action: none !important;
       cursor: crosshair;
       z-index: 20;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
       border-radius: 4px;
     }
     .markup-color-dot {
@@ -5926,7 +5929,7 @@
       </div>
 
       <div class="modal-body">
-        <div id="cropperWrapper" class="cropper-wrapper">
+        <div id="cropperWrapper" class="cropper-wrapper" style="position:relative !important; overflow:hidden !important;">
           <img id="cropperImage" alt="Cropper Preview">
           <canvas id="markupCanvas" class="markup-canvas-overlay" style="display:none;"></canvas>
         </div>
@@ -8548,6 +8551,7 @@
 
       document.getElementById('camTitle').textContent = title;
       document.getElementById('camModal').classList.remove('hidden');
+      lockBodyScroll();
 
       document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
 
@@ -8725,8 +8729,9 @@
         canvas.style.width = `${dispW}px`;
         canvas.style.height = `${dispH}px`;
         canvas.style.position = 'absolute';
-        canvas.style.left = `${Math.round((wrapW - dispW) / 2)}px`;
-        canvas.style.top = `${Math.round((wrapH - dispH) / 2)}px`;
+        canvas.style.top = '50%';
+        canvas.style.left = '50%';
+        canvas.style.transform = 'translate(-50%, -50%)';
 
         initMarkupPointerEvents(canvas);
         redrawMarkup();

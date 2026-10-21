@@ -2390,8 +2390,9 @@ window.FONT_ROBOTO_BOLD = FONT_ROBOTO_BOLD;
         canvas.style.width = `${dispW}px`;
         canvas.style.height = `${dispH}px`;
         canvas.style.position = 'absolute';
-        canvas.style.left = `${(wrapW - dispW) / 2}px`;
-        canvas.style.top = `${(wrapH - dispH) / 2}px`;
+        canvas.style.top = '50%';
+        canvas.style.left = '50%';
+        canvas.style.transform = 'translate(-50%, -50%)';
 
         initMarkupPointerEvents(canvas);
         redrawMarkup();
