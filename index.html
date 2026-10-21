@@ -527,11 +527,12 @@
       display: flex;
       min-width: max-content;
       gap: 6px;
-      padding: 8px 0;
+      padding: 10px 0 8px 0;
       scroll-padding: 0 24px;
     }
 
     .tab {
+      position: relative;
       padding: 6px 14px;
       height: 30px;
       display: inline-flex;
@@ -603,58 +604,67 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    /* Tab Hover Actions (Duplicate & Delete inherited icons) */
+    /* Tab Hover Actions (Floating on top-right corner like photo slots) */
     .tab-actions {
+      position: absolute;
+      top: -9px;
+      right: -2px;
       display: inline-flex;
       align-items: center;
-      gap: 2px;
-      max-width: 0;
-      overflow: hidden;
+      gap: 3px;
+      z-index: 20;
       opacity: 0;
       pointer-events: none;
-      transition: max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, margin-left 0.15s ease;
-      margin-left: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(2px) scale(0.9);
     }
 
     .tab:hover .tab-actions {
-      max-width: 50px;
       opacity: 1;
       pointer-events: auto;
-      margin-left: 6px;
+      transform: translateY(0) scale(1);
     }
 
     .tab-action-btn {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      border: none;
-      background: transparent;
+      border: 0.5px solid rgba(255, 255, 255, 0.25);
+      background: rgba(18, 18, 20, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--muted);
+      color: #ffffff;
       cursor: pointer;
       padding: 0;
-      transition: all 0.15s ease;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .tab-action-btn:hover {
-      background: rgba(0, 0, 0, 0.08);
-      color: var(--ink);
+      background: #000000;
+      border-color: #ffffff;
       transform: scale(1.12);
+    }
+
+    .tab-action-btn.tab-btn-del {
+      color: #fca5a5;
     }
 
     .tab-action-btn.tab-btn-del:hover {
       background: var(--bad, #dc2626);
+      border-color: var(--bad, #dc2626);
       color: #ffffff;
+      transform: scale(1.12);
     }
 
     @media (hover: none) {
       .tab.active .tab-actions {
-        max-width: 50px;
-        opacity: 1;
+        opacity: 0.95;
         pointer-events: auto;
-        margin-left: 6px;
+        transform: translateY(0) scale(1);
       }
     }
 
