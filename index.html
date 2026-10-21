@@ -2153,6 +2153,7 @@
     }
 
     .free-photo-item:hover .pactions,
+    .photo-slot:hover .pactions,
     .dim-main-photo:hover .pactions,
     .dim-sub-photo:hover .pactions,
     .cover-slot:hover .pactions,
@@ -2314,27 +2315,55 @@
 
     /* FULL-WIDTH PHOTO CELL */
     .free-photo-item.is-fullwidth,
+    .photo-slot.is-fullwidth,
     .watchout-slot.is-fullwidth,
     .assembly-slot.is-fullwidth,
     .testing-slot.is-fullwidth {
       grid-column: 1 / -1 !important;
+      justify-self: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
     }
 
     .free-photo-item.is-fullwidth {
-      aspect-ratio: 16 / 9;
-      max-height: 320px;
+      aspect-ratio: 4 / 3;
+      width: 60% !important;
+      max-width: 520px;
+    }
+
+    .photo-slot.is-fullwidth {
+      aspect-ratio: 4 / 3;
+      width: 80% !important;
+      max-width: 640px;
+    }
+
+    .watchout-slot.is-fullwidth,
+    .assembly-slot.is-fullwidth,
+    .testing-slot.is-fullwidth {
+      width: 100% !important;
+    }
+
+    @media (max-width: 680px) {
+      .free-photo-item.is-fullwidth,
+      .photo-slot.is-fullwidth {
+        width: 95% !important;
+      }
     }
 
     .free-photo-item.is-fullwidth img {
-      max-height: 320px;
-      object-fit: contain;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
     }
 
     .watchout-slot.is-fullwidth .dim-photo-container,
     .assembly-slot.is-fullwidth .dim-photo-container,
     .testing-slot.is-fullwidth .dim-photo-container {
       aspect-ratio: 16 / 9;
-      max-height: 320px;
+      max-height: 440px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* ACTION BUTTON (TOGGLE FULL-WIDTH / NORMAL) */
@@ -5338,6 +5367,14 @@
         </svg>
         <span class="btn-lbl">SHARE</span>
       </button>
+      <button class="topbar-btn" id="btnPreview" onclick="previewPDF()" style="display:none"
+        title="Preview PDF (A4 Realistic View)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span class="btn-lbl">PREVIEW</span>
+      </button>
       <button class="topbar-btn pri" id="btnExport" onclick="exportPDF()" style="display:none"
         title="Export PDF Document">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
@@ -5995,6 +6032,41 @@
       </div>
       <div class="add-module-body" id="addModuleBody">
         <!-- Rendered dynamically by renderAddModuleList() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PDF REALISTIC PREVIEW (A4) -->
+  <div class="modal-overlay hidden" id="pdfLivePreviewModal" style="z-index: 130;">
+    <div class="modal-box"
+      style="width: 95vw; max-width: 1100px; height: 92vh; max-height: 92vh; display: flex; flex-direction: column; border-radius: var(--r, 16px); box-shadow: var(--sh-xl); border: 1px solid var(--line); overflow: hidden; padding: 0;">
+      <div class="modal-head"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--surface, #ffffff); border-bottom: 1px solid var(--line);">
+        <h3 id="pdfPreviewTitle"
+          style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin: 0; text-transform: uppercase;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span>PDF PREVIEW (A4 REALISTIC)</span>
+        </h3>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="topbar-btn pri" id="btnPreviewDownload" onclick="downloadPdfFromPreview()"
+            style="height: 32px; padding: 0 14px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span class="btn-lbl">DOWNLOAD PDF</span>
+          </button>
+          <button class="modal-close" onclick="closePdfPreviewModal()"
+            style="border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="flex: 1; padding: 0; background: #525659; overflow: hidden; position: relative;">
+        <iframe id="pdfPreviewFrame" src="" style="width: 100%; height: 100%; border: none; display: block;"
+          title="PDF Preview Frame"></iframe>
       </div>
     </div>
   </div>
@@ -7879,6 +7951,12 @@
         }
       }
       if (e.key === 'Escape') {
+        const previewModal = document.getElementById('pdfLivePreviewModal');
+        if (previewModal && !previewModal.classList.contains('hidden')) {
+          e.preventDefault();
+          closePdfPreviewModal();
+          return;
+        }
         const camModal = document.getElementById('camModal');
         if (camModal && !camModal.classList.contains('hidden')) {
           e.preventDefault();
@@ -8840,7 +8918,7 @@
       document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
-      ['tabsWrap', 'saveBar', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+      ['tabsWrap', 'saveBar', 'btnHome', 'btnPreview', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
         const el = document.getElementById(elemId);
         if (el) el.style.display = 'none';
       });
@@ -9303,7 +9381,7 @@
       // Render Header Actions (Rename, Duplicate, Delete) cho các Module
       renderAllModuleHeaders();
 
-      buildSlotGrid('coverPhotos', COVER_SLOTS.map(s => ({ key: s.replace(/ /g, '_'), label: s })), 'slot', 'cover');
+      renderCoverSlots();
       Object.entries(CHECK_OPTS).forEach(([g, opts]) => {
         const el = document.getElementById('ck_' + g); if (!el) return; el.innerHTML = '';
         opts.forEach(o => el.appendChild(makeCheck(g, o)));
@@ -10071,11 +10149,134 @@
       label.onclick = () => toggleCheck(group, opt); return label;
     }
 
+    function getCoverSlotKeys() {
+      if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
+        D.coverSlots = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+      }
+      return D.coverSlots;
+    }
+
+    function isCoverSlotFull(key) {
+      if (D.coverSizes && D.coverSizes[key] === 'full') return true;
+      const p = D.coverPhotos && D.coverPhotos[key];
+      if (p && typeof p === 'object' && (p.fullWidth === true || p.photoSize === 'full')) return true;
+      return false;
+    }
+
+    function getCoverCapacityUsage() {
+      const keys = getCoverSlotKeys();
+      let usage = 0;
+      keys.forEach(k => {
+        usage += isCoverSlotFull(k) ? 2 : 1;
+      });
+      return usage;
+    }
+
+    function toggleCoverSlotFullWidth(key) {
+      const current = isCoverSlotFull(key);
+      if (!current) {
+        // Đang là ảnh nhỏ muốn phóng to -> tăng 1 điểm: kiểm tra giới hạn tối đa 4 điểm
+        const currentUsage = getCoverCapacityUsage();
+        if (currentUsage + 1 > 4) {
+          showToast('Overview tối đa: 2 ảnh lớn, 1 lớn + 2 nhỏ, hoặc 4 ảnh nhỏ (đủ 1 trang)');
+          return;
+        }
+      }
+      if (!D.coverSizes) D.coverSizes = {};
+      const next = current ? 'normal' : 'full';
+      D.coverSizes[key] = next;
+      if (D.coverPhotos && D.coverPhotos[key]) {
+        if (typeof D.coverPhotos[key] === 'string') {
+          D.coverPhotos[key] = { img: D.coverPhotos[key], photoSize: next, fullWidth: (next === 'full') };
+        } else if (typeof D.coverPhotos[key] === 'object') {
+          D.coverPhotos[key].photoSize = next;
+          D.coverPhotos[key].fullWidth = (next === 'full');
+        }
+      }
+      pushHistory(`Toggle Overview photo ${next === 'full' ? 'full width' : 'half width'}`);
+      as();
+      renderCoverSlots();
+    }
+
+    function delCoverSlot(key) {
+      const store = D.coverPhotos;
+      const data = store && store[key];
+      const hasImg = !!(data && (typeof data === 'string' ? data : data.img));
+
+      if (hasImg) {
+        if (!confirm('Are you sure you want to delete this photo?')) return;
+        pushHistory('Delete Overview photo');
+        delete D.coverPhotos[key];
+        as();
+        renderCoverSlots();
+      } else {
+        // Không có ảnh: xóa slot ngay lập tức không cần popup (kế thừa chuẩn như bên photo)
+        pushHistory('Delete Overview slot');
+        const keys = getCoverSlotKeys();
+        const idx = keys.indexOf(key);
+        if (idx !== -1) {
+          keys.splice(idx, 1);
+        }
+        if (D.coverPhotos) delete D.coverPhotos[key];
+        if (D.coverTitles) delete D.coverTitles[key];
+        if (D.coverSizes) delete D.coverSizes[key];
+        as();
+        renderCoverSlots();
+      }
+    }
+
+    function addCoverSlot() {
+      if (getCoverCapacityUsage() >= 4) {
+        showToast('Overview tối đa: 2 ảnh lớn, 1 lớn + 2 nhỏ, hoặc 4 ảnh nhỏ (đủ 1 trang)');
+        return;
+      }
+      const keys = getCoverSlotKeys();
+      const nextNum = keys.length + 1;
+      const newKey = `ANGLE_VIEW_${Date.now()}`;
+      keys.push(newKey);
+      if (!D.coverTitles) D.coverTitles = {};
+      D.coverTitles[newKey] = `PHOTO VIEW #${nextNum}`;
+      pushHistory('Add Overview slot');
+      as();
+      renderCoverSlots();
+    }
+
+    function renderCoverSlots() {
+      const containerId = 'coverPhotos';
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const keys = getCoverSlotKeys();
+      const slots = keys.map((k, i) => {
+        const defaultLabel = COVER_SLOTS[i] || k.replace(/_/g, ' ');
+        return { key: k, label: defaultLabel };
+      });
+      buildSlotGrid(containerId, slots, 'slot', 'cover');
+
+      // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
+      if (getCoverCapacityUsage() < 4) {
+        const addBtn = document.createElement('div');
+        addBtn.className = 'add-photo-btn ignore-drag';
+        addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
+        addBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
+          <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
+        `;
+        addBtn.onclick = () => addCoverSlot();
+        attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
+        el.appendChild(addBtn);
+      }
+    }
+
     function buildSlotGrid(containerId, slots, type, section) {
       const el = document.getElementById(containerId); if (!el) return; el.innerHTML = '';
       slots.forEach(s => {
         const div = document.createElement('div');
-        div.className = 'photo-slot';
+        const isFull = (containerId === 'coverPhotos') ? isCoverSlotFull(s.key) : false;
+        div.className = 'photo-slot' + (isFull ? ' is-fullwidth' : '');
         div.id = `ps_${containerId}_${s.key}`;
         div.dataset.key = s.key;
         div.innerHTML = renderSlotHTML(containerId, s.key, s.label, type, section);
@@ -10102,42 +10303,14 @@
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
-            const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+            const ckeys = getCoverSlotKeys();
             let from = evt.oldIndex;
             let to = evt.newIndex;
             if (from >= ckeys.length || to >= ckeys.length) return;
-            const keyFrom = ckeys[from];
-            const keyTo = ckeys[to];
-
-            if (!D.coverPhotos) D.coverPhotos = {};
-            const tempPhoto = D.coverPhotos[keyFrom];
-            if (D.coverPhotos[keyTo] !== undefined) {
-              D.coverPhotos[keyFrom] = D.coverPhotos[keyTo];
-            } else {
-              delete D.coverPhotos[keyFrom];
-            }
-            if (tempPhoto !== undefined) {
-              D.coverPhotos[keyTo] = tempPhoto;
-            } else {
-              delete D.coverPhotos[keyTo];
-            }
-
-            if (!D.coverTitles) D.coverTitles = {};
-            const tempTitle = D.coverTitles[keyFrom];
-            if (D.coverTitles[keyTo] !== undefined) {
-              D.coverTitles[keyFrom] = D.coverTitles[keyTo];
-            } else {
-              delete D.coverTitles[keyFrom];
-            }
-            if (tempTitle !== undefined) {
-              D.coverTitles[keyTo] = tempTitle;
-            } else {
-              delete D.coverTitles[keyTo];
-            }
-
-            pushHistory('Swap Overview photos');
+            ckeys.splice(to, 0, ckeys.splice(from, 1)[0]);
+            pushHistory('Reorder Overview photos');
             as();
-            buildSlotGrid(containerId, slots, type, section);
+            renderCoverSlots();
           }
         });
       }
@@ -10156,6 +10329,21 @@
       const targetObj = `{type:'${type}',key:'${key}',containerId:'${containerId}',section:'${section}'}`;
       const currentTitle = (D.coverTitles && D.coverTitles[key]) ? D.coverTitles[key] : label;
 
+      const isFull = isCoverSlotFull(key);
+      const activeClass = isFull ? 'active' : '';
+      const expandTitle = isFull
+        ? 'Full row (100%) - Click to switch to half row (50%)'
+        : 'Half row (50%) - Click to expand to full row (100%)';
+      const expandSvg = isFull
+        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"/></svg>`
+        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+
+      const expandBtnHtml = `
+        <button class="pact expand ${activeClass}" type="button" title="${expandTitle}" onclick="toggleCoverSlotFullWidth('${key}');event.stopPropagation()">
+          ${expandSvg}
+        </button>
+      `;
+
       let inner = '';
       if (displayImg) {
         inner = `
@@ -10164,10 +10352,11 @@
         </div>
         <img class="pimg" src="${displayImg}" draggable="false" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
         <div class="pactions">
+          ${expandBtnHtml}
           <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-          <button class="pact del" title="Delete photo" onclick="delSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()">
+          <button class="pact del" title="Delete photo" onclick="delCoverSlot('${key}');event.stopPropagation()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
         </div>`;
@@ -10186,6 +10375,12 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
             <span>Paste</span>
           </div>
+        </div>
+        <div class="pactions" style="position:absolute; top:6px; right:6px;">
+          ${expandBtnHtml}
+          <button class="pact del" title="Delete slot" onclick="delCoverSlot('${key}');event.stopPropagation()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
         </div>`;
       }
       inner += `
@@ -10196,6 +10391,10 @@
     }
 
     function refreshSlot(containerId, key, section) {
+      if (containerId === 'coverPhotos') {
+        renderCoverSlots();
+        return;
+      }
       const slots = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
       const label = COVER_SLOTS[slots.indexOf(key)] || key.replace(/_/g, ' ');
       const el = document.getElementById(`ps_${containerId}_${key}`);
@@ -10203,10 +10402,7 @@
     }
 
     function delSlotPhoto(containerId, key, section) {
-      if (!confirm('Are you sure you want to delete this photo?')) return;
-      pushHistory('Delete Cover photo');
-      delete D.coverPhotos[key];
-      refreshSlot(containerId, key, section); as();
+      delCoverSlot(key);
     }
 
     // ═══════════════ DYNAMIC DIMENSIONS (FLEXIBLE PHOTO LAYOUTS) ═══════════════
@@ -12392,7 +12588,7 @@
         buildUI(); loadData(); showSection(0);
         document.body.classList.add('in-editor');
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'btnHome', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+        ['tabsWrap', 'btnHome', 'btnPreview', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
           if (el) el.style.display = elemId === 'tabsWrap' ? 'block' : 'inline-flex';
         });
@@ -12468,8 +12664,9 @@
     }
 
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
-    async function exportPDF() {
-      as(); showToast('Initializing PDF generation...'); await new Promise(r => setTimeout(r, 150));
+    async function exportPDF(options = {}) {
+      const isPreview = !!(options && options.preview);
+      as(); showToast(isPreview ? 'Preparing realistic PDF preview...' : 'Initializing PDF generation...'); await new Promise(r => setTimeout(r, 150));
       if (!window.jspdf || !window.jspdf.jsPDF) {
         showToast('Error: PDF library not ready (please check network connection).');
         return;
@@ -12650,17 +12847,21 @@
         } else {
           // Chế độ 1 ảnh (Single mode)
           if (p.img) {
-            addImg(p.img, px, py, gw, cardH);
+            const b = addImg(p.img, px, py, gw, cardH);
+            if (b) {
+              doc.setDrawColor(220, 217, 210);
+              doc.setLineWidth(0.25);
+              doc.rect(b.x, b.y, b.w, b.h, 'S');
+            }
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px, py, gw, cardH, 'F');
             doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 158);
             doc.text('Photo View', px + gw / 2, py + cardH / 2, { align: 'center' });
+            doc.setDrawColor(220, 217, 210);
+            doc.setLineWidth(0.25);
+            doc.rect(px, py, gw, cardH, 'S');
           }
-
-          doc.setDrawColor(220, 217, 210);
-          doc.setLineWidth(0.25);
-          doc.rect(px, py, gw, cardH, 'S');
 
           return cardH;
         }
@@ -12689,11 +12890,12 @@
           }
           let h = mainW / r;
           if (isFull) {
-            if (h > 85) h = 85;
-            if (h < 50) h = 50;
+            // Ảnh lớn: tối ưu 82mm để đảm bảo 1 ảnh lớn + 4 ảnh nhỏ vừa khít trọn vẹn trong 1 trang A4
+            h = 82;
           } else {
-            if (h > 62) h = 62;
-            if (h < 35) h = 35;
+            // Ảnh nhỏ 2/hàng: tối ưu 58mm (vừa vặn 2 hàng 4 ảnh phía dưới trên cùng trang A4)
+            if (h > 60) h = 60;
+            if (h < 40) h = 40;
           }
           return h;
         };
@@ -12939,7 +13141,9 @@
       y += sumBoxH + 8.5;
 
       const cp = D.coverPhotos || {};
-      const ckeys = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+      const ckeys = (D.coverSlots && Array.isArray(D.coverSlots) && D.coverSlots.length > 0)
+        ? D.coverSlots
+        : COVER_SLOTS.map(s => s.replace(/ /g, '_'));
 
       // Tự động lọc các ảnh thực tế có trong Overview (Không có ảnh -> Tuyệt đối không hiện ô và không hiện chữ)
       const validCovers = [];
@@ -12949,8 +13153,9 @@
         if (img) {
           const slotTitle = (D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) 
             ? D.coverTitles[key].trim() 
-            : COVER_SLOTS[i];
-          validCovers.push({ key, img, title: slotTitle });
+            : (COVER_SLOTS[i] || key.replace(/_/g, ' '));
+          const isFull = isCoverSlotFull(key);
+          validCovers.push({ key, img, title: slotTitle, isFull });
         }
       });
 
@@ -12962,7 +13167,90 @@
       if (validCovers.length > 0) {
         doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40); doc.text("OVERVIEW", M, y); y += 6.5;
 
-        if (validCovers.length === 1) {
+        const hasFull = validCovers.some(c => c.isFull);
+
+        if (hasFull) {
+          // BỐ CỤC LINH HOẠT KHI CÓ ẢNH FULL-WIDTH (PHÓNG TO)
+          const numFull = validCovers.filter(c => c.isFull).length;
+          const numNormal = validCovers.length - numFull;
+
+          // Xác định kích thước động tối ưu cho từng tổ hợp:
+          // 1) 1 ảnh lớn + ảnh nhỏ: Ảnh lớn bứt phá ph = 86mm, pw = 140mm (cao gần gấp đôi ảnh nhỏ)
+          // 2) 2 ảnh lớn: Cả 2 ảnh chia đều không gian ph = 68mm, pw = 125mm (vừa khít 1 trang)
+          // 3) 1 ảnh lớn đơn độc: ph = 96mm, pw = 145mm
+          let largePw, largePh, smallPw, smallPh;
+          if (numFull >= 2) {
+            largePw = 125;
+            largePh = 68;
+            smallPw = (totalContentW - gapX) / 2;
+            smallPh = 56;
+          } else if (numNormal > 0) {
+            largePw = 140;
+            largePh = 86;
+            smallPw = (totalContentW - gapX) / 2;
+            smallPh = 56;
+          } else {
+            largePw = 145;
+            largePh = 96;
+            smallPw = (totalContentW - gapX) / 2;
+            smallPh = 56;
+          }
+
+          let cIdx = 0;
+          while (cIdx < validCovers.length) {
+            const c0 = validCovers[cIdx];
+            if (c0.isFull) {
+              // ẢNH FULL-WIDTH: CĂN GIỮA
+              const pw = largePw;
+              const ph = largePh;
+              const px = (W - pw) / 2;
+              const py = y;
+              let barX = px, barY = py + ph, barW = pw;
+              const bounds = addImg(c0.img, px, py, pw, ph);
+              if (bounds) {
+                barX = bounds.x;
+                barW = bounds.w;
+                barY = bounds.y + bounds.h;
+              }
+              doc.setFillColor(245, 242, 237);
+              doc.rect(barX, barY, barW, barH, 'F');
+              doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
+              doc.text(c0.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+
+              y = barY + barH + gapY;
+              cIdx++;
+            } else {
+              // ẢNH BÌNH THƯỜNG: 2 ẢNH / HÀNG (HOẶC CĂN GIỮA NẾU CHỈ CÓ 1 ẢNH TRÊN HÀNG)
+              const c1 = (cIdx + 1 < validCovers.length && !validCovers[cIdx + 1].isFull) ? validCovers[cIdx + 1] : null;
+              const pw = smallPw;
+              const ph = smallPh;
+              let maxY = y;
+
+              const items = [c0, c1].filter(Boolean);
+              items.forEach((c, idx) => {
+                const px = items.length === 1 ? (W - pw) / 2 : (M + idx * (pw + gapX));
+                const py = y;
+                let barX = px, barY = py + ph, barW = pw;
+                const bounds = addImg(c.img, px, py, pw, ph);
+                if (bounds) {
+                  barX = bounds.x;
+                  barW = bounds.w;
+                  barY = bounds.y + bounds.h;
+                }
+                doc.setFillColor(245, 242, 237);
+                doc.rect(barX, barY, barW, barH, 'F');
+                doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
+                doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+
+                if (barY + barH > maxY) maxY = barY + barH;
+              });
+
+              y = maxY + gapY;
+              cIdx += (c1 ? 2 : 1);
+            }
+          }
+          y += 2;
+        } else if (validCovers.length === 1) {
           // 1 ẢNH DUY NHẤT: CÂN ĐỐI, CĂN CHÍNH GIỮA TRỌNG TÂM THỊ GIÁC (KHÔNG BÈ 100% OVER, KHÔNG BỊ HẪNG TRÊN DƯỚI)
           const c = validCovers[0];
           const pw = 126; // Chiều rộng cân đối (~69% trang)
@@ -13023,7 +13311,7 @@
         } else if (validCovers.length === 3) {
           // 3 ẢNH: 2 ẢNH TRÊN + 1 ẢNH DƯỚI CĂN GIỮA
           const pw = (totalContentW - gapX) / 2;
-          const ph = 68;
+          const ph = 62;
           let maxY = y;
 
           // Ảnh 1 & 2 hàng trên
@@ -13073,11 +13361,11 @@
           doc.setFontSize(7.5);
           doc.text(c3.title.toUpperCase(), barX3 + barW3 / 2, barY3 + (barH / 2) + 1, { align: 'center', maxWidth: barW3 - 2 });
 
-          y = barY3 + barH + 6;
+          y = barY3 + barH + gapY;
         } else {
-          // 4 ẢNH TRỞ LÊN: LƯỚI 2x2 TIÊU CHUẨN
+          // 4 ẢNH TRỞ LÊN: LƯỚI 2x2 TIÊU CHUẨN (ĐẢM BẢO 4 ẢNH NHỎ VỪA KHÍT 1 TRANG)
           const pw = (totalContentW - gapX) / 2;
-          const ph = 74;
+          const ph = 62;
           const gridCoords = [
             [M, y],
             [M + pw + gapX, y],
@@ -13106,7 +13394,7 @@
             doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
           });
 
-          y += (ph + barH) * 2 + gapY + 4;
+          y += (ph + barH) * 2 + gapY + 2;
         }
       }
 
@@ -13656,12 +13944,70 @@
       const parts = [repTitle, D.model, D.desc, D.date].map(s => (s || '').trim()).filter(Boolean);
       const rawFileName = parts.join('_') || 'report';
       const safeFileName = rawFileName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
-      doc.save(`${safeFileName}.pdf`);
-      showToast('✓ PDF download complete!');
+
+      if (isPreview) {
+        const blob = doc.output('blob');
+        const blobUrl = URL.createObjectURL(blob);
+        openPdfPreviewModal(blobUrl, safeFileName);
+        showToast('✓ PDF preview ready!');
+      } else {
+        doc.save(`${safeFileName}.pdf`);
+        showToast('✓ PDF download complete!');
+      }
       if (typeof window !== 'undefined' && window._lastGeneratedDoc) {
         delete window._lastGeneratedDoc;
       }
       return doc;
+    }
+
+    async function previewPDF() {
+      return exportPDF({ preview: true });
+    }
+
+    let currentPreviewBlobUrl = null;
+    let currentPreviewFileName = 'report.pdf';
+
+    function openPdfPreviewModal(blobUrl, fileName) {
+      if (currentPreviewBlobUrl) {
+        try { URL.revokeObjectURL(currentPreviewBlobUrl); } catch (e) { }
+      }
+      currentPreviewBlobUrl = blobUrl;
+      currentPreviewFileName = (fileName ? fileName.replace(/\.pdf$/i, '') : 'report') + '.pdf';
+      const modal = document.getElementById('pdfLivePreviewModal');
+      const frame = document.getElementById('pdfPreviewFrame');
+      const title = document.getElementById('pdfPreviewTitle');
+      if (frame) frame.src = blobUrl;
+      if (title) title.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>PDF PREVIEW (A4) — ${escapeHtml(currentPreviewFileName)}</span>`;
+      if (modal) {
+        modal.classList.remove('hidden');
+        lockBodyScroll();
+      }
+    }
+
+    function closePdfPreviewModal() {
+      const modal = document.getElementById('pdfLivePreviewModal');
+      const frame = document.getElementById('pdfPreviewFrame');
+      if (modal) modal.classList.add('hidden');
+      if (frame) frame.src = '';
+      if (currentPreviewBlobUrl) {
+        try { URL.revokeObjectURL(currentPreviewBlobUrl); } catch (e) { }
+        currentPreviewBlobUrl = null;
+      }
+      unlockBodyScroll();
+    }
+
+    function downloadPdfFromPreview() {
+      if (!currentPreviewBlobUrl) {
+        exportPDF();
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = currentPreviewBlobUrl;
+      a.download = currentPreviewFileName || 'report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('✓ PDF download started!');
     }
 
     // ═══════════════ PWA SERVICE WORKER REGISTRATION ═══════════════
