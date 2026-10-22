@@ -1,4 +1,4 @@
-// Service Worker for DIGITAL REPORT (Offline & PWA Support)
+// Service Worker for SUPER REPORT (Offline & PWA Support)
 const CACHE_NAME = 'pp-review-v3.2.0';
 
 const STATIC_ASSETS = [

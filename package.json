@@ -1,7 +1,7 @@
 {
   "name": "super-report",
   "version": "3.2.0",
-  "description": "Digital Report PWA App - SOFACOMPANY",
+  "description": "Super Report PWA App - SOFACOMPANY",
   "type": "module",
   "scripts": {
     "dev": "vite",
