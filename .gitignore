@@ -5,6 +5,10 @@
 !index.html
 !manifest.json
 !service-worker.js
+!public/
+!public/**
+!scripts/
+!scripts/**
 !.gitignore
 !.github/
 !.github/**

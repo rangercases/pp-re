@@ -1,7 +1,7 @@
 {
-  "name": "SUPER REPORT",
-  "short_name": "SUPER REPORT",
-  "description": "Prototype Sample Review Report Tool for Furniture Manufacturing & Quality Control",
+  "name": "DIGITAL REPORT",
+  "short_name": "DIGITAL",
+  "description": "DEPRECATED in root - source of truth moved to public/manifest.json. Prototype Sample Review Report Tool for Furniture Manufacturing & Quality Control",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1,5 +1,6 @@
+// DEPRECATED - Source of truth moved to public/service-worker.js
 // Service Worker for PP Sample Review (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v3.1.8';
+const CACHE_NAME = 'pp-review-v3.2.0';
 
 const STATIC_ASSETS = [
   './',
@@ -71,6 +72,7 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         }).catch(() => {
           console.warn('[SW] Offline and CDN asset not in cache:', req.url);
+          return Response.error();
         });
       })
     );
