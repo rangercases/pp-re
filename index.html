@@ -605,79 +605,40 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    /* Tab Actions (Floating on top-right corner like photo slots) */
-    .tab-actions {
-      position: absolute;
-      top: -8px;
-      right: -2px;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      z-index: 20;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease, transform 0.15s ease;
-      transform: translateY(2px) scale(0.9);
-    }
-
-    /* Hiển thị luôn trên Tab đang chọn (Active) */
-    .tab.active .tab-actions {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0) scale(1);
-    }
-
-    .tab-action-btn {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 0.5px solid rgba(255, 255, 255, 0.25);
-      background: rgba(18, 18, 20, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      cursor: pointer;
-      padding: 0;
-      touch-action: manipulation;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .tab-action-btn.tab-btn-del {
-      color: #fca5a5;
-    }
-
-    /* Chỉ kích hoạt hiệu ứng rê chuột (Hover) trên màn hình Desktop có chuột chính xác */
-    /* Ngăn chặn hoàn toàn việc iOS Safari / iPadOS bắt người dùng chạm 2 lần */
-    @media (hover: hover) and (pointer: fine) {
-      .tab:hover .tab-actions {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0) scale(1);
-      }
-
-      .tab-action-btn:hover {
-        background: #000000;
-        border-color: #ffffff;
-        transform: scale(1.12);
-      }
-
-      .tab-action-btn.tab-btn-del:hover {
-        background: var(--bad, #dc2626);
-        border-color: var(--bad, #dc2626);
-        color: #ffffff;
-        transform: scale(1.12);
-      }
-    }
-
-    /* Add Module Tab Button */
+    /* Tab Settings & Management Button */
     .add-module-tab-btn {
-      background: rgba(255, 255, 255, 0.82) !important;
-      border: 1px dashed var(--line-strong, #ccc) !important;
+      background: rgba(255, 255, 255, 0.92) !important;
+      border: 1px solid var(--line-strong, #ccc) !important;
       color: var(--ink-strong) !important;
+      font-weight: 700 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 5px !important;
+      cursor: pointer !important;
+      padding: 6px 13px !important;
+      height: 30px !important;
+      font-size: 11px !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+      border-radius: var(--r-pill, 9999px) !important;
+      transition: all 0.16s ease !important;
+      outline: none;
+      flex-shrink: 0;
+      touch-action: manipulation;
+    }
+
+    .add-module-tab-btn:hover {
+      background: #ffffff !important;
+      border-color: var(--module-theme, #0A7E5C) !important;
+      color: var(--module-theme, #0A7E5C) !important;
+      transform: translateY(-0.5px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .add-module-tab-btn:active {
+      transform: scale(0.97);
+    }
       font-weight: 700 !important;
       display: inline-flex !important;
       align-items: center !important;
@@ -4105,37 +4066,37 @@
       gap: 8px;
     }
 
-    /* ═══════════════ ADD & RESTORE MODULE MODAL STYLES (COMPACT & SIMPLE) ═══════════════ */
-    .add-module-box {
-      max-width: 380px;
+    /* ═══════════════ TAB MANAGER & MODULE SETTINGS (IOS STYLE) ═══════════════ */
+    .tab-manager-box {
+      max-width: 440px;
       width: 100%;
       background: #ffffff;
       border-radius: var(--r-xl, 18px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
       border: 1px solid var(--line);
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    .add-module-box .modal-head {
+    .tab-manager-box .modal-head {
       background: #ffffff;
       color: var(--ink-strong, #111);
       border-bottom: 1px solid var(--line, #e5e5e5);
       padding: 12px 16px;
     }
 
-    .add-module-box .modal-head h3 {
+    .tab-manager-box .modal-head h3 {
       font-family: var(--font-hud);
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--ink-strong);
       margin: 0;
     }
 
-    .add-module-box .modal-head .modal-close {
+    .tab-manager-box .modal-head .modal-close {
       color: var(--ink-strong);
       background: rgba(0, 0, 0, 0.05);
       width: 26px;
@@ -4143,19 +4104,217 @@
       font-size: 14px;
     }
 
-    .add-module-box .modal-head .modal-close:hover {
+    .tab-manager-box .modal-head .modal-close:hover {
       background: rgba(0, 0, 0, 0.12);
+    }
+
+    .tab-mgr-switcher-wrap {
+      padding: 10px 16px 8px 16px;
+      background: #fbfaf9;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-mgr-switcher {
+      display: flex;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 3px;
+      border-radius: var(--r-pill, 9999px);
+      gap: 3px;
+    }
+
+    .tab-mgr-switch-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: var(--r-pill, 9999px);
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .tab-mgr-switch-btn.active {
+      background: #ffffff;
+      color: var(--ink-strong);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     }
 
     .add-module-body {
       background: #ffffff;
-      padding: 8px 10px;
+      padding: 10px 12px;
       max-height: 72vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
+    }
+
+    /* List item in Reorder view */
+    .tab-mgr-reorder-hint {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 4px 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-mgr-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--r, 10px);
+      margin-bottom: 5px;
+      transition: all 0.15s ease;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .tab-mgr-item-row:hover {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: var(--line-strong, #ccc);
+    }
+
+    .tab-mgr-item-row.sortable-ghost {
+      opacity: 0.35;
+      background: rgba(10, 126, 92, 0.08);
+      border: 1.5px dashed var(--module-theme, #0A7E5C);
+    }
+
+    .tab-mgr-item-row.sortable-chosen {
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+      transform: scale(1.02);
+      border-color: var(--module-theme, #0A7E5C);
+    }
+
+    .tab-mgr-row-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tab-mgr-handle {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      cursor: grab;
+      touch-action: none;
+      flex-shrink: 0;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .tab-mgr-handle:active {
+      cursor: grabbing;
+      color: var(--ink-strong);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-mgr-mod-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .tab-mgr-mod-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--ink-strong);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tab-mgr-mod-badge {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tab-mgr-row-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .tab-mgr-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: #f7f6f5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--ink-strong);
+      transition: all 0.14s ease;
+      padding: 0;
+      touch-action: manipulation;
+    }
+
+    .tab-mgr-btn:hover {
+      background: #111111;
+      color: #ffffff;
+      border-color: #111111;
+      transform: scale(1.08);
+    }
+
+    .tab-mgr-btn.btn-del {
+      color: var(--bad, #dc2626);
+      background: #fef2f2;
+      border-color: #fee2e2;
+    }
+
+    .tab-mgr-btn.btn-del:hover {
+      background: var(--bad, #dc2626);
+      color: #ffffff;
+      border-color: var(--bad, #dc2626);
+      transform: scale(1.08);
+    }
+
+    .tab-mgr-locked-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--r-pill);
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tab-mgr-empty-msg {
+      text-align: center;
+      padding: 24px 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .module-select-row {
@@ -4165,16 +4324,17 @@
       gap: 10px;
       padding: 9px 12px;
       background: #ffffff;
-      border: 1px solid transparent;
+      border: 1px solid var(--line);
       border-radius: var(--r, 10px);
       cursor: pointer;
       transition: all 0.14s ease;
       user-select: none;
+      margin-bottom: 5px;
     }
 
     .module-select-row:hover {
       background: rgba(0, 0, 0, 0.035);
-      border-color: var(--line);
+      border-color: var(--line-strong, #ccc);
     }
 
     .module-select-row:active {
@@ -4190,11 +4350,11 @@
     }
 
     .module-select-icon {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
       background: rgba(10, 126, 92, 0.08);
-      color: var(--brand-theme);
+      color: var(--brand-theme, #0A7E5C);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4207,7 +4367,6 @@
       font-weight: 700;
       color: var(--ink-strong);
       letter-spacing: 0.03em;
-      text-transform: uppercase;
     }
 
     .module-status-badge {
@@ -4226,44 +4385,10 @@
       flex-shrink: 0;
     }
 
-    .module-status-badge.active {
-      background: rgba(10, 126, 92, 0.08);
-      color: var(--brand-theme);
-      border: 1px solid rgba(10, 126, 92, 0.2);
-    }
-
     .module-status-badge.restore {
-      background: var(--brand-theme);
+      background: var(--brand-theme, #0A7E5C);
       color: #ffffff;
       box-shadow: 0 2px 6px rgba(10, 126, 92, 0.25);
-    }
-
-    .photos-missing-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      padding: 2px 8px 6px 40px;
-    }
-
-    .photo-restore-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      background: var(--brand-theme);
-      color: #ffffff;
-      border-radius: var(--r-pill, 9999px);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: all 0.14s ease;
-    }
-
-    .photo-restore-pill:hover {
-      opacity: 0.9;
     }
 
     @media (max-width: 600px) {
@@ -4271,6 +4396,7 @@
         align-items: flex-end;
         padding: 0;
       }
+      .tab-manager-box,
       .add-module-box {
         max-width: 100%;
         border-radius: 18px 18px 0 0;
@@ -6158,20 +6284,41 @@
   </div>
 
   <!-- MODAL: ADD / RESTORE MODULE -->
+  <!-- MODAL: ADD / RESTORE & REORDER MODULES (TAB MANAGER) -->
   <div class="modal-overlay hidden" id="addModuleModal" style="z-index: 106;">
-    <div class="modal-box add-module-box">
+    <div class="modal-box add-module-box tab-manager-box">
       <div class="modal-head">
         <h3 style="display:flex; align-items:center; gap:8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
-          Add / Restore Module
+          Quản lý Tab & Module
         </h3>
         <button class="modal-close" onclick="closeAddModuleModal()">✕</button>
       </div>
+
+      <!-- Segmented iOS Switcher: Sắp xếp & Quản lý vs Thêm Module -->
+      <div class="tab-mgr-switcher-wrap">
+        <div class="tab-mgr-switcher">
+          <button type="button" class="tab-mgr-switch-btn active" id="btnTabMgrReorder" onclick="setTabMgrMode('reorder')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>
+            <span>Sắp xếp & Quản lý</span>
+          </button>
+          <button type="button" class="tab-mgr-switch-btn" id="btnTabMgrAdd" onclick="setTabMgrMode('add')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Thêm Module</span>
+          </button>
+        </div>
+      </div>
+
       <div class="add-module-body" id="addModuleBody">
-        <!-- Rendered dynamically by renderAddModuleList() -->
+        <!-- Rendered dynamically by renderTabManagerModal() -->
       </div>
     </div>
   </div>
@@ -9904,48 +10051,27 @@
         d.id = `tab${i}`;
         d.dataset.moduleId = mod.id;
         d.dataset.index = i;
-
-        const canDup = mod.canDuplicate !== false;
-        const canDel = mod.canDelete !== false;
-        let actionsHtml = '';
-        if (canDup || canDel) {
-          actionsHtml = `
-            <div class="tab-actions ignore-tab-drag">
-              ${canDup ? `
-                <button type="button" class="tab-action-btn tab-btn-dup ignore-tab-drag" title="Duplicate module" onclick="event.stopPropagation(); duplicateModule('${mod.id}');">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </button>
-              ` : ''}
-              ${canDel ? `
-                <button type="button" class="tab-action-btn tab-btn-del ignore-tab-drag" title="Delete module" onclick="event.stopPropagation(); deleteModule('${mod.id}');">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-              ` : ''}
-            </div>
-          `;
-        }
-
-        d.innerHTML = `<span>${escapeHtml(mod.name)}</span>${actionsHtml}`;
+        d.innerHTML = `<span>${escapeHtml(mod.name)}</span>`;
         d.onclick = () => showSection(i);
         tabsRow.appendChild(d);
       });
 
-      // Add Module button at the end of tabs
+      // Tab Settings & Reorder button at the end of tabs
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'tab add-module-tab-btn ignore-tab-drag';
       addBtn.id = 'btnAddModuleTab';
-      addBtn.title = 'Add or restore a module';
+      addBtn.title = 'Tab Settings & Reorder (Quản lý & Sắp xếp Tab)';
       addBtn.innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        <span>Add Module</span>
+        <span>Tabs</span>
       `;
       addBtn.onclick = (e) => {
         e.stopPropagation();
-        openAddModuleModal();
+        openAddModuleModal('reorder');
       };
       tabsRow.appendChild(addBtn);
 
@@ -10166,11 +10292,14 @@
       }
     }
 
-    // ═══════════════ ADD & RESTORE MODULE CONTROLLER ═══════════════
-    function openAddModuleModal() {
+    // ═══════════════ TAB MANAGER & MODULE SETTINGS CONTROLLER (IOS STYLE) ═══════════════
+    let currentTabMgrMode = 'reorder'; // 'reorder' | 'add'
+
+    function openAddModuleModal(preferredMode = 'reorder') {
       const modal = document.getElementById('addModuleModal');
       if (!modal) return;
-      renderAddModuleList();
+      currentTabMgrMode = preferredMode;
+      renderTabManagerModal(currentTabMgrMode);
       modal.classList.remove('hidden');
       lockBodyScroll();
     }
@@ -10179,6 +10308,263 @@
       const modal = document.getElementById('addModuleModal');
       if (modal) modal.classList.add('hidden');
       unlockBodyScroll();
+    }
+
+    function setTabMgrMode(mode) {
+      currentTabMgrMode = mode;
+      renderTabManagerModal(mode);
+    }
+
+    function renderTabManagerModal(mode) {
+      ensureReportModules();
+      const body = document.getElementById('addModuleBody');
+      if (!body) return;
+
+      const btnReorder = document.getElementById('btnTabMgrReorder');
+      const btnAdd = document.getElementById('btnTabMgrAdd');
+      if (btnReorder) btnReorder.classList.toggle('active', mode === 'reorder');
+      if (btnAdd) btnAdd.classList.toggle('active', mode === 'add');
+
+      if (mode === 'reorder') {
+        renderTabMgrReorderView(body);
+      } else {
+        renderTabMgrAddView(body);
+      }
+    }
+
+    // 1. GIAO DIỆN SẮP XẾP & QUẢN LÝ (REORDER & ACTIONS)
+    function renderTabMgrReorderView(body) {
+      ensureReportModules();
+      body.innerHTML = `
+        <div class="tab-mgr-reorder-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Nhấn giữ biểu tượng ⠿ để kéo di chuyển thứ tự tab</span>
+        </div>
+        <div id="tabMgrSortList" class="tab-mgr-list"></div>
+      `;
+
+      const listEl = document.getElementById('tabMgrSortList');
+      if (!listEl) return;
+
+      D.modules.forEach((mod, idx) => {
+        const row = document.createElement('div');
+        row.className = 'tab-mgr-item-row';
+        row.dataset.moduleId = mod.id;
+        row.dataset.index = idx;
+
+        const canDup = mod.canDuplicate !== false;
+        const canDel = mod.canDelete !== false;
+
+        let actionsHtml = '';
+        if (canDup || canDel) {
+          actionsHtml = `
+            <div class="tab-mgr-row-actions">
+              ${canDup ? `
+                <button type="button" class="tab-mgr-btn btn-dup" title="Nhân bản module này" onclick="event.stopPropagation(); duplicateModuleFromMgr('${mod.id}');">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              ` : ''}
+              ${canDel ? `
+                <button type="button" class="tab-mgr-btn btn-del" title="Xóa module này" onclick="event.stopPropagation(); deleteModuleFromMgr('${mod.id}');">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          actionsHtml = `<span class="tab-mgr-locked-pill">Mặc định</span>`;
+        }
+
+        row.innerHTML = `
+          <div class="tab-mgr-row-left">
+            <div class="tab-mgr-handle" title="Kéo để đổi vị trí">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+            </div>
+            <div class="tab-mgr-mod-info">
+              <span class="tab-mgr-mod-name">${escapeHtml(mod.name)}</span>
+              <span class="tab-mgr-mod-badge">${escapeHtml(mod.type || 'module')}</span>
+            </div>
+          </div>
+          ${actionsHtml}
+        `;
+
+        // Chạm vào hàng để chuyển ngay sang tab đó và đóng bảng
+        row.onclick = () => {
+          const targetIdx = D.modules.findIndex(m => m.id === mod.id);
+          if (targetIdx !== -1) {
+            showSection(targetIdx);
+            closeAddModuleModal();
+          }
+        };
+
+        listEl.appendChild(row);
+      });
+
+      // Kích hoạt SortableJS kéo thả mượt mà trong danh sách hàng dọc
+      if (typeof Sortable !== 'undefined') {
+        if (listEl._sortable) listEl._sortable.destroy();
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
+        listEl._sortable = new Sortable(listEl, {
+          handle: '.tab-mgr-handle',
+          draggable: '.tab-mgr-item-row',
+          filter: 'button, .tab-mgr-btn',
+          preventOnFilter: false,
+          animation: 180,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          forceFallback: isTouchDevice,
+          delay: isTouchDevice ? 150 : 0,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 5,
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(40);
+            }
+          },
+          onEnd: function (evt) {
+            if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
+            const targetIdx = Math.min(evt.newIndex, D.modules.length - 1);
+            if (evt.oldIndex >= D.modules.length || targetIdx < 0) return;
+            const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
+            D.modules.splice(targetIdx, 0, movedMod);
+            pushHistory(`Reorder module "${movedMod.name}"`);
+            as();
+            buildUI();
+            showSection(targetIdx);
+            showToast(`✓ Đã đổi vị trí: ${movedMod.name}`);
+          }
+        });
+      }
+    }
+
+    function duplicateModuleFromMgr(moduleId) {
+      duplicateModule(moduleId);
+      const body = document.getElementById('addModuleBody');
+      if (body) renderTabMgrReorderView(body);
+    }
+
+    function deleteModuleFromMgr(moduleId) {
+      deleteModule(moduleId);
+      const body = document.getElementById('addModuleBody');
+      if (body) renderTabMgrReorderView(body);
+    }
+
+    // 2. GIAO DIỆN THÊM MODULE (CHỈ HIỆN MODULE CHƯA ACTIVE)
+    function renderTabMgrAddView(body) {
+      ensureReportModules();
+      const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
+      const defMods = (MODULE_THEMES[modKey] || MODULE_THEMES['pre-production']).defaultModules;
+
+      // Quy tắc cốt lõi: Module đã active KHÔNG ĐƯỢC HIỆN, chỉ hiện module tiêu chuẩn CHƯA CÓ trong D.modules
+      const missingStandardMods = defMods.filter(def => {
+        return !D.modules.some(m => m.id === def.id || (m.type === def.type && ['overall', 'dimensions', 'testing', 'checklist', 'documents'].includes(def.type)));
+      });
+
+      let standardHtml = '';
+      if (missingStandardMods.length > 0) {
+        standardHtml = missingStandardMods.map(mod => {
+          return `
+            <div class="module-select-row" onclick="restoreStandardModuleFromMgr('${mod.type}', '${mod.id}')">
+              <div class="module-select-left">
+                <div class="module-select-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span class="module-select-name">${escapeHtml(mod.name)}</span>
+                  <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">${escapeHtml(mod.type)}</span>
+                </div>
+              </div>
+              <span class="module-status-badge restore">+ Thêm lại</span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        standardHtml = `
+          <div class="tab-mgr-empty-msg">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:6px; opacity:0.6;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <div>Tất cả các module tiêu chuẩn đã có trong báo cáo.</div>
+          </div>
+        `;
+      }
+
+      body.innerHTML = `
+        <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; padding:4px 6px 8px;">
+          Module tiêu chuẩn có thể thêm
+        </div>
+        ${standardHtml}
+
+        <div style="border-top:1px dashed var(--line); margin:12px 0 8px; padding-top:10px;">
+          <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; padding:0 6px 8px;">
+            Tùy chọn tạo mới
+          </div>
+          <div class="module-select-row" onclick="promptNewPhotoModuleFromMgr()">
+            <div class="module-select-left">
+              <div class="module-select-icon" style="background:rgba(0,0,0,0.06); color:var(--ink-strong);">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <span class="module-select-name">+ Module Ảnh Tùy Chỉnh (Custom Photos)</span>
+                <span style="font-size:10px; color:var(--muted);">Tạo thêm một tab ảnh mới cho báo cáo</span>
+              </div>
+            </div>
+            <span class="module-status-badge restore">+ Tạo mới</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function restoreStandardModuleFromMgr(modType, modId) {
+      ensureReportModules();
+      const defaultDef = DEFAULT_MODULES.find(m => m.id === modId || m.type === modType);
+      if (!defaultDef) {
+        showToast('Module template not found');
+        return;
+      }
+
+      const newMod = JSON.parse(JSON.stringify(defaultDef));
+      const defIdx = DEFAULT_MODULES.findIndex(m => m.id === defaultDef.id || m.type === defaultDef.type);
+      let insertIdx = D.modules.length;
+      for (let i = 0; i < D.modules.length; i++) {
+        const curDefIdx = DEFAULT_MODULES.findIndex(m => m.id === D.modules[i].id || m.type === D.modules[i].type);
+        if (curDefIdx > defIdx) {
+          insertIdx = i;
+          break;
+        }
+      }
+
+      D.modules.splice(insertIdx, 0, newMod);
+      const domBlock = getModuleDomBlock(newMod.id);
+      if (domBlock) domBlock.style.display = 'block';
+
+      if (modType === 'dimensions' && !D.dimensions) D.dimensions = [];
+      if (modType === 'testing') {
+        if (!D.bvRows) D.bvRows = [];
+        if (!D.testingPhotos) D.testingPhotos = [];
+      }
+      if (modType === 'checklist' && !D.checklist) D.checklist = {};
+      if (modType === 'documents' && !D.docAttachments) D.docAttachments = [];
+      if (newMod.key && !D[newMod.key]) D[newMod.key] = [];
+
+      pushHistory(`Restore module "${newMod.name}"`);
+      as();
+      buildUI();
+      showSection(insertIdx);
+      closeAddModuleModal();
+      showToast(`✓ Đã thêm module "${newMod.name}"`);
+    }
+
+    function promptNewPhotoModuleFromMgr() {
+      const name = prompt('Nhập tên cho module ảnh mới (ví dụ: Packaging Photos, Label & Barcode...):');
+      if (name && name.trim()) {
+        createCustomPhotoModule(name.trim());
+      }
     }
 
     function switchModule(modType) {
@@ -10202,90 +10588,11 @@
     }
 
     function restoreStandardModule(modType) {
-      ensureReportModules();
-      const existingIdx = D.modules.findIndex(m => m.type === modType);
-      if (existingIdx !== -1) {
-        switchModule(modType);
-        return;
-      }
-
-      const defaultDef = DEFAULT_MODULES.find(m => m.type === modType);
-      if (!defaultDef) {
-        showToast('Module template not found');
-        return;
-      }
-
-      const newMod = JSON.parse(JSON.stringify(defaultDef));
-
-      // Calculate appropriate insertion index
-      const defIdx = DEFAULT_MODULES.findIndex(m => m.type === modType);
-      let insertIdx = D.modules.length;
-      for (let i = 0; i < D.modules.length; i++) {
-        const curDefIdx = DEFAULT_MODULES.findIndex(m => m.type === D.modules[i].type || m.id === D.modules[i].id);
-        if (curDefIdx > defIdx) {
-          insertIdx = i;
-          break;
-        }
-      }
-
-      D.modules.splice(insertIdx, 0, newMod);
-
-      const domBlock = getModuleDomBlock(newMod.id);
-      if (domBlock) {
-        domBlock.style.display = 'block';
-      }
-
-      if (modType === 'dimensions' && !D.dimensions) D.dimensions = [];
-      if (modType === 'testing') {
-        if (!D.bvRows) D.bvRows = [];
-        if (!D.testingPhotos) D.testingPhotos = [];
-      }
-      if (modType === 'checklist' && !D.checklist) D.checklist = {};
-      if (modType === 'documents' && !D.docAttachments) D.docAttachments = [];
-
-      pushHistory(`Restore module "${newMod.name}"`);
-      as();
-      buildUI();
-      showSection(insertIdx);
-      closeAddModuleModal();
-      showToast(`✓ Restored module "${newMod.name}"`);
+      restoreStandardModuleFromMgr(modType, modType);
     }
 
     function restorePhotoModule(moduleId) {
-      ensureReportModules();
-      const existingIdx = D.modules.findIndex(m => m.id === moduleId);
-      if (existingIdx !== -1) {
-        switchModuleById(moduleId);
-        return;
-      }
-
-      const defaultDef = DEFAULT_MODULES.find(m => m.id === moduleId);
-      if (!defaultDef) return;
-
-      const newMod = JSON.parse(JSON.stringify(defaultDef));
-
-      const defIdx = DEFAULT_MODULES.findIndex(m => m.id === moduleId);
-      let insertIdx = D.modules.length;
-      for (let i = 0; i < D.modules.length; i++) {
-        const curDefIdx = DEFAULT_MODULES.findIndex(m => m.id === D.modules[i].id);
-        if (curDefIdx > defIdx) {
-          insertIdx = i;
-          break;
-        }
-      }
-
-      D.modules.splice(insertIdx, 0, newMod);
-      const domBlock = getModuleDomBlock(newMod.id);
-      if (domBlock) domBlock.style.display = 'block';
-
-      if (newMod.key && !D[newMod.key]) D[newMod.key] = [];
-
-      pushHistory(`Restore module "${newMod.name}"`);
-      as();
-      buildUI();
-      showSection(insertIdx);
-      closeAddModuleModal();
-      showToast(`✓ Restored module "${newMod.name}"`);
+      restoreStandardModuleFromMgr('photos', moduleId);
     }
 
     function createCustomPhotoModule(customName) {
@@ -10345,140 +10652,11 @@
       const newIdx = D.modules.length - 1;
       showSection(newIdx);
       closeAddModuleModal();
-      showToast(`✓ Added photo module "${name}"`);
+      showToast(`✓ Đã thêm module "${name}"`);
     }
 
     function renderAddModuleList() {
-      ensureReportModules();
-      const body = document.getElementById('addModuleBody');
-      if (!body) return;
-
-      const isOverallActive = D.modules.some(m => m.type === 'overall');
-      const isDimActive = D.modules.some(m => m.type === 'dimensions');
-      const isTestingActive = D.modules.some(m => m.type === 'testing');
-      const isChecklistActive = D.modules.some(m => m.type === 'checklist');
-      const isDocActive = D.modules.some(m => m.type === 'documents');
-
-      const defaultPhotoModules = [
-        { id: 'sec_photos', name: 'Product Photos' },
-        { id: 'sec_assembly', name: 'Assembly' },
-        { id: 'sec_watchout', name: 'Watch Out' },
-        { id: 'sec_comparison', name: 'Comparison' },
-        { id: 'sec_greenlabel', name: 'Green Label' }
-      ];
-
-      const missingPhotoMods = defaultPhotoModules.filter(pm => !D.modules.some(m => m.id === pm.id));
-
-      body.innerHTML = `
-        <!-- 1. OVERVIEW -->
-        <div class="module-select-row" onclick="${isOverallActive ? `switchModule('overall')` : `restoreStandardModule('overall')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <line x1="10" y1="9" x2="8" y2="9"></line>
-              </svg>
-            </div>
-            <span class="module-select-name">Overview</span>
-          </div>
-          <span class="module-status-badge ${isOverallActive ? 'active' : 'restore'}">
-            ${isOverallActive ? '✓ Active' : '+ Restore'}
-          </span>
-        </div>
-
-        <!-- 2. DIMENSIONS -->
-        <div class="module-select-row" onclick="${isDimActive ? `switchModule('dimensions')` : `restoreStandardModule('dimensions')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 3L3 21"></path>
-                <path d="M21 3h-6"></path>
-                <path d="M21 3v6"></path>
-                <path d="M3 21h6"></path>
-                <path d="M3 21v-6"></path>
-              </svg>
-            </div>
-            <span class="module-select-name">Dimensions</span>
-          </div>
-          <span class="module-status-badge ${isDimActive ? 'active' : 'restore'}">
-            ${isDimActive ? '✓ Active' : '+ Restore'}
-          </span>
-        </div>
-
-        <!-- 3. TESTING -->
-        <div class="module-select-row" onclick="${isTestingActive ? `switchModule('testing')` : `restoreStandardModule('testing')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 2v7.31L4.69 17.7a2 2 0 0 0 1.62 2.9h11.38a2 2 0 0 0 1.62-2.9L14 9.31V2"></path>
-                <line x1="8.5" y1="2" x2="15.5" y2="2"></line>
-                <line x1="14" y1="13" x2="10" y2="13"></line>
-              </svg>
-            </div>
-            <span class="module-select-name">Testing</span>
-          </div>
-          <span class="module-status-badge ${isTestingActive ? 'active' : 'restore'}">
-            ${isTestingActive ? '✓ Active' : '+ Restore'}
-          </span>
-        </div>
-
-        <!-- 4. CHECKLIST -->
-        <div class="module-select-row" onclick="${isChecklistActive ? `switchModule('checklist')` : `restoreStandardModule('checklist')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 11 12 14 22 4"></polyline>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-              </svg>
-            </div>
-            <span class="module-select-name">Checklist</span>
-          </div>
-          <span class="module-status-badge ${isChecklistActive ? 'active' : 'restore'}">
-            ${isChecklistActive ? '✓ Active' : '+ Restore'}
-          </span>
-        </div>
-
-        <!-- 5. DOCUMENTS -->
-        <div class="module-select-row" onclick="${isDocActive ? `switchModule('documents')` : `restoreStandardModule('documents')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
-            </div>
-            <span class="module-select-name">Documents</span>
-          </div>
-          <span class="module-status-badge ${isDocActive ? 'active' : 'restore'}">
-            ${isDocActive ? '✓ Active' : '+ Restore'}
-          </span>
-        </div>
-
-        <!-- 6. PHOTOS -->
-        <div class="module-select-row" onclick="${missingPhotoMods.length > 0 ? `restorePhotoModule('${missingPhotoMods[0].id}')` : `createCustomPhotoModule('Photos')`}">
-          <div class="module-select-left">
-            <div class="module-select-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                <circle cx="12" cy="13" r="4"></circle>
-              </svg>
-            </div>
-            <span class="module-select-name">Photos</span>
-          </div>
-          <span class="module-status-badge ${missingPhotoMods.length > 0 ? 'restore' : 'active'}">
-            ${missingPhotoMods.length > 0 ? `+ Restore (${missingPhotoMods.length})` : '+ Add'}
-          </span>
-        </div>
-        ${missingPhotoMods.length > 1 ? `
-          <div class="photos-missing-chips">
-            ${missingPhotoMods.map(pm => `
-              <button type="button" class="photo-restore-pill" onclick="restorePhotoModule('${pm.id}')">+ ${escapeHtml(pm.name)}</button>
-            `).join('')}
-          </div>
-        ` : ''}
-      `;
+      renderTabManagerModal(currentTabMgrMode);
     }
 
         // Close Add Module modal on overlay backdrop click & prevent touchmove on backdrop
