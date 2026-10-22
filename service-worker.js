@@ -1,5 +1,4 @@
-// DEPRECATED - Source of truth moved to public/service-worker.js
-// Service Worker for PP Sample Review (Offline & PWA Support)
+// Service Worker for DIGITAL REPORT (Offline & PWA Support)
 const CACHE_NAME = 'pp-review-v3.2.0';
 
 const STATIC_ASSETS = [
@@ -14,11 +13,10 @@ const STATIC_ASSETS = [
   'https://img.icons8.com/color/180/sofa.png'
 ];
 
-// Install: Cache all core assets & CDNs
+// Install: Precache core assets & CDNs (individual caching for resilience)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Use individual caching so a single transient CDN glitch won't abort entire install
       for (const url of STATIC_ASSETS) {
         try {
           await cache.add(url);
@@ -26,8 +24,16 @@ self.addEventListener('install', (event) => {
           console.warn('[SW] Failed to precache:', url, err);
         }
       }
-    }).then(() => self.skipWaiting())
+    })
   );
+  // Do NOT call skipWaiting() here so users can be prompted cleanly to update
+});
+
+// Message: Allow app to explicitly trigger skipWaiting when user accepts update
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate: Cleanup previous outdated caches
@@ -46,7 +52,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Cache-First for CDN/assets, Network-First for local app files (auto-updates freshest code)
+// Fetch: Cache-First for CDN/assets, Network-First for local app files
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -70,8 +76,8 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
           }
           return networkResponse;
-        }).catch(() => {
-          console.warn('[SW] Offline and CDN asset not in cache:', req.url);
+        }).catch((err) => {
+          console.warn('[SW] Offline and CDN asset not in cache:', req.url, err);
           return Response.error();
         });
       })
@@ -79,17 +85,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Local app files (index.html, manifest.json) -> Network-First with cache fallback
+  // 2. Other cross-origin assets (fonts, etc.) -> let the browser handle them
+  if (url.origin !== self.location.origin) return;
+
+  // 3. Local app files (index.html, manifest.json) -> Network-First with cache fallback
+  // Navigations bypass the HTTP cache so a new deploy is picked up immediately.
+  const fetchOptions = req.mode === 'navigate' ? { cache: 'no-store' } : undefined;
   event.respondWith(
-    fetch(req).then((networkResponse) => {
+    fetch(req, fetchOptions).then((networkResponse) => {
       if (networkResponse && networkResponse.status === 200) {
         const clone = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
       }
       return networkResponse;
     }).catch(() => {
-      // If offline or network fails, return cached version
-      return caches.match(req);
+      // If offline or network fails, return cached version (index.html for navigations)
+      return caches.match(req).then((cached) => {
+        if (cached) return cached;
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      });
     })
   );
 });

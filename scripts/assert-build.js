@@ -61,6 +61,15 @@ check('dist/service-worker.js claims clients', sw.includes('clients.claim()'));
 check('dist/service-worker.js ignores cross-origin non-CDN requests', sw.includes('url.origin !== self.location.origin'));
 check('dist/service-worker.js bypasses HTTP cache on navigation', sw.includes("cache: 'no-store'"));
 
+// GitHub Pages currently deploys the repo root, so these mirrors must stay in sync.
+const normalize = (text) => text.replace(/\r\n/g, '\n');
+const publicManifestText = readFileSync(join(root, 'public', 'manifest.json'), 'utf8');
+const publicSwText = readFileSync(join(root, 'public', 'service-worker.js'), 'utf8');
+check('root manifest mirrors public/manifest.json',
+  normalize(readFileSync(join(root, 'manifest.json'), 'utf8')) === normalize(publicManifestText));
+check('root service-worker mirrors public/service-worker.js',
+  normalize(readFileSync(join(root, 'service-worker.js'), 'utf8')) === normalize(publicSwText));
+
 const passCount = checks.filter(c => c.ok).length;
 checks.forEach(c => {
   console.log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.name}${c.ok || !c.detail ? '' : ' (' + c.detail + ')'}`);
