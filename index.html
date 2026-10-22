@@ -527,7 +527,7 @@
       display: flex;
       min-width: max-content;
       gap: 6px;
-      padding: 10px 0 8px 0;
+      padding: 14px 0 10px 0;
       scroll-padding: 0 24px;
     }
 
@@ -550,6 +550,7 @@
       font-weight: 600;
       user-select: none;
       flex-shrink: 0;
+      touch-action: manipulation;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -604,10 +605,10 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    /* Tab Hover Actions (Floating on top-right corner like photo slots) */
+    /* Tab Actions (Floating on top-right corner like photo slots) */
     .tab-actions {
       position: absolute;
-      top: -9px;
+      top: -8px;
       right: -2px;
       display: inline-flex;
       align-items: center;
@@ -619,7 +620,8 @@
       transform: translateY(2px) scale(0.9);
     }
 
-    .tab:hover .tab-actions {
+    /* Hiển thị luôn trên Tab đang chọn (Active) */
+    .tab.active .tab-actions {
       opacity: 1;
       pointer-events: auto;
       transform: translateY(0) scale(1);
@@ -640,31 +642,34 @@
       color: #ffffff;
       cursor: pointer;
       padding: 0;
+      touch-action: manipulation;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .tab-action-btn:hover {
-      background: #000000;
-      border-color: #ffffff;
-      transform: scale(1.12);
     }
 
     .tab-action-btn.tab-btn-del {
       color: #fca5a5;
     }
 
-    .tab-action-btn.tab-btn-del:hover {
-      background: var(--bad, #dc2626);
-      border-color: var(--bad, #dc2626);
-      color: #ffffff;
-      transform: scale(1.12);
-    }
-
-    @media (hover: none) {
-      .tab.active .tab-actions {
-        opacity: 0.95;
+    /* Chỉ kích hoạt hiệu ứng rê chuột (Hover) trên màn hình Desktop có chuột chính xác */
+    /* Ngăn chặn hoàn toàn việc iOS Safari / iPadOS bắt người dùng chạm 2 lần */
+    @media (hover: hover) and (pointer: fine) {
+      .tab:hover .tab-actions {
+        opacity: 1;
         pointer-events: auto;
         transform: translateY(0) scale(1);
+      }
+
+      .tab-action-btn:hover {
+        background: #000000;
+        border-color: #ffffff;
+        transform: scale(1.12);
+      }
+
+      .tab-action-btn.tab-btn-del:hover {
+        background: var(--bad, #dc2626);
+        border-color: var(--bad, #dc2626);
+        color: #ffffff;
+        transform: scale(1.12);
       }
     }
 
@@ -9905,14 +9910,14 @@
         let actionsHtml = '';
         if (canDup || canDel) {
           actionsHtml = `
-            <div class="tab-actions">
+            <div class="tab-actions ignore-tab-drag">
               ${canDup ? `
-                <button type="button" class="tab-action-btn tab-btn-dup" title="Duplicate module" onclick="event.stopPropagation(); duplicateModule('${mod.id}');">
+                <button type="button" class="tab-action-btn tab-btn-dup ignore-tab-drag" title="Duplicate module" onclick="event.stopPropagation(); duplicateModule('${mod.id}');">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </button>
               ` : ''}
               ${canDel ? `
-                <button type="button" class="tab-action-btn tab-btn-del" title="Delete module" onclick="event.stopPropagation(); deleteModule('${mod.id}');">
+                <button type="button" class="tab-action-btn tab-btn-del ignore-tab-drag" title="Delete module" onclick="event.stopPropagation(); deleteModule('${mod.id}');">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               ` : ''}
@@ -9950,7 +9955,8 @@
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
         tabsRow._sortable = new Sortable(tabsRow, {
           draggable: '.tab:not(.ignore-tab-drag)',
-          filter: '.ignore-tab-drag',
+          filter: '.ignore-tab-drag, .tab-actions, .tab-action-btn, .tab-action-btn *, button',
+          preventOnFilter: false,
           animation: 180,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
