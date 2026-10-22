@@ -85,17 +85,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Local app files (index.html, manifest.json) -> Network-First with cache fallback
+  // 2. Other cross-origin assets (fonts, etc.) -> let the browser handle them
+  if (url.origin !== self.location.origin) return;
+
+  // 3. Local app files (index.html, manifest.json) -> Network-First with cache fallback
+  // Navigations bypass the HTTP cache so a new deploy is picked up immediately.
+  const fetchOptions = req.mode === 'navigate' ? { cache: 'no-store' } : undefined;
   event.respondWith(
-    fetch(req).then((networkResponse) => {
+    fetch(req, fetchOptions).then((networkResponse) => {
       if (networkResponse && networkResponse.status === 200) {
         const clone = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
       }
       return networkResponse;
     }).catch(() => {
-      // If offline or network fails, return cached version
-      return caches.match(req);
+      // If offline or network fails, return cached version (index.html for navigations)
+      return caches.match(req).then((cached) => {
+        if (cached) return cached;
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      });
     })
   );
 });
