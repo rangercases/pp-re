@@ -4459,6 +4459,19 @@
       font-weight: 700;
     }
 
+    @media (max-width: 520px) {
+      .cropper-tools .tools-row.cropper-segmented {
+        flex-wrap: wrap;
+        overflow: visible;
+        border-radius: 16px;
+      }
+
+      .cropper-tools .tools-row.cropper-segmented .tool-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+    }
+
     .tool-btn {
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
@@ -5784,6 +5797,168 @@
         min-height: 48px;
       }
     }
+
+    /* Batch photo queue */
+    .pq-box {
+      width: min(680px, calc(100vw - 28px));
+      max-height: 86vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pq-summary {
+      padding: 12px 18px 0;
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+
+    .pq-summary .pq-warn {
+      color: #b45309;
+      font-weight: 600;
+    }
+
+    .pq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 8px;
+      padding: 12px 18px;
+      overflow-y: auto;
+      align-content: start;
+      flex: 1;
+    }
+
+    .pq-item {
+      position: relative;
+      aspect-ratio: 1;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .pq-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .pq-num {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: rgba(17, 17, 17, 0.78);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 20px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .pq-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(17, 17, 17, 0.7);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .pq-remove:hover {
+      background: #b42318;
+    }
+
+    .pq-drag {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+      color: #fff;
+      font-size: 14px;
+      letter-spacing: 2px;
+      cursor: grab;
+      touch-action: none;
+      z-index: 2;
+    }
+
+    .pq-hint {
+      padding: 0 18px 10px;
+      font-family: var(--font-body);
+      font-size: 11.5px;
+      color: var(--ink-soft, #777);
+    }
+
+    .pq-actions {
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--bg);
+    }
+
+    .pq-actions .sbar-btn {
+      flex: 0 0 auto;
+      min-width: 96px;
+      height: 38px;
+      padding: 0 14px;
+    }
+
+    .pq-actions .pq-sort {
+      margin-right: auto;
+      min-width: 0;
+    }
+
+    @media (max-width: 640px) {
+      .pq-box {
+        width: 100vw;
+        max-height: calc(100vh - 16px);
+        border-radius: 20px 20px 0 0;
+      }
+
+      #photoQueueModal {
+        align-items: flex-end;
+      }
+
+      .pq-grid {
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        padding: 10px 14px;
+      }
+
+      .pq-summary {
+        padding: 10px 14px 0;
+      }
+
+      .pq-hint {
+        padding: 0 14px 8px;
+      }
+
+      .pq-actions {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+
+      .pq-actions .sbar-btn {
+        height: 48px;
+        min-height: 48px;
+      }
+    }
   </style>
 </head>
 
@@ -6339,7 +6514,7 @@
         </div>
 
         <div id="editorToolbar" class="cropper-tools">
-          <div class="tools-row cropper-segmented" id="ratioSegmented">
+          <div class="tools-row cropper-segmented" id="ratioSegmented" style="display:none;">
             <button class="tool-btn" id="ratio_free" onclick="setCropRatio(NaN, this)">FREE</button>
             <button class="tool-btn active" id="ratio_4_3" onclick="setCropRatio(4/3, this)">4:3</button>
             <button class="tool-btn" id="ratio_3_4" onclick="setCropRatio(3/4, this)">3:4</button>
@@ -6348,6 +6523,7 @@
           </div>
 
           <div class="tools-row cropper-segmented" id="transformSegmented">
+            <button class="tool-btn" id="btnToggleCrop" type="button" onclick="toggleCropMode()" style="font-weight:700;">⬚ CROP</button>
             <button class="tool-btn transform-op" type="button" onclick="rotate90()">ROTATE 90°</button>
             <button class="tool-btn transform-op" type="button" onclick="flipImage('x')">FLIP H</button>
             <button class="tool-btn transform-op" type="button" onclick="flipImage('y')">FLIP V</button>
@@ -6648,6 +6824,26 @@
           onclick="closeAppConfirm(false)">Cancel</button>
         <button type="button" class="sbar-btn danger" id="appConfirmOk"
           onclick="closeAppConfirm(true)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MULTI-PHOTO QUEUE -->
+  <div class="modal-overlay hidden" id="photoQueueModal" style="z-index: 320;"
+    onclick="if (event.target === this) closePhotoQueue()">
+    <div class="modal-box pq-box">
+      <div class="modal-head">
+        <h3 id="pqTitle">Add photos</h3>
+        <button type="button" class="modal-close" aria-label="Close dialog" onclick="closePhotoQueue()">✕</button>
+      </div>
+      <div class="pq-summary" id="pqSummary"></div>
+      <div class="pq-grid" id="pqGrid"></div>
+      <div class="pq-hint">Drag the strip to reorder · Tap ✕ to remove. Tap any photo later to crop.</div>
+      <div class="modal-foot pq-actions">
+        <button type="button" class="sbar-btn sec pq-sort" id="pqSortBtn" onclick="sortPhotoQueueByName()">Sort A→Z</button>
+        <button type="button" class="sbar-btn sec" onclick="closePhotoQueue()">Cancel</button>
+        <button type="button" class="sbar-btn pri" id="pqConfirmBtn" data-autofocus
+          onclick="applyPhotoQueue()">Add photos</button>
       </div>
     </div>
   </div>
@@ -8028,54 +8224,434 @@
         const files = getDroppedImageFiles(e.dataTransfer);
         if (!files.length) return;
 
-        if (isMulti) {
-          handleMultipleDroppedFiles(files, target.key);
-        } else {
-          const targetSnapshot = Object.assign({}, target);
-          camTarget = target;
-          setTargetLoading(targetSnapshot, true);
-          showToast('Applying photo...');
-          readImageFileAsDataUrl(files[0]).then(async dataUrl => {
-            if (!dataUrl) {
-              setTargetLoading(targetSnapshot, false);
-              return;
-            }
-            currentOriginalImg = dataUrl;
-            const masterPhoto = await normalizeMasterPhoto(dataUrl);
-            const compressed = await resizeImage(masterPhoto, 1280, 0.85);
-            savePhoto(compressed, masterPhoto, targetSnapshot);
-            highlightTarget(targetSnapshot, element);
-          }).catch(err => {
-            console.error('Lỗi drop ảnh:', err);
-            setTargetLoading(targetSnapshot, false);
-          });
+        if (files.length > 1) {
+          openPhotoQueue(files, Object.assign({}, target));
+          return;
         }
+
+        const targetSnapshot = Object.assign({}, target);
+        camTarget = target;
+        setTargetLoading(targetSnapshot, true);
+        showToast('Applying photo...');
+        readImageFileAsDataUrl(files[0]).then(async dataUrl => {
+          if (!dataUrl) {
+            setTargetLoading(targetSnapshot, false);
+            return;
+          }
+          currentOriginalImg = dataUrl;
+          const masterPhoto = await normalizeMasterPhoto(dataUrl);
+          const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+          savePhoto(compressed, masterPhoto, targetSnapshot);
+          highlightTarget(targetSnapshot, element);
+        }).catch(err => {
+          console.error('Lỗi drop ảnh:', err);
+          setTargetLoading(targetSnapshot, false);
+        });
       }, false);
     }
 
-    async function handleMultipleDroppedFiles(files, key) {
-      showToast(`Adding ${files.length} photos...`);
-      pushHistory(`Add ${files.length} photos`);
-      if (!D[key]) D[key] = [];
-      let addedCount = 0;
+    // ═══════════════ MULTI-PHOTO QUEUE ═══════════════
+    const SPECIAL_FREE_KEYS = ['watchoutPhotos', 'testingPhotos', 'assemblyPhotos'];
+    let photoQueue = null;
 
-      for (const file of files) {
-        const dataUrl = await readImageFileAsDataUrl(file);
-        if (!dataUrl) continue;
-        const compressed = await resizeImage(dataUrl, 1280, 0.85);
-        D[key].push({
-          img: compressed,
-          original: dataUrl,
-          caption: ''
-        });
-        addedCount++;
+    function openPhotoQueue(files, target) {
+      if (!target || !files || !files.length) return;
+      closePhotoQueue();
+      const base = Date.now().toString(36);
+      const items = Array.from(files).filter(isImageFile).map((file, i) => ({
+        id: `pq_${base}_${i}`,
+        file,
+        url: URL.createObjectURL(file)
+      }));
+      if (!items.length) {
+        showToast('No supported images selected');
+        return;
       }
-      renderFreePhotos(key);
-      as();
-      highlightTarget({ type: 'free', key });
-      showToast(addedCount
-        ? `✓ Added ${addedCount} photo(s) to section!`
-        : 'No photos were added.');
+      photoQueue = { target: Object.assign({}, target), items, busy: false };
+      renderPhotoQueue();
+      const modal = document.getElementById('photoQueueModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        lockBodyScroll();
+      }
+    }
+
+    function closePhotoQueue() {
+      if (photoQueue) {
+        photoQueue.items.forEach(it => { if (it.url) URL.revokeObjectURL(it.url); });
+      }
+      photoQueue = null;
+      const grid = document.getElementById('pqGrid');
+      if (grid && grid._pqSortable) {
+        grid._pqSortable.destroy();
+        grid._pqSortable = null;
+      }
+      if (grid) grid.innerHTML = '';
+      const modal = document.getElementById('photoQueueModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+    }
+
+    function renderPhotoQueue() {
+      const q = photoQueue;
+      const grid = document.getElementById('pqGrid');
+      if (!q || !grid) return;
+      grid.innerHTML = q.items.map((it, i) => `
+        <div class="pq-item" data-id="${it.id}">
+          <span class="pq-num">${i + 1}</span>
+          <img src="${it.url}" alt="" data-preview-id="${it.id}" onerror="hydrateQueuePreview('${it.id}')">
+          <button type="button" class="pq-remove" aria-label="Remove photo ${i + 1}"
+            onclick="removeQueuedPhoto('${it.id}')">✕</button>
+          <div class="pq-drag" aria-hidden="true">⠿</div>
+        </div>`).join('');
+      renderPhotoQueueMeta();
+      mountPhotoQueueSortable(grid);
+    }
+
+    function photoCountText(n) {
+      return n === 1 ? '1 photo' : `${n} photos`;
+    }
+
+    function renderPhotoQueueMeta() {
+      const q = photoQueue;
+      if (!q) return;
+      const plan = buildPhotoQueuePlan(q.target, q.items.length);
+      const skipped = q.items.length - plan.length;
+      const summary = document.getElementById('pqSummary');
+      if (summary) {
+        summary.innerHTML = `${escapeHtml(targetLabel(q.target))} · <strong>${photoCountText(q.items.length)}</strong>` +
+          (skipped > 0 ? ` · <span class="pq-warn">${skipped} will be skipped (no empty slot)</span>` : '');
+      }
+      const btn = document.getElementById('pqConfirmBtn');
+      if (btn && !btn.disabled) {
+        btn.textContent = plan.length > 0 && plan.length < q.items.length
+          ? `Add ${photoCountText(plan.length)}`
+          : 'Add photos';
+      }
+      const sortBtn = document.getElementById('pqSortBtn');
+      if (sortBtn) sortBtn.style.display = q.items.length > 1 ? '' : 'none';
+    }
+
+    async function hydrateQueuePreview(id) {
+      const q = photoQueue;
+      if (!q) return;
+      const item = q.items.find(it => it.id === id);
+      if (!item || item._hydrating || item._hydrated) return;
+      item._hydrating = true;
+      try {
+        const raw = await readImageFileAsDataUrl(item.file);
+        if (!raw || photoQueue !== q) return;
+        const thumb = await resizeImage(raw, 480, 0.75);
+        item._hydrated = true;
+        if (item.url) URL.revokeObjectURL(item.url);
+        item.url = thumb || raw;
+        const grid = document.getElementById('pqGrid');
+        const img = grid && grid.querySelector(`img[data-preview-id="${id}"]`);
+        if (img) img.src = item.url;
+      } catch (err) {
+        console.warn('Queue preview failed:', err);
+      } finally {
+        item._hydrating = false;
+      }
+    }
+
+    function mountPhotoQueueSortable(grid) {
+      if (typeof Sortable === 'undefined') return;
+      if (grid._pqSortable) grid._pqSortable.destroy();
+      grid._pqSortable = new Sortable(grid, {
+        animation: 150,
+        draggable: '.pq-item',
+        handle: '.pq-drag',
+        filter: '.pq-remove',
+        preventOnFilter: false,
+        onEnd: function () {
+          if (!photoQueue) return;
+          const order = Array.from(grid.querySelectorAll('.pq-item')).map(el => el.dataset.id);
+          photoQueue.items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+          grid.querySelectorAll('.pq-item').forEach((el, i) => {
+            const num = el.querySelector('.pq-num');
+            if (num) num.textContent = i + 1;
+          });
+          renderPhotoQueueMeta();
+        }
+      });
+    }
+
+    function removeQueuedPhoto(id) {
+      if (!photoQueue || photoQueue.busy) return;
+      const idx = photoQueue.items.findIndex(it => it.id === id);
+      if (idx < 0) return;
+      const removed = photoQueue.items.splice(idx, 1)[0];
+      if (removed && removed.url) URL.revokeObjectURL(removed.url);
+      if (!photoQueue.items.length) {
+        closePhotoQueue();
+        return;
+      }
+      renderPhotoQueue();
+    }
+
+    function sortPhotoQueueByName() {
+      if (!photoQueue || photoQueue.busy || photoQueue.items.length < 2) return;
+      photoQueue.items.sort((a, b) =>
+        String(a.file.name || '').localeCompare(String(b.file.name || ''), undefined, { numeric: true, sensitivity: 'base' })
+      );
+      renderPhotoQueue();
+    }
+
+    function targetLabel(target) {
+      if (!target) return 'Photos';
+      if (target.type === 'slot') {
+        const keys = getCoverSlotKeys();
+        const idx = keys.indexOf(target.key);
+        return (D.coverTitles && D.coverTitles[target.key]) || COVER_SLOTS[idx] || 'Overview photo';
+      }
+      if (target.type === 'dim') {
+        const row = D.dimensions && D.dimensions[target.index];
+        const name = row && row.name && row.name !== 'DIMENSION NAME'
+          ? row.name
+          : `Dimension #${Number(target.index) + 1}`;
+        return target.subType === 'sub' ? `${name} · detail` : name;
+      }
+      const labels = {
+        prodPhotos: 'Product Photos',
+        assemblyPhotos: 'Product Assembly',
+        watchoutPhotos: 'Quality Watch Out',
+        testingPhotos: 'Testing Photos',
+        checklistPhotos: 'Checklist Photos'
+      };
+      return labels[target.key] || 'Photos';
+    }
+
+    function coverSlotHasPhoto(key) {
+      const p = D.coverPhotos && D.coverPhotos[key];
+      return Boolean(p && typeof p === 'object' && (p.img || p.original));
+    }
+
+    function dimRoleFilled(row, role) {
+      if (!row) return false;
+      return role === 'sub' ? Boolean(row.imgSub) : Boolean(row.img);
+    }
+
+    function freeRoleFilled(key, row, role) {
+      if (!row) return false;
+      if (SPECIAL_FREE_KEYS.includes(key) && role === 'sub') return Boolean(row.imgSub);
+      return Boolean(row.img);
+    }
+
+    function buildPhotoQueuePlan(target, count) {
+      if (!target || count <= 0) return [];
+
+      if (target.type === 'slot') {
+        const keys = getCoverSlotKeys();
+        const ordered = keys.slice();
+        if (!ordered.includes(target.key)) ordered.unshift(target.key);
+        const plan = [{ type: 'slot', key: target.key, containerId: 'coverPhotos', section: 'cover' }];
+        for (const k of ordered) {
+          if (plan.length >= count) break;
+          if (k === target.key) continue;
+          if (coverSlotHasPhoto(k)) continue;
+          plan.push({ type: 'slot', key: k, containerId: 'coverPhotos', section: 'cover' });
+        }
+        return plan;
+      }
+
+      if (target.type === 'dim') {
+        const role = target.subType === 'sub' ? 'sub' : 'main';
+        const rows = D.dimensions || [];
+        const plan = [{ type: 'dim', index: target.index, subType: role }];
+        for (let i = 0; i < rows.length && plan.length < count; i++) {
+          if (i === target.index) continue;
+          if (dimRoleFilled(rows[i], role)) continue;
+          plan.push({ type: 'dim', index: i, subType: role });
+        }
+        while (plan.length < count) {
+          plan.push({ type: 'dim', index: -1, subType: role, create: true });
+        }
+        return plan;
+      }
+
+      if (target.type === 'free') {
+        const key = target.key;
+        const special = SPECIAL_FREE_KEYS.includes(key);
+        const role = special && target.subType === 'sub' ? 'sub' : 'main';
+        const rows = D[key] || [];
+        const hasIndex = Number.isInteger(target.index) && target.index >= 0;
+        const plan = [];
+        if (hasIndex) plan.push({ type: 'free', key, index: target.index, subType: role });
+        for (let i = 0; i < rows.length && plan.length < count; i++) {
+          if (hasIndex && i === target.index) continue;
+          if (freeRoleFilled(key, rows[i], role)) continue;
+          plan.push({ type: 'free', key, index: i, subType: role });
+        }
+        while (plan.length < count) {
+          plan.push({ type: 'free', key, index: -1, subType: role, create: true });
+        }
+        return plan;
+      }
+
+      return [];
+    }
+
+    function writeQueuePhoto(t, img, original) {
+      if (t.type === 'slot') {
+        if (!D.coverPhotos) D.coverPhotos = {};
+        const prev = D.coverPhotos[t.key];
+        D.coverPhotos[t.key] = Object.assign({}, (prev && typeof prev === 'object') ? prev : null, {
+          img: img,
+          original: original
+        });
+        const keys = getCoverSlotKeys();
+        if (!keys.includes(t.key)) {
+          const nextNum = keys.length + 1;
+          keys.push(t.key);
+          if (!D.coverTitles) D.coverTitles = {};
+          D.coverTitles[t.key] = `PHOTO VIEW #${nextNum}`;
+        }
+        writeMarkupMetadata(t, null);
+        return;
+      }
+
+      if (t.type === 'dim') {
+        if (!D.dimensions) D.dimensions = [];
+        let idx = t.index;
+        if (t.create || idx < 0 || !D.dimensions[idx]) {
+          D.dimensions.push({
+            id: 'dim_' + Math.random().toString(36).substr(2, 9),
+            name: 'DIMENSION NAME',
+            actual: '',
+            drawing: '',
+            actualUnit: 'mm',
+            drawingUnit: 'mm',
+            color: 'color-blue',
+            photoLayout: '3:1',
+            img: null,
+            original: null,
+            imgSub: null,
+            originalSub: null
+          });
+          idx = D.dimensions.length - 1;
+        }
+        const row = D.dimensions[idx];
+        if (t.subType === 'sub') {
+          row.imgSub = img;
+          row.originalSub = original;
+        } else {
+          row.img = img;
+          row.original = original;
+        }
+        writeMarkupMetadata(t, null);
+        return;
+      }
+
+      if (t.type === 'free') {
+        const key = t.key;
+        const special = SPECIAL_FREE_KEYS.includes(key);
+        if (!D[key]) D[key] = [];
+        const rows = D[key];
+        let idx = t.index;
+        if (t.create || idx === undefined || idx < 0) {
+          const newIdx = rows.length;
+          const caption = key === 'testingPhotos' && D.bvRows && D.bvRows[newIdx] && D.bvRows[newIdx].test
+            ? D.bvRows[newIdx].test.trim()
+            : '';
+          rows.push(special
+            ? { img: null, original: null, imgSub: null, originalSub: null, photoLayout: t.subType === 'sub' ? '3:1' : 'single', caption: caption }
+            : { img: null, original: null, caption: '' });
+          idx = rows.length - 1;
+        } else if (!rows[idx] || typeof rows[idx] !== 'object') {
+          rows[idx] = special
+            ? { img: null, original: null, imgSub: null, originalSub: null, photoLayout: t.subType === 'sub' ? '3:1' : 'single', caption: '' }
+            : { img: null, original: null, caption: '' };
+        }
+        const row = rows[idx];
+        if (special && t.subType === 'sub') {
+          row.imgSub = img;
+          row.originalSub = original;
+          if (!row.photoLayout || row.photoLayout === 'single') row.photoLayout = '3:1';
+        } else {
+          row.img = img;
+          row.original = original;
+          if (special && !row.photoLayout) row.photoLayout = 'single';
+          if (row.caption === undefined) row.caption = '';
+        }
+        writeMarkupMetadata(t, null);
+      }
+    }
+
+    function refreshQueueTarget(target) {
+      if (!target) return;
+      if (target.type === 'slot') {
+        renderCoverSlots();
+      } else if (target.type === 'dim') {
+        buildDimGrid();
+      } else if (target.type === 'free') {
+        renderFreePhotos(target.key);
+      }
+    }
+
+    async function applyPhotoQueue() {
+      if (!photoQueue || photoQueue.busy) return;
+      const q = photoQueue;
+      const plan = buildPhotoQueuePlan(q.target, q.items.length);
+      if (!plan.length) {
+        showToast('This section is full');
+        return;
+      }
+      const total = Math.min(plan.length, q.items.length);
+      q.busy = true;
+      const btn = document.getElementById('pqConfirmBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = `Adding ${total}...`;
+      }
+
+      let added = 0;
+      let failed = 0;
+      const prepared = [];
+      for (let i = 0; i < total; i++) {
+        try {
+          const rawDataUrl = await readImageFileAsDataUrl(q.items[i].file);
+          if (!rawDataUrl) { failed++; continue; }
+          const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
+          const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+          if (!compressed) { failed++; continue; }
+          prepared.push({ target: plan[i], img: compressed, original: masterPhoto });
+        } catch (err) {
+          console.error('Queue photo failed:', err);
+          failed++;
+        }
+      }
+
+      const target = q.target;
+      q.busy = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Add photos';
+      }
+
+      if (prepared.length) {
+        pushHistory(`Add ${prepared.length} photo(s)`);
+        prepared.forEach(item => writeQueuePhoto(item.target, item.img, item.original));
+        added = prepared.length;
+        refreshQueueTarget(target);
+        as();
+        savePhotoChangeNow();
+        const reportRef = D;
+        const reportId = D.id;
+        refreshReportThumbnail(reportRef, target.section === 'cover').then(() => {
+          if (D === reportRef && D.id === reportId) {
+            markDirty();
+            as();
+          }
+        });
+      }
+
+      closePhotoQueue();
+      if (added && failed) showToast(`✓ Added ${added} photo(s) · ${failed} failed`);
+      else if (added) showToast(`✓ Added ${added} photo(s)`);
+      else showToast('Photo processing error');
     }
 
     // ═══════════════ CLIPBOARD PASTE SUPPORT (CTRL+V & DÁN) ═══════════════
@@ -8529,8 +9105,8 @@
         return;
       }
 
-      if (resolved.isMulti || (resolved.target.type === 'free' && resolved.target.index === undefined)) {
-        await handleMultipleDroppedFiles(imgFiles, resolved.target.key);
+      if (imgFiles.length > 1) {
+        openPhotoQueue(imgFiles, Object.assign({}, resolved.target));
       } else {
         await applyImageFileToTarget(imgFiles[0], resolved.target, resolved.element);
       }
@@ -8887,7 +9463,7 @@
       const libInput = document.getElementById('libraryInput');
       if (libInput) {
         libInput.value = '';
-        libInput.multiple = Boolean(target && target.type === 'free');
+        libInput.multiple = true;
         libInput.click();
       }
     }
@@ -8952,26 +9528,8 @@
         return;
       }
 
-      if (camTarget.type === 'free' && files.length > 1) {
-        showToast(`Adding ${files.length} photos...`);
-        let addedCount = 0;
-        for (const file of files) {
-          const dataUrl = await readImageFileAsDataUrl(file);
-          if (!dataUrl) continue;
-          const compressed = await resizeImage(dataUrl, 1280, 0.88);
-          if (camTarget.index !== undefined && addedCount === 0) {
-            if (!D[camTarget.key][camTarget.index]) D[camTarget.key][camTarget.index] = { caption: '' };
-            D[camTarget.key][camTarget.index].img = compressed;
-            D[camTarget.key][camTarget.index].original = compressed;
-          } else {
-            if (!D[camTarget.key]) D[camTarget.key] = [];
-            D[camTarget.key].push({ img: compressed, original: compressed, caption: '' });
-          }
-          addedCount++;
-        }
-        renderFreePhotos(camTarget.key);
-        as();
-        showToast(`✓ Added ${addedCount} photo(s)!`);
+      if (files.length > 1) {
+        openPhotoQueue(files, Object.assign({}, camTarget));
         return;
       }
 
@@ -8980,12 +9538,28 @@
         const rawDataUrl = await readImageFileAsDataUrl(files[0]);
         if (!rawDataUrl) return;
         const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
+        const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+        if (!compressed) {
+          showToast('Photo processing error');
+          return;
+        }
         camTarget = targetSnapshot;
-        currentOriginalImg = masterPhoto;
-        initCropper(masterPhoto);
+        savePhoto(compressed, masterPhoto, targetSnapshot);
       } catch (err) {
         console.error('Lỗi khi nạp ảnh:', err);
         showToast('Photo processing error');
+      }
+    }
+
+    function openPhotoEditor(target, imgSrc, fallbackSrc = null) {
+      const saved = readSavedMarkup(target);
+      camTarget = target;
+      currentOriginalImg = imgSrc || fallbackSrc;
+      pendingMarkupRestore = saved;
+      if (saved && saved.base) {
+        initCropper(saved.base);
+      } else {
+        initCropper(imgSrc || fallbackSrc, fallbackSrc !== imgSrc ? fallbackSrc : null);
       }
     }
 
@@ -8996,9 +9570,7 @@
       const orig = typeof data === 'string' ? data : (data.original || data.img);
       const fallback = typeof data === 'object' && data.img ? data.img : null;
       if (!orig && !fallback) return;
-      camTarget = { type: 'slot', key, containerId, section };
-      currentOriginalImg = orig || fallback;
-      initCropper(orig || fallback, fallback !== orig ? fallback : null);
+      openPhotoEditor({ type: 'slot', key, containerId, section }, orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function editDimPhoto(index, subType = 'main') {
@@ -9011,9 +9583,7 @@
       const fallback = data[imgKey] || null;
       if (!orig && !fallback) return;
 
-      camTarget = { type: 'dim', index, subType };
-      currentOriginalImg = orig || fallback;
-      initCropper(orig || fallback, fallback !== orig ? fallback : null);
+      openPhotoEditor({ type: 'dim', index, subType }, orig || fallback, fallback !== orig ? fallback : null);
     }
 
     function editFreePhoto(key, index) {
@@ -9022,9 +9592,7 @@
       const orig = data.original || data.img;
       const fallback = data.img || null;
       if (!orig && !fallback) return;
-      camTarget = { type: 'free', key, index };
-      currentOriginalImg = orig || fallback;
-      initCropper(orig || fallback, fallback !== orig ? fallback : null);
+      openPhotoEditor({ type: 'free', key, index }, orig || fallback, fallback !== orig ? fallback : null);
     }
 
     // ═══════════════ CROP RATIO MATCHING (SLOT-AWARE) ═══════════════
@@ -9105,6 +9673,14 @@
         return;
       }
 
+      const restoreMarkup = pendingMarkupRestore;
+      pendingMarkupRestore = null;
+      isCropMode = false;
+      if (!restoreMarkup) {
+        markupShapes = [];
+        markupBaseCanvas = null;
+      }
+
       if (typeof Cropper === 'undefined') {
         showToast('Error: Cropper library not ready. Check internet connection.');
         closeCamera();
@@ -9143,7 +9719,6 @@
       if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
 
       currentCropRatio = defaultRatio;
-      updateCropRatioHint(defaultRatio);
 
       baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
       const slider = document.getElementById('straightenRange'); if (slider) slider.value = 0;
@@ -9165,6 +9740,7 @@
           aspectRatio: defaultRatio,
           viewMode: 1,
           dragMode: 'move',
+          autoCrop: false,
           autoCropArea: 0.95,
           restore: false,
           guides: true,
@@ -9175,7 +9751,19 @@
           toggleDragModeOnDblclick: false,
           zoomOnWheel: true,
           zoomOnTouch: true,
-          background: false
+          background: false,
+          ready() {
+            // Deferred so the outer `cropper` reference is assigned before use.
+            setTimeout(() => {
+              if (restoreMarkup && restoreMarkup.shapes && restoreMarkup.shapes.length) {
+                markupShapes = restoreMarkup.shapes.map(s => ({ ...s }));
+                toggleMarkupMode();
+                showToast(`Markup restored (${markupShapes.length} item${markupShapes.length > 1 ? 's' : ''}) — undo or keep drawing`);
+              } else {
+                syncCropModeUI();
+              }
+            }, 0);
+          }
         });
       };
 
@@ -9211,7 +9799,7 @@
       if (activeBtn) activeBtn.classList.add('active');
       currentCropRatio = ratio;
       if (camTarget) cropRatioMemory[cropTargetKey(camTarget)] = Number.isFinite(ratio) ? ratio : NaN;
-      updateCropRatioHint(ratio);
+      if (isCropMode) updateCropRatioHint(ratio);
     }
 
     function rotate90() {
@@ -9247,6 +9835,8 @@
 
     // ═══════════════ PHOTO MARKUP ENGINE (ARROW, CIRCLE, RECT, TEXT) ═══════════════
     let isMarkupMode = false;
+    let isCropMode = false;
+    let pendingMarkupRestore = null;
     let markupTool = 'arrow'; // 'arrow' | 'circle' | 'rect' | 'text'
     let markupColor = '#e24b4b';
     let markupShapes = [];
@@ -9254,6 +9844,78 @@
     let isDrawingMarkup = false;
     let currentDraftShape = null;
     let markupEventsBound = false;
+
+    function markupFieldKeys(target) {
+      const isSub = !!target && target.type !== 'slot' && target.subType === 'sub';
+      return isSub
+        ? { shapes: 'markupShapesSub', base: 'markupBaseSub' }
+        : { shapes: 'markupShapes', base: 'markupBase' };
+    }
+
+    function getPhotoRecord(target) {
+      if (!target) return null;
+      if (target.type === 'slot') return (D.coverPhotos && D.coverPhotos[target.key]) || null;
+      if (target.type === 'dim') return (D.dimensions && D.dimensions[target.index]) || null;
+      if (target.type === 'free') return (D[target.key] && D[target.key][target.index]) || null;
+      return null;
+    }
+
+    function readSavedMarkup(target) {
+      const rec = getPhotoRecord(target);
+      if (!rec || typeof rec !== 'object') return null;
+      const f = markupFieldKeys(target);
+      const shapes = Array.isArray(rec[f.shapes]) ? rec[f.shapes] : null;
+      if (!shapes || !shapes.length || !rec[f.base]) return null;
+      return { shapes: shapes.map(s => ({ ...s })), base: rec[f.base] };
+    }
+
+    function writeMarkupMetadata(target, markup) {
+      const rec = getPhotoRecord(target);
+      if (!rec || typeof rec !== 'object') return;
+      const f = markupFieldKeys(target);
+      if (markup && markup.shapes && markup.shapes.length) {
+        rec[f.shapes] = markup.shapes.map(s => ({ ...s }));
+        rec[f.base] = markup.base;
+      } else {
+        delete rec[f.shapes];
+        delete rec[f.base];
+      }
+    }
+
+    function syncCropModeUI() {
+      const btn = document.getElementById('btnToggleCrop');
+      const ratioSeg = document.getElementById('ratioSegmented');
+      const strBox = document.getElementById('straightenBox');
+      const cropHint = document.getElementById('cropHint');
+      if (btn) {
+        btn.classList.toggle('active', isCropMode);
+        btn.textContent = isCropMode ? '✓ CROP' : '⬚ CROP';
+      }
+      if (isMarkupMode) {
+        if (ratioSeg) ratioSeg.style.display = 'none';
+        if (strBox) strBox.style.display = 'none';
+        return;
+      }
+      if (ratioSeg) ratioSeg.style.display = isCropMode ? 'flex' : 'none';
+      if (strBox) strBox.style.display = 'flex';
+      if (cropHint) {
+        if (isCropMode) updateCropRatioHint(currentCropRatio);
+        else cropHint.textContent = 'Pinch to zoom. Tap CROP to trim, MARKUP to annotate.';
+      }
+    }
+
+    function toggleCropMode() {
+      if (!cropper) return;
+      if (isMarkupMode) toggleMarkupMode();
+      isCropMode = !isCropMode;
+      if (isCropMode) {
+        cropper.setAspectRatio(currentCropRatio);
+        cropper.crop();
+      } else {
+        cropper.clear();
+      }
+      syncCropModeUI();
+    }
 
     function toggleMarkupMode() {
       if (!cropper) return;
@@ -9269,7 +9931,7 @@
       if (isMarkupMode) {
         if (btnToggle) {
           btnToggle.classList.add('active');
-          btnToggle.textContent = '📐 CROP';
+          btnToggle.textContent = '✓ MARKUP';
         }
         if (toolbar) toolbar.style.display = 'block';
         if (ratioSeg) ratioSeg.style.display = 'none';
@@ -9329,16 +9991,14 @@
           btnToggle.textContent = '✏️ MARKUP';
         }
         if (toolbar) toolbar.style.display = 'none';
-        if (ratioSeg) ratioSeg.style.display = 'flex';
-        if (strBox) strBox.style.display = 'flex';
         const toolbarEl = document.getElementById('editorToolbar');
         if (toolbarEl) toolbarEl.classList.remove('markup-active');
         closeMarkupTextPopover();
-        if (cropHint) updateCropRatioHint(currentCropRatio);
 
         canvas.style.display = 'none';
         const cropperContainer = document.querySelector('.cropper-container');
         if (cropperContainer) cropperContainer.style.display = 'block';
+        syncCropModeUI();
       }
     }
 
@@ -9571,29 +10231,41 @@
 
     async function usePhoto() {
       if (!cropper) { showToast('Error: No image data ready!'); return; }
+      // Existing markup must be rebaked against the current crop before saving.
+      if (markupShapes && markupShapes.length > 0 && !isMarkupMode) toggleMarkupMode();
+
+      const target = camTarget ? Object.assign({}, camTarget) : null;
       let finalDataUrl;
+      let markup = null;
       if (markupShapes && markupShapes.length > 0 && markupBaseCanvas) {
         redrawMarkup();
         const canvas = document.getElementById('markupCanvas');
         finalDataUrl = canvas.toDataURL('image/jpeg', 0.80);
+        markup = {
+          shapes: markupShapes.map(s => ({ ...s })),
+          base: markupBaseCanvas.toDataURL('image/jpeg', 0.72)
+        };
       } else {
         const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
         finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.75);
         croppedCanvas.width = 0; croppedCanvas.height = 0;
       }
 
-      savePhoto(finalDataUrl, currentOriginalImg);
+      savePhoto(finalDataUrl, currentOriginalImg, target, markup);
       closeCamera();
     }
 
-    function savePhoto(imgData, originalData, explicitTarget = null) {
+    function savePhoto(imgData, originalData, explicitTarget = null, markup = null) {
       const t = explicitTarget || camTarget;
       if (!t) return;
       setTargetLoading(t, false);
       pushHistory('Save photo');
       if (t.type === 'slot') {
-        const payload = { img: imgData, original: originalData };
-        if (t.section === 'cover') { D.coverPhotos[t.key] = payload; refreshSlot(t.containerId, t.key, 'cover'); }
+        if (t.section === 'cover') {
+          const prev = (D.coverPhotos[t.key] && typeof D.coverPhotos[t.key] === 'object') ? D.coverPhotos[t.key] : {};
+          D.coverPhotos[t.key] = Object.assign({}, prev, { img: imgData, original: originalData });
+          refreshSlot(t.containerId, t.key, 'cover');
+        }
       } else if (t.type === 'free') {
         const isMulti = t.key === 'watchoutPhotos' || t.key === 'testingPhotos' || t.key === 'assemblyPhotos';
         if (t.index !== undefined) {
@@ -9623,6 +10295,7 @@
         }
         buildDimGrid();
       }
+      writeMarkupMetadata(t, markup);
       as(); showToast('✓ Photo applied');
       savePhotoChangeNow();
       const reportRef = D;
@@ -9640,6 +10313,8 @@
       currentOriginalImg = null;
       markupShapes = [];
       isMarkupMode = false;
+      isCropMode = false;
+      pendingMarkupRestore = null;
       if (markupBaseCanvas) {
         markupBaseCanvas.width = 0;
         markupBaseCanvas.height = 0;
@@ -9658,9 +10333,14 @@
         btnToggle.textContent = '✏️ MARKUP';
       }
       const ratioSeg = document.getElementById('ratioSegmented');
-      if (ratioSeg) ratioSeg.style.display = 'flex';
+      if (ratioSeg) ratioSeg.style.display = 'none';
       const strBox = document.getElementById('straightenBox');
       if (strBox) strBox.style.display = 'flex';
+      const btnCrop = document.getElementById('btnToggleCrop');
+      if (btnCrop) {
+        btnCrop.classList.remove('active');
+        btnCrop.textContent = '⬚ CROP';
+      }
 
       const image = document.getElementById('cropperImage');
       if (image) {
@@ -12563,9 +13243,7 @@
       const orig = p[origKey] || p[imgKey];
       const fallback = p[imgKey] || null;
       if (!orig && !fallback) return;
-      currentOriginalImg = orig || fallback;
-      camTarget = { type: 'free', key: 'watchoutPhotos', index, subType };
-      initCropper(orig || fallback, fallback !== orig ? fallback : null);
+      openPhotoEditor({ type: 'free', key: 'watchoutPhotos', index, subType }, orig || fallback, fallback !== orig ? fallback : null);
     }
 
     async function delWatchoutPhoto(index, subType = 'main') {
@@ -12812,9 +13490,7 @@
       const orig = p[origKey] || p[imgKey];
       const fallback = p[imgKey] || null;
       if (!orig && !fallback) return;
-      currentOriginalImg = orig || fallback;
-      camTarget = { type: 'free', key: 'testingPhotos', index, subType };
-      initCropper(orig || fallback, fallback !== orig ? fallback : null);
+      openPhotoEditor({ type: 'free', key: 'testingPhotos', index, subType }, orig || fallback, fallback !== orig ? fallback : null);
     }
 
     async function delTestingPhoto(index, subType = 'main') {
@@ -13030,9 +13706,8 @@
       if (!p) return;
       const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
       if (!imgSrc) return;
-      currentOriginalImg = imgSrc;
-      camTarget = { type: 'free', key: 'assemblyPhotos', index, subType };
-      initCropper(imgSrc);
+      const imgFallback = subType === 'sub' ? (p.imgSub || null) : (p.img || null);
+      openPhotoEditor({ type: 'free', key: 'assemblyPhotos', index, subType }, imgSrc, imgFallback !== imgSrc ? imgFallback : null);
     }
 
     async function delAssemblyPhoto(index, subType = 'main') {
