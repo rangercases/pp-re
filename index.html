@@ -605,22 +605,19 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    /* Tab Settings & Management Button */
+    /* Tab Settings & Management Icon Button (Minimalist Icon Only) */
     .add-module-tab-btn {
+      width: 32px !important;
+      min-width: 32px !important;
+      height: 30px !important;
+      padding: 0 !important;
       background: rgba(255, 255, 255, 0.92) !important;
       border: 1px solid var(--line-strong, #ccc) !important;
       color: var(--ink-strong) !important;
-      font-weight: 700 !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      gap: 5px !important;
       cursor: pointer !important;
-      padding: 6px 13px !important;
-      height: 30px !important;
-      font-size: 11px !important;
-      letter-spacing: 0.05em !important;
-      text-transform: uppercase !important;
       border-radius: var(--r-pill, 9999px) !important;
       transition: all 0.16s ease !important;
       outline: none;
@@ -633,39 +630,11 @@
       border-color: var(--module-theme, #0A7E5C) !important;
       color: var(--module-theme, #0A7E5C) !important;
       transform: translateY(-0.5px);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
     .add-module-tab-btn:active {
-      transform: scale(0.97);
-    }
-      font-weight: 700 !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 4px !important;
-      cursor: pointer !important;
-      padding: 6px 13px !important;
-      height: 30px !important;
-      font-size: 11px !important;
-      letter-spacing: 0.05em !important;
-      text-transform: uppercase !important;
-      border-radius: var(--r-pill, 9999px) !important;
-      transition: all 0.16s ease !important;
-      outline: none;
-      flex-shrink: 0;
-    }
-
-    .add-module-tab-btn:hover {
-      background: #ffffff !important;
-      border-color: var(--brand-theme, #0A7E5C) !important;
-      color: var(--brand-theme, #0A7E5C) !important;
-      box-shadow: 0 2px 8px rgba(10, 126, 92, 0.12);
-      transform: translateY(-1px);
-    }
-
-    .add-module-tab-btn:active {
-      transform: scale(0.96);
+      transform: scale(0.95);
     }
 
     /* SCREENS */
@@ -4181,7 +4150,7 @@
       border: 1px solid var(--line);
       border-radius: var(--r, 10px);
       margin-bottom: 5px;
-      transition: all 0.15s ease;
+      transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.15s ease, background 0.15s ease;
       user-select: none;
       cursor: pointer;
     }
@@ -4191,16 +4160,22 @@
       border-color: var(--line-strong, #ccc);
     }
 
-    .tab-mgr-item-row.sortable-ghost {
-      opacity: 0.35;
-      background: rgba(10, 126, 92, 0.08);
-      border: 1.5px dashed var(--module-theme, #0A7E5C);
+    .tab-mgr-ghost {
+      opacity: 0.22 !important;
+      background: rgba(10, 126, 92, 0.06) !important;
+      border: 1.5px dashed var(--module-theme, #0A7E5C) !important;
+      transform: scale(0.985);
     }
 
-    .tab-mgr-item-row.sortable-chosen {
-      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
-      transform: scale(1.02);
-      border-color: var(--module-theme, #0A7E5C);
+    .tab-mgr-chosen {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18) !important;
+      transform: scale(1.025);
+      border-color: var(--module-theme, #0A7E5C) !important;
+      z-index: 999;
+    }
+
+    .tab-mgr-drag {
+      opacity: 0.95 !important;
     }
 
     .tab-mgr-row-left {
@@ -6289,30 +6264,30 @@
     <div class="modal-box add-module-box tab-manager-box">
       <div class="modal-head">
         <h3 style="display:flex; align-items:center; gap:8px;">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
-          Quản lý Tab & Module
+          MODULES
         </h3>
         <button class="modal-close" onclick="closeAddModuleModal()">✕</button>
       </div>
 
-      <!-- Segmented iOS Switcher: Sắp xếp & Quản lý vs Thêm Module -->
+      <!-- Segmented iOS Switcher: REORDER vs ADD -->
       <div class="tab-mgr-switcher-wrap">
         <div class="tab-mgr-switcher">
           <button type="button" class="tab-mgr-switch-btn active" id="btnTabMgrReorder" onclick="setTabMgrMode('reorder')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4"/>
             </svg>
-            <span>Sắp xếp & Quản lý</span>
+            <span>REORDER</span>
           </button>
           <button type="button" class="tab-mgr-switch-btn" id="btnTabMgrAdd" onclick="setTabMgrMode('add')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>Thêm Module</span>
+            <span>ADD</span>
           </button>
         </div>
       </div>
@@ -10056,18 +10031,17 @@
         tabsRow.appendChild(d);
       });
 
-      // Tab Settings & Reorder button at the end of tabs
+      // Tab Settings & Reorder button at the end of tabs (Minimalist Icon Only)
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'tab add-module-tab-btn ignore-tab-drag';
       addBtn.id = 'btnAddModuleTab';
-      addBtn.title = 'Tab Settings & Reorder (Quản lý & Sắp xếp Tab)';
+      addBtn.title = 'Manage & Reorder Modules';
       addBtn.innerHTML = `
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        <span>Tabs</span>
       `;
       addBtn.onclick = (e) => {
         e.stopPropagation();
@@ -10332,16 +10306,10 @@
       }
     }
 
-    // 1. GIAO DIỆN SẮP XẾP & QUẢN LÝ (REORDER & ACTIONS)
+    // 1. GIAO DIỆN SẮP XẾP & QUẢN LÝ (REORDER & ACTIONS - FLUID QUEUE SHIFT)
     function renderTabMgrReorderView(body) {
       ensureReportModules();
-      body.innerHTML = `
-        <div class="tab-mgr-reorder-hint">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <span>Nhấn giữ biểu tượng ⠿ để kéo di chuyển thứ tự tab</span>
-        </div>
-        <div id="tabMgrSortList" class="tab-mgr-list"></div>
-      `;
+      body.innerHTML = `<div id="tabMgrSortList" class="tab-mgr-list"></div>`;
 
       const listEl = document.getElementById('tabMgrSortList');
       if (!listEl) return;
@@ -10360,35 +10328,36 @@
           actionsHtml = `
             <div class="tab-mgr-row-actions">
               ${canDup ? `
-                <button type="button" class="tab-mgr-btn btn-dup" title="Nhân bản module này" onclick="event.stopPropagation(); duplicateModuleFromMgr('${mod.id}');">
+                <button type="button" class="tab-mgr-btn btn-dup" title="Duplicate" onclick="event.stopPropagation(); duplicateModuleFromMgr('${mod.id}');">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </button>
               ` : ''}
               ${canDel ? `
-                <button type="button" class="tab-mgr-btn btn-del" title="Xóa module này" onclick="event.stopPropagation(); deleteModuleFromMgr('${mod.id}');">
+                <button type="button" class="tab-mgr-btn btn-del" title="Delete" onclick="event.stopPropagation(); deleteModuleFromMgr('${mod.id}');">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               ` : ''}
             </div>
           `;
         } else {
-          actionsHtml = `<span class="tab-mgr-locked-pill">Mặc định</span>`;
+          actionsHtml = `<span class="tab-mgr-locked-pill">LOCKED</span>`;
         }
+
+        const typeTag = (mod.type || 'module').toUpperCase();
 
         row.innerHTML = `
           <div class="tab-mgr-row-left">
-            <div class="tab-mgr-handle" title="Kéo để đổi vị trí">
+            <div class="tab-mgr-handle" title="Drag to reorder">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
             </div>
             <div class="tab-mgr-mod-info">
               <span class="tab-mgr-mod-name">${escapeHtml(mod.name)}</span>
-              <span class="tab-mgr-mod-badge">${escapeHtml(mod.type || 'module')}</span>
+              <span class="tab-mgr-mod-badge">${escapeHtml(typeTag)}</span>
             </div>
           </div>
           ${actionsHtml}
         `;
 
-        // Chạm vào hàng để chuyển ngay sang tab đó và đóng bảng
         row.onclick = () => {
           const targetIdx = D.modules.findIndex(m => m.id === mod.id);
           if (targetIdx !== -1) {
@@ -10400,7 +10369,7 @@
         listEl.appendChild(row);
       });
 
-      // Kích hoạt SortableJS kéo thả mượt mà trong danh sách hàng dọc
+      // Kéo thả dạng nối đuôi (Fluid Queue Shift Reorder)
       if (typeof Sortable !== 'undefined') {
         if (listEl._sortable) listEl._sortable.destroy();
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
@@ -10409,16 +10378,19 @@
           draggable: '.tab-mgr-item-row',
           filter: 'button, .tab-mgr-btn',
           preventOnFilter: false,
-          animation: 180,
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
+          animation: 200,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          ghostClass: 'tab-mgr-ghost',
+          chosenClass: 'tab-mgr-chosen',
+          dragClass: 'tab-mgr-drag',
           forceFallback: isTouchDevice,
-          delay: isTouchDevice ? 150 : 0,
+          fallbackTolerance: 3,
+          delay: isTouchDevice ? 120 : 0,
           delayOnTouchOnly: true,
           touchStartThreshold: 5,
           onStart: function () {
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
-              navigator.vibrate(40);
+              navigator.vibrate(35);
             }
           },
           onEnd: function (evt) {
@@ -10431,7 +10403,7 @@
             as();
             buildUI();
             showSection(targetIdx);
-            showToast(`✓ Đã đổi vị trí: ${movedMod.name}`);
+            showToast(`✓ Reordered: ${movedMod.name}`);
           }
         });
       }
@@ -10449,13 +10421,13 @@
       if (body) renderTabMgrReorderView(body);
     }
 
-    // 2. GIAO DIỆN THÊM MODULE (CHỈ HIỆN MODULE CHƯA ACTIVE)
+    // 2. GIAO DIỆN THÊM MODULE (CHỈ HIỆN MODULE CHƯA ACTIVE - TIẾNG ANH & ICON-HÓA)
     function renderTabMgrAddView(body) {
       ensureReportModules();
       const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
       const defMods = (MODULE_THEMES[modKey] || MODULE_THEMES['pre-production']).defaultModules;
 
-      // Quy tắc cốt lõi: Module đã active KHÔNG ĐƯỢC HIỆN, chỉ hiện module tiêu chuẩn CHƯA CÓ trong D.modules
+      // Active modules are 100% hidden; only missing standard modules appear
       const missingStandardMods = defMods.filter(def => {
         return !D.modules.some(m => m.id === def.id || (m.type === def.type && ['overall', 'dimensions', 'testing', 'checklist', 'documents'].includes(def.type)));
       });
@@ -10477,28 +10449,28 @@
                   <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">${escapeHtml(mod.type)}</span>
                 </div>
               </div>
-              <span class="module-status-badge restore">+ Thêm lại</span>
+              <span class="module-status-badge restore">+ ADD</span>
             </div>
           `;
         }).join('');
       } else {
         standardHtml = `
           <div class="tab-mgr-empty-msg">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:6px; opacity:0.6;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-            <div>Tất cả các module tiêu chuẩn đã có trong báo cáo.</div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:6px; opacity:0.6;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <div>All standard modules active.</div>
           </div>
         `;
       }
 
       body.innerHTML = `
-        <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; padding:4px 6px 8px;">
-          Module tiêu chuẩn có thể thêm
+        <div style="font-size:10.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; padding:4px 6px 8px;">
+          AVAILABLE MODULES
         </div>
         ${standardHtml}
 
         <div style="border-top:1px dashed var(--line); margin:12px 0 8px; padding-top:10px;">
-          <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; padding:0 6px 8px;">
-            Tùy chọn tạo mới
+          <div style="font-size:10.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; padding:0 6px 8px;">
+            CUSTOM MODULE
           </div>
           <div class="module-select-row" onclick="promptNewPhotoModuleFromMgr()">
             <div class="module-select-left">
@@ -10510,11 +10482,11 @@
                 </svg>
               </div>
               <div style="display:flex; flex-direction:column; gap:2px;">
-                <span class="module-select-name">+ Module Ảnh Tùy Chỉnh (Custom Photos)</span>
-                <span style="font-size:10px; color:var(--muted);">Tạo thêm một tab ảnh mới cho báo cáo</span>
+                <span class="module-select-name">Custom Photo Module</span>
+                <span style="font-size:10px; color:var(--muted);">Additional photo section</span>
               </div>
             </div>
-            <span class="module-status-badge restore">+ Tạo mới</span>
+            <span class="module-status-badge restore">+ NEW</span>
           </div>
         </div>
       `;
@@ -10557,11 +10529,11 @@
       buildUI();
       showSection(insertIdx);
       closeAddModuleModal();
-      showToast(`✓ Đã thêm module "${newMod.name}"`);
+      showToast(`✓ Added: ${newMod.name}`);
     }
 
     function promptNewPhotoModuleFromMgr() {
-      const name = prompt('Nhập tên cho module ảnh mới (ví dụ: Packaging Photos, Label & Barcode...):');
+      const name = prompt('Module Name (e.g. Packaging Photos, Labels):');
       if (name && name.trim()) {
         createCustomPhotoModule(name.trim());
       }
