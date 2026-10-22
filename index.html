@@ -6983,17 +6983,32 @@
 
     function dbPut(report) {
       return new Promise((res, rej) => {
-        const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(report);
-        req.onsuccess = () => res();
-        req.onerror = () => rej(req.error);
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => res();
+          tx.onerror = () => rej(tx.error);
+          tx.onabort = () => rej(tx.error || new DOMException('Transaction aborted', 'AbortError'));
+          tx.objectStore(STORE_NAME).put(report);
+        } catch (err) {
+          rej(err);
+        }
       });
     }
 
     function dbDelete(id) {
       return new Promise((res, rej) => {
-        const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete(id);
-        req.onsuccess = () => res();
-        req.onerror = () => rej(req.error);
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => {
+            if (typeof clearDraftSnapshot === 'function') clearDraftSnapshot(id);
+            res();
+          };
+          tx.onerror = () => rej(tx.error);
+          tx.onabort = () => rej(tx.error || new DOMException('Transaction aborted', 'AbortError'));
+          tx.objectStore(STORE_NAME).delete(id);
+        } catch (err) {
+          rej(err);
+        }
       });
     }
 
@@ -7002,6 +7017,7 @@
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
       try {
+        if (typeof flushReport === 'function') await flushReport();
         const allReports = await dbGetAll();
         if (!allReports || allReports.length === 0) {
           showToast('No reports available in database to backup!');
@@ -8299,6 +8315,7 @@
 
     async function undo() {
       if (isDimSelectMode) return;
+      if (typeof cancelTimerOnly === 'function') cancelTimerOnly();
       flushPendingTextUndo();
       if (!undoStack.length || !currentId) {
         showToast('No action to undo');
@@ -8318,7 +8335,7 @@
           D = restored;
           loadData();
           updateTopbar();
-          await dbPut(D);
+          await saveReportSafe(D);
           showToast(`↩️ Undo: ${item.desc}`);
         }
       } catch (err) {
@@ -8332,6 +8349,7 @@
 
     async function redo() {
       if (isDimSelectMode) return;
+      if (typeof cancelTimerOnly === 'function') cancelTimerOnly();
       flushPendingTextUndo();
       if (!redoStack.length || !currentId) {
         showToast('No action to redo');
@@ -8351,7 +8369,7 @@
           D = restored;
           loadData();
           updateTopbar();
-          await dbPut(D);
+          await saveReportSafe(D);
           showToast(`↪️ Redo: ${item.desc}`);
         }
       } catch (err) {
@@ -9374,6 +9392,9 @@
 
     async function duplicateReportById(id) {
       try {
+        if (typeof flushReport === 'function' && currentId && String(currentId) === String(id)) {
+          await flushReport();
+        }
         let source = await dbGet(id);
         if (!source) {
           const allReps = await dbGetAll();
@@ -9457,6 +9478,9 @@
 
     async function shareReportById(id) {
       try {
+        if (typeof flushReport === 'function' && currentId && String(currentId) === String(id)) {
+          await flushReport();
+        }
         let rep = await dbGet(id);
         if (!rep) {
           const reports = await dbGetAll();
@@ -9640,6 +9664,7 @@
     }
 
     async function goHome() {
+      if (typeof flushReport === 'function') await flushReport();
       currentId = null; curSec = 0;
       D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
       document.body.classList.remove('in-editor');
@@ -13413,59 +13438,390 @@
       comparisonNotes: 'comparisonNotes', docNotes: 'docNotes', greenlabelNotes: 'greenlabelNotes'
     };
 
-    function as() {
-      if (!currentId) return;
-      D.updatedAt = Date.now();
-      const saveText = document.getElementById('saveText'); if (saveText) saveText.textContent = 'Saving...';
+    // ── TEXT & NON-PHOTO SNAPSHOT STORAGE (LOCALSTORAGE) ──
+    const SNAPSHOT_KEY_PREFIX = 'super_report_draft_';
+
+    function stripPhotosForSnapshot(report) {
+      if (!report) return null;
+      try {
+        const snap = JSON.parse(JSON.stringify(report));
+        if (snap.coverPhotos && typeof snap.coverPhotos === 'object') {
+          Object.keys(snap.coverPhotos).forEach(k => { snap.coverPhotos[k] = null; });
+        }
+        const stripPhotoArray = (arr) => {
+          if (!Array.isArray(arr)) return;
+          arr.forEach(item => {
+            if (item && typeof item === 'object') {
+              if ('img' in item) item.img = null;
+              if ('imgSub' in item) item.imgSub = null;
+              if ('image' in item) item.image = null;
+            }
+          });
+        };
+        stripPhotoArray(snap.prodPhotos);
+        stripPhotoArray(snap.dimensions);
+        stripPhotoArray(snap.assemblyPhotos);
+        stripPhotoArray(snap.watchoutPhotos);
+        stripPhotoArray(snap.testingPhotos);
+        stripPhotoArray(snap.checklistPhotos);
+        stripPhotoArray(snap.comparisonPhotos);
+        stripPhotoArray(snap.docAttachments);
+        stripPhotoArray(snap.greenlabelPhotos);
+        return snap;
+      } catch (e) {
+        console.warn('[Snapshot] Failed to strip photos', e);
+        return null;
+      }
+    }
+
+    function saveDraftSnapshot(report) {
+      if (!report || !report.id) return;
+      try {
+        const stripped = stripPhotosForSnapshot(report);
+        if (!stripped) return;
+        const entry = {
+          savedAt: Date.now(),
+          reportId: report.id,
+          data: stripped
+        };
+        const str = JSON.stringify(entry);
+        if (str.length > 500000) { // Limit to ~500KB
+          console.warn('[Snapshot] Snapshot too large, skipping');
+          return;
+        }
+        localStorage.setItem(SNAPSHOT_KEY_PREFIX + report.id, str);
+      } catch (err) {
+        console.warn('[Snapshot] localStorage write failed (private browsing or quota)', err);
+      }
+    }
+
+    function getDraftSnapshot(reportId) {
+      if (!reportId) return null;
+      try {
+        const raw = localStorage.getItem(SNAPSHOT_KEY_PREFIX + reportId);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function clearDraftSnapshot(reportId) {
+      if (!reportId) return;
+      try {
+        localStorage.removeItem(SNAPSHOT_KEY_PREFIX + reportId);
+      } catch (e) {}
+    }
+
+    function restoreSnapshotIntoReport(dbReport, snapData) {
+      if (!dbReport || !snapData) return { report: dbReport, hadMismatches: false };
+      let hadMismatches = false;
+      const target = JSON.parse(JSON.stringify(dbReport));
+
+      const scalarKeys = [
+        'reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer',
+        'numS', 'numR', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes',
+        'checklistNotes', 'comparisonNotes', 'docNotes', 'greenlabelNotes',
+        'checks', 'bvRows', 'coverTitles', 'modules'
+      ];
+      scalarKeys.forEach(k => {
+        if (k in snapData && snapData[k] !== undefined) {
+          target[k] = snapData[k];
+        }
+      });
+
+      const photoArrayKeys = [
+        'dimensions', 'prodPhotos', 'assemblyPhotos', 'watchoutPhotos',
+        'testingPhotos', 'checklistPhotos', 'comparisonPhotos', 'docAttachments', 'greenlabelPhotos'
+      ];
+
+      photoArrayKeys.forEach(key => {
+        const dbArr = target[key];
+        const snapArr = snapData[key];
+        if (!Array.isArray(snapArr)) return;
+        if (!Array.isArray(dbArr)) {
+          if (dbArr === null && snapArr === null) return;
+          hadMismatches = true;
+          return;
+        }
+
+        if (dbArr.length !== snapArr.length) {
+          hadMismatches = true;
+          return;
+        }
+
+        for (let i = 0; i < dbArr.length; i++) {
+          const dbItem = dbArr[i] || {};
+          const snapItem = snapArr[i] || {};
+          const mergedItem = { ...snapItem };
+          if ('img' in dbItem) mergedItem.img = dbItem.img;
+          if ('imgSub' in dbItem) mergedItem.imgSub = dbItem.imgSub;
+          if ('image' in dbItem) mergedItem.image = dbItem.image;
+          dbArr[i] = mergedItem;
+        }
+      });
+
+      return { report: target, hadMismatches };
+    }
+
+    async function checkAndPromptDraftRestore(id, dbRecord) {
+      const snap = getDraftSnapshot(id);
+      if (!snap || !snap.savedAt || !snap.data) return dbRecord;
+
+      const dbUpdatedAt = dbRecord.updatedAt || 0;
+      if (snap.savedAt <= dbUpdatedAt) {
+        clearDraftSnapshot(id);
+        return dbRecord;
+      }
+
+      const snapTimeStr = new Date(snap.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const wantsRestore = confirm(
+        'Phát hiện bản nháp chưa lưu (lúc ' + snapTimeStr + ') mới hơn dữ liệu đã lưu.\n\n' +
+        'Bạn có muốn khôi phục lại các nội dung văn bản này không?\n\n' +
+        '• Chọn OK để khôi phục bản nháp\n' +
+        '• Chọn Cancel để bỏ qua và dùng dữ liệu đã lưu'
+      );
+
+      if (wantsRestore) {
+        const { report: restored, hadMismatches } = restoreSnapshotIntoReport(dbRecord, snap.data);
+        if (hadMismatches) {
+          showToast('⚠️ Đã khôi phục văn bản. Một số danh sách ảnh có thay đổi số lượng nên được giữ nguyên ảnh gốc.');
+        } else {
+          showToast('✓ Đã khôi phục bản nháp thành công');
+        }
+        restored.updatedAt = Date.now();
+        await saveReportSafe(restored);
+        return restored;
+      } else {
+        clearDraftSnapshot(id);
+        return dbRecord;
+      }
+    }
+
+    // ── AUTOSAVE & STORAGE SCHEDULER (DUAL-LAYER & SINGLE IN-FLIGHT) ──
+    let isSaveInFlight = false;
+    let isDirtyAfterInFlight = false;
+    let pendingPayloadToSave = null;
+    let autosaveIdleTimer = null;
+    let blurSaveTimer = null;
+    let lastSnapshotTime = 0;
+    let isSaveFailedBannerVisible = false;
+    let savePromiseChain = Promise.resolve();
+
+    function cancelTimerOnly() {
+      if (autosaveIdleTimer) {
+        clearTimeout(autosaveIdleTimer);
+        autosaveIdleTimer = null;
+      }
+      if (blurSaveTimer) {
+        clearTimeout(blurSaveTimer);
+        blurSaveTimer = null;
+      }
+    }
+
+    async function showQuotaErrorBanner(error) {
+      isSaveFailedBannerVisible = true;
+      const saveText = document.getElementById('saveText');
+      if (saveText) saveText.textContent = 'Save Error ⚠️';
+      const saveIndicator = document.getElementById('saveIndicator');
+      if (saveIndicator) {
+        saveIndicator.title = 'Storage error: ' + (error && error.message ? error.message : 'Quota exceeded');
+        saveIndicator.classList.remove('saving');
+        saveIndicator.classList.add('error');
+      }
+
+      let storageInfo = '';
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const est = await navigator.storage.estimate();
+          const usedMB = (est.usage / (1024 * 1024)).toFixed(1);
+          const totalMB = (est.quota / (1024 * 1024)).toFixed(1);
+          storageInfo = ' (' + usedMB + 'MB / ' + totalMB + 'MB)';
+        } catch (e) {}
+      }
+
+      let banner = document.getElementById('storageQuotaErrorBanner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'storageQuotaErrorBanner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#d32f2f;color:#ffffff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-body,-apple-system,sans-serif);font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.3);gap:12px;';
+        document.body.prepend(banner);
+      }
+      banner.style.display = 'flex';
+      banner.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><span>⚠️ <strong>Lỗi lưu trữ:</strong> Không thể ghi vào bộ nhớ trình duyệt' + storageInfo + '. Dữ liệu chưa lưu có thể bị mất!</span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><button id="btnRetrySave" style="background:#ffffff;color:#d32f2f;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">🔄 Thử lưu lại</button><button id="btnEmergencyBackup" style="background:#ffb300;color:#000000;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">💾 Xuất Backup JSON ngay</button></div>';
+
+      document.getElementById('btnRetrySave').onclick = async () => {
+        banner.style.display = 'none';
+        isSaveFailedBannerVisible = false;
+        await flushReport();
+      };
+      document.getElementById('btnEmergencyBackup').onclick = () => {
+        if (D && D.id) {
+          downloadReportJson(D);
+        } else {
+          backupDatabase();
+        }
+      };
+    }
+
+    function hideQuotaErrorBanner() {
+      if (isSaveFailedBannerVisible) {
+        isSaveFailedBannerVisible = false;
+        const banner = document.getElementById('storageQuotaErrorBanner');
+        if (banner) banner.style.display = 'none';
+      }
+    }
+
+    async function executeSave(payload) {
+      if (!payload || !payload.id) return;
+      isSaveInFlight = true;
+      const saveText = document.getElementById('saveText');
+      if (saveText) saveText.textContent = 'Saving...';
       const saveIndicator = document.getElementById('saveIndicator');
       if (saveIndicator) {
         saveIndicator.title = 'Saving data...';
         saveIndicator.classList.add('saving');
       }
-      Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
-      D.numS = document.getElementById('fNumS').value; D.numR = document.getElementById('fNumR').value;
-      renderOverviewSummary();
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(async () => {
-        await dbPut(D);
+
+      try {
+        payload.updatedAt = Date.now();
+        await dbPut(payload);
+        clearDraftSnapshot(payload.id);
+        hideQuotaErrorBanner();
+
         if (saveText) saveText.textContent = 'Saved';
         if (saveIndicator) {
           saveIndicator.title = 'Saved & synced';
           saveIndicator.classList.remove('saving');
+          saveIndicator.classList.remove('error');
         }
         updateTopbar();
-      }, 400);
+      } catch (err) {
+        console.error('[Save Error]', err);
+        await showQuotaErrorBanner(err);
+        throw err;
+      } finally {
+        isSaveInFlight = false;
+        if (isDirtyAfterInFlight && pendingPayloadToSave) {
+          isDirtyAfterInFlight = false;
+          const nextPayload = pendingPayloadToSave;
+          pendingPayloadToSave = null;
+          await executeSave(nextPayload);
+        }
+      }
     }
 
-    function flushAutosave() {
+    function saveReportSafe(customPayload) {
+      if (!currentId && !customPayload) return Promise.resolve();
+      const payload = customPayload || (D && D.id ? JSON.parse(JSON.stringify(D)) : null);
+      if (!payload || !payload.id) return Promise.resolve();
+
+      cancelTimerOnly();
+
+      if (isSaveInFlight) {
+        isDirtyAfterInFlight = true;
+        pendingPayloadToSave = payload;
+        return savePromiseChain;
+      }
+
+      savePromiseChain = savePromiseChain
+        .catch((err) => {
+          console.warn('[Scheduler] Recovering chain from previous save rejection', err);
+        })
+        .then(() => executeSave(payload));
+
+      return savePromiseChain;
+    }
+
+    async function flushReport() {
+      cancelTimerOnly();
+      if (currentId && D && Object.keys(D).length > 0) {
+        Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          if (el) D[key] = el.value;
+        });
+        const elNumS = document.getElementById('fNumS'); if (elNumS) D.numS = elNumS.value;
+        const elNumR = document.getElementById('fNumR'); if (elNumR) D.numR = elNumR.value;
+      }
+
+      if (isSaveInFlight) {
+        try {
+          await savePromiseChain;
+        } catch (e) {}
+      }
+
+      if (pendingPayloadToSave || (currentId && D && D.id)) {
+        const payload = pendingPayloadToSave || JSON.parse(JSON.stringify(D));
+        pendingPayloadToSave = null;
+        isDirtyAfterInFlight = false;
+        await saveReportSafe(payload);
+      }
+    }
+
+    function as() {
       if (!currentId || !D) return;
-      D.updatedAt = Date.now();
-      Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => { const el = document.getElementById(id); if (el) D[key] = el.value; });
+      Object.entries(FIELD_KEY_MAP).forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) D[key] = el.value;
+      });
       const elNumS = document.getElementById('fNumS'); if (elNumS) D.numS = elNumS.value;
       const elNumR = document.getElementById('fNumR'); if (elNumR) D.numR = elNumR.value;
-      clearTimeout(saveTimeout);
-      dbPut(D);
+      renderOverviewSummary();
+
+      const now = Date.now();
+      if (now - lastSnapshotTime > 1500) {
+        lastSnapshotTime = now;
+        saveDraftSnapshot(D);
+      }
+
+      const saveText = document.getElementById('saveText');
+      if (saveText) saveText.textContent = 'Unsaved...';
+
+      cancelTimerOnly();
+      autosaveIdleTimer = setTimeout(() => {
+        saveReportSafe();
+      }, 10000);
     }
 
-    window.addEventListener('beforeunload', flushAutosave);
-    window.addEventListener('pagehide', flushAutosave);
+    function scheduleBlurSave() {
+      if (!currentId || !D) return;
+      if (blurSaveTimer) clearTimeout(blurSaveTimer);
+      blurSaveTimer = setTimeout(() => {
+        saveReportSafe();
+      }, 1500);
+    }
+
+    document.addEventListener('focusout', (e) => {
+      if (currentId && D && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        saveDraftSnapshot(D);
+        scheduleBlurSave();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => { flushReport(); });
+    window.addEventListener('pagehide', () => { flushReport(); });
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') flushAutosave();
+      if (document.visibilityState === 'hidden') flushReport();
     });
 
     async function openReport(id) {
       try {
+        if (typeof flushReport === 'function') await flushReport();
         currentId = id;
-        D = await dbGet(id);
-        if (!D) {
+        let repData = await dbGet(id);
+        if (!repData) {
           const all = await dbGetAll();
-          D = all.find(r => String(r.id) === String(id));
+          repData = all.find(r => String(r.id) === String(id));
         }
 
-        if (!D) {
+        if (!repData) {
           alert('Error: Report data not found!');
           return;
         }
+
+        D = (typeof checkAndPromptDraftRestore === 'function')
+          ? await checkAndPromptDraftRestore(id, repData)
+          : repData;
         reports = []; // Release report list array from memory while editing
 
         const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
@@ -13505,6 +13861,7 @@
 
     async function newReport() {
       try {
+        if (typeof flushReport === 'function') await flushReport();
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
         const modKey = (currentActiveModule === 'prototype') ? 'prototype' : 'pre-production';
         const modCfg = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
@@ -14927,8 +15284,45 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('[PWA] ServiceWorker registered successfully:', reg.scope))
+          .then(reg => {
+            console.log('[PWA] ServiceWorker registered successfully:', reg.scope);
+
+            function notifyUpdate(worker) {
+              if (document.getElementById('pwaUpdateToast')) return;
+              const toast = document.createElement('div');
+              toast.id = 'pwaUpdateToast';
+              toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a3a2a;color:#ffffff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:999999;display:flex;align-items:center;gap:12px;font-family:var(--font-body,-apple-system,sans-serif);font-size:13px;font-weight:600;';
+              toast.innerHTML = '<span>Đã có phiên bản cập nhật mới ' + APP_VERSION + '.</span><button id="btnPwaReload" style="background:#2d5a3d;color:#ffffff;border:1px solid rgba(255,255,255,0.4);border-radius:4px;padding:6px 12px;cursor:pointer;font-weight:700;">Tải lại ngay</button>';
+              document.body.appendChild(toast);
+              document.getElementById('btnPwaReload').onclick = () => {
+                worker.postMessage({ type: 'SKIP_WAITING' });
+              };
+            }
+
+            if (reg.waiting && navigator.serviceWorker.controller) {
+              notifyUpdate(reg.waiting);
+            }
+
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    notifyUpdate(newWorker);
+                  }
+                });
+              }
+            });
+          })
           .catch(err => console.warn('[PWA] Could not register ServiceWorker:', err));
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
       });
     }
 
