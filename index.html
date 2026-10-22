@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#1a3a2a">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SUPER REPORT">
 
@@ -39,111 +40,6 @@
 
   <!-- SortableJS Library -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <script>
-    // Tích hợp Swap Plugin tiêu chuẩn cho SortableJS: Tự động đổi chỗ 1-1 sạch sẽ khi bật chế độ Swap
-    (function () {
-      if (typeof Sortable === 'undefined' || typeof Sortable.mount !== 'function') return;
-      var lastSwapEl = null;
-
-      function toggleClass(el, name, state) {
-        if (!el || !name) return;
-        if (el.classList) el.classList[state ? 'add' : 'remove'](name);
-        else el.className = (' ' + el.className + ' ').replace(new RegExp(' ' + name + ' ', 'g'), ' ').trim() + (state ? ' ' + name : '');
-      }
-
-      function getIndex(el) {
-        if (!el || !el.parentNode) return -1;
-        var children = el.parentNode.children;
-        for (var i = 0; i < children.length; i++) {
-          if (children[i] === el) return i;
-        }
-        return -1;
-      }
-
-      function swapNodes(n1, n2) {
-        var p1 = n1.parentNode, p2 = n2.parentNode;
-        if (!p1 || !p2 || p1 === n2 || p2 === n1) return;
-        var i1 = getIndex(n1), i2 = getIndex(n2);
-        if (p1 === p2 && i1 < i2) i2++;
-        p1.insertBefore(n2, p1.children[i1]);
-        p2.insertBefore(n1, p2.children[i2]);
-      }
-
-      function StandardSwapPlugin() {
-        function Plugin() {
-          this.defaults = { swapClass: 'sortable-swap-highlight' };
-        }
-        Plugin.prototype = {
-          dragStart: function (_ref) {
-            lastSwapEl = _ref.dragEl;
-          },
-          dragOverValid: function (_ref2) {
-            var target = _ref2.target,
-              onMove = _ref2.onMove,
-              activeSortable = _ref2.activeSortable,
-              changed = _ref2.changed,
-              completed = _ref2.completed,
-              cancel = _ref2.cancel;
-
-            if (!activeSortable.options.swap) return; // Nếu chế độ Nối đuôi (swap: false) thì nhường lại cho SortableJS gốc!
-
-            var el = this.sortable.el,
-              options = this.options;
-            var dragItem = target && target.closest ? target.closest(activeSortable.options.draggable || '*') : target;
-
-            if (dragItem && dragItem !== el && (!activeSortable.options.draggable || dragItem.matches(activeSortable.options.draggable))) {
-              var prevSwapEl = lastSwapEl;
-              if (onMove(dragItem) !== false) {
-                if (options.swapClass) toggleClass(dragItem, options.swapClass, true);
-                lastSwapEl = dragItem;
-              } else {
-                lastSwapEl = null;
-              }
-              if (prevSwapEl && prevSwapEl !== lastSwapEl) {
-                if (options.swapClass) toggleClass(prevSwapEl, options.swapClass, false);
-              }
-            }
-            changed();
-            completed(true);
-            cancel();
-          },
-          drop: function (_ref3) {
-            var activeSortable = _ref3.activeSortable,
-              putSortable = _ref3.putSortable,
-              dragEl = _ref3.dragEl;
-            var toSortable = putSortable || this.sortable;
-            var options = this.options;
-
-            if (lastSwapEl && options.swapClass) toggleClass(lastSwapEl, options.swapClass, false);
-            if (activeSortable.options.swap && lastSwapEl && (options.swap || (putSortable && putSortable.options.swap))) {
-              if (dragEl !== lastSwapEl) {
-                if (toSortable.captureAnimationState) toSortable.captureAnimationState();
-                if (toSortable !== activeSortable && activeSortable.captureAnimationState) activeSortable.captureAnimationState();
-                swapNodes(dragEl, lastSwapEl);
-                if (toSortable.animateAll) toSortable.animateAll();
-                if (toSortable !== activeSortable && activeSortable.animateAll) activeSortable.animateAll();
-              }
-            }
-          },
-          nulling: function () {
-            lastSwapEl = null;
-          }
-        };
-        return Object.assign(Plugin, {
-          pluginName: 'swap',
-          eventProperties: function () {
-            return { swapItem: lastSwapEl };
-          }
-        });
-      }
-
-      try {
-        Sortable.mount(new StandardSwapPlugin());
-      } catch (e) {
-        console.warn('Sortable StandardSwapPlugin mount error:', e);
-      }
-    })();
-  </script>
 
   <style>
     :root {
@@ -653,7 +549,7 @@
     }
 
     #homeScreen {
-      max-width: 100%;
+      max-width: 1180px;
       padding: 24px 24px calc(140px + env(safe-area-inset-bottom)) 24px;
     }
 
@@ -1252,11 +1148,28 @@
     }
 
     .rc-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
       font-family: var(--font-display);
       font-size: 14.5px;
       font-weight: 700;
       letter-spacing: -0.01em;
       color: var(--ink-strong);
+    }
+
+    .rc-title-text {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .rc-title .rc-badge {
+      flex-shrink: 0;
+      margin-left: 0;
     }
 
     .rc-sub {
@@ -5495,6 +5408,382 @@
       transform: scale(1.25);
       box-shadow: 0 0 0 2px var(--brand-theme);
     }
+
+    /* ═══════════════ UX ERGONOMICS & ACCESSIBILITY (STYLE-PRESERVING) ═══════════════ */
+    /* Module manager gear stays visible while the tab strip scrolls */
+    .tabs {
+      position: relative;
+    }
+
+    .add-module-tab-btn {
+      position: sticky !important;
+      right: 0;
+      z-index: 12;
+      align-self: center;
+      margin-left: 2px;
+      background: #ffffff !important;
+      box-shadow: -16px 0 14px -10px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Clear keyboard focus without changing the resting look */
+    .topbar-btn:focus-visible,
+    .sbar-btn:focus-visible,
+    .craft-btn:focus-visible,
+    .tool-btn:focus-visible,
+    .modal-close:focus-visible,
+    .tab:focus-visible,
+    .pact:focus-visible,
+    .tap-option:focus-visible,
+    .tab-mgr-btn:focus-visible,
+    .markup-color-dot:focus-visible {
+      outline: 2px solid var(--module-theme, var(--accent));
+      outline-offset: 2px;
+    }
+
+    @media (pointer: fine) {
+      .topbar-btn {
+        min-height: 32px;
+      }
+
+      .modal-close {
+        width: 34px;
+        height: 34px;
+      }
+
+      .tab-manager-box .modal-head .modal-close {
+        width: 32px;
+        height: 32px;
+      }
+
+      .pact {
+        width: 32px;
+        height: 32px;
+      }
+
+      .dim-sub-photo .pact {
+        width: 28px;
+        height: 28px;
+      }
+
+      .tab-mgr-btn {
+        width: 34px;
+        height: 34px;
+      }
+
+      .tools-row.cropper-segmented .tool-btn {
+        height: 34px;
+      }
+
+      .craft-btn {
+        height: 38px;
+      }
+
+      .sbar-btn {
+        height: 46px;
+        min-height: 46px;
+      }
+
+      .date-cal-btn {
+        min-width: 32px;
+        min-height: 32px;
+      }
+
+      .today-pill-btn {
+        min-height: 30px;
+        padding: 6px 11px;
+      }
+
+      .markup-color-dot {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    @media (pointer: coarse) {
+      .topbar-btn {
+        min-width: 40px;
+        height: 40px;
+      }
+
+      .topbar-btn.pri {
+        padding: 0 12px;
+      }
+
+      .tab {
+        height: 40px;
+        padding: 8px 16px;
+      }
+
+      .add-module-tab-btn {
+        width: 40px !important;
+        min-width: 40px !important;
+        height: 40px !important;
+      }
+
+      .modal-close,
+      .tab-manager-box .modal-head .modal-close {
+        width: 40px;
+        height: 40px;
+        font-size: 17px;
+      }
+
+      .pact {
+        position: relative;
+        width: 32px;
+        height: 32px;
+      }
+
+      .pact::after {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
+
+      .dim-sub-photo .pact {
+        width: 26px;
+        height: 26px;
+      }
+
+      .dim-sub-photo .pact::after {
+        inset: -9px;
+      }
+
+      .pactions {
+        gap: 10px;
+      }
+
+      .tab-mgr-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      .tools-row.cropper-segmented .tool-btn {
+        height: 40px;
+        padding: 0 14px;
+      }
+
+      .craft-btn {
+        height: 44px;
+        padding: 0 14px;
+      }
+
+      .sbar-btn {
+        height: 48px;
+        min-height: 48px;
+      }
+
+      .date-cal-btn {
+        min-width: 40px;
+        min-height: 40px;
+      }
+
+      .today-pill-btn {
+        min-height: 34px;
+        padding: 7px 12px;
+        font-size: 11px;
+      }
+
+      .markup-color-dot {
+        position: relative;
+        width: 32px;
+        height: 32px;
+      }
+
+      .markup-color-dot::after {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
+
+      .markup-color-dot:first-of-type {
+        margin-left: 10px;
+      }
+    }
+
+    .sbar-btn:disabled {
+      opacity: 0.38;
+      cursor: default;
+      pointer-events: none;
+      box-shadow: none;
+      filter: none;
+    }
+
+    /* Field affordance: make the whole cell read as an editable target */
+    .fcell {
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .fcell:hover {
+      background: #faf9f7;
+    }
+
+    .fcell:focus-within {
+      background: #faf9f7;
+      box-shadow: inset 0 -2px 0 var(--module-theme, var(--accent));
+    }
+
+    .flabel {
+      font-size: 10.5px;
+    }
+
+    /* Photo caption: readable when idle, roomy when editing (still 16px to avoid iOS zoom) */
+    .photo-slot .pbar input {
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      min-height: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .free-caption input {
+        font-size: 12px !important;
+        min-height: 24px;
+      }
+
+      .free-caption input:focus {
+        font-size: 16px !important;
+      }
+
+      .photo-slot .pbar {
+        height: 30px;
+      }
+
+      .photo-slot .pbar input {
+        font-size: 11px !important;
+        min-height: 30px;
+      }
+
+      .photo-slot .pbar input:focus {
+        font-size: 16px !important;
+      }
+    }
+
+    /* Markup: hide transform ops while drawing, in-app remark editor */
+    #editorToolbar.markup-active .transform-op {
+      display: none !important;
+    }
+
+    .markup-text-popover {
+      position: absolute;
+      z-index: 30;
+      width: 232px;
+      max-width: calc(100% - 16px);
+      padding: 8px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .markup-text-popover input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      color: var(--ink);
+      background: var(--sunken);
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .markup-text-popover input:focus {
+      border-color: var(--module-theme, var(--accent));
+      background: #ffffff;
+    }
+
+    .markup-text-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .markup-text-actions .craft-btn {
+      height: 34px;
+      padding: 0 12px;
+      font-size: 10.5px;
+    }
+
+    /* Bottom sheet polish: grabber + safe area breathing room */
+    @media (max-width: 768px) {
+      .tab-manager-box {
+        border-radius: 20px 20px 0 0;
+      }
+
+      .tab-manager-box::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        border-radius: 9999px;
+        background: rgba(0, 0, 0, 0.16);
+        margin: 8px auto 0 auto;
+        flex-shrink: 0;
+      }
+
+      .tab-manager-box {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* P2: mobile report title — two-line clamp, badge stays aligned */
+    @media (max-width: 640px) {
+      .rc-title {
+        align-items: flex-start;
+      }
+
+      .rc-title-text {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.3;
+      }
+
+      .rc-title .rc-badge {
+        margin-top: 1px;
+      }
+    }
+
+    /* P2: in-app confirmation dialog */
+    .app-confirm-box {
+      max-width: 420px;
+    }
+
+    .app-confirm-body {
+      padding: 18px 18px 14px;
+      background: var(--card);
+    }
+
+    .app-confirm-body p {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--ink);
+      white-space: pre-line;
+    }
+
+    .app-confirm-actions {
+      justify-content: flex-end;
+      background: var(--bg);
+    }
+
+    .app-confirm-actions .sbar-btn {
+      flex: 0 0 auto;
+      min-width: 104px;
+      height: 38px;
+      padding: 0 16px;
+    }
+
+    @media (max-width: 640px) {
+      .app-confirm-actions .sbar-btn {
+        height: 48px;
+        min-height: 48px;
+      }
+    }
   </style>
 </head>
 
@@ -6023,8 +6312,8 @@
 
   <!-- SAVE BAR -->
   <div class="save-bar" id="saveBar" style="display:none">
-    <button class="sbar-btn sec" onclick="prevSection()">← Back</button>
-    <button class="sbar-btn pri" onclick="nextSection()">Next →</button>
+    <button class="sbar-btn sec" id="btnPrevSection" onclick="prevSection()">← Back</button>
+    <button class="sbar-btn pri" id="btnNextSection" onclick="nextSection()">Next →</button>
   </div>
 
   <!-- CROPPER MODAL -->
@@ -6038,6 +6327,15 @@
         <div id="cropperWrapper" class="cropper-wrapper" style="position:relative !important; overflow:hidden !important;">
           <img id="cropperImage" alt="Cropper Preview">
           <canvas id="markupCanvas" class="markup-canvas-overlay" style="display:none;"></canvas>
+          <div id="markupTextPopover" class="markup-text-popover" style="display:none;">
+            <input id="markupTextInput" type="text" maxlength="80" placeholder="Remark..."
+              aria-label="Remark text"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();commitMarkupText();}else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeMarkupTextPopover();}">
+            <div class="markup-text-actions">
+              <button type="button" class="craft-btn craft-btn-sec" onclick="closeMarkupTextPopover()">Cancel</button>
+              <button type="button" class="craft-btn craft-btn-pri" onclick="commitMarkupText()">Add note</button>
+            </div>
+          </div>
         </div>
 
         <div id="editorToolbar" class="cropper-tools">
@@ -6050,10 +6348,10 @@
           </div>
 
           <div class="tools-row cropper-segmented" id="transformSegmented">
-            <button class="tool-btn" type="button" onclick="rotate90()">ROTATE 90°</button>
-            <button class="tool-btn" type="button" onclick="flipImage('x')">FLIP H</button>
-            <button class="tool-btn" type="button" onclick="flipImage('y')">FLIP V</button>
-            <button class="tool-btn" type="button" onclick="resetTransforms()">RESET</button>
+            <button class="tool-btn transform-op" type="button" onclick="rotate90()">ROTATE 90°</button>
+            <button class="tool-btn transform-op" type="button" onclick="flipImage('x')">FLIP H</button>
+            <button class="tool-btn transform-op" type="button" onclick="flipImage('y')">FLIP V</button>
+            <button class="tool-btn transform-op" type="button" onclick="resetTransforms()">RESET</button>
             <button class="tool-btn" id="btnToggleMarkup" type="button" onclick="toggleMarkupMode()" style="font-weight:700;">✏️ MARKUP</button>
           </div>
 
@@ -6329,6 +6627,27 @@
       <div class="modal-body" style="flex: 1; padding: 0; background: #525659; overflow: hidden; position: relative;">
         <iframe id="pdfPreviewFrame" src="" style="width: 100%; height: 100%; border: none; display: block;"
           title="PDF Preview Frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IN-APP CONFIRMATION (replaces native confirm for destructive actions) -->
+  <div class="modal-overlay hidden" id="appConfirmModal" style="z-index: 300;"
+    onclick="if (event.target === this) closeAppConfirm(false)">
+    <div class="modal-box app-confirm-box">
+      <div class="modal-head">
+        <h3 id="appConfirmTitle">Delete this item?</h3>
+        <button type="button" class="modal-close" aria-label="Close dialog"
+          onclick="closeAppConfirm(false)">✕</button>
+      </div>
+      <div class="app-confirm-body">
+        <p id="appConfirmMessage"></p>
+      </div>
+      <div class="modal-foot app-confirm-actions">
+        <button type="button" class="sbar-btn sec" id="appConfirmCancel" data-autofocus
+          onclick="closeAppConfirm(false)">Cancel</button>
+        <button type="button" class="sbar-btn danger" id="appConfirmOk"
+          onclick="closeAppConfirm(true)">Delete</button>
       </div>
     </div>
   </div>
@@ -8406,6 +8725,12 @@
       if (e.key === 'Enter') {
         const camModal = document.getElementById('camModal');
         if (camModal && !camModal.classList.contains('hidden')) {
+          const notePopover = document.getElementById('markupTextPopover');
+          if (notePopover && notePopover.style.display !== 'none') {
+            e.preventDefault();
+            commitMarkupText();
+            return;
+          }
           e.preventDefault();
           usePhoto();
           return;
@@ -8423,6 +8748,21 @@
           e.preventDefault();
           closeCamera();
           return;
+        }
+        const openOverlays = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)'))
+          .sort((a, b) => {
+            const za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
+            const zb = parseInt(window.getComputedStyle(b).zIndex, 10) || 0;
+            return zb - za;
+          });
+        const topOverlay = openOverlays[0];
+        if (topOverlay) {
+          const closeBtn = topOverlay.querySelector('.modal-close');
+          if (closeBtn) {
+            e.preventDefault();
+            closeBtn.click();
+            return;
+          }
         }
       }
 
@@ -8636,22 +8976,15 @@
       }
 
       const targetSnapshot = Object.assign({}, camTarget);
-      setTargetLoading(targetSnapshot, true);
-      showToast('Applying photo...');
       try {
         const rawDataUrl = await readImageFileAsDataUrl(files[0]);
-        if (!rawDataUrl) {
-          setTargetLoading(targetSnapshot, false);
-          return;
-        }
+        if (!rawDataUrl) return;
         const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
-        const compressed = await resizeImage(masterPhoto, 1280, 0.88);
+        camTarget = targetSnapshot;
         currentOriginalImg = masterPhoto;
-        savePhoto(compressed, masterPhoto, targetSnapshot);
-        highlightTarget(targetSnapshot);
+        initCropper(masterPhoto);
       } catch (err) {
         console.error('Lỗi khi nạp ảnh:', err);
-        setTargetLoading(targetSnapshot, false);
         showToast('Photo processing error');
       }
     }
@@ -8694,6 +9027,78 @@
       initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
+    // ═══════════════ CROP RATIO MATCHING (SLOT-AWARE) ═══════════════
+    const cropRatioMemory = {};
+    let currentCropRatio = 4 / 3;
+
+    function cropTargetKey(target) {
+      if (!target) return 'none';
+      if (target.type === 'slot') return `slot:${target.key}`;
+      if (target.type === 'dim') return `dim:${target.index}:${target.subType || 'main'}`;
+      return `free:${target.key}:${target.index === undefined ? 'new' : target.index}:${target.subType || 'main'}`;
+    }
+
+    // Mirrors the rendered aspect ratio of each photo slot (see .photo-slot / .dim-photo-container CSS).
+    function getTargetCropRatio(target = camTarget) {
+      if (!target) return { ratio: 4 / 3, btnId: 'ratio_4_3' };
+      if (target.type === 'slot') return { ratio: 4 / 3, btnId: 'ratio_4_3' };
+
+      const isMultiLayout = target.type === 'dim' ||
+        (target.type === 'free' && ['assemblyPhotos', 'watchoutPhotos', 'testingPhotos'].includes(target.key));
+
+      if (isMultiLayout) {
+        const item = target.type === 'dim'
+          ? (D.dimensions && D.dimensions[target.index])
+          : (D[target.key] && D[target.key][target.index]);
+        const layout = (item && item.photoLayout) || '3:1';
+        if (layout === 'single') return { ratio: 16 / 9, btnId: null };
+        if (layout === '1:1') return { ratio: 8 / 9, btnId: null };
+        return target.subType === 'sub'
+          ? { ratio: 4 / 9, btnId: 'ratio_4_9' }
+          : { ratio: 4 / 3, btnId: 'ratio_4_3' };
+      }
+
+      return { ratio: 4 / 3, btnId: 'ratio_4_3' };
+    }
+
+    function findCropRatioButton(ratio) {
+      if (!Number.isFinite(ratio)) return document.getElementById('ratio_free');
+      const presets = [
+        ['ratio_4_3', 4 / 3],
+        ['ratio_3_4', 3 / 4],
+        ['ratio_1_1', 1],
+        ['ratio_4_9', 4 / 9]
+      ];
+      const match = presets.find(([, value]) => Math.abs(ratio - value) < 0.01);
+      return match ? document.getElementById(match[0]) : null;
+    }
+
+    function formatCropRatio(ratio) {
+      if (!Number.isFinite(ratio)) return 'Free';
+      if (Math.abs(ratio - 1) < 0.01) return '1:1';
+      if (Math.abs(ratio - 4 / 3) < 0.01) return '4:3';
+      if (Math.abs(ratio - 3 / 4) < 0.01) return '3:4';
+      if (Math.abs(ratio - 4 / 9) < 0.01) return '4:9';
+      if (Math.abs(ratio - 16 / 9) < 0.01) return '16:9';
+      if (Math.abs(ratio - 8 / 9) < 0.01) return '8:9';
+      return `${ratio.toFixed(2)}:1`;
+    }
+
+    function updateCropRatioHint(ratio) {
+      const hint = document.getElementById('cropHint');
+      if (!hint) return;
+      const preferred = getTargetCropRatio(camTarget);
+      if (!Number.isFinite(ratio)) {
+        hint.textContent = 'Free crop. Drag to reposition.';
+        return;
+      }
+      if (preferred.ratio && Math.abs(ratio - preferred.ratio) > 0.02) {
+        hint.textContent = `Crop ${formatCropRatio(ratio)} — slot is ${formatCropRatio(preferred.ratio)}. Photo will be letterboxed.`;
+      } else {
+        hint.textContent = `Crop matches slot ratio (${formatCropRatio(preferred.ratio)}). Drag to reposition.`;
+      }
+    }
+
     function initCropper(imgSrc, fallbackSrc = null) {
       if (!imgSrc) {
         showToast('No image data to display');
@@ -8726,24 +9131,19 @@
 
       document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
 
-      let defaultRatio = 4 / 3;
-      let defaultRatioBtn = document.getElementById('ratio_4_3');
+      const preferredRatio = getTargetCropRatio(camTarget);
+      const remembered = cropRatioMemory[cropTargetKey(camTarget)];
+      let defaultRatio = remembered !== undefined ? remembered : preferredRatio.ratio;
+      let defaultRatioBtn = findCropRatioButton(defaultRatio);
 
-      if (camTarget.type === 'dim' || (camTarget.type === 'free' && (camTarget.key === 'watchoutPhotos' || camTarget.key === 'testingPhotos' || camTarget.key === 'assemblyPhotos'))) {
-        const item = camTarget.type === 'dim'
-          ? (D.dimensions && D.dimensions[camTarget.index])
-          : (D[camTarget.key] && D[camTarget.key][camTarget.index]);
-        const layout = (item && item.photoLayout) || '3:1';
-        if (layout !== '1:1' && camTarget.subType === 'sub') {
-          defaultRatio = 4 / 9;
-          defaultRatioBtn = document.getElementById('ratio_4_9');
-        } else {
-          defaultRatio = 4 / 3;
-          defaultRatioBtn = document.getElementById('ratio_4_3');
-        }
+      // First upload always starts at the slot's own ratio; re-opening remembers the last choice.
+      if (!defaultRatioBtn && remembered === undefined && preferredRatio.btnId) {
+        defaultRatioBtn = document.getElementById(preferredRatio.btnId);
       }
-
       if (defaultRatioBtn) defaultRatioBtn.classList.add('active');
+
+      currentCropRatio = defaultRatio;
+      updateCropRatioHint(defaultRatio);
 
       baseRotateAngle = 0; lastStraightenAngle = 0; scaleX = 1; scaleY = 1;
       const slider = document.getElementById('straightenRange'); if (slider) slider.value = 0;
@@ -8807,7 +9207,11 @@
       if (!cropper) return;
       cropper.setAspectRatio(ratio);
       document.querySelectorAll('.cropper-tools .tools-row:first-child .tool-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
+      const activeBtn = btnEl || findCropRatioButton(ratio);
+      if (activeBtn) activeBtn.classList.add('active');
+      currentCropRatio = ratio;
+      if (camTarget) cropRatioMemory[cropTargetKey(camTarget)] = Number.isFinite(ratio) ? ratio : NaN;
+      updateCropRatioHint(ratio);
     }
 
     function rotate90() {
@@ -8837,11 +9241,8 @@
       cropper.reset();
       document.getElementById('straightenRange').value = 0;
       document.getElementById('straightenVal').textContent = '0.0°';
-      if (camTarget && camTarget.subType === 'sub') {
-        setCropRatio(4 / 9, document.getElementById('ratio_4_9'));
-      } else {
-        setCropRatio(4 / 3, document.getElementById('ratio_4_3'));
-      }
+      const preferred = getTargetCropRatio(camTarget);
+      setCropRatio(preferred.ratio, preferred.btnId ? document.getElementById(preferred.btnId) : null);
     }
 
     // ═══════════════ PHOTO MARKUP ENGINE (ARROW, CIRCLE, RECT, TEXT) ═══════════════
@@ -8873,7 +9274,12 @@
         if (toolbar) toolbar.style.display = 'block';
         if (ratioSeg) ratioSeg.style.display = 'none';
         if (strBox) strBox.style.display = 'none';
-        if (cropHint) cropHint.textContent = 'Chạm/Kéo để vẽ mũi tên, khoanh tròn, chữ. Bấm APPLY để lưu.';
+        const toolbarEl = document.getElementById('editorToolbar');
+        if (toolbarEl) toolbarEl.classList.add('markup-active');
+        if (cropHint) cropHint.textContent = 'Draw an arrow, circle or rectangle, or tap to add a note. APPLY saves.';
+
+        const prevBaseW = markupBaseCanvas ? markupBaseCanvas.width : 0;
+        const prevBaseH = markupBaseCanvas ? markupBaseCanvas.height : 0;
 
         markupBaseCanvas = cropper.getCroppedCanvas({
           maxWidth: 1280,
@@ -8882,6 +9288,17 @@
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high'
         });
+
+        // Crop changed since the shapes were drawn: rescale them to the new canvas.
+        if (markupShapes.length && prevBaseW && prevBaseH &&
+          (prevBaseW !== markupBaseCanvas.width || prevBaseH !== markupBaseCanvas.height)) {
+          const sx = markupBaseCanvas.width / prevBaseW;
+          const sy = markupBaseCanvas.height / prevBaseH;
+          markupShapes = markupShapes.map(shape => shape.type === 'text'
+            ? { ...shape, x: shape.x * sx, y: shape.y * sy }
+            : { ...shape, x1: shape.x1 * sx, y1: shape.y1 * sy, x2: shape.x2 * sx, y2: shape.y2 * sy });
+          showToast('Markup rescaled to the new crop');
+        }
 
         const cropperContainer = document.querySelector('.cropper-container');
         if (cropperContainer) cropperContainer.style.display = 'none';
@@ -8914,7 +9331,10 @@
         if (toolbar) toolbar.style.display = 'none';
         if (ratioSeg) ratioSeg.style.display = 'flex';
         if (strBox) strBox.style.display = 'flex';
-        if (cropHint) cropHint.textContent = 'Cuộn / Kẹp hai ngón để phóng to. Kéo để cắt ảnh.';
+        const toolbarEl = document.getElementById('editorToolbar');
+        if (toolbarEl) toolbarEl.classList.remove('markup-active');
+        closeMarkupTextPopover();
+        if (cropHint) updateCropRatioHint(currentCropRatio);
 
         canvas.style.display = 'none';
         const cropperContainer = document.querySelector('.cropper-container');
@@ -8924,6 +9344,7 @@
 
     function setMarkupTool(tool, btn) {
       markupTool = tool;
+      if (tool !== 'text') closeMarkupTextPopover();
       document.querySelectorAll('#markupToolbar .tools-row .tool-btn').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
     }
@@ -8960,6 +9381,57 @@
       };
     }
 
+    let markupPendingTextPos = null;
+
+    function openMarkupTextPopover(pos) {
+      const pop = document.getElementById('markupTextPopover');
+      const input = document.getElementById('markupTextInput');
+      const canvas = document.getElementById('markupCanvas');
+      const wrapper = document.getElementById('cropperWrapper');
+      if (!pop || !input || !canvas || !wrapper) return;
+
+      markupPendingTextPos = pos;
+      pop.style.display = 'block';
+
+      const wrapRect = wrapper.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      const pointLeft = canvasRect.left - wrapRect.left + (pos.x / canvas.width) * canvasRect.width;
+      const pointTop = canvasRect.top - wrapRect.top + (pos.y / canvas.height) * canvasRect.height;
+      const maxLeft = Math.max(8, wrapper.clientWidth - pop.offsetWidth - 8);
+      const maxTop = Math.max(8, wrapper.clientHeight - pop.offsetHeight - 8);
+      pop.style.left = `${Math.min(Math.max(8, pointLeft - pop.offsetWidth / 2), maxLeft)}px`;
+      pop.style.top = `${Math.min(Math.max(8, pointTop + 10), maxTop)}px`;
+
+      input.value = '';
+      input.focus({ preventScroll: true });
+    }
+
+    function closeMarkupTextPopover() {
+      const pop = document.getElementById('markupTextPopover');
+      const input = document.getElementById('markupTextInput');
+      if (pop) pop.style.display = 'none';
+      if (input) input.value = '';
+      markupPendingTextPos = null;
+    }
+
+    function commitMarkupText() {
+      const input = document.getElementById('markupTextInput');
+      const text = ((input && input.value) || '').trim();
+      if (!text || !markupPendingTextPos) {
+        closeMarkupTextPopover();
+        return;
+      }
+      markupShapes.push({
+        type: 'text',
+        x: markupPendingTextPos.x,
+        y: markupPendingTextPos.y,
+        text,
+        color: markupColor
+      });
+      redrawMarkup();
+      closeMarkupTextPopover();
+    }
+
     function initMarkupPointerEvents(canvas) {
       if (markupEventsBound) return;
       markupEventsBound = true;
@@ -8969,17 +9441,7 @@
         e.preventDefault();
         const pos = getMarkupCanvasCoords(canvas, e);
         if (markupTool === 'text') {
-          const text = prompt('Nhập nội dung ghi chú / Remark:');
-          if (text && text.trim()) {
-            markupShapes.push({
-              type: 'text',
-              x: pos.x,
-              y: pos.y,
-              text: text.trim(),
-              color: markupColor
-            });
-            redrawMarkup();
-          }
+          openMarkupTextPopover(pos);
           return;
         }
         isDrawingMarkup = true;
@@ -9187,6 +9649,9 @@
       if (canvas) canvas.style.display = 'none';
       const toolbar = document.getElementById('markupToolbar');
       if (toolbar) toolbar.style.display = 'none';
+      const toolbarEl = document.getElementById('editorToolbar');
+      if (toolbarEl) toolbarEl.classList.remove('markup-active');
+      closeMarkupTextPopover();
       const btnToggle = document.getElementById('btnToggleMarkup');
       if (btnToggle) {
         btnToggle.classList.remove('active');
@@ -9264,7 +9729,7 @@
         showToast('No reports selected');
         return;
       }
-      if (!confirm(`Delete ${selectedReportIds.size} selected report(s)?`)) return;
+      if (!(await appConfirm(`Delete ${selectedReportIds.size} selected report(s)?`, { title: 'Delete reports?' }))) return;
 
       for (const id of selectedReportIds) {
         await dbDelete(id);
@@ -9322,12 +9787,12 @@
       updateDimBatchUI();
     }
 
-    function deleteSelectedDims() {
+    async function deleteSelectedDims() {
       if (selectedDimIndices.size === 0) {
         showToast('No dimensions selected');
         return;
       }
-      if (!confirm(`Delete ${selectedDimIndices.size} selected dimension(s)?`)) return;
+      if (!(await appConfirm(`Delete ${selectedDimIndices.size} selected dimension(s)?`, { title: 'Delete dimensions?' }))) return;
       pushHistory(`Delete ${selectedDimIndices.size} dimensions`);
 
       const sorted = Array.from(selectedDimIndices).sort((a, b) => b - a);
@@ -9341,10 +9806,10 @@
       showToast('✓ Selected dimensions deleted');
     }
 
-    function deleteDimSlot(index) {
+    async function deleteDimSlot(index) {
       if (!D.dimensions || !D.dimensions[index]) return;
       const dName = D.dimensions[index].name || `#${index + 1}`;
-      if (!confirm(`Delete dimension "${dName}"?`)) return;
+      if (!(await appConfirm(`Delete dimension "${dName}"?`, { title: 'Delete dimension?' }))) return;
       pushHistory(`Delete dimension ${dName}`);
       D.dimensions.splice(index, 1);
       if (selectedDimIndices.has(index)) selectedDimIndices.delete(index);
@@ -9710,7 +10175,7 @@
         document.getElementById('launcherHubView').style.display = 'none';
         document.getElementById('moduleWorkspaceView').style.display = 'block';
         const modCfg = MODULE_THEMES[currentActiveModule] || MODULE_THEMES['pre-production'];
-        document.getElementById('topTitle').textContent = modCfg.title;
+        setTopbarTitle(modCfg.title);
         document.documentElement.style.setProperty('--module-theme', modCfg.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modCfg.lightColor);
         if (hubBack) hubBack.style.display = 'inline-flex';
@@ -9718,7 +10183,7 @@
       } else {
         document.getElementById('launcherHubView').style.display = 'flex';
         document.getElementById('moduleWorkspaceView').style.display = 'none';
-        document.getElementById('topTitle').textContent = 'SUPER REPORT';
+        setTopbarTitle('SUPER REPORT');
         if (hubBack) hubBack.style.display = 'none';
         if (wsSettings) wsSettings.style.display = 'none';
         if (btnSel) btnSel.style.display = 'none';
@@ -9780,7 +10245,7 @@
 
       document.getElementById('launcherHubView').style.display = 'none';
       document.getElementById('moduleWorkspaceView').style.display = 'block';
-      document.getElementById('topTitle').textContent = modConfig.title;
+      setTopbarTitle(modConfig.title);
       const hubBack = document.getElementById('btnHubBack');
       if (hubBack) hubBack.style.display = 'inline-flex';
       const wsSettings = document.getElementById('workspaceSettingsWrap');
@@ -9797,7 +10262,7 @@
 
       document.getElementById('moduleWorkspaceView').style.display = 'none';
       document.getElementById('launcherHubView').style.display = 'flex';
-      document.getElementById('topTitle').textContent = 'SUPER REPORT';
+      setTopbarTitle('SUPER REPORT');
       const hubBack = document.getElementById('btnHubBack');
       if (hubBack) hubBack.style.display = 'none';
       const wsSettings = document.getElementById('workspaceSettingsWrap');
@@ -9977,8 +10442,8 @@
               <div class="rc-select-circle"></div>
               ${thumbHtml}
               <div style="min-width:0; flex:1;">
-                <div class="rc-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;">${safeTitle}</span>
+                <div class="rc-title">
+                  <span class="rc-title-text" title="${safeTitle}">${safeTitle}</span>
                   <span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'DONE' : 'WIP'}</span>
                 </div>
                 <div class="rc-sub">${metaText}</div>
@@ -10017,7 +10482,7 @@
             delBtn.onclick = async (e) => {
               e.stopPropagation();
               const title = getReportTitle(r) || 'this report';
-              if (!confirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`)) return;
+              if (!(await appConfirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`, { title: 'Delete report?' }))) return;
               await dbDelete(r.id);
               showToast('✓ Report deleted');
               renderHome();
@@ -10087,6 +10552,7 @@
       addBtn.className = 'tab add-module-tab-btn ignore-tab-drag';
       addBtn.id = 'btnAddModuleTab';
       addBtn.title = 'Manage & Reorder Modules';
+      addBtn.setAttribute('aria-label', 'Manage & Reorder Modules');
       addBtn.innerHTML = `
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -10195,6 +10661,7 @@
         secHead.innerHTML = `
           <div class="module-head-left">
             <input type="text" class="module-title-input" value="${escapeHtml(mod.name)}" 
+                   aria-label="Module name"
                    title="Click to rename module (auto-syncs to Tab & PDF)" 
                    onchange="onModuleRename('${mod.id}', this.value)" 
                    onkeydown="if(event.key==='Enter') this.blur()">
@@ -10281,14 +10748,14 @@
       showToast(`✓ Duplicated module: ${newName}`);
     }
 
-    function deleteModule(moduleId) {
+    async function deleteModule(moduleId) {
       const mod = (D.modules || []).find(m => m.id === moduleId);
       if (!mod) return;
       if (mod.canDelete === false) {
         showToast('This module cannot be deleted');
         return;
       }
-      if (!confirm(`Are you sure you want to remove module "${mod.name}" from this report?\n\n(It will not appear in the exported PDF. New reports will still include all default modules.)`)) return;
+      if (!(await appConfirm(`Are you sure you want to remove module "${mod.name}" from this report?\n\n(It will not appear in the exported PDF. New reports will still include all default modules.)`, { title: 'Remove module?', confirmLabel: 'Remove' }))) return;
 
       const idx = D.modules.indexOf(mod);
       D.modules.splice(idx, 1);
@@ -10316,6 +10783,35 @@
       }
     }
 
+    // ═══════════════ IN-APP CONFIRMATION ═══════════════
+    let appConfirmResolver = null;
+
+    function closeAppConfirm(result) {
+      const modal = document.getElementById('appConfirmModal');
+      if (!modal || modal.classList.contains('hidden')) return;
+      modal.classList.add('hidden');
+      unlockBodyScroll();
+      const resolve = appConfirmResolver;
+      appConfirmResolver = null;
+      if (resolve) resolve(result === true);
+    }
+
+    function appConfirm(message, opts = {}) {
+      const modal = document.getElementById('appConfirmModal');
+      if (!modal) return Promise.resolve(window.confirm(message));
+      if (appConfirmResolver) {
+        const pending = appConfirmResolver;
+        appConfirmResolver = null;
+        pending(false);
+      }
+      document.getElementById('appConfirmTitle').textContent = opts.title || 'Delete this item?';
+      document.getElementById('appConfirmMessage').textContent = message;
+      document.getElementById('appConfirmOk').textContent = opts.confirmLabel || 'Delete';
+      modal.classList.remove('hidden');
+      lockBodyScroll();
+      return new Promise(resolve => { appConfirmResolver = resolve; });
+    }
+
     // ═══════════════ TAB MANAGER & MODULE SETTINGS CONTROLLER (IOS STYLE) ═══════════════
     let currentTabMgrMode = 'reorder'; // 'reorder' | 'add'
 
@@ -10332,6 +10828,80 @@
       const modal = document.getElementById('addModuleModal');
       if (modal) modal.classList.add('hidden');
       unlockBodyScroll();
+    }
+
+    // ═══════════════ MODAL ACCESSIBILITY: ROLE, FOCUS TRAP, FOCUS RESTORE ═══════════════
+    function initModalAccessibility() {
+      const overlays = Array.from(document.querySelectorAll('.modal-overlay'));
+      if (!overlays.length || document.body.dataset.a11yInit === '1') return;
+      document.body.dataset.a11yInit = '1';
+
+      const visibleOverlays = () => overlays.filter(el => !el.classList.contains('hidden'));
+
+      const topModal = () => visibleOverlays().sort((a, b) => {
+        const za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
+        const zb = parseInt(window.getComputedStyle(b).zIndex, 10) || 0;
+        return zb - za;
+      })[0] || null;
+
+      const focusableIn = (root) => Array.from(root.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter(el => !el.classList.contains('hidden') && el.getClientRects().length > 0);
+
+      overlays.forEach((overlay, idx) => {
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        const heading = overlay.querySelector('.modal-head h3');
+        if (heading) {
+          if (!heading.id) heading.id = `modalTitle_${idx + 1}`;
+          overlay.setAttribute('aria-labelledby', heading.id);
+        }
+        overlay.querySelectorAll('.modal-close').forEach(btn => {
+          if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', 'Close dialog');
+        });
+        overlay.setAttribute('aria-hidden', overlay.classList.contains('hidden') ? 'true' : 'false');
+
+        new MutationObserver(() => {
+          const isHidden = overlay.classList.contains('hidden');
+          overlay.setAttribute('aria-hidden', isHidden ? 'true' : 'false');
+          if (isHidden) {
+            const restore = overlay._returnFocus;
+            overlay._returnFocus = null;
+            if (restore && document.contains(restore) && !topModal()) {
+              restore.focus({ preventScroll: true });
+            }
+          } else {
+            const active = document.activeElement;
+            overlay._returnFocus = (active && active !== document.body && !overlay.contains(active)) ? active : null;
+            const target = overlay.querySelector('[data-autofocus]') || focusableIn(overlay)[0];
+            if (target) {
+              setTimeout(() => {
+                if (topModal() === overlay) target.focus({ preventScroll: true });
+              }, 30);
+            }
+          }
+        }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const overlay = topModal();
+        if (!overlay) return;
+        const items = focusableIn(overlay);
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!overlay.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      });
     }
 
     function setTabMgrMode(mode) {
@@ -10378,12 +10948,12 @@
           actionsHtml = `
             <div class="tab-mgr-row-actions">
               ${canDup ? `
-                <button type="button" class="tab-mgr-btn btn-dup" title="Duplicate" onclick="event.stopPropagation(); duplicateModuleFromMgr('${mod.id}');">
+                <button type="button" class="tab-mgr-btn btn-dup" title="Duplicate" aria-label="Duplicate module" onclick="event.stopPropagation(); duplicateModuleFromMgr('${mod.id}');">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </button>
               ` : ''}
               ${canDel ? `
-                <button type="button" class="tab-mgr-btn btn-del" title="Delete" onclick="event.stopPropagation(); deleteModuleFromMgr('${mod.id}');">
+                <button type="button" class="tab-mgr-btn btn-del" title="Delete" aria-label="Delete module" onclick="event.stopPropagation(); deleteModuleFromMgr('${mod.id}');">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               ` : ''}
@@ -10408,11 +10978,21 @@
           ${actionsHtml}
         `;
 
-        row.onclick = () => {
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
+        row.setAttribute('aria-label', `${mod.name} — open module`);
+        row.onclick = (e) => {
+          if (e.target.closest('.tab-mgr-handle, .tab-mgr-btn')) return;
           const targetIdx = D.modules.findIndex(m => m.id === mod.id);
           if (targetIdx !== -1) {
             showSection(targetIdx);
             closeAddModuleModal();
+          }
+        };
+        row.onkeydown = (e) => {
+          if (e.target === row && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            row.click();
           }
         };
 
@@ -10465,8 +11045,8 @@
       if (body) renderTabMgrReorderView(body);
     }
 
-    function deleteModuleFromMgr(moduleId) {
-      deleteModule(moduleId);
+    async function deleteModuleFromMgr(moduleId) {
+      await deleteModule(moduleId);
       const body = document.getElementById('addModuleBody');
       if (body) renderTabMgrReorderView(body);
     }
@@ -10683,6 +11263,7 @@
 
         // Close Add Module modal on overlay backdrop click & prevent touchmove on backdrop
     document.addEventListener('DOMContentLoaded', () => {
+      initModalAccessibility();
       const addModal = document.getElementById('addModuleModal');
       if (addModal) {
         addModal.addEventListener('click', (e) => {
@@ -10889,11 +11470,11 @@
       }
     }
 
-    function deleteDocAttachment(index) {
+    async function deleteDocAttachment(index) {
       if (!D.docAttachments || !D.docAttachments[index]) return;
       const docItem = D.docAttachments[index];
       const docName = docItem.name || 'document';
-      if (!confirm(`Are you sure you want to remove "${docName}" from this report?`)) return;
+      if (!(await appConfirm(`Are you sure you want to remove "${docName}" from this report?`, { title: 'Remove document?', confirmLabel: 'Remove' }))) return;
       pushHistory(`Delete ${docName}`);
       D.docAttachments.splice(index, 1);
       as();
@@ -10992,7 +11573,7 @@
       return usage;
     }
 
-    function toggleCoverSlotFullWidth(key) {
+    async function toggleCoverSlotFullWidth(key) {
       const current = isCoverSlotFull(key);
       if (!current) {
         // Đang là ảnh nhỏ muốn phóng to -> tăng 1 điểm: kiểm tra giới hạn tối đa 4 điểm
@@ -11029,7 +11610,7 @@
             // Tất cả đều có ảnh: hỏi xác nhận trước khi bỏ ô nhỏ cuối cùng
             const lastSmall = otherSmallKeys[otherSmallKeys.length - 1];
             const slotTitle = (D.coverTitles && D.coverTitles[lastSmall]) || lastSmall.replace(/_/g, ' ');
-            if (!confirm(`Để phóng to ảnh này thành ảnh lớn, cần bỏ bớt ô "${slotTitle}". Bạn có đồng ý xóa không?`)) {
+            if (!(await appConfirm(`Để phóng to ảnh này thành ảnh lớn, cần bỏ bớt ô "${slotTitle}". Bạn có đồng ý xóa không?`, { title: 'Remove photo slot?', confirmLabel: 'Remove' }))) {
               return;
             }
             const idx = ckeys.indexOf(lastSmall);
@@ -11056,13 +11637,13 @@
       renderCoverSlots();
     }
 
-    function delCoverSlot(key) {
+    async function delCoverSlot(key) {
       const store = D.coverPhotos;
       const data = store && store[key];
       const hasImg = !!(data && (typeof data === 'string' ? data : data.img));
 
       if (hasImg) {
-        if (!confirm('Are you sure you want to delete this photo?')) return;
+        if (!(await appConfirm('Are you sure you want to delete this photo?', { title: 'Delete photo?' }))) return;
         pushHistory('Delete Overview photo');
         delete D.coverPhotos[key];
         as();
@@ -11583,8 +12164,8 @@
       buildDimGrid(); as();
     }
 
-    function delDimPhoto(index, subType = 'main') {
-      if (!confirm('Delete this photo?')) return;
+    async function delDimPhoto(index, subType = 'main') {
+      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
       pushHistory(subType === 'sub' ? 'Delete detail dimension photo' : 'Delete main dimension photo');
       if (subType === 'sub') {
         D.dimensions[index].imgSub = null;
@@ -11987,8 +12568,8 @@
       initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
-    function delWatchoutPhoto(index, subType = 'main') {
-      if (!confirm('Delete this photo?')) return;
+    async function delWatchoutPhoto(index, subType = 'main') {
+      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
       pushHistory(subType === 'sub' ? 'Delete detail Watch Out photo' : 'Delete main Watch Out photo');
       if (D.watchoutPhotos && D.watchoutPhotos[index]) {
         if (subType === 'sub') {
@@ -12236,8 +12817,8 @@
       initCropper(orig || fallback, fallback !== orig ? fallback : null);
     }
 
-    function delTestingPhoto(index, subType = 'main') {
-      if (!confirm('Delete this photo?')) return;
+    async function delTestingPhoto(index, subType = 'main') {
+      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
       pushHistory(subType === 'sub' ? 'Delete detail Testing photo' : 'Delete main Testing photo');
       if (D.testingPhotos && D.testingPhotos[index]) {
         if (subType === 'sub') {
@@ -12454,8 +13035,8 @@
       initCropper(imgSrc);
     }
 
-    function delAssemblyPhoto(index, subType = 'main') {
-      if (!confirm('Delete this photo?')) return;
+    async function delAssemblyPhoto(index, subType = 'main') {
+      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
       pushHistory(subType === 'sub' ? 'Delete assembly detail photo' : 'Delete assembly main photo');
       if (D.assemblyPhotos && D.assemblyPhotos[index]) {
         if (subType === 'sub') {
@@ -12489,8 +13070,8 @@
       }
       as();
     }
-    function delFreePhoto(key, i) {
-      if (!confirm('Are you sure you want to delete this photo?')) return;
+    async function delFreePhoto(key, i) {
+      if (!(await appConfirm('Are you sure you want to delete this photo?', { title: 'Delete photo?' }))) return;
       pushHistory('Delete photo');
       if (D[key] && D[key][i]) {
         const size = getPhotoSize(D[key][i]);
@@ -12562,11 +13143,11 @@
     }
 
     function addBVRow() { pushHistory('Add BV test row'); if (!D.bvRows) D.bvRows = []; D.bvRows.push({ test: '', result: '', remark: '' }); renderBVTable(); as(); }
-    function delBVRow(i) {
+    async function delBVRow(i) {
       if (!D.bvRows || !D.bvRows[i]) return;
       const row = D.bvRows[i];
       if (row.test || row.result || row.remark) {
-        if (!confirm(`Are you sure you want to delete test row "${row.test || 'Test'}"?`)) return;
+        if (!(await appConfirm(`Are you sure you want to delete test row "${row.test || 'Test'}"?`, { title: 'Delete test row?' }))) return;
       }
       pushHistory('Delete BV test row');
       D.bvRows.splice(i, 1);
@@ -12995,10 +13576,10 @@
       }, 80);
     }
 
-    function removeCategoryGroup(gIdx) {
+    async function removeCategoryGroup(gIdx) {
       if (!D.checklist || !D.checklist[gIdx]) return;
       const title = D.checklist[gIdx].title || `Group ${gIdx + 1}`;
-      if (!confirm(`Are you sure you want to delete group "${title}" and all its criteria?`)) return;
+      if (!(await appConfirm(`Are you sure you want to delete group "${title}" and all its criteria?`, { title: 'Delete group?' }))) return;
       D.checklist.splice(gIdx, 1);
       pushHistory('Delete checklist group');
       renderChecklist();
@@ -13300,6 +13881,7 @@
       const pFill = document.getElementById('progressFill');
       if (pFill) pFill.style.width = Math.round(((curSec + 1) / D.modules.length) * 100) + '%';
       updateDragModeUI();
+      updateSaveBarState();
       window.scrollTo(0, 0);
 
       // Auto-scroll the active tab into center view so headers never get lost
@@ -13315,6 +13897,14 @@
     }
     function prevSection() { if (curSec > 0) showSection(curSec - 1); }
     function nextSection() { if (curSec < D.modules.length - 1) showSection(curSec + 1); }
+
+    function updateSaveBarState() {
+      const back = document.getElementById('btnPrevSection');
+      const next = document.getElementById('btnNextSection');
+      const total = (D.modules && D.modules.length) || 1;
+      if (back) back.disabled = curSec <= 0;
+      if (next) next.disabled = curSec >= total - 1;
+    }
 
     // ═══════════════ TOUCH SWIPE GESTURE NAVIGATION (IPHONE / IPAD) ═══════════════
     function initTouchSwipeNavigation() {
@@ -13367,8 +13957,15 @@
       }, { passive: true });
     }
 
+    function setTopbarTitle(text) {
+      const el = document.getElementById('topTitle');
+      if (!el) return;
+      el.textContent = text;
+      el.title = text;
+    }
+
     function updateTopbar() {
-      document.getElementById('topTitle').textContent = getReportTitle(D);
+      setTopbarTitle(getReportTitle(D));
       const brandLogo = document.getElementById('topbarBrandLogo');
       if (brandLogo && typeof LOGO_WHITE !== 'undefined') {
         const isDark = true;
@@ -13930,8 +14527,7 @@
         const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
         document.documentElement.style.setProperty('--module-theme', modConfig.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modConfig.lightColor);
-        const topTitle = document.getElementById('topTitle');
-        if (topTitle) topTitle.textContent = modConfig.title;
+        setTopbarTitle(modConfig.title);
 
         curSec = 0;
         isDimSelectMode = false;
