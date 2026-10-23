@@ -5845,6 +5845,39 @@
       display: block;
     }
 
+    .pq-thumb {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--sunken, #f2f3f5);
+    }
+
+    .pq-ph {
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      text-align: center;
+      padding: 4px;
+      max-width: 100%;
+      overflow: hidden;
+      line-height: 1.3;
+    }
+
+    .pq-ph small {
+      display: block;
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: 500;
+      color: #9ca3af;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .pq-num {
       position: absolute;
       top: 5px;
@@ -8092,38 +8125,69 @@
       return await libheifModulePromise;
     }
 
+    // HEIC decode needs a full-resolution ImageData + canvas; running two at once
+    // can exhaust mobile tabs, so every conversion goes through this serial lock.
+    let heicDecodeChain = Promise.resolve();
+
+    function withHeicLock(task) {
+      const run = heicDecodeChain.then(task, task);
+      heicDecodeChain = run.then(() => {}, () => {});
+      return run;
+    }
+
     async function convertHeicWithLibheif(file) {
-      const libheif = await getLibheifModule();
-      if (!libheif || typeof libheif.HeifDecoder !== 'function') {
-        throw new Error('Updated HEIF decoder is unavailable');
-      }
+      return withHeicLock(async () => {
+        const libheif = await getLibheifModule();
+        if (!libheif || typeof libheif.HeifDecoder !== 'function') {
+          throw new Error('Updated HEIF decoder is unavailable');
+        }
 
-      const decoder = new libheif.HeifDecoder();
-      const images = decoder.decode(new Uint8Array(await file.arrayBuffer()));
-      if (!images || !images.length) {
-        throw new Error('Updated HEIF decoder found no image');
-      }
+        const decoder = new libheif.HeifDecoder();
+        const images = decoder.decode(new Uint8Array(await file.arrayBuffer()));
+        if (!images || !images.length) {
+          throw new Error('Updated HEIF decoder found no image');
+        }
 
-      const image = images[0];
-      const width = image.get_width();
-      const height = image.get_height();
-      const imageData = new ImageData(width, height);
-      await new Promise((resolve, reject) => {
-        image.display(imageData, result => {
-          if (!result) {
-            reject(new Error('Updated HEIF decoder could not render image'));
-            return;
+        const image = images[0];
+        let imageData = null;
+        let canvas = null;
+        try {
+          const width = image.get_width();
+          const height = image.get_height();
+          try {
+            imageData = new ImageData(width, height);
+          } catch (allocErr) {
+            throw new Error('HEIC image is too large for this browser (' + width + 'x' + height + ')');
           }
-          resolve();
-        });
-      });
+          await new Promise((resolve, reject) => {
+            image.display(imageData, result => {
+              if (!result) {
+                reject(new Error('Updated HEIF decoder could not render image'));
+                return;
+              }
+              resolve();
+            });
+          });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').putImageData(imageData, 0, 0);
-      return await new Promise((resolve, reject) => {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not encode JPEG')), 'image/jpeg', 0.9);
+          canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').putImageData(imageData, 0, 0);
+          imageData = null;
+          return await new Promise((resolve, reject) => {
+            canvas.toBlob(blob => {
+              canvas.width = 0; canvas.height = 0;
+              blob ? resolve(blob) : reject(new Error('Could not encode JPEG'));
+            }, 'image/jpeg', 0.9);
+          });
+        } finally {
+          imageData = null;
+          if (canvas) { canvas.width = 0; canvas.height = 0; }
+          images.length = 0;
+          if (image && typeof image.free === 'function') {
+            try { image.free(); } catch (e) {}
+          }
+        }
       });
     }
 
@@ -8261,7 +8325,8 @@
       const items = Array.from(files).filter(isImageFile).map((file, i) => ({
         id: `pq_${base}_${i}`,
         file,
-        url: URL.createObjectURL(file)
+        previewUrl: '',
+        previewState: 'pending'
       }));
       if (!items.length) {
         showToast('No supported images selected');
@@ -8274,12 +8339,11 @@
         modal.classList.remove('hidden');
         lockBodyScroll();
       }
+      // Fire-and-forget: build small previews one photo at a time.
+      startQueuePreviews(photoQueue);
     }
 
     function closePhotoQueue() {
-      if (photoQueue) {
-        photoQueue.items.forEach(it => { if (it.url) URL.revokeObjectURL(it.url); });
-      }
       photoQueue = null;
       const grid = document.getElementById('pqGrid');
       if (grid && grid._pqSortable) {
@@ -8294,6 +8358,25 @@
       }
     }
 
+    function queuePreviewName(file) {
+      const name = (file && file.name) || 'photo';
+      return name.length > 14 ? name.slice(0, 12) + '…' : name;
+    }
+
+    function queuePreviewBody(it) {
+      const name = escapeHtml(queuePreviewName(it.file));
+      if (it.previewUrl) {
+        return `<img src="${it.previewUrl}" alt="" loading="lazy" decoding="async">`;
+      }
+      if (it.previewState === 'heic') {
+        return `<div class="pq-ph">HEIC<small>${name}</small></div>`;
+      }
+      if (it.previewState === 'error') {
+        return `<div class="pq-ph">✕<small>${name}</small></div>`;
+      }
+      return `<div class="pq-ph">…<small>${name}</small></div>`;
+    }
+
     function renderPhotoQueue() {
       const q = photoQueue;
       const grid = document.getElementById('pqGrid');
@@ -8301,13 +8384,20 @@
       grid.innerHTML = q.items.map((it, i) => `
         <div class="pq-item" data-id="${it.id}">
           <span class="pq-num">${i + 1}</span>
-          <img src="${it.url}" alt="" data-preview-id="${it.id}" onerror="hydrateQueuePreview('${it.id}')">
+          <div class="pq-thumb" data-preview-id="${it.id}">${queuePreviewBody(it)}</div>
           <button type="button" class="pq-remove" aria-label="Remove photo ${i + 1}"
             onclick="removeQueuedPhoto('${it.id}')">✕</button>
           <div class="pq-drag" aria-hidden="true">⠿</div>
         </div>`).join('');
       renderPhotoQueueMeta();
       mountPhotoQueueSortable(grid);
+    }
+
+    function updateQueuePreviewSlot(item) {
+      const grid = document.getElementById('pqGrid');
+      if (!grid) return;
+      const holder = grid.querySelector(`.pq-thumb[data-preview-id="${item.id}"]`);
+      if (holder) holder.innerHTML = queuePreviewBody(item);
     }
 
     function photoCountText(n) {
@@ -8334,26 +8424,61 @@
       if (sortBtn) sortBtn.style.display = q.items.length > 1 ? '' : 'none';
     }
 
-    async function hydrateQueuePreview(id) {
-      const q = photoQueue;
-      if (!q) return;
-      const item = q.items.find(it => it.id === id);
-      if (!item || item._hydrating || item._hydrated) return;
-      item._hydrating = true;
-      try {
-        const raw = await readImageFileAsDataUrl(item.file);
-        if (!raw || photoQueue !== q) return;
-        const thumb = await resizeImage(raw, 480, 0.75);
-        item._hydrated = true;
-        if (item.url) URL.revokeObjectURL(item.url);
-        item.url = thumb || raw;
-        const grid = document.getElementById('pqGrid');
-        const img = grid && grid.querySelector(`img[data-preview-id="${id}"]`);
-        if (img) img.src = item.url;
-      } catch (err) {
-        console.warn('Queue preview failed:', err);
-      } finally {
-        item._hydrating = false;
+    // Decode a small bitmap on purpose: rendering a full-resolution blob URL at
+    // 96px still costs ~47 MB per 12 MP photo in the browser's image cache.
+    async function buildQueuePreview(file, maxDim = 480) {
+      if (typeof createImageBitmap === 'function') {
+        let bmp = null;
+        try {
+          bmp = await createImageBitmap(file, { resizeWidth: maxDim, resizeQuality: 'high' });
+          const scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+          const w = Math.max(1, Math.round(bmp.width * scale));
+          const h = Math.max(1, Math.round(bmp.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+          const url = canvas.toDataURL('image/jpeg', 0.75);
+          canvas.width = 0; canvas.height = 0;
+          return url;
+        } catch (err) {
+          console.warn('[Queue] Resized bitmap preview failed, falling back:', err);
+        } finally {
+          if (bmp && typeof bmp.close === 'function') bmp.close();
+        }
+      }
+      return await resizeImage(file, maxDim, 0.75);
+    }
+
+    async function startQueuePreviews(q) {
+      let heicNative = null;
+      for (let i = 0; i < q.items.length; i++) {
+        if (photoQueue !== q) return;
+        const item = q.items[i];
+        try {
+          if (isHeicFile(item.file)) {
+            if (heicNative === null) heicNative = await canDecodeNatively(item.file);
+            if (!heicNative) {
+              item.previewState = 'heic';
+              updateQueuePreviewSlot(item);
+              continue;
+            }
+          }
+          const url = await buildQueuePreview(item.file, 480);
+          if (photoQueue !== q) return;
+          if (url && url.startsWith('data:image')) {
+            item.previewUrl = url;
+            item.previewState = 'ready';
+          } else {
+            item.previewState = 'error';
+          }
+        } catch (err) {
+          console.warn('Queue preview failed:', err);
+          item.previewState = 'error';
+        }
+        updateQueuePreviewSlot(item);
+        // Yield so scrolling/tapping stays responsive between photos.
+        await new Promise(r => setTimeout(r, 0));
       }
     }
 
@@ -8383,8 +8508,7 @@
       if (!photoQueue || photoQueue.busy) return;
       const idx = photoQueue.items.findIndex(it => it.id === id);
       if (idx < 0) return;
-      const removed = photoQueue.items.splice(idx, 1)[0];
-      if (removed && removed.url) URL.revokeObjectURL(removed.url);
+      photoQueue.items.splice(idx, 1);
       if (!photoQueue.items.length) {
         closePhotoQueue();
         return;
@@ -9124,23 +9248,51 @@
       return `__vault_img_${len}_${fp}`;
     }
 
+    const snapshotPhotoRefs = new Map();
+
     function dehydrateReportForHistory(reportObj) {
       if (!reportObj) return null;
       try {
-        return JSON.stringify(reportObj, (key, value) => {
+        const keys = new Set();
+        const snapshot = JSON.stringify(reportObj, (key, value) => {
           if (typeof value === 'string' && value.length > 200 && value.startsWith('data:image')) {
             const vKey = getVaultKey(value);
             if (!photoVault.has(vKey)) {
               photoVault.set(vKey, value);
             }
+            keys.add(vKey);
             return vKey;
           }
           return value;
         });
+        snapshotPhotoRefs.set(snapshot, keys);
+        return snapshot;
       } catch (err) {
         console.warn('Dehydrate failed', err);
         return null;
       }
+    }
+
+    // Undo snapshots only store vault keys, so photos that no remaining snapshot
+    // references (deleted or re-cropped) can be dropped from RAM right away.
+    function prunePhotoVault() {
+      const liveKeys = new Set();
+      const liveSnaps = new Set();
+      const collect = (snap) => {
+        if (!snap) return;
+        liveSnaps.add(snap);
+        const refs = snapshotPhotoRefs.get(snap);
+        if (refs) refs.forEach(k => liveKeys.add(k));
+      };
+      undoStack.forEach(item => collect(item.data));
+      redoStack.forEach(item => collect(item.data));
+      collect(preTypingSnapshot);
+      photoVault.forEach((_, key) => {
+        if (!liveKeys.has(key)) photoVault.delete(key);
+      });
+      snapshotPhotoRefs.forEach((_, snap) => {
+        if (!liveSnaps.has(snap)) snapshotPhotoRefs.delete(snap);
+      });
     }
 
     function hydrateReportFromHistory(snapshotJson) {
@@ -9165,6 +9317,7 @@
       preTypingSnapshot = null;
       clearTimeout(textInputUndoTimeout);
       photoVault.clear();
+      snapshotPhotoRefs.clear();
       dataRevision = 0;
       lastSavedRevision = 0;
       isDirty = false;
@@ -9190,6 +9343,7 @@
       }
       redoStack = [];
       updateUndoRedoUI();
+      prunePhotoVault();
     }
 
     function pushHistory(desc = 'Action') {
@@ -9205,6 +9359,7 @@
         }
         redoStack = [];
         updateUndoRedoUI();
+        prunePhotoVault();
       } catch (err) {
         console.warn('History snapshot failed', err);
       }
@@ -9258,6 +9413,7 @@
       } finally {
         isHistoryNavigating = false;
         updateUndoRedoUI();
+        prunePhotoVault();
       }
     }
 
@@ -9292,6 +9448,7 @@
       } finally {
         isHistoryNavigating = false;
         updateUndoRedoUI();
+        prunePhotoVault();
       }
     }
 
@@ -11111,7 +11268,7 @@
             if (typeof p === 'string' && p.startsWith('data:image')) thumbSrc = p;
             else if (p && (p.data || p.img)) thumbSrc = p.data || p.img;
           }
-          const thumbHtml = thumbSrc ? `<img src="${thumbSrc}" class="rc-thumb" alt="Thumbnail">` : '';
+          const thumbHtml = thumbSrc ? `<img src="${thumbSrc}" class="rc-thumb" alt="Thumbnail" loading="lazy" decoding="async">` : '';
 
           // Loại bỏ dấu phân cách thừa (· ·) khi trường dữ liệu bị trống
           const metaParts = [safeDate, safeFactory, safeReviewer].filter(Boolean);
@@ -12016,7 +12173,7 @@
             </div>
 
             <div class="doc-thumb-preview" onclick="openDocPreviewModal('${doc.id || idx}')" title="Click to view full screen">
-              ${previewSrc ? `<img src="${previewSrc}" alt="${escapeHtml(doc.name || '')}">` : `<div style="color:var(--muted); font-size:11px; padding:10px; text-align:center;">Rendering drawing preview...</div>`}
+              ${previewSrc ? `<img loading="lazy" decoding="async" src="${previewSrc}" alt="${escapeHtml(doc.name || '')}">` : `<div style="color:var(--muted); font-size:11px; padding:10px; text-align:center;">Rendering drawing preview...</div>`}
               <div class="doc-thumb-overlay">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <span>View Details</span>
@@ -12040,7 +12197,7 @@
             if (card) {
               const prev = card.querySelector('.doc-thumb-preview');
               if (prev) {
-                prev.innerHTML = `<img src="${renderedImg}" alt=""><div class="doc-thumb-overlay"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>View Details</span></div>`;
+                prev.innerHTML = `<img loading="lazy" decoding="async" src="${renderedImg}" alt=""><div class="doc-thumb-overlay"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>View Details</span></div>`;
               }
             }
           }
@@ -12497,7 +12654,7 @@
         <div class="free-drag-handle" title="Drag to reorder photo">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
         </div>
-        <img class="pimg" src="${displayImg}" draggable="false" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+        <img class="pimg" loading="lazy" decoding="async" src="${displayImg}" draggable="false" onclick="editSlotPhoto('${containerId}','${key}','${section}');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
         <div class="pactions">
           ${expandBtnHtml}
           <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()">
@@ -12604,7 +12761,7 @@
           
           <!-- ẢNH CHÍNH -->
           <div class="dim-main-photo" id="dph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img src="${displayImg}" onclick="editDimPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">` : `
+            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editDimPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">` : `
             <div class="dual-tap-box">
               <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -12628,7 +12785,7 @@
           <!-- ẢNH PHỤ CHI TIẾT (ẨN KHI Ở CHẾ ĐỘ SINGLE) -->
           ${layout !== 'single' ? `
           <div class="dim-sub-photo" id="dph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editDimPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">` : `
+            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editDimPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">` : `
             <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
               <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Take photo from camera" onclick="triggerNativeCamera(${targetSub})">
                 <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -12954,7 +13111,7 @@
         if (p && p.img) {
           div.innerHTML = `
             ${dragHandleHtml}
-            <img src="${p.img}" draggable="false" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Click to edit or crop photo">
+            <img loading="lazy" decoding="async" src="${p.img}" draggable="false" onclick="editFreePhoto('${key}', ${i})" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               ${getPhotoSizeActionBtnHtml(key, i, size)}
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetObj});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -13094,7 +13251,7 @@
         <div class="dim-photo-container" data-layout="${layout}">
           <!-- ẢNH CHÍNH -->
           <div class="dim-main-photo" id="wph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               ${getPhotoSizeActionBtnHtml('watchoutPhotos', i, size)}
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -13119,7 +13276,7 @@
           <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
           ${layout !== 'single' ? `
           <div class="dim-sub-photo" id="wph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Delete detail photo" onclick="delWatchoutPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
@@ -13318,7 +13475,7 @@
         <div class="dim-photo-container" data-layout="${layout}">
           <!-- ẢNH CHÍNH -->
           <div class="dim-main-photo" id="tph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               ${getPhotoSizeActionBtnHtml('testingPhotos', i, size)}
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -13343,7 +13500,7 @@
           <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
           ${layout !== 'single' ? `
           <div class="dim-sub-photo" id="tph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Delete detail photo" onclick="delTestingPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
@@ -13560,7 +13717,7 @@
         <div class="dim-photo-container" data-layout="${layout}">
           <!-- MAIN PHOTO -->
           <div class="dim-main-photo" id="asph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               ${getPhotoSizeActionBtnHtml('assemblyPhotos', i, size)}
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -13585,7 +13742,7 @@
           <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
           ${layout !== 'single' ? `
           <div class="dim-sub-photo" id="asph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img src="${displayImgSub}" onclick="editAssemblyPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editAssemblyPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
             <div class="pactions">
               <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="pact del" title="Delete detail photo" onclick="delAssemblyPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
@@ -15296,6 +15453,50 @@
       }, duration);
     }
 
+    // Pre-shrink embedded photos so jsPDF does not hold every full-size JPEG
+    // while also building the final PDF in memory.
+    async function preparePdfImageMap(report) {
+      if (!report) return null;
+      const sources = new Set();
+      const consider = (value) => {
+        if (typeof value === 'string' && value.startsWith('data:image') && value.length > 120000) {
+          sources.add(value);
+        }
+      };
+      const walkPhoto = (p) => {
+        if (!p) return;
+        if (typeof p === 'string') { consider(p); return; }
+        if (typeof p !== 'object') return;
+        consider(p.img);
+        consider(p.imgSub);
+        consider(p.data);
+        consider(p.image);
+      };
+      if (report.coverPhotos) Object.values(report.coverPhotos).forEach(walkPhoto);
+      FREE_PHOTO_KEYS.forEach(key => {
+        if (Array.isArray(report[key])) report[key].forEach(walkPhoto);
+      });
+      ['dimensions', 'docAttachments'].forEach(key => {
+        if (Array.isArray(report[key])) report[key].forEach(walkPhoto);
+      });
+      if (!sources.size) return null;
+
+      const map = new Map();
+      let processed = 0;
+      for (const src of sources) {
+        try {
+          const small = await resizeImage(src, 1100, 0.78);
+          if (small && small.startsWith('data:image') && small.length < src.length) {
+            map.set(src, small);
+          }
+        } catch (err) {
+          console.warn('[PDF] Image prep skipped', err);
+        }
+        if (++processed % 6 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+      return map;
+    }
+
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF(options = {}) {
       const isPreview = !!(options && options.preview);
@@ -15322,6 +15523,8 @@
           console.warn('Could not load Roboto into jsPDF:', e);
         }
       }
+
+      const pdfImageMap = await preparePdfImageMap(D);
 
       const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
       const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
@@ -15402,9 +15605,10 @@
 
       const addImg = (src, x, iy, iw, ih) => {
         if (!src) return null;
+        const imgSrc = (pdfImageMap && pdfImageMap.get(src)) || src;
         try {
           // Kiểm tra tỉ lệ ảnh gốc để hiển thị đúng chuẩn "contain" (không méo hình)
-          const imgProps = doc.getImageProperties(src);
+          const imgProps = doc.getImageProperties(imgSrc);
           const imgRatio = imgProps.width / imgProps.height;
           const boxRatio = iw / ih;
 
@@ -15423,12 +15627,12 @@
             offsetX = (iw - renderW) / 2;
           }
 
-          doc.addImage(src, 'JPEG', x + offsetX, iy + offsetY, renderW, renderH);
+          doc.addImage(imgSrc, 'JPEG', x + offsetX, iy + offsetY, renderW, renderH);
           return { x: x + offsetX, y: iy + offsetY, w: renderW, h: renderH };
         } catch (e) {
           // Dự phòng nếu không đọc được thuộc tính ảnh
           try {
-            doc.addImage(src, 'JPEG', x, iy, iw, ih);
+            doc.addImage(imgSrc, 'JPEG', x, iy, iw, ih);
             return { x, y: iy, w: iw, h: ih };
           } catch (err) {
             return null;
