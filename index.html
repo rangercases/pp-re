@@ -305,6 +305,54 @@
       animation: dotPulse 0.8s infinite alternate;
     }
 
+    .fs-chip {
+      font-family: var(--font-body);
+      font-size: 9.5px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--ink-soft, #6b7280);
+      border: 1px solid var(--line, #d7dce1);
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-left: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      background: transparent;
+      flex-shrink: 0;
+      line-height: 1.5;
+    }
+
+    .fs-chip:hover {
+      filter: brightness(1.15);
+    }
+
+    .fs-chip.on {
+      color: var(--good, #1f9d55);
+      border-color: currentColor;
+    }
+
+    .fs-chip.warn {
+      color: var(--warn, #d97706);
+      border-color: currentColor;
+    }
+
+    .fs-chip.saving {
+      color: var(--warn, #d97706);
+      border-color: currentColor;
+      animation: dotPulse 0.8s infinite alternate;
+    }
+
+    @media (max-width: 768px) {
+      .fs-chip {
+        display: none !important;
+      }
+    }
+
     @keyframes dotPulse {
       from {
         opacity: 0.3;
@@ -6022,6 +6070,8 @@
       <div class="topbar-title" id="topTitle">SUPER REPORT</div>
       <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Sync Status"><span
           class="dot">●</span> <span id="saveText">SYNCED</span></div>
+      <button class="fs-chip" id="fsArchiveChip" onclick="fsChipClick()" style="display:none"
+        title="Archive to OneDrive folder"><span id="fsChipText">SAVE</span></button>
     </div>
 
     <div class="topbar-actions">
@@ -6042,6 +6092,10 @@
           <div class="ws-menu-item" onclick="triggerRestoreData()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>RESTORE DATA (JSON)</span>
+          </div>
+          <div class="ws-menu-item" onclick="openArchiveBrowser()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span>ARCHIVE BROWSER (ONE DRIVE)</span>
           </div>
         </div>
       </div>
@@ -6190,16 +6244,21 @@
       <!-- Main Workspace Content Container (Balanced & Centered) -->
       <div class="workspace-body">
         <!-- Action Buttons (2 buttons on 1 row) -->
-        <div class="workspace-actions-row" style="display:flex; gap:10px; margin-bottom:16px; align-items:stretch;">
-          <button class="new-btn primary-cta" id="btnNewReport" onclick="newReport()" style="flex:1;">
+        <div class="workspace-actions-row" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:stretch;">
+          <button class="new-btn primary-cta" id="btnNewReport" onclick="newReport()" style="flex:1; min-width:140px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>NEW REPORT</span>
           </button>
           <button class="new-btn sub-action-btn" id="btnImport"
             onclick="document.getElementById('importInput').click()"
-            title="Import JSON report or press Ctrl+V" style="flex:1;">
+            title="Import JSON report or press Ctrl+V" style="flex:1; min-width:140px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <span>IMPORT FILE</span>
+          </button>
+          <button class="new-btn sub-action-btn" id="btnArchive" onclick="openArchiveBrowser()"
+            title="Open the OneDrive archive folder and restore reports" style="flex:1; min-width:140px; padding:0 12px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span>ARCHIVE</span>
           </button>
         </div>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
@@ -9454,6 +9513,14 @@
 
     // Global Keybinding for Undo / Redo & Modal Shortcuts
     window.addEventListener('keydown', (e) => {
+      // Save: Ctrl/Cmd+S saves to the connected OneDrive archive folder.
+      // Ctrl/Cmd+Shift+S lets the user choose a different folder.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (e.shiftKey) fsChangeFolder();
+        else fsSaveShortcut();
+        return;
+      }
       // Enter để lưu ảnh khi đang mở Cropper modal
       if (e.key === 'Enter') {
         const camModal = document.getElementById('camModal');
@@ -15094,6 +15161,7 @@
     function markDirty() {
       dataRevision++;
       isDirty = true;
+      try { fsMarkDirty(); } catch (err) { /* archive module may not be loaded yet */ }
     }
 
     function cancelTimerOnly() {
@@ -15285,6 +15353,7 @@
         syncReportFieldsFromDOM();
         saveDraftSnapshot(D);
         saveReportSafe(D).catch(() => {});
+        try { fsFlushPending(); } catch (err) { }
       } catch (err) {
         console.warn('[Autosave] Emergency flush failed', err);
       }
@@ -15339,6 +15408,7 @@
 
     async function openReport(id) {
       try {
+        try { fsFlushPending(); } catch (err) { }
         if (typeof flushReport === 'function') await flushReport();
         currentId = id;
         const repData = await dbGet(id);
@@ -15399,6 +15469,7 @@
 
     async function newReport() {
       try {
+        try { fsFlushPending(); } catch (err) { }
         if (typeof flushReport === 'function') await flushReport();
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
         const modKey = (currentActiveModule === 'prototype') ? 'prototype' : 'pre-production';
@@ -15451,6 +15522,744 @@
         t.classList.remove('show');
         toastTimeout = null;
       }, duration);
+    }
+
+    /* ================= ONE DRIVE FOLDER ARCHIVE (File System Access API) ================= */
+    const FS_DB_NAME = 'SofaCompanyPP_FS';
+    const FS_STORE_NAME = 'kv';
+    const FS_DIR_KEY = 'archiveDir';
+    const FS_VERSION = 1;
+    const FS_AUTOSAVE_MS = 60000;
+    const FS_HEAVY_FIELDS = ['img', 'original', 'markupBase', 'imgSub', 'originalSub', 'markupBaseSub'];
+
+    let fsDb = null;
+    let fsDirHandle = null;
+    let fsTimer = null;
+    let fsBusy = null;
+    let fsPendingRep = null;
+    let fsPendingId = null;
+    let fsLastSavedAt = 0;
+    let fsError = null;
+    const fsRefCache = {};
+    const fsSupported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
+
+    function fsOpenDb() {
+      return new Promise((resolve, reject) => {
+        if (fsDb) return resolve(fsDb);
+        const req = indexedDB.open(FS_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const sdb = req.result;
+          if (!sdb.objectStoreNames.contains(FS_STORE_NAME)) sdb.createObjectStore(FS_STORE_NAME);
+        };
+        req.onsuccess = () => { fsDb = req.result; resolve(fsDb); };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function fsIdbGet(key) {
+      const sdb = await fsOpenDb();
+      return new Promise((resolve, reject) => {
+        const tx = sdb.transaction(FS_STORE_NAME, 'readonly');
+        const req = tx.objectStore(FS_STORE_NAME).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function fsIdbSet(key, value) {
+      const sdb = await fsOpenDb();
+      return new Promise((resolve, reject) => {
+        const tx = sdb.transaction(FS_STORE_NAME, 'readwrite');
+        tx.objectStore(FS_STORE_NAME).put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function fsTimeLabel(ts) {
+      try {
+        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) { return ''; }
+    }
+
+    function fsSetChip(state, text, title) {
+      const chip = document.getElementById('fsArchiveChip');
+      if (!chip) return;
+      if (!fsSupported) { chip.style.display = 'none'; return; }
+      chip.style.display = 'inline-flex';
+      chip.className = 'fs-chip' + (state ? ' ' + state : '');
+      const label = document.getElementById('fsChipText');
+      if (label) label.textContent = text;
+      chip.title = title || '';
+    }
+
+    async function fsRefreshChip() {
+      if (!fsSupported) { fsSetChip('', '', ''); return; }
+      if (!fsDirHandle) {
+        fsSetChip('off', 'SAVE', 'Ctrl+S để chọn thư mục OneDrive');
+        return;
+      }
+      if (fsError) {
+        fsSetChip('warn', 'ARCHIVE ⚠', 'Lỗi archive: ' + fsError);
+        return;
+      }
+      const granted = await fsEnsurePermission(false);
+      if (granted) {
+        fsSetChip('on', fsLastSavedAt ? 'ARCHIVE ' + fsTimeLabel(fsLastSavedAt) : 'ARCHIVE ON',
+          'Thư mục: ' + (fsDirHandle.name || '') + ' — Ctrl+S lưu ngay, Ctrl+Shift+S đổi thư mục');
+      } else {
+        fsSetChip('warn', 'RECONNECT', 'Nhấn để cấp lại quyền ghi thư mục OneDrive');
+      }
+    }
+
+    async function fsEnsurePermission(interactive) {
+      if (!fsDirHandle) return false;
+      try {
+        const opts = { mode: 'readwrite' };
+        if (typeof fsDirHandle.queryPermission === 'function') {
+          const state = await fsDirHandle.queryPermission(opts);
+          if (state === 'granted') return true;
+          if (!interactive) return false;
+        } else if (!interactive) {
+          return true;
+        }
+        if (interactive && typeof fsDirHandle.requestPermission === 'function') {
+          return (await fsDirHandle.requestPermission(opts)) === 'granted';
+        }
+        return false;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function fsInit() {
+      if (!fsSupported) { fsSetChip('', '', ''); return; }
+      try { fsDirHandle = (await fsIdbGet(FS_DIR_KEY)) || null; }
+      catch (err) { fsDirHandle = null; }
+      fsRefreshChip();
+    }
+
+    async function fsPickFolder(thenSave) {
+      if (!fsSupported) {
+        showToast('Trình duyệt này không hỗ trợ lưu vào thư mục. Dùng Chrome/Edge trên máy tính.');
+        return false;
+      }
+      try {
+        const handle = await window.showDirectoryPicker({ id: 'sofa-archive', mode: 'readwrite', startIn: 'documents' });
+        if (!handle) return false;
+        fsDirHandle = handle;
+        fsError = null;
+        try { await fsIdbSet(FS_DIR_KEY, handle); } catch (err) { console.warn('[Archive] could not persist folder handle', err); }
+        await fsRefreshChip();
+        showToast('✓ Đã kết nối thư mục: ' + handle.name);
+        if (thenSave && currentId && D && D.id) await fsSaveReport(D, true);
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return false;
+        console.warn('[Archive] pick folder failed', err);
+        showToast('Không mở được thư mục: ' + (err.message || err.name));
+        return false;
+      }
+    }
+
+    async function fsChipClick() {
+      if (!fsSupported) { showToast('Cần Chrome/Edge trên máy tính để lưu vào thư mục OneDrive.'); return; }
+      if (!fsDirHandle) { await fsPickFolder(!!(currentId && D && D.id)); return; }
+      const granted = await fsEnsurePermission(true);
+      if (!granted) { await fsPickFolder(!!(currentId && D && D.id)); return; }
+      if (currentId && D && D.id) await fsSaveShortcut();
+      else showToast('Thư mục archive đã kết nối');
+    }
+
+    async function fsChangeFolder(refreshList) {
+      if (!fsSupported) { showToast('Cần Chrome/Edge trên máy tính để đổi thư mục archive.'); return; }
+      const picked = await fsPickFolder(!!(currentId && D && D.id));
+      const modal = document.getElementById('fsArchiveModal');
+      if (picked && refreshList && modal && !modal.classList.contains('hidden')) await fsRenderArchiveList();
+    }
+
+    async function fsSaveShortcut() {
+      if (!fsSupported) {
+        if (currentId && D && D.id) {
+          try { syncReportFieldsFromDOM(); } catch (err) { }
+          downloadReportJson(D);
+          showToast('Trình duyệt không hỗ trợ thư mục — đã tải JSON báo cáo');
+        } else {
+          backupDatabase();
+        }
+        return;
+      }
+      if (!currentId || !D || !D.id) {
+        if (!fsDirHandle) { await fsPickFolder(false); return; }
+        showToast('Mở một báo cáo để lưu archive');
+        return;
+      }
+      try { syncReportFieldsFromDOM(); } catch (err) { }
+      if (!fsDirHandle) { await fsPickFolder(true); return; }
+      const granted = await fsEnsurePermission(true);
+      if (!granted) { await fsPickFolder(true); return; }
+      await fsSaveReport(D, true);
+    }
+
+    function fsMarkDirty() {
+      if (!fsSupported || !fsDirHandle) return;
+      if (!currentId || !D || !D.id) return;
+      fsPendingRep = D;
+      fsPendingId = D.id;
+      if (fsTimer) clearTimeout(fsTimer);
+      fsTimer = setTimeout(() => {
+        fsTimer = null;
+        const rep = fsPendingRep;
+        fsPendingRep = null;
+        fsPendingId = null;
+        if (rep && rep.id) fsSaveReport(rep, false).catch(() => { });
+      }, FS_AUTOSAVE_MS);
+    }
+
+    function fsFlushPending() {
+      if (!fsSupported || !fsDirHandle || !fsTimer) return;
+      clearTimeout(fsTimer);
+      fsTimer = null;
+      const rep = fsPendingRep;
+      fsPendingRep = null;
+      fsPendingId = null;
+      if (rep && rep.id) fsSaveReport(rep, false).catch(() => { });
+    }
+
+    function fsSaveReport(rep, manual) {
+      if (!fsSupported || !rep || !rep.id) return Promise.resolve();
+      if (!fsDirHandle) return Promise.resolve();
+      const run = () => fsDoSave(rep, manual);
+      const next = (fsBusy || Promise.resolve()).then(run, run);
+      fsBusy = next.catch(() => { });
+      return next;
+    }
+
+    function fsSanitizeFolderName(name) {
+      let out = String(name || 'report').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+      out = out.replace(/[. ]+$/g, '');
+      if (!out) out = 'report';
+      if (out.length > 60) out = out.slice(0, 60).replace(/[. _-]+$/g, '');
+      if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(out)) out = '_' + out;
+      return out;
+    }
+
+    function getReportFileBaseName(rep) {
+      const r = rep || {};
+      const repTitle = (r.reportTitle && r.reportTitle.trim()) ||
+        (typeof pdfConfig !== 'undefined' && pdfConfig && pdfConfig.reportTitle) ||
+        'PRE-PRODUCTION SAMPLE REVIEW REPORT';
+      const parts = [repTitle, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
+      const raw = parts.join('_') || 'report';
+      const safe = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+      return safe.slice(0, 120) || 'report';
+    }
+
+    function fsPhotoKeys(rep) {
+      const keys = new Set(FREE_PHOTO_KEYS);
+      Object.keys(rep || {}).forEach(k => {
+        if (k !== 'coverPhotos' && /Photos$/.test(k)) keys.add(k);
+      });
+      return Array.from(keys);
+    }
+
+    function fsCollectSlots(rep) {
+      const slots = [];
+      const push = (key, rec, names) => {
+        if (!rec || typeof rec !== 'object') return;
+        slots.push({ key: key, rec: rec, names: names });
+      };
+      const cover = rep.coverPhotos || {};
+      Object.keys(cover).forEach(k => {
+        let rec = cover[k];
+        if (typeof rec === 'string') rec = { img: rec };
+        push('cover:' + k, rec, ['img', 'original', 'markupBase']);
+      });
+      (Array.isArray(rep.dimensions) ? rep.dimensions : []).forEach((row, i) => {
+        const id = (row && row.id) ? row.id : 'i' + i;
+        push('dim:' + id, row, ['img', 'original', 'markupBase', 'imgSub', 'originalSub', 'markupBaseSub']);
+      });
+      fsPhotoKeys(rep).forEach(fk => {
+        const arr = rep[fk];
+        if (!Array.isArray(arr)) return;
+        arr.forEach((row, i) => {
+          const id = (row && row.id) ? row.id : i;
+          push('free:' + fk + ':' + id, row, ['img', 'original', 'markupBase', 'imgSub', 'originalSub', 'markupBaseSub']);
+        });
+      });
+      return slots;
+    }
+
+    function fsCollectDocRecords(rep) {
+      const out = [];
+      (Array.isArray(rep.docAttachments) ? rep.docAttachments : []).forEach((doc, i) => {
+        if (!doc || typeof doc !== 'object') return;
+        const id = doc.id || ('i' + i);
+        out.push({ key: 'doc:' + id, rec: doc, names: ['img', 'data'] });
+      });
+      return out;
+    }
+
+    function fsDataUrlExt(dataUrl) {
+      const m = /^data:([^;,]+)/.exec(String(dataUrl || ''));
+      const mime = (m && m[1] || '').toLowerCase();
+      if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
+      if (mime === 'image/png') return 'png';
+      if (mime === 'image/webp') return 'webp';
+      if (mime === 'image/gif') return 'gif';
+      if (mime === 'application/pdf') return 'pdf';
+      return 'bin';
+    }
+
+    function fsShortId(str) {
+      let h = 5381;
+      const s = String(str);
+      for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+      return h.toString(36).padStart(6, '0');
+    }
+
+    function fsPhotoSig(dataUrl) {
+      const s = String(dataUrl);
+      const head = s.slice(0, 96);
+      const tail = s.slice(-96);
+      const midStart = Math.max(0, (s.length >> 1) - 48);
+      const mid = s.slice(midStart, midStart + 96);
+      const sample = head + '|' + mid + '|' + tail;
+      let h = 5381;
+      for (let i = 0; i < sample.length; i++) h = ((h * 33) ^ sample.charCodeAt(i)) >>> 0;
+      return s.length + ':' + h.toString(36);
+    }
+
+    function fsIsDataUrl(value) {
+      return typeof value === 'string' && value.startsWith('data:') && value.length > 64;
+    }
+
+    async function fsWriteBlobFile(dir, name, dataUrl) {
+      const blob = await (await fetch(dataUrl)).blob();
+      const handle = await dir.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    }
+
+    async function fsWriteTextFile(dir, name, text) {
+      const handle = await dir.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(new Blob([text], { type: 'application/json' }));
+      await writable.close();
+    }
+
+    async function fsFileExists(dir, name) {
+      try { await dir.getFileHandle(name, { create: false }); return true; }
+      catch (err) { return false; }
+    }
+
+    async function fsReadFileAsDataUrl(dir, name) {
+      const handle = await dir.getFileHandle(name, { create: false });
+      const file = await handle.getFile();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = ev => resolve(ev.target.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function fsReadReportJson(folder) {
+      try {
+        const handle = await folder.getFileHandle('report.json', { create: false });
+        const file = await handle.getFile();
+        return JSON.parse(await file.text());
+      } catch (err) { return null; }
+    }
+
+    async function fsResolveFolder(rep, root) {
+      if (rep.archiveFolder) {
+        const name = fsSanitizeFolderName(rep.archiveFolder);
+        let folder;
+        try { folder = await root.getDirectoryHandle(name, { create: false }); }
+        catch (err) { folder = await root.getDirectoryHandle(name, { create: true }); }
+        const meta = await fsReadReportJson(folder);
+        return { folder: folder, name: name, meta: meta };
+      }
+      const base = fsSanitizeFolderName(getReportFileBaseName(rep));
+      for (let i = 1; i <= 50; i++) {
+        const suffix = i === 1 ? '' : ('_' + i);
+        const candidate = (i === 1 ? base : base.slice(0, Math.max(1, 56 - suffix.length)).replace(/[. ]+$/g, '') + suffix);
+        let folder = null;
+        try { folder = await root.getDirectoryHandle(candidate, { create: false }); }
+        catch (err) { /* not found */ }
+        if (!folder) {
+          folder = await root.getDirectoryHandle(candidate, { create: true });
+          rep.archiveFolder = candidate;
+          return { folder: folder, name: candidate, meta: null };
+        }
+        const meta = await fsReadReportJson(folder);
+        if (meta && String(meta.id) === String(rep.id)) {
+          rep.archiveFolder = candidate;
+          return { folder: folder, name: candidate, meta: meta };
+        }
+      }
+      throw new Error('Không tạo được thư mục archive (quá nhiều tên trùng)');
+    }
+
+    function fsStripPhotoRecord(rec) {
+      if (!rec || typeof rec !== 'object') return rec;
+      const copy = Object.assign({}, rec);
+      FS_HEAVY_FIELDS.forEach(f => { if (copy[f]) copy[f] = null; });
+      return copy;
+    }
+
+    function fsBuildArchivePayload(rep, files, folderName) {
+      const out = Object.assign({}, rep);
+      delete out.thumbSmall;
+      if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
+        out.coverPhotos = {};
+        Object.keys(rep.coverPhotos).forEach(k => {
+          const rec = rep.coverPhotos[k];
+          out.coverPhotos[k] = (typeof rec === 'string') ? { img: null } : fsStripPhotoRecord(rec);
+        });
+      }
+      if (Array.isArray(rep.dimensions)) out.dimensions = rep.dimensions.map(fsStripPhotoRecord);
+      fsPhotoKeys(rep).forEach(fk => {
+        if (Array.isArray(rep[fk])) out[fk] = rep[fk].map(fsStripPhotoRecord);
+      });
+      if (Array.isArray(rep.docAttachments)) {
+        out.docAttachments = rep.docAttachments.map(doc => {
+          if (!doc || typeof doc !== 'object') return doc;
+          const copy = Object.assign({}, doc);
+          if (copy.img) copy.img = null;
+          if (copy.data) copy.data = null;
+          return copy;
+        });
+      }
+      out._archive = {
+        version: FS_VERSION,
+        folder: folderName,
+        savedAt: new Date().toISOString(),
+        files: files
+      };
+      return out;
+    }
+
+    async function fsCleanupDir(dir, used) {
+      const stale = [];
+      try {
+        for await (const entry of dir.entries()) {
+          const name = entry[0];
+          const handle = entry[1];
+          if (!handle || handle.kind !== 'file') continue;
+          if (!/^p_/.test(name)) continue;
+          if (used.has(name)) continue;
+          stale.push(name);
+        }
+      } catch (err) { return; }
+      for (const name of stale) {
+        try { await dir.removeEntry(name); } catch (err) { }
+      }
+    }
+
+    async function fsWriteMediaSet(dir, slots, baseline, files, used, contentFiles) {
+      for (const slot of slots) {
+        const entry = files[slot.key] || {};
+        for (const name of slot.names) {
+          const data = slot.rec[name];
+          if (!fsIsDataUrl(data)) continue;
+          const sig = fsPhotoSig(data);
+          let fileName = contentFiles.get(sig);
+          const prior = baseline[slot.key] && baseline[slot.key][name];
+          if (!fileName && prior && prior.s === sig && prior.f && await fsFileExists(dir, prior.f)) {
+            fileName = prior.f;
+          }
+          if (!fileName) {
+            fileName = 'p_' + fsShortId(slot.key + ':' + name) + '_' + sig.split(':')[1] + '.' + fsDataUrlExt(data);
+            await fsWriteBlobFile(dir, fileName, data);
+          }
+          contentFiles.set(sig, fileName);
+          entry[name] = { f: fileName, s: sig };
+          used.add(fileName);
+        }
+        if (Object.keys(entry).length) files[slot.key] = entry;
+      }
+    }
+
+    function fsHasIdentity(rep) {
+      if ((rep.model && String(rep.model).trim()) || (rep.desc && String(rep.desc).trim())) return true;
+      const slots = fsCollectSlots(rep);
+      return slots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n])));
+    }
+
+    async function fsDoSave(rep, manual) {
+      // Do not create a folder with a generic name before the report has any real content.
+      if (!manual && !rep.archiveFolder && !fsHasIdentity(rep)) return;
+      const granted = await fsEnsurePermission(false);
+      if (!granted) {
+        fsSetChip('warn', 'RECONNECT', 'Nhấn để cấp lại quyền ghi thư mục OneDrive');
+        if (manual) showToast('Chưa có quyền ghi thư mục — bấm RECONNECT để cấp lại');
+        return;
+      }
+      fsSetChip('saving', 'ARCHIVING...', 'Đang lưu vào thư mục OneDrive...');
+      try {
+        const resolved = await fsResolveFolder(rep, fsDirHandle);
+        const folder = resolved.folder;
+        const folderName = resolved.name;
+        const cached = fsRefCache[rep.id];
+        let baseline = {};
+        if (cached && cached.folder === folderName) baseline = cached.files || {};
+        else if (resolved.meta && String(resolved.meta.id) === String(rep.id) && resolved.meta._archive) {
+          baseline = resolved.meta._archive.files || {};
+        }
+
+        const slots = fsCollectSlots(rep);
+        const docSlots = fsCollectDocRecords(rep);
+        const hasMedia = slots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n]))) ||
+          docSlots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n])));
+
+        let photosDir = null;
+        try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); }
+        catch (err) { /* not created yet */ }
+        if (!photosDir && hasMedia) photosDir = await folder.getDirectoryHandle('photos', { create: true });
+
+        const files = {};
+        const used = new Set();
+        const contentFiles = new Map();
+        if (photosDir) {
+          await fsWriteMediaSet(photosDir, slots, baseline, files, used, contentFiles);
+          await fsWriteMediaSet(photosDir, docSlots, baseline, files, used, contentFiles);
+          await fsCleanupDir(photosDir, used);
+        }
+
+        const payload = fsBuildArchivePayload(rep, files, folderName);
+        await fsWriteTextFile(folder, 'report.json', JSON.stringify(payload));
+
+        fsRefCache[rep.id] = { folder: folderName, files: files };
+        fsLastSavedAt = Date.now();
+        fsError = null;
+        fsPendingRep = null;
+        fsPendingId = null;
+        await fsRefreshChip();
+        if (manual) showToast('✓ Đã lưu vào OneDrive: ' + folderName);
+      } catch (err) {
+        console.warn('[Archive] save failed', err);
+        fsError = err && err.message ? err.message : String(err);
+        fsSetChip('warn', 'ARCHIVE ⚠', 'Lỗi archive: ' + fsError);
+        if (manual) showToast('Lỗi lưu OneDrive: ' + fsError, 4000);
+      }
+    }
+
+    async function fsSavePdfBlob(blob, baseName) {
+      const name = (baseName || 'report').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 120) + '.pdf';
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) { } }, 60000);
+      } catch (err) {
+        console.warn('[PDF] download failed', err);
+      }
+      if (!fsSupported || !fsDirHandle || !currentId || !D || !D.id) return;
+      try {
+        const granted = await fsEnsurePermission(false);
+        if (!granted) return;
+        const resolved = await fsResolveFolder(D, fsDirHandle);
+        const handle = await resolved.folder.getFileHandle(name, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        showToast('✓ PDF đã lưu vào thư mục archive');
+      } catch (err) {
+        console.warn('[Archive] could not store PDF copy', err);
+      }
+    }
+
+    function fsBuildArchiveModal() {
+      if (document.getElementById('fsArchiveModal')) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'fsArchiveModal';
+      overlay.className = 'modal-overlay hidden';
+      overlay.style.zIndex = '340';
+      overlay.innerHTML =
+        '<div class="modal-box" style="max-width:640px;">' +
+          '<div class="modal-head">' +
+            '<h3>ARCHIVE · ONE DRIVE</h3>' +
+            '<button class="modal-close" onclick="closeFsArchiveModal()">✕</button>' +
+          '</div>' +
+          '<div style="padding:10px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--line);">' +
+            '<div id="fsArchiveRoot" style="flex:1; min-width:0; font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
+            '<button type="button" id="fsArchiveChangeBtn" style="height:32px; padding:0 10px; font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; border-radius:8px; border:1px solid var(--line-strong); background:var(--card); color:var(--ink-strong); cursor:pointer;">ĐỔI THƯ MỤC</button>' +
+            '<button type="button" id="fsArchiveRefreshBtn" style="height:32px; padding:0 10px; font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; border-radius:8px; border:1px solid var(--line-strong); background:var(--card); color:var(--ink-strong); cursor:pointer;">REFRESH</button>' +
+          '</div>' +
+          '<div id="fsArchiveList" style="overflow:auto; max-height:60vh; padding:8px;"></div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      const changeBtn = overlay.querySelector('#fsArchiveChangeBtn');
+      if (changeBtn) changeBtn.onclick = () => fsChangeFolder(true);
+      const refreshBtn = overlay.querySelector('#fsArchiveRefreshBtn');
+      if (refreshBtn) refreshBtn.onclick = () => fsRenderArchiveList();
+    }
+
+    function closeFsArchiveModal() {
+      const modal = document.getElementById('fsArchiveModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function fsListArchiveReports() {
+      const items = [];
+      if (!fsDirHandle) return items;
+      try {
+        for await (const entry of fsDirHandle.entries()) {
+          const name = entry[0];
+          const handle = entry[1];
+          if (!handle || handle.kind !== 'directory') continue;
+          const meta = await fsReadReportJson(handle);
+          if (!meta || !meta.id) continue;
+          items.push({ name: name, meta: meta });
+        }
+      } catch (err) {
+        console.warn('[Archive] list failed', err);
+      }
+      items.sort((a, b) => {
+        const sa = (a.meta._archive && a.meta._archive.savedAt) || '';
+        const sb = (b.meta._archive && b.meta._archive.savedAt) || '';
+        return String(sb).localeCompare(String(sa));
+      });
+      return items;
+    }
+
+    async function fsRenderArchiveList() {
+      const list = document.getElementById('fsArchiveList');
+      const rootLabel = document.getElementById('fsArchiveRoot');
+      if (!list) return;
+      if (rootLabel) rootLabel.textContent = fsDirHandle ? ('Thư mục: ' + (fsDirHandle.name || '')) : 'Chưa chọn thư mục';
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:12px;">Đang quét thư mục...</div>';
+      const items = await fsListArchiveReports();
+      if (!items.length) {
+        list.innerHTML = '<div style="padding:28px 16px;text-align:center;color:var(--ink-soft);font-size:12px;line-height:1.7;">Chưa có báo cáo nào trong thư mục này.<br>Mở một báo cáo và nhấn <strong>Ctrl+S</strong> để lưu vào đây.</div>';
+        return;
+      }
+      list.innerHTML = items.map(item => {
+        const meta = item.meta;
+        const saved = (meta._archive && meta._archive.savedAt) ? new Date(meta._archive.savedAt).toLocaleString() : '';
+        const fileCount = Object.keys((meta._archive && meta._archive.files) || {}).length;
+        const sub = [item.name, fileCount + ' mục ảnh/tài liệu', saved].filter(Boolean).join(' · ');
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:13px;font-weight:600;color:var(--ink-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(getReportTitle(meta)) + '</div>' +
+            '<div style="font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(sub) + '</div>' +
+          '</div>' +
+          '<button type="button" data-folder="' + escapeHtml(item.name) + '" class="fs-restore-btn" style="height:32px;padding:0 12px;font-size:10.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;border-radius:8px;border:1px solid var(--line-strong);background:var(--brand-theme);color:var(--brand-header-footer-text);cursor:pointer;flex-shrink:0;">RESTORE</button>' +
+        '</div>';
+      }).join('');
+      list.querySelectorAll('.fs-restore-btn').forEach(btn => {
+        btn.onclick = () => fsRestoreReport(btn.getAttribute('data-folder'));
+      });
+    }
+
+    async function openArchiveBrowser() {
+      if (!fsSupported) {
+        showToast('Cần Chrome/Edge trên máy tính để mở kho lưu OneDrive.', 4000);
+        return;
+      }
+      if (!fsDirHandle) {
+        const ok = await fsPickFolder(false);
+        if (!ok || !fsDirHandle) return;
+      }
+      const granted = await fsEnsurePermission(true);
+      if (!granted) { showToast('Chưa có quyền truy cập thư mục archive'); return; }
+      fsBuildArchiveModal();
+      const modal = document.getElementById('fsArchiveModal');
+      if (modal) modal.classList.remove('hidden');
+      await fsRenderArchiveList();
+    }
+
+    async function fsHydratePayload(meta, folderName, photosDir) {
+      const files = (meta._archive && meta._archive.files) || {};
+      const payload = Object.assign({}, meta);
+      delete payload._archive;
+      payload.archiveFolder = folderName;
+      for (const slot of fsCollectSlots(payload)) {
+        const info = files[slot.key];
+        if (info) {
+          for (const name of slot.names) {
+            const ref = info[name];
+            if (!ref || !ref.f || !photosDir) continue;
+            try {
+              const data = await fsReadFileAsDataUrl(photosDir, ref.f);
+              if (data) slot.rec[name] = data;
+            } catch (err) { console.warn('[Archive] missing photo file', ref.f, err); }
+          }
+        }
+        if (!slot.rec.img && slot.rec.original) {
+          try { slot.rec.img = await resizeImage(slot.rec.original, 1280, 0.85); } catch (err) { }
+        }
+        if (!slot.rec.imgSub && slot.rec.originalSub) {
+          try { slot.rec.imgSub = await resizeImage(slot.rec.originalSub, 1280, 0.85); } catch (err) { }
+        }
+      }
+      for (const slot of fsCollectDocRecords(payload)) {
+        const info = files[slot.key];
+        if (!info || !photosDir) continue;
+        for (const name of slot.names) {
+          const ref = info[name];
+          if (!ref || !ref.f) continue;
+          try {
+            const data = await fsReadFileAsDataUrl(photosDir, ref.f);
+            if (data) slot.rec[name] = data;
+          } catch (err) { console.warn('[Archive] missing doc file', ref.f, err); }
+        }
+      }
+      return payload;
+    }
+
+    async function fsRestoreReport(folderName) {
+      if (!fsDirHandle) return;
+      const granted = await fsEnsurePermission(true);
+      if (!granted) { showToast('Chưa có quyền truy cập thư mục archive'); return; }
+      let folder = null;
+      let meta = null;
+      let photosDir = null;
+      try {
+        folder = await fsDirHandle.getDirectoryHandle(folderName, { create: false });
+        meta = await fsReadReportJson(folder);
+        if (!meta || !meta.id) throw new Error('report.json không hợp lệ');
+        try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); } catch (err) { }
+      } catch (err) {
+        showToast('Không đọc được archive: ' + (err.message || err), 4000);
+        return;
+      }
+      showToast('Đang khôi phục báo cáo...', 5000);
+      try {
+        const payload = await fsHydratePayload(meta, folderName, photosDir);
+        const existing = await dbGet(payload.id);
+        let keepFolder = true;
+        if (existing) {
+          const overwrite = confirm('Báo cáo "' + getReportTitle(payload) + '" đã có trên máy này.\n\nOK = Ghi đè bản trên máy bằng bản trong archive\nCancel = Khôi phục thành một bản sao mới');
+          if (!overwrite) {
+            payload.id = Date.now().toString();
+            payload.archiveFolder = null;
+            keepFolder = false;
+          }
+        }
+        payload.thumbSmall = null;
+        try { await refreshReportThumbnail(payload, true); } catch (err) { }
+        await dbPut(payload);
+        if (keepFolder) {
+          fsRefCache[payload.id] = { folder: folderName, files: (meta._archive && meta._archive.files) || {} };
+        } else {
+          delete fsRefCache[payload.id];
+        }
+        await renderHome();
+        closeFsArchiveModal();
+        showToast('✓ Đã khôi phục: ' + getReportTitle(payload));
+        await openReport(payload.id);
+      } catch (err) {
+        console.warn('[Archive] restore failed', err);
+        showToast('Lỗi khôi phục: ' + (err.message || err), 4000);
+      }
     }
 
     // Pre-shrink embedded photos so jsPDF does not hold every full-size JPEG
@@ -16795,10 +17604,7 @@
         setPdfTextOpacity(1);
       }
 
-      const repTitle = (D.reportTitle && D.reportTitle.trim()) || (typeof pdfConfig !== 'undefined' && pdfConfig.reportTitle) || 'PRE-PRODUCTION SAMPLE REVIEW REPORT';
-      const parts = [repTitle, D.model, D.desc, D.date].map(s => (s || '').trim()).filter(Boolean);
-      const rawFileName = parts.join('_') || 'report';
-      const safeFileName = rawFileName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+      const safeFileName = getReportFileBaseName(D);
 
       if (isPreview) {
         const blob = doc.output('blob');
@@ -16806,7 +17612,8 @@
         openPdfPreviewModal(blobUrl, safeFileName);
         showToast('✓ PDF preview ready!');
       } else {
-        doc.save(`${safeFileName}.pdf`);
+        const blob = doc.output('blob');
+        fsSavePdfBlob(blob, safeFileName);
         showToast('✓ PDF download complete!');
       }
       if (typeof window !== 'undefined' && window._lastGeneratedDoc) {
@@ -16913,7 +17720,7 @@
       });
     }
 
-    initDB().then(() => { renderHome(); initHomeDragAndDrop(); }).catch(err => { console.error('IndexedDB initialization error:', err); showToast('IndexedDB storage error'); });
+    initDB().then(() => { renderHome(); initHomeDragAndDrop(); fsInit().catch(() => { }); }).catch(err => { console.error('IndexedDB initialization error:', err); showToast('IndexedDB storage error'); });
   </script>
   <script>
     // Roboto-Regular TrueType Font for jsPDF Vietnamese Unicode support
