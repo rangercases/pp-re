@@ -6261,6 +6261,7 @@
             <span>ARCHIVE</span>
           </button>
         </div>
+        <div id="localReportLimitText" style="font-size:11px; color:var(--ink-soft); text-align:right; margin:-6px 2px 10px;"></div>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importReport(event)">
         <input type="file" id="restoreDbInput" accept=".json" style="display:none" onchange="restoreDatabase(event)">
 
@@ -7690,6 +7691,14 @@
 
           if (!reportsToRestore.length) {
             alert('Backup file does not contain valid report data!');
+            return;
+          }
+
+          const existingMetas = await dbGetAllMetadata();
+          const existingIds = new Set(existingMetas.map(r => String(r.id)));
+          const newCount = reportsToRestore.filter(r => !r.id || !existingIds.has(String(r.id))).length;
+          if (existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
+            alert(`Giới hạn ${MAX_LOCAL_REPORTS} báo cáo trên app.\n\nBackup này sẽ làm app có ${existingMetas.length + newCount} báo cáo.\nHãy xoá bớt báo cáo trên app hoặc dùng backup ít hơn rồi thử lại.`);
             return;
           }
 
@@ -10743,6 +10752,8 @@
 
     async function applyImportData(data, isReplace) {
       try {
+        const willGrow = !(isReplace && pendingExistingReport);
+        if (willGrow && !(await ensureLocalReportCapacity())) return;
         const normalizedData = await normalizeReportPhotos(data);
         if (isReplace && pendingExistingReport) {
           normalizedData.id = pendingExistingReport.id;
@@ -10826,11 +10837,11 @@
         cloned.desc = `Copy ${suffix}`;
       }
 
+      if (!(await ensureLocalReportCapacity())) return;
       await dbPut(cloned);
       showToast(`✓ Duplicated report ${suffix}!`);
       await renderHome();
     }
-
     async function duplicateSelectedReports() {
       if (selectedReportIds.size === 0) {
         showToast('No reports selected to duplicate!');
@@ -10838,6 +10849,13 @@
       }
       try {
         const ids = Array.from(selectedReportIds);
+        const metas = await dbGetAllMetadata();
+        const room = MAX_LOCAL_REPORTS - metas.length;
+        if (room <= 0) { await handleReportLimitReached(); return; }
+        if (ids.length > room) {
+          showToast(`Chỉ còn ${room} chỗ trống (giới hạn ${MAX_LOCAL_REPORTS}). Hãy xoá bớt hoặc chọn ít hơn.`, 5000);
+          return;
+        }
         for (const id of ids) {
           const source = await dbGet(id);
           if (source) {
@@ -10945,6 +10963,7 @@
         if (!data.id || isIdConflict) {
           data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
         }
+        if (!(await ensureLocalReportCapacity())) return;
 
         const normalizedData = await normalizeReportPhotos(data);
         await dbPut(normalizedData);
@@ -11094,6 +11113,7 @@
       }
       resetHistory();
       await renderHome();
+      try { fsRefreshChip(); } catch (err) { }
     }
 
     let homeSearchQuery = '';
@@ -11156,6 +11176,7 @@
       if (wsSettings) wsSettings.style.display = 'inline-flex';
       window.scrollTo(0, 0);
       renderHome();
+      try { fsRefreshChip(); } catch (err) { }
     }
 
     function backToLauncherHub() {
@@ -11219,6 +11240,14 @@
     async function renderHome() {
       try {
         reports = await dbGetAllMetadata();
+
+        const limitEl = document.getElementById('localReportLimitText');
+        if (limitEl) {
+          const total = reports.length;
+          const over = total >= MAX_LOCAL_REPORTS;
+          limitEl.textContent = `Báo cáo trên app: ${total}/${MAX_LOCAL_REPORTS}` + (over ? ' — đã đạt giới hạn, hãy backup và xoá bớt' : '');
+          limitEl.style.color = over ? 'var(--warn)' : 'var(--ink-soft)';
+        }
 
         const preProdReports = reports.filter(r => !r.moduleType || r.moduleType === 'pre-production');
         const protoReports = reports.filter(r => r.moduleType === 'prototype');
@@ -15462,15 +15491,51 @@
         const wrapEl = document.getElementById('tabsWrap');
         if (wrapEl) wrapEl.scrollLeft = 0;
         document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); initTouchSwipeNavigation(); window.scrollTo(0, 0);
+        try { fsRefreshChip(); } catch (err) { }
       } catch (err) {
         alert("Error opening report: " + err.message);
       }
+    }
+
+    const MAX_LOCAL_REPORTS = 10;
+
+    async function handleReportLimitReached() {
+      let doBackup = false;
+      try {
+        doBackup = confirm(
+          'App đã đạt giới hạn ' + MAX_LOCAL_REPORTS + ' báo cáo.\n\n' +
+          'OK = Xuất file backup JSON ngay\n' +
+          'Cancel = Không backup\n\n' +
+          'Sau đó hãy xoá bớt báo cáo trên app (bản đã lưu trên OneDrive vẫn giữ) rồi thử lại.'
+        );
+      } catch (err) { doBackup = false; }
+      if (doBackup) {
+        try { await backupDatabase(); } catch (err) { console.warn('[Limit] backup failed', err); }
+      }
+      showToast('Đã đủ ' + MAX_LOCAL_REPORTS + ' báo cáo — hãy backup và xoá bớt', 5000);
+      const home = document.getElementById('homeScreen');
+      if (home && home.classList.contains('active') && typeof isSelectMode !== 'undefined' && !isSelectMode) {
+        try { toggleSelectMode(); } catch (err) { }
+      }
+    }
+
+    async function ensureLocalReportCapacity() {
+      try {
+        const metas = await dbGetAllMetadata();
+        if (!metas || metas.length < MAX_LOCAL_REPORTS) return true;
+      } catch (err) {
+        console.warn('[Limit] could not count reports', err);
+        return true;
+      }
+      await handleReportLimitReached();
+      return false;
     }
 
     async function newReport() {
       try {
         try { fsFlushPending(); } catch (err) { }
         if (typeof flushReport === 'function') await flushReport();
+        if (!(await ensureLocalReportCapacity())) return;
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
         const modKey = (currentActiveModule === 'prototype') ? 'prototype' : 'pre-production';
         const modCfg = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
@@ -15541,6 +15606,7 @@
     let fsLastSavedAt = 0;
     let fsError = null;
     const fsRefCache = {};
+    const fsSavedAtByReport = {};
     const fsSupported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
 
     function fsOpenDb() {
@@ -15604,11 +15670,19 @@
         return;
       }
       const granted = await fsEnsurePermission(false);
-      if (granted) {
-        fsSetChip('on', fsLastSavedAt ? 'ARCHIVE ' + fsTimeLabel(fsLastSavedAt) : 'ARCHIVE ON',
-          'Thư mục: ' + (fsDirHandle.name || '') + ' — Ctrl+S lưu ngay, Ctrl+Shift+S đổi thư mục');
-      } else {
+      if (!granted) {
         fsSetChip('warn', 'RECONNECT', 'Nhấn để cấp lại quyền ghi thư mục OneDrive');
+        return;
+      }
+      const editing = !!(currentId && D && D.id);
+      if (!editing) {
+        fsSetChip('on', 'ARCHIVE ON', 'Thư mục: ' + (fsDirHandle.name || '') + ' — Ctrl+Shift+S đổi thư mục');
+      } else if (D.archiveFolder) {
+        const ts = fsSavedAtByReport[D.id];
+        fsSetChip('on', ts ? 'ARCHIVE ' + fsTimeLabel(ts) : 'ARCHIVED',
+          'Báo cáo đã lưu vào: ' + D.archiveFolder + ' — Ctrl+S lưu ngay');
+      } else {
+        fsSetChip('off', 'SAVE', 'Báo cáo này chỉ là bản nháp trên app — bấm SAVE hoặc Ctrl+S để lưu vào OneDrive');
       }
     }
 
@@ -15704,6 +15778,8 @@
     function fsMarkDirty() {
       if (!fsSupported || !fsDirHandle) return;
       if (!currentId || !D || !D.id) return;
+      // Drafts stay local until the user explicitly saves them to the archive.
+      if (!D.archiveFolder) return;
       fsPendingRep = D;
       fsPendingId = D.id;
       if (fsTimer) clearTimeout(fsTimer);
@@ -16034,6 +16110,7 @@
 
         fsRefCache[rep.id] = { folder: folderName, files: files };
         fsLastSavedAt = Date.now();
+        fsSavedAtByReport[rep.id] = fsLastSavedAt;
         fsError = null;
         fsPendingRep = null;
         fsPendingId = null;
@@ -16061,7 +16138,7 @@
       } catch (err) {
         console.warn('[PDF] download failed', err);
       }
-      if (!fsSupported || !fsDirHandle || !currentId || !D || !D.id) return;
+      if (!fsSupported || !fsDirHandle || !currentId || !D || !D.id || !D.archiveFolder) return;
       try {
         const granted = await fsEnsurePermission(false);
         if (!granted) return;
@@ -16233,22 +16310,29 @@
       }
       showToast('Đang khôi phục báo cáo...', 5000);
       try {
-        const payload = await fsHydratePayload(meta, folderName, photosDir);
-        const existing = await dbGet(payload.id);
+        const existing = await dbGet(meta.id);
         let keepFolder = true;
+        let copyId = null;
         if (existing) {
-          const overwrite = confirm('Báo cáo "' + getReportTitle(payload) + '" đã có trên máy này.\n\nOK = Ghi đè bản trên máy bằng bản trong archive\nCancel = Khôi phục thành một bản sao mới');
+          const overwrite = confirm('Báo cáo "' + getReportTitle(meta) + '" đã có trên máy này.\n\nOK = Ghi đè bản trên máy bằng bản trong archive\nCancel = Khôi phục thành một bản sao mới');
           if (!overwrite) {
-            payload.id = Date.now().toString();
-            payload.archiveFolder = null;
+            copyId = Date.now().toString();
             keepFolder = false;
           }
+        }
+        if ((!existing || !keepFolder) && !(await ensureLocalReportCapacity())) return;
+        const payload = await fsHydratePayload(meta, folderName, photosDir);
+        if (copyId) {
+          payload.id = copyId;
+          payload.archiveFolder = null;
         }
         payload.thumbSmall = null;
         try { await refreshReportThumbnail(payload, true); } catch (err) { }
         await dbPut(payload);
         if (keepFolder) {
           fsRefCache[payload.id] = { folder: folderName, files: (meta._archive && meta._archive.files) || {} };
+          const savedTs = meta._archive && meta._archive.savedAt ? Date.parse(meta._archive.savedAt) : 0;
+          if (savedTs) fsSavedAtByReport[payload.id] = savedTs;
         } else {
           delete fsRefCache[payload.id];
         }
