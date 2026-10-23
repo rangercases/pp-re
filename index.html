@@ -7519,7 +7519,7 @@
       });
     }
 
-    function dbPut(report) {
+    function dbPutOnce(report) {
       return new Promise((res, rej) => {
         try {
           const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -7531,6 +7531,22 @@
           rej(err);
         }
       });
+    }
+
+    // A transaction aborted by iOS suspension or a stale connection usually
+    // succeeds again on a fresh connection, so retry once before warning.
+    async function dbPut(report) {
+      try {
+        await dbPutOnce(report);
+      } catch (err) {
+        if (err && err.name === 'QuotaExceededError') throw err;
+        if (document.visibilityState === 'hidden') {
+          setSaveErrorPending();
+          throw err;
+        }
+        await reopenDb();
+        await dbPutOnce(report);
+      }
     }
 
     function dbDelete(id) {
@@ -15129,9 +15145,26 @@
     let blurSaveTimer = null;
     let lastSnapshotTime = 0;
     let isSaveFailedBannerVisible = false;
+    let saveErrorPending = false;
+    let isPdfExporting = false;
     let dataRevision = 0;
     let lastSavedRevision = 0;
     let isDirty = false;
+
+    function reopenDb() {
+      return new Promise((resolve) => {
+        try { if (db) db.close(); } catch (e) { }
+        db = null;
+        initDB().then(() => resolve(true)).catch((err) => {
+          console.warn('[DB] Reopen failed', err);
+          resolve(false);
+        });
+      });
+    }
+
+    function setSaveErrorPending() {
+      saveErrorPending = true;
+    }
 
     function markDirty() {
       dataRevision++;
@@ -15150,7 +15183,15 @@
     }
 
     async function showQuotaErrorBanner(error) {
+      // A write that fails while the tab is backgrounded is usually a suspended
+      // IndexedDB transaction; keep the payload queued and retry when visible.
+      if (document.visibilityState === 'hidden') { saveErrorPending = true; return; }
       isSaveFailedBannerVisible = true;
+      saveErrorPending = false;
+
+      const errName = (error && error.name) ? String(error.name) : '';
+      const errMsg = (error && error.message) ? String(error.message) : '';
+      const isQuota = errName === 'QuotaExceededError';
 
       let storageInfo = '';
       if (navigator.storage && navigator.storage.estimate) {
@@ -15166,19 +15207,30 @@
       if (!banner) {
         banner = document.createElement('div');
         banner.id = 'storageQuotaErrorBanner';
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#d32f2f;color:#ffffff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-body,-apple-system,sans-serif);font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.3);gap:12px;';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#d32f2f;color:#ffffff;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;font-family:var(--font-body,-apple-system,sans-serif);font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.3);gap:12px;';
         document.body.prepend(banner);
       }
+      const headline = isQuota
+        ? 'Máy đã hết dung lượng trình duyệt' + storageInfo
+        : 'Không ghi được vào bộ nhớ trình duyệt' + storageInfo;
+      const detail = isQuota
+        ? 'Hãy xoá bớt báo cáo cũ hoặc xuất Backup JSON ngay.'
+        : 'Lỗi: ' + (escapeHtml(errName || 'Unknown')) + (errMsg ? ' — ' + escapeHtml(errMsg) : '') + '. Dữ liệu chưa lưu có thể bị mất!';
       banner.style.display = 'flex';
-      banner.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><span>⚠️ <strong>Lỗi lưu trữ:</strong> Không thể ghi vào bộ nhớ trình duyệt' + storageInfo + '. Dữ liệu chưa lưu có thể bị mất!</span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><button id="btnRetrySave" style="background:#ffffff;color:#d32f2f;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">🔄 Thử lưu lại</button><button id="btnEmergencyBackup" style="background:#ffb300;color:#000000;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">💾 Xuất Backup JSON ngay</button></div>';
+      banner.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px;flex:1 1 240px;min-width:0;"><span>⚠️ <strong>Lỗi lưu trữ:</strong> ' + headline + '<br><span style="font-weight:500;opacity:.9;">' + detail + '</span></span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><button id="btnRetrySave" style="background:#ffffff;color:#d32f2f;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">🔄 Thử lưu lại</button><button id="btnEmergencyBackup" style="background:#ffb300;color:#000000;border:none;border-radius:4px;padding:6px 12px;font-weight:700;cursor:pointer;">💾 Xuất Backup JSON ngay</button></div>';
 
       document.getElementById('btnRetrySave').onclick = async () => {
         banner.style.display = 'none';
         isSaveFailedBannerVisible = false;
+        saveErrorPending = false;
         try {
+          await reopenDb();
           await flushReport();
+          hideQuotaErrorBanner();
+          showToast('✓ Đã lưu lại dữ liệu');
         } catch (err) {
           console.warn('[Autosave] Retry failed', err);
+          await showQuotaErrorBanner(err);
         }
       };
       document.getElementById('btnEmergencyBackup').onclick = () => {
@@ -15304,6 +15356,9 @@
       try {
         syncReportFieldsFromDOM();
         saveDraftSnapshot(D);
+        // The PDF wrapper saves right after export; writing now would compete
+        // with jsPDF for memory while the page is being backgrounded.
+        if (isPdfExporting) return;
         saveReportSafe(D).catch(() => {});
       } catch (err) {
         console.warn('[Autosave] Emergency flush failed', err);
@@ -15330,6 +15385,9 @@
       }
 
       cancelTimerOnly();
+      // Writing tens of MB while jsPDF/Safari is exporting can abort the
+      // IndexedDB transaction, so hold autosave until the export finishes.
+      if (isPdfExporting) return;
       autosaveIdleTimer = setTimeout(() => {
         saveReportSafe().catch(() => {});
       }, 10000);
@@ -15337,6 +15395,7 @@
 
     function scheduleBlurSave() {
       if (!currentId || !D) return;
+      if (isPdfExporting) return;
       if (blurSaveTimer) clearTimeout(blurSaveTimer);
       blurSaveTimer = setTimeout(() => {
         saveReportSafe().catch(() => {});
@@ -15360,7 +15419,19 @@
     });
     window.addEventListener('pagehide', emergencyFlush);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') emergencyFlush();
+      if (document.visibilityState === 'hidden') {
+        emergencyFlush();
+        return;
+      }
+      if (!saveErrorPending && !isSaveFailedBannerVisible) return;
+      saveErrorPending = false;
+      reopenDb()
+        .then(() => flushReport())
+        .then(() => { hideQuotaErrorBanner(); })
+        .catch((err) => {
+          console.warn('[Autosave] Retry on visible failed', err);
+          showQuotaErrorBanner(err);
+        });
     });
 
     async function openReport(id) {
@@ -16093,6 +16164,16 @@
 
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF(options = {}) {
+      isPdfExporting = true;
+      try {
+        return await exportPdfCore(options);
+      } finally {
+        isPdfExporting = false;
+        if (currentId && D && D.id) saveReportSafe(D).catch(() => {});
+      }
+    }
+
+    async function exportPdfCore(options = {}) {
       const isPreview = !!(options && options.preview);
       as(); showToast(isPreview ? 'Preparing realistic PDF preview...' : 'Initializing PDF generation...'); await new Promise(r => setTimeout(r, 150));
       if (!window.jspdf || !window.jspdf.jsPDF) {
