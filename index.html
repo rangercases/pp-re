@@ -275,82 +275,14 @@
       max-width: 100%;
     }
 
-    .autosave-indicator {
-      font-family: var(--font-body);
-      font-size: 10.5px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--good);
-      margin-right: 4px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+    .file-dirty-dot {
+      font-size: 12px;
+      line-height: 1;
+      color: var(--warn, #d97706);
+      margin-left: 5px;
       flex-shrink: 0;
       user-select: none;
       cursor: default;
-      font-weight: 600;
-    }
-
-    .autosave-indicator.saving {
-      color: var(--warn);
-    }
-
-    .autosave-indicator .dot {
-      display: inline-block;
-      font-size: 8px;
-      line-height: 1;
-    }
-
-    .autosave-indicator.saving .dot {
-      animation: dotPulse 0.8s infinite alternate;
-    }
-
-    .fs-chip {
-      font-family: var(--font-body);
-      font-size: 9.5px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: var(--ink-soft, #6b7280);
-      border: 1px solid var(--line, #d7dce1);
-      border-radius: 999px;
-      padding: 2px 8px;
-      margin-left: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-      background: transparent;
-      flex-shrink: 0;
-      line-height: 1.5;
-    }
-
-    .fs-chip:hover {
-      filter: brightness(1.15);
-    }
-
-    .fs-chip.on {
-      color: var(--good, #1f9d55);
-      border-color: currentColor;
-    }
-
-    .fs-chip.warn {
-      color: var(--warn, #d97706);
-      border-color: currentColor;
-    }
-
-    .fs-chip.saving {
-      color: var(--warn, #d97706);
-      border-color: currentColor;
-      animation: dotPulse 0.8s infinite alternate;
-    }
-
-    @media (max-width: 768px) {
-      .fs-chip {
-        display: none !important;
-      }
     }
 
     @keyframes dotPulse {
@@ -4708,16 +4640,6 @@
         text-overflow: ellipsis;
       }
 
-      .autosave-indicator {
-        margin-right: 0;
-        padding: 0;
-        gap: 2px;
-      }
-
-      .autosave-indicator #saveText {
-        display: none !important;
-      }
-
       .topbar-actions {
         gap: 4px;
         padding: 0 2px 0 0;
@@ -6068,10 +5990,8 @@
 
     <div class="topbar-center">
       <div class="topbar-title" id="topTitle">SUPER REPORT</div>
-      <div class="autosave-indicator" id="saveIndicator" style="display:none" title="Sync Status"><span
-          class="dot">●</span> <span id="saveText">SYNCED</span></div>
-      <button class="fs-chip" id="fsArchiveChip" onclick="fsChipClick()" style="display:none"
-        title="Archive to OneDrive folder"><span id="fsChipText">SAVE</span></button>
+      <span class="file-dirty-dot" id="fileDirtyDot" style="display:none"
+        title="Có thay đổi chưa lưu ra file">●</span>
     </div>
 
     <div class="topbar-actions">
@@ -6095,7 +6015,7 @@
           </div>
           <div class="ws-menu-item" onclick="openArchiveBrowser()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            <span>ARCHIVE BROWSER (ONE DRIVE)</span>
+            <span>KHÔI PHỤC FOLDER CŨ</span>
           </div>
         </div>
       </div>
@@ -6123,14 +6043,14 @@
         title="PDF Layout & Styling"><span class="btn-lbl">STYLE</span></button>
       -->
 
-      <button class="topbar-btn" id="btnShare" onclick="shareReport()" style="display:none"
-        title="Share Report (Download JSON)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-          <polyline points="16 6 12 2 8 6" />
-          <line x1="12" y1="2" x2="12" y2="15" />
+      <button class="topbar-btn icon-btn" id="btnSaveFile" onclick="fileSaveShortcut()" style="display:none"
+        title="Lưu file (Ctrl+S)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
         </svg>
-        <span class="btn-lbl">SHARE</span>
       </button>
       <button class="topbar-btn" id="btnPreview" onclick="previewPDF()" style="display:none"
         title="Preview PDF (A4 Realistic View)">
@@ -6249,16 +6169,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>NEW REPORT</span>
           </button>
-          <button class="new-btn sub-action-btn" id="btnImport"
-            onclick="document.getElementById('importInput').click()"
-            title="Import JSON report or press Ctrl+V" style="flex:1; min-width:140px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            <span>IMPORT FILE</span>
-          </button>
-          <button class="new-btn sub-action-btn" id="btnArchive" onclick="openArchiveBrowser()"
-            title="Open the OneDrive archive folder and restore reports" style="flex:1; min-width:140px; padding:0 12px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-            <span>ARCHIVE</span>
+          <button class="new-btn sub-action-btn" id="btnImport" onclick="openReportFile()"
+            title="Mở file JSON hoặc nhấn Ctrl+V" style="flex:1; min-width:140px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 14 12 17 15 14"></polyline><line x1="12" y1="10" x2="12" y2="17"></line></svg>
+            <span>OPEN FILE</span>
           </button>
         </div>
         <div id="localReportLimitText" style="font-size:11px; color:var(--ink-soft); text-align:right; margin:-6px 2px 10px;"></div>
@@ -7533,6 +7447,7 @@
                 factory: r.factory || '',
                 reviewer: r.reviewer || '',
                 updatedAt: r.updatedAt || r.date || '',
+                _fileDirty: !!r._fileDirty,
                 photoCount: coverCount + prodCount,
                 // Only the tiny 96px thumbnail is loaded for the home list. Never
                 // return a full-resolution data URL here.
@@ -9472,6 +9387,7 @@
           D = restored;
           loadData();
           updateTopbar();
+          markFileDirty();
           await saveReportSafe(D);
           showToast(`↩️ Undo: ${item.desc}`);
         }
@@ -9507,6 +9423,7 @@
           D = restored;
           loadData();
           updateTopbar();
+          markFileDirty();
           await saveReportSafe(D);
           showToast(`↪️ Redo: ${item.desc}`);
         }
@@ -9522,12 +9439,12 @@
 
     // Global Keybinding for Undo / Redo & Modal Shortcuts
     window.addEventListener('keydown', (e) => {
-      // Save: Ctrl/Cmd+S saves to the connected OneDrive archive folder.
-      // Ctrl/Cmd+Shift+S lets the user choose a different folder.
+      // Save: Ctrl/Cmd+S writes the report file (first time asks for name + folder).
+      // Ctrl/Cmd+Shift+S = Save As.
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
-        if (e.shiftKey) fsChangeFolder();
-        else fsSaveShortcut();
+        if (e.shiftKey) fileSaveAs();
+        else fileSaveShortcut();
         return;
       }
       // Enter để lưu ảnh khi đang mở Cropper modal
@@ -10819,6 +10736,9 @@
     async function doDuplicateReport(source) {
       const cloned = JSON.parse(JSON.stringify(source));
       cloned.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+      delete cloned._fileDirty;
+      delete cloned._fileSavedAt;
+      delete cloned.archiveFolder;
 
       const allReports = await dbGetAllMetadata();
       const baseTitle = getReportTitle(cloned).trim();
@@ -10927,47 +10847,66 @@
       }
     }
 
-    async function processJsonData(data) {
+    async function processJsonData(data, opts) {
       try {
+        const openHandle = (opts && opts.fileHandle) || null;
         const existingReports = await dbGetAllMetadata();
 
-        const targetTitle = getReportTitle(data).trim();
-        const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
+        if (openHandle) {
+          if (!data.id) data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+          const local = existingReports.find(r => String(r.id) === String(data.id));
+          if (local && local._fileDirty) {
+            const proceed = confirm('Bản trên máy có thay đổi chưa lưu ra file. Mở file sẽ ghi đè bản trên máy.\n\nOK = Mở file\nCancel = Huỷ');
+            if (!proceed) return;
+          }
+          if (!local && !(await ensureLocalReportCapacity())) return;
+        } else {
+          const targetTitle = getReportTitle(data).trim();
+          const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
 
-        // 1. Kiểm tra nếu trùng cả NAME với báo cáo đang có
-        let conflictReport = null;
-        if (isNamed) {
-          conflictReport = existingReports.find(r => getReportTitle(r).trim().toLowerCase() === targetTitle.toLowerCase());
+          // 1. Kiểm tra nếu trùng cả NAME với báo cáo đang có
+          let conflictReport = null;
+          if (isNamed) {
+            conflictReport = existingReports.find(r => getReportTitle(r).trim().toLowerCase() === targetTitle.toLowerCase());
+          }
+
+          if (conflictReport) {
+            // Trùng cả name -> Hiển thị hộp thoại hỏi Replace hay Tạo bản (1)
+            pendingImportData = data;
+            pendingExistingReport = conflictReport;
+            pendingCopySuffix = findNextCopySuffix(targetTitle, existingReports);
+
+            const nameEl = document.getElementById('conflictReportName');
+            const newNameEl = document.getElementById('conflictNewName');
+            const btnCopy = document.getElementById('btnConflictCopy');
+            if (nameEl) nameEl.textContent = `"${targetTitle}"`;
+            if (newNameEl) newNameEl.textContent = `copy ${pendingCopySuffix}`;
+            if (btnCopy) btnCopy.textContent = `Create Copy ${pendingCopySuffix}`;
+
+            const m = document.getElementById('importConflictModal');
+            if (m) m.classList.remove('hidden');
+            return;
+          }
+
+          // 2. Nếu KHÔNG trùng name nhưng trùng ID (hoặc chưa có ID) -> Tự động cấp ID mới
+          const isIdConflict = data.id && existingReports.some(r => String(r.id) === String(data.id));
+          if (!data.id || isIdConflict) {
+            data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
+          }
+          if (!(await ensureLocalReportCapacity())) return;
         }
 
-        if (conflictReport) {
-          // Trùng cả name -> Hiển thị hộp thoại hỏi Replace hay Tạo bản (1)
-          pendingImportData = data;
-          pendingExistingReport = conflictReport;
-          pendingCopySuffix = findNextCopySuffix(targetTitle, existingReports);
-
-          const nameEl = document.getElementById('conflictReportName');
-          const newNameEl = document.getElementById('conflictNewName');
-          const btnCopy = document.getElementById('btnConflictCopy');
-          if (nameEl) nameEl.textContent = `"${targetTitle}"`;
-          if (newNameEl) newNameEl.textContent = `copy ${pendingCopySuffix}`;
-          if (btnCopy) btnCopy.textContent = `Create Copy ${pendingCopySuffix}`;
-
-          const m = document.getElementById('importConflictModal');
-          if (m) m.classList.remove('hidden');
-          return;
-        }
-
-        // 2. Nếu KHÔNG trùng name nhưng trùng ID (hoặc chưa có ID) -> Tự động cấp ID mới
-        const isIdConflict = data.id && existingReports.some(r => String(r.id) === String(data.id));
-        if (!data.id || isIdConflict) {
-          data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
-        }
-        if (!(await ensureLocalReportCapacity())) return;
-
+        delete data.archiveFolder;
+        delete data._fileDirty;
+        delete data._fileSavedAt;
         const normalizedData = await normalizeReportPhotos(data);
+        if (openHandle) {
+          normalizedData._fileDirty = false;
+          normalizedData._fileSavedAt = Date.now();
+        }
         await dbPut(normalizedData);
-        showToast('✓ Report imported successfully!');
+        if (openHandle) await filePersistHandle(normalizedData.id, openHandle);
+        showToast(openHandle ? '✓ Đã mở file' : '✓ Report imported successfully!');
         await renderHome();
         openReport(normalizedData.id);
       } catch (err) {
@@ -11069,6 +11008,13 @@
     }
 
     async function goHome() {
+      if (D && D.id && D._fileDirty) {
+        let leave = true;
+        try {
+          leave = confirm('Báo cáo chưa lưu ra file.\n\nOK = Về trang chủ (bản trong app vẫn được giữ)\nCancel = Ở lại để lưu file (Ctrl+S)');
+        } catch (err) { leave = true; }
+        if (!leave) return;
+      }
       if (typeof flushReport === 'function') {
         try {
           await flushReport();
@@ -11080,10 +11026,11 @@
       }
       currentId = null; curSec = 0;
       D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
+      fileUpdateDot();
       document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
-      ['tabsWrap', 'saveBar', 'btnHome', 'btnPreview', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+      ['tabsWrap', 'saveBar', 'btnHome', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
         const el = document.getElementById(elemId);
         if (el) el.style.display = 'none';
       });
@@ -11113,7 +11060,6 @@
       }
       resetHistory();
       await renderHome();
-      try { fsRefreshChip(); } catch (err) { }
     }
 
     let homeSearchQuery = '';
@@ -11176,7 +11122,6 @@
       if (wsSettings) wsSettings.style.display = 'inline-flex';
       window.scrollTo(0, 0);
       renderHome();
-      try { fsRefreshChip(); } catch (err) { }
     }
 
     function backToLauncherHub() {
@@ -14894,6 +14839,7 @@
 
     function updateTopbar() {
       setTopbarTitle(getReportTitle(D));
+      fileUpdateDot();
       const brandLogo = document.getElementById('topbarBrandLogo');
       if (brandLogo && typeof LOGO_WHITE !== 'undefined') {
         const isDark = true;
@@ -15190,7 +15136,6 @@
     function markDirty() {
       dataRevision++;
       isDirty = true;
-      try { fsMarkDirty(); } catch (err) { /* archive module may not be loaded yet */ }
     }
 
     function cancelTimerOnly() {
@@ -15206,14 +15151,6 @@
 
     async function showQuotaErrorBanner(error) {
       isSaveFailedBannerVisible = true;
-      const saveText = document.getElementById('saveText');
-      if (saveText) saveText.textContent = 'Save Error ⚠️';
-      const saveIndicator = document.getElementById('saveIndicator');
-      if (saveIndicator) {
-        saveIndicator.title = 'Storage error: ' + (error && error.message ? error.message : 'Quota exceeded');
-        saveIndicator.classList.remove('saving');
-        saveIndicator.classList.add('error');
-      }
 
       let storageInfo = '';
       if (navigator.storage && navigator.storage.estimate) {
@@ -15275,13 +15212,6 @@
       if (!payload || !payload.id) return;
       const isCurrentReport = (payload === D);
       const revisionAtStart = dataRevision;
-      const saveText = document.getElementById('saveText');
-      if (saveText) saveText.textContent = 'Saving...';
-      const saveIndicator = document.getElementById('saveIndicator');
-      if (saveIndicator) {
-        saveIndicator.title = 'Saving data...';
-        saveIndicator.classList.add('saving');
-      }
 
       try {
         payload.updatedAt = Date.now();
@@ -15299,13 +15229,6 @@
           clearDraftSnapshot(payload.id);
         }
         hideQuotaErrorBanner();
-
-        if (saveText) saveText.textContent = 'Saved';
-        if (saveIndicator) {
-          saveIndicator.title = 'Saved & synced';
-          saveIndicator.classList.remove('saving');
-          saveIndicator.classList.remove('error');
-        }
         if (isCurrentReport) updateTopbar();
       } catch (err) {
         console.error('[Save Error]', err);
@@ -15382,7 +15305,6 @@
         syncReportFieldsFromDOM();
         saveDraftSnapshot(D);
         saveReportSafe(D).catch(() => {});
-        try { fsFlushPending(); } catch (err) { }
       } catch (err) {
         console.warn('[Autosave] Emergency flush failed', err);
       }
@@ -15391,12 +15313,14 @@
     function savePhotoChangeNow() {
       if (!currentId || !D || !D.id) return;
       saveReportSafe(D).catch(() => {});
+      markFileDirty();
     }
 
     function as() {
       if (!currentId || !D) return;
       syncReportFieldsFromDOM();
       markDirty();
+      markFileDirty();
       renderOverviewSummary();
 
       const now = Date.now();
@@ -15404,9 +15328,6 @@
         lastSnapshotTime = now;
         saveDraftSnapshot(D);
       }
-
-      const saveText = document.getElementById('saveText');
-      if (saveText) saveText.textContent = 'Unsaved...';
 
       cancelTimerOnly();
       autosaveIdleTimer = setTimeout(() => {
@@ -15429,7 +15350,14 @@
       }
     });
 
-    window.addEventListener('beforeunload', emergencyFlush);
+    window.addEventListener('beforeunload', (e) => {
+      if (currentId && D && D.id && D._fileDirty) {
+        try { syncReportFieldsFromDOM(); } catch (err) { }
+        e.preventDefault();
+        e.returnValue = '';
+      }
+      emergencyFlush();
+    });
     window.addEventListener('pagehide', emergencyFlush);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') emergencyFlush();
@@ -15437,7 +15365,6 @@
 
     async function openReport(id) {
       try {
-        try { fsFlushPending(); } catch (err) { }
         if (typeof flushReport === 'function') await flushReport();
         currentId = id;
         const repData = await dbGet(id);
@@ -15476,7 +15403,7 @@
         }
         document.body.classList.add('in-editor');
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'btnHome', 'btnPreview', 'btnExport', 'btnShare', 'btnUndo', 'btnRedo', 'saveIndicator', 'topbarDivider'].forEach(elemId => {
+        ['tabsWrap', 'btnHome', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
           if (el) el.style.display = elemId === 'tabsWrap' ? 'block' : 'inline-flex';
         });
@@ -15491,7 +15418,7 @@
         const wrapEl = document.getElementById('tabsWrap');
         if (wrapEl) wrapEl.scrollLeft = 0;
         document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); initTouchSwipeNavigation(); window.scrollTo(0, 0);
-        try { fsRefreshChip(); } catch (err) { }
+        fileEnsureHandle().then(fileUpdateDot).catch(() => { });
       } catch (err) {
         alert("Error opening report: " + err.message);
       }
@@ -15506,7 +15433,7 @@
           'App đã đạt giới hạn ' + MAX_LOCAL_REPORTS + ' báo cáo.\n\n' +
           'OK = Xuất file backup JSON ngay\n' +
           'Cancel = Không backup\n\n' +
-          'Sau đó hãy xoá bớt báo cáo trên app (bản đã lưu trên OneDrive vẫn giữ) rồi thử lại.'
+          'Sau đó hãy xoá bớt báo cáo trên app (bản đã lưu ra file vẫn giữ) rồi thử lại.'
         );
       } catch (err) { doBackup = false; }
       if (doBackup) {
@@ -15533,7 +15460,6 @@
 
     async function newReport() {
       try {
-        try { fsFlushPending(); } catch (err) { }
         if (typeof flushReport === 'function') await flushReport();
         if (!(await ensureLocalReportCapacity())) return;
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
@@ -15568,11 +15494,6 @@
       }
     }
 
-    function shareReport() {
-      as();
-      downloadReportJson(D);
-      showToast('✓ JSON file downloaded');
-    }
     let toastTimeout = null;
     function showToast(msg, duration = 2200) {
       const t = document.getElementById('toast');
@@ -15589,25 +15510,20 @@
       }, duration);
     }
 
-    /* ================= ONE DRIVE FOLDER ARCHIVE (File System Access API) ================= */
+    /* ============ SAVE ONE JSON FILE PER REPORT + LEGACY ARCHIVE RESTORE ============ */
     const FS_DB_NAME = 'SofaCompanyPP_FS';
     const FS_STORE_NAME = 'kv';
     const FS_DIR_KEY = 'archiveDir';
     const FS_VERSION = 1;
-    const FS_AUTOSAVE_MS = 60000;
-    const FS_HEAVY_FIELDS = ['img', 'original', 'markupBase', 'imgSub', 'originalSub', 'markupBaseSub'];
+    const FILE_HANDLE_PREFIX = 'reportFile:';
 
     let fsDb = null;
     let fsDirHandle = null;
-    let fsTimer = null;
-    let fsBusy = null;
-    let fsPendingRep = null;
-    let fsPendingId = null;
-    let fsLastSavedAt = 0;
-    let fsError = null;
-    const fsRefCache = {};
-    const fsSavedAtByReport = {};
+    let fileHandle = null;
+    let fileHandleId = null;
+    let fileBusy = null;
     const fsSupported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
+    const FILE_SAVE_SUPPORTED = typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function';
 
     function fsOpenDb() {
       return new Promise((resolve, reject) => {
@@ -15642,63 +15558,20 @@
       });
     }
 
-    function fsTimeLabel(ts) {
-      try {
-        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } catch (e) { return ''; }
-    }
-
-    function fsSetChip(state, text, title) {
-      const chip = document.getElementById('fsArchiveChip');
-      if (!chip) return;
-      if (!fsSupported) { chip.style.display = 'none'; return; }
-      chip.style.display = 'inline-flex';
-      chip.className = 'fs-chip' + (state ? ' ' + state : '');
-      const label = document.getElementById('fsChipText');
-      if (label) label.textContent = text;
-      chip.title = title || '';
-    }
-
-    async function fsRefreshChip() {
-      if (!fsSupported) { fsSetChip('', '', ''); return; }
-      if (!fsDirHandle) {
-        fsSetChip('off', 'SAVE', 'Ctrl+S để chọn thư mục OneDrive');
-        return;
-      }
-      if (fsError) {
-        fsSetChip('warn', 'ARCHIVE ⚠', 'Lỗi archive: ' + fsError);
-        return;
-      }
-      const granted = await fsEnsurePermission(false);
-      if (!granted) {
-        fsSetChip('warn', 'RECONNECT', 'Nhấn để cấp lại quyền ghi thư mục OneDrive');
-        return;
-      }
-      const editing = !!(currentId && D && D.id);
-      if (!editing) {
-        fsSetChip('on', 'ARCHIVE ON', 'Thư mục: ' + (fsDirHandle.name || '') + ' — Ctrl+Shift+S đổi thư mục');
-      } else if (D.archiveFolder) {
-        const ts = fsSavedAtByReport[D.id];
-        fsSetChip('on', ts ? 'ARCHIVE ' + fsTimeLabel(ts) : 'ARCHIVED',
-          'Báo cáo đã lưu vào: ' + D.archiveFolder + ' — Ctrl+S lưu ngay');
-      } else {
-        fsSetChip('off', 'SAVE', 'Báo cáo này chỉ là bản nháp trên app — bấm SAVE hoặc Ctrl+S để lưu vào OneDrive');
-      }
-    }
-
-    async function fsEnsurePermission(interactive) {
-      if (!fsDirHandle) return false;
+    async function fsEnsurePermission(handle, interactive) {
+      const h = handle || fsDirHandle;
+      if (!h) return false;
       try {
         const opts = { mode: 'readwrite' };
-        if (typeof fsDirHandle.queryPermission === 'function') {
-          const state = await fsDirHandle.queryPermission(opts);
+        if (typeof h.queryPermission === 'function') {
+          const state = await h.queryPermission(opts);
           if (state === 'granted') return true;
           if (!interactive) return false;
         } else if (!interactive) {
           return true;
         }
-        if (interactive && typeof fsDirHandle.requestPermission === 'function') {
-          return (await fsDirHandle.requestPermission(opts)) === 'granted';
+        if (interactive && typeof h.requestPermission === 'function') {
+          return (await h.requestPermission(opts)) === 'granted';
         }
         return false;
       } catch (err) {
@@ -15706,27 +15579,183 @@
       }
     }
 
-    async function fsInit() {
-      if (!fsSupported) { fsSetChip('', '', ''); return; }
-      try { fsDirHandle = (await fsIdbGet(FS_DIR_KEY)) || null; }
-      catch (err) { fsDirHandle = null; }
-      fsRefreshChip();
+    /* ---- one .json file per report (Ctrl+S) ---- */
+    async function fileEnsureHandle() {
+      const id = currentId || (D && D.id);
+      if (!id) { fileHandle = null; fileHandleId = null; return null; }
+      if (fileHandleId === id && fileHandle) return fileHandle;
+      try { fileHandle = (await fsIdbGet(FILE_HANDLE_PREFIX + id)) || null; }
+      catch (err) { fileHandle = null; }
+      fileHandleId = id;
+      return fileHandle;
     }
 
-    async function fsPickFolder(thenSave) {
+    function fileUpdateDot() {
+      const dot = document.getElementById('fileDirtyDot');
+      if (!dot) return;
+      dot.style.display = (D && D.id && D._fileDirty) ? 'inline' : 'none';
+    }
+
+    function markFileDirty() {
+      if (!currentId || !D || !D.id || D._fileDirty) return;
+      D._fileDirty = true;
+      fileUpdateDot();
+    }
+
+    function fileSuggestedName(rep) {
+      const base = [rep.model, rep.desc].filter(Boolean).join('_') || getReportFileBaseName(rep);
+      const safe = String(base).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 100) || 'report';
+      return safe + '.json';
+    }
+
+    function fileBuildBlob(rep) {
+      const copy = Object.assign({}, rep);
+      delete copy._fileDirty;
+      delete copy._fileSavedAt;
+      return new Blob([JSON.stringify(copy)], { type: 'application/json' });
+    }
+
+    async function fileWriteReport(handle, rep) {
+      const writable = await handle.createWritable();
+      try {
+        await writable.write(fileBuildBlob(rep));
+      } catch (err) {
+        try { await writable.abort(); } catch (e) { }
+        throw err;
+      }
+      await writable.close();
+    }
+
+    async function filePersistHandle(id, handle) {
+      fileHandle = handle;
+      fileHandleId = id;
+      try { await fsIdbSet(FILE_HANDLE_PREFIX + id, handle); }
+      catch (err) { console.warn('[Save] could not persist file handle', err); }
+    }
+
+    async function fileSaveAs() {
+      if (!currentId || !D || !D.id) return;
+      try { syncReportFieldsFromDOM(); } catch (err) { }
+      if (!FILE_SAVE_SUPPORTED) {
+        downloadReportJson(D);
+        showToast('Trình duyệt không hỗ trợ lưu file — đã tải JSON về máy');
+        return;
+      }
+      let handle = null;
+      try {
+        handle = await window.showSaveFilePicker({
+          id: 'sofa-report-file',
+          suggestedName: fileSuggestedName(D),
+          types: [{ description: 'Super Report JSON', accept: { 'application/json': ['.json'] } }]
+        });
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.warn('[Save] picker failed', err);
+        downloadReportJson(D);
+        showToast('Không mở được hộp thoại lưu — đã tải JSON về máy');
+        return;
+      }
+      if (!handle) return;
+      const id = D.id;
+      const rev = dataRevision;
+      try {
+        await fileWriteReport(handle, D);
+      } catch (err) {
+        console.warn('[Save] write failed', err);
+        showToast('Lỗi lưu file: ' + (err && err.message ? err.message : err), 5000);
+        return;
+      }
+      await filePersistHandle(id, handle);
+      if (D && D.id === id && dataRevision === rev) {
+        D._fileDirty = false;
+        D._fileSavedAt = Date.now();
+      }
+      fileUpdateDot();
+      showToast('✓ Đã lưu file: ' + handle.name);
+    }
+
+    async function fileWriteCurrent(handle) {
+      try { syncReportFieldsFromDOM(); } catch (err) { }
+      const id = D.id;
+      const rev = dataRevision;
+      await fileWriteReport(handle, D);
+      if (D && D.id === id && dataRevision === rev) {
+        D._fileDirty = false;
+        D._fileSavedAt = Date.now();
+      }
+      fileUpdateDot();
+      showToast('✓ Đã lưu: ' + handle.name);
+    }
+
+    function fileSaveShortcut() {
+      if (!currentId || !D || !D.id) return;
+      return fileEnsureHandle().then(async (handle) => {
+        if (!handle) { await fileSaveAs(); return; }
+        const granted = await fsEnsurePermission(handle, true);
+        if (!granted) { await fileSaveAs(); return; }
+        const next = (fileBusy || Promise.resolve()).then(() => fileWriteCurrent(handle));
+        fileBusy = next.catch(() => { });
+        try {
+          await next;
+        } catch (err) {
+          console.warn('[Save] write failed', err);
+          if (err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError')) { await fileSaveAs(); return; }
+          showToast('Lỗi lưu file: ' + (err && err.message ? err.message : err), 5000);
+        }
+      });
+    }
+
+    async function openReportFile() {
+      if (typeof flushReport === 'function') {
+        try { await flushReport(); } catch (err) { }
+      }
+      if (!FILE_SAVE_SUPPORTED || typeof window.showOpenFilePicker !== 'function') {
+        const input = document.getElementById('importInput');
+        if (input) input.click();
+        return;
+      }
+      let handle = null;
+      try {
+        const picked = await window.showOpenFilePicker({
+          id: 'sofa-report-file',
+          multiple: false,
+          types: [{ description: 'Super Report JSON', accept: { 'application/json': ['.json'] } }]
+        });
+        handle = picked && picked[0];
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        const input = document.getElementById('importInput');
+        if (input) input.click();
+        return;
+      }
+      if (!handle) return;
+      try {
+        const file = await handle.getFile();
+        const data = JSON.parse(await file.text());
+        await processJsonData(data, { fileHandle: handle });
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi mở file: JSON không hợp lệ hoặc không đọc được.');
+      }
+    }
+
+    async function fsInit() {
+      if (!fsSupported) return;
+      try { fsDirHandle = (await fsIdbGet(FS_DIR_KEY)) || null; }
+      catch (err) { fsDirHandle = null; }
+    }
+
+    async function fsPickFolder() {
       if (!fsSupported) {
-        showToast('Trình duyệt này không hỗ trợ lưu vào thư mục. Dùng Chrome/Edge trên máy tính.');
+        showToast('Trình duyệt này không hỗ trợ đọc thư mục. Dùng Chrome/Edge trên máy tính.');
         return false;
       }
       try {
         const handle = await window.showDirectoryPicker({ id: 'sofa-archive', mode: 'readwrite', startIn: 'documents' });
         if (!handle) return false;
         fsDirHandle = handle;
-        fsError = null;
         try { await fsIdbSet(FS_DIR_KEY, handle); } catch (err) { console.warn('[Archive] could not persist folder handle', err); }
-        await fsRefreshChip();
         showToast('✓ Đã kết nối thư mục: ' + handle.name);
-        if (thenSave && currentId && D && D.id) await fsSaveReport(D, true);
         return true;
       } catch (err) {
         if (err && err.name === 'AbortError') return false;
@@ -15736,88 +15765,10 @@
       }
     }
 
-    async function fsChipClick() {
-      if (!fsSupported) { showToast('Cần Chrome/Edge trên máy tính để lưu vào thư mục OneDrive.'); return; }
-      if (!fsDirHandle) { await fsPickFolder(!!(currentId && D && D.id)); return; }
-      const granted = await fsEnsurePermission(true);
-      if (!granted) { await fsPickFolder(!!(currentId && D && D.id)); return; }
-      if (currentId && D && D.id) await fsSaveShortcut();
-      else showToast('Thư mục archive đã kết nối');
-    }
-
     async function fsChangeFolder(refreshList) {
-      if (!fsSupported) { showToast('Cần Chrome/Edge trên máy tính để đổi thư mục archive.'); return; }
-      const picked = await fsPickFolder(!!(currentId && D && D.id));
+      const picked = await fsPickFolder();
       const modal = document.getElementById('fsArchiveModal');
       if (picked && refreshList && modal && !modal.classList.contains('hidden')) await fsRenderArchiveList();
-    }
-
-    async function fsSaveShortcut() {
-      if (!fsSupported) {
-        if (currentId && D && D.id) {
-          try { syncReportFieldsFromDOM(); } catch (err) { }
-          downloadReportJson(D);
-          showToast('Trình duyệt không hỗ trợ thư mục — đã tải JSON báo cáo');
-        } else {
-          backupDatabase();
-        }
-        return;
-      }
-      if (!currentId || !D || !D.id) {
-        if (!fsDirHandle) { await fsPickFolder(false); return; }
-        showToast('Mở một báo cáo để lưu archive');
-        return;
-      }
-      try { syncReportFieldsFromDOM(); } catch (err) { }
-      if (!fsDirHandle) { await fsPickFolder(true); return; }
-      const granted = await fsEnsurePermission(true);
-      if (!granted) { await fsPickFolder(true); return; }
-      await fsSaveReport(D, true);
-    }
-
-    function fsMarkDirty() {
-      if (!fsSupported || !fsDirHandle) return;
-      if (!currentId || !D || !D.id) return;
-      // Drafts stay local until the user explicitly saves them to the archive.
-      if (!D.archiveFolder) return;
-      fsPendingRep = D;
-      fsPendingId = D.id;
-      if (fsTimer) clearTimeout(fsTimer);
-      fsTimer = setTimeout(() => {
-        fsTimer = null;
-        const rep = fsPendingRep;
-        fsPendingRep = null;
-        fsPendingId = null;
-        if (rep && rep.id) fsSaveReport(rep, false).catch(() => { });
-      }, FS_AUTOSAVE_MS);
-    }
-
-    function fsFlushPending() {
-      if (!fsSupported || !fsDirHandle || !fsTimer) return;
-      clearTimeout(fsTimer);
-      fsTimer = null;
-      const rep = fsPendingRep;
-      fsPendingRep = null;
-      fsPendingId = null;
-      if (rep && rep.id) fsSaveReport(rep, false).catch(() => { });
-    }
-
-    function fsSaveReport(rep, manual) {
-      if (!fsSupported || !rep || !rep.id) return Promise.resolve();
-      if (!fsDirHandle) return Promise.resolve();
-      const run = () => fsDoSave(rep, manual);
-      const next = (fsBusy || Promise.resolve()).then(run, run);
-      fsBusy = next.catch(() => { });
-      return next;
-    }
-
-    function fsSanitizeFolderName(name) {
-      let out = String(name || 'report').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
-      out = out.replace(/[. ]+$/g, '');
-      if (!out) out = 'report';
-      if (out.length > 60) out = out.slice(0, 60).replace(/[. _-]+$/g, '');
-      if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(out)) out = '_' + out;
-      return out;
     }
 
     function getReportFileBaseName(rep) {
@@ -15876,60 +15827,6 @@
       return out;
     }
 
-    function fsDataUrlExt(dataUrl) {
-      const m = /^data:([^;,]+)/.exec(String(dataUrl || ''));
-      const mime = (m && m[1] || '').toLowerCase();
-      if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
-      if (mime === 'image/png') return 'png';
-      if (mime === 'image/webp') return 'webp';
-      if (mime === 'image/gif') return 'gif';
-      if (mime === 'application/pdf') return 'pdf';
-      return 'bin';
-    }
-
-    function fsShortId(str) {
-      let h = 5381;
-      const s = String(str);
-      for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
-      return h.toString(36).padStart(6, '0');
-    }
-
-    function fsPhotoSig(dataUrl) {
-      const s = String(dataUrl);
-      const head = s.slice(0, 96);
-      const tail = s.slice(-96);
-      const midStart = Math.max(0, (s.length >> 1) - 48);
-      const mid = s.slice(midStart, midStart + 96);
-      const sample = head + '|' + mid + '|' + tail;
-      let h = 5381;
-      for (let i = 0; i < sample.length; i++) h = ((h * 33) ^ sample.charCodeAt(i)) >>> 0;
-      return s.length + ':' + h.toString(36);
-    }
-
-    function fsIsDataUrl(value) {
-      return typeof value === 'string' && value.startsWith('data:') && value.length > 64;
-    }
-
-    async function fsWriteBlobFile(dir, name, dataUrl) {
-      const blob = await (await fetch(dataUrl)).blob();
-      const handle = await dir.getFileHandle(name, { create: true });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    }
-
-    async function fsWriteTextFile(dir, name, text) {
-      const handle = await dir.getFileHandle(name, { create: true });
-      const writable = await handle.createWritable();
-      await writable.write(new Blob([text], { type: 'application/json' }));
-      await writable.close();
-    }
-
-    async function fsFileExists(dir, name) {
-      try { await dir.getFileHandle(name, { create: false }); return true; }
-      catch (err) { return false; }
-    }
-
     async function fsReadFileAsDataUrl(dir, name) {
       const handle = await dir.getFileHandle(name, { create: false });
       const file = await handle.getFile();
@@ -15949,181 +15846,6 @@
       } catch (err) { return null; }
     }
 
-    async function fsResolveFolder(rep, root) {
-      if (rep.archiveFolder) {
-        const name = fsSanitizeFolderName(rep.archiveFolder);
-        let folder;
-        try { folder = await root.getDirectoryHandle(name, { create: false }); }
-        catch (err) { folder = await root.getDirectoryHandle(name, { create: true }); }
-        const meta = await fsReadReportJson(folder);
-        return { folder: folder, name: name, meta: meta };
-      }
-      const base = fsSanitizeFolderName(getReportFileBaseName(rep));
-      for (let i = 1; i <= 50; i++) {
-        const suffix = i === 1 ? '' : ('_' + i);
-        const candidate = (i === 1 ? base : base.slice(0, Math.max(1, 56 - suffix.length)).replace(/[. ]+$/g, '') + suffix);
-        let folder = null;
-        try { folder = await root.getDirectoryHandle(candidate, { create: false }); }
-        catch (err) { /* not found */ }
-        if (!folder) {
-          folder = await root.getDirectoryHandle(candidate, { create: true });
-          rep.archiveFolder = candidate;
-          return { folder: folder, name: candidate, meta: null };
-        }
-        const meta = await fsReadReportJson(folder);
-        if (meta && String(meta.id) === String(rep.id)) {
-          rep.archiveFolder = candidate;
-          return { folder: folder, name: candidate, meta: meta };
-        }
-      }
-      throw new Error('Không tạo được thư mục archive (quá nhiều tên trùng)');
-    }
-
-    function fsStripPhotoRecord(rec) {
-      if (!rec || typeof rec !== 'object') return rec;
-      const copy = Object.assign({}, rec);
-      FS_HEAVY_FIELDS.forEach(f => { if (copy[f]) copy[f] = null; });
-      return copy;
-    }
-
-    function fsBuildArchivePayload(rep, files, folderName) {
-      const out = Object.assign({}, rep);
-      delete out.thumbSmall;
-      if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
-        out.coverPhotos = {};
-        Object.keys(rep.coverPhotos).forEach(k => {
-          const rec = rep.coverPhotos[k];
-          out.coverPhotos[k] = (typeof rec === 'string') ? { img: null } : fsStripPhotoRecord(rec);
-        });
-      }
-      if (Array.isArray(rep.dimensions)) out.dimensions = rep.dimensions.map(fsStripPhotoRecord);
-      fsPhotoKeys(rep).forEach(fk => {
-        if (Array.isArray(rep[fk])) out[fk] = rep[fk].map(fsStripPhotoRecord);
-      });
-      if (Array.isArray(rep.docAttachments)) {
-        out.docAttachments = rep.docAttachments.map(doc => {
-          if (!doc || typeof doc !== 'object') return doc;
-          const copy = Object.assign({}, doc);
-          if (copy.img) copy.img = null;
-          if (copy.data) copy.data = null;
-          return copy;
-        });
-      }
-      out._archive = {
-        version: FS_VERSION,
-        folder: folderName,
-        savedAt: new Date().toISOString(),
-        files: files
-      };
-      return out;
-    }
-
-    async function fsCleanupDir(dir, used) {
-      const stale = [];
-      try {
-        for await (const entry of dir.entries()) {
-          const name = entry[0];
-          const handle = entry[1];
-          if (!handle || handle.kind !== 'file') continue;
-          if (!/^p_/.test(name)) continue;
-          if (used.has(name)) continue;
-          stale.push(name);
-        }
-      } catch (err) { return; }
-      for (const name of stale) {
-        try { await dir.removeEntry(name); } catch (err) { }
-      }
-    }
-
-    async function fsWriteMediaSet(dir, slots, baseline, files, used, contentFiles) {
-      for (const slot of slots) {
-        const entry = files[slot.key] || {};
-        for (const name of slot.names) {
-          const data = slot.rec[name];
-          if (!fsIsDataUrl(data)) continue;
-          const sig = fsPhotoSig(data);
-          let fileName = contentFiles.get(sig);
-          const prior = baseline[slot.key] && baseline[slot.key][name];
-          if (!fileName && prior && prior.s === sig && prior.f && await fsFileExists(dir, prior.f)) {
-            fileName = prior.f;
-          }
-          if (!fileName) {
-            fileName = 'p_' + fsShortId(slot.key + ':' + name) + '_' + sig.split(':')[1] + '.' + fsDataUrlExt(data);
-            await fsWriteBlobFile(dir, fileName, data);
-          }
-          contentFiles.set(sig, fileName);
-          entry[name] = { f: fileName, s: sig };
-          used.add(fileName);
-        }
-        if (Object.keys(entry).length) files[slot.key] = entry;
-      }
-    }
-
-    function fsHasIdentity(rep) {
-      if ((rep.model && String(rep.model).trim()) || (rep.desc && String(rep.desc).trim())) return true;
-      const slots = fsCollectSlots(rep);
-      return slots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n])));
-    }
-
-    async function fsDoSave(rep, manual) {
-      // Do not create a folder with a generic name before the report has any real content.
-      if (!manual && !rep.archiveFolder && !fsHasIdentity(rep)) return;
-      const granted = await fsEnsurePermission(false);
-      if (!granted) {
-        fsSetChip('warn', 'RECONNECT', 'Nhấn để cấp lại quyền ghi thư mục OneDrive');
-        if (manual) showToast('Chưa có quyền ghi thư mục — bấm RECONNECT để cấp lại');
-        return;
-      }
-      fsSetChip('saving', 'ARCHIVING...', 'Đang lưu vào thư mục OneDrive...');
-      try {
-        const resolved = await fsResolveFolder(rep, fsDirHandle);
-        const folder = resolved.folder;
-        const folderName = resolved.name;
-        const cached = fsRefCache[rep.id];
-        let baseline = {};
-        if (cached && cached.folder === folderName) baseline = cached.files || {};
-        else if (resolved.meta && String(resolved.meta.id) === String(rep.id) && resolved.meta._archive) {
-          baseline = resolved.meta._archive.files || {};
-        }
-
-        const slots = fsCollectSlots(rep);
-        const docSlots = fsCollectDocRecords(rep);
-        const hasMedia = slots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n]))) ||
-          docSlots.some(s => s.names.some(n => fsIsDataUrl(s.rec[n])));
-
-        let photosDir = null;
-        try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); }
-        catch (err) { /* not created yet */ }
-        if (!photosDir && hasMedia) photosDir = await folder.getDirectoryHandle('photos', { create: true });
-
-        const files = {};
-        const used = new Set();
-        const contentFiles = new Map();
-        if (photosDir) {
-          await fsWriteMediaSet(photosDir, slots, baseline, files, used, contentFiles);
-          await fsWriteMediaSet(photosDir, docSlots, baseline, files, used, contentFiles);
-          await fsCleanupDir(photosDir, used);
-        }
-
-        const payload = fsBuildArchivePayload(rep, files, folderName);
-        await fsWriteTextFile(folder, 'report.json', JSON.stringify(payload));
-
-        fsRefCache[rep.id] = { folder: folderName, files: files };
-        fsLastSavedAt = Date.now();
-        fsSavedAtByReport[rep.id] = fsLastSavedAt;
-        fsError = null;
-        fsPendingRep = null;
-        fsPendingId = null;
-        await fsRefreshChip();
-        if (manual) showToast('✓ Đã lưu vào OneDrive: ' + folderName);
-      } catch (err) {
-        console.warn('[Archive] save failed', err);
-        fsError = err && err.message ? err.message : String(err);
-        fsSetChip('warn', 'ARCHIVE ⚠', 'Lỗi archive: ' + fsError);
-        if (manual) showToast('Lỗi lưu OneDrive: ' + fsError, 4000);
-      }
-    }
-
     async function fsSavePdfBlob(blob, baseName) {
       const name = (baseName || 'report').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 120) + '.pdf';
       try {
@@ -16138,19 +15860,6 @@
       } catch (err) {
         console.warn('[PDF] download failed', err);
       }
-      if (!fsSupported || !fsDirHandle || !currentId || !D || !D.id || !D.archiveFolder) return;
-      try {
-        const granted = await fsEnsurePermission(false);
-        if (!granted) return;
-        const resolved = await fsResolveFolder(D, fsDirHandle);
-        const handle = await resolved.folder.getFileHandle(name, { create: true });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        showToast('✓ PDF đã lưu vào thư mục archive');
-      } catch (err) {
-        console.warn('[Archive] could not store PDF copy', err);
-      }
     }
 
     function fsBuildArchiveModal() {
@@ -16162,7 +15871,7 @@
       overlay.innerHTML =
         '<div class="modal-box" style="max-width:640px;">' +
           '<div class="modal-head">' +
-            '<h3>ARCHIVE · ONE DRIVE</h3>' +
+            '<h3>KHÔI PHỤC FOLDER CŨ</h3>' +
             '<button class="modal-close" onclick="closeFsArchiveModal()">✕</button>' +
           '</div>' +
           '<div style="padding:10px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--line);">' +
@@ -16215,7 +15924,7 @@
       list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:12px;">Đang quét thư mục...</div>';
       const items = await fsListArchiveReports();
       if (!items.length) {
-        list.innerHTML = '<div style="padding:28px 16px;text-align:center;color:var(--ink-soft);font-size:12px;line-height:1.7;">Chưa có báo cáo nào trong thư mục này.<br>Mở một báo cáo và nhấn <strong>Ctrl+S</strong> để lưu vào đây.</div>';
+        list.innerHTML = '<div style="padding:28px 16px;text-align:center;color:var(--ink-soft);font-size:12px;line-height:1.7;">Chưa có báo cáo nào trong thư mục này.</div>';
         return;
       }
       list.innerHTML = items.map(item => {
@@ -16238,14 +15947,14 @@
 
     async function openArchiveBrowser() {
       if (!fsSupported) {
-        showToast('Cần Chrome/Edge trên máy tính để mở kho lưu OneDrive.', 4000);
+        showToast('Cần Chrome/Edge trên máy tính để mở folder cũ.', 4000);
         return;
       }
       if (!fsDirHandle) {
-        const ok = await fsPickFolder(false);
+        const ok = await fsPickFolder();
         if (!ok || !fsDirHandle) return;
       }
-      const granted = await fsEnsurePermission(true);
+      const granted = await fsEnsurePermission(fsDirHandle, true);
       if (!granted) { showToast('Chưa có quyền truy cập thư mục archive'); return; }
       fsBuildArchiveModal();
       const modal = document.getElementById('fsArchiveModal');
@@ -16257,7 +15966,9 @@
       const files = (meta._archive && meta._archive.files) || {};
       const payload = Object.assign({}, meta);
       delete payload._archive;
-      payload.archiveFolder = folderName;
+      delete payload.archiveFolder;
+      delete payload._fileDirty;
+      delete payload._fileSavedAt;
       for (const slot of fsCollectSlots(payload)) {
         const info = files[slot.key];
         if (info) {
@@ -16294,7 +16005,7 @@
 
     async function fsRestoreReport(folderName) {
       if (!fsDirHandle) return;
-      const granted = await fsEnsurePermission(true);
+      const granted = await fsEnsurePermission(fsDirHandle, true);
       if (!granted) { showToast('Chưa có quyền truy cập thư mục archive'); return; }
       let folder = null;
       let meta = null;
@@ -16322,20 +16033,10 @@
         }
         if ((!existing || !keepFolder) && !(await ensureLocalReportCapacity())) return;
         const payload = await fsHydratePayload(meta, folderName, photosDir);
-        if (copyId) {
-          payload.id = copyId;
-          payload.archiveFolder = null;
-        }
+        if (copyId) payload.id = copyId;
         payload.thumbSmall = null;
         try { await refreshReportThumbnail(payload, true); } catch (err) { }
         await dbPut(payload);
-        if (keepFolder) {
-          fsRefCache[payload.id] = { folder: folderName, files: (meta._archive && meta._archive.files) || {} };
-          const savedTs = meta._archive && meta._archive.savedAt ? Date.parse(meta._archive.savedAt) : 0;
-          if (savedTs) fsSavedAtByReport[payload.id] = savedTs;
-        } else {
-          delete fsRefCache[payload.id];
-        }
         await renderHome();
         closeFsArchiveModal();
         showToast('✓ Đã khôi phục: ' + getReportTitle(payload));
