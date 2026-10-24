@@ -7873,6 +7873,16 @@
       return parts.length ? parts.join(' ') : 'Untitled Report';
     }
 
+    // WebP chỉ dùng cho ảnh mới để giảm dung lượng; luồng xuất PDF luôn ra JPEG
+    // vì jsPDF không nhúng được WebP. Nếu canvas không encode được WebP thì giữ JPEG.
+    const supportsWebpEncoding = (() => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 1; c.height = 1;
+        return c.toDataURL('image/webp').startsWith('data:image/webp');
+      } catch (e) { return false; }
+    })();
+
     // Chuẩn hóa trần ảnh gốc (Master Photo): Khống chế tối đa 1600px với chất lượng 0.7
     // Tiết kiệm hơn 85% dung lượng bộ nhớ mà vẫn bảo toàn đầy đủ khung cảnh để bấm cắt lại (re-crop) bất kỳ lúc nào
     async function normalizeMasterPhoto(dataUrl, maxDimension = 1600, quality = 0.7) {
@@ -7911,7 +7921,7 @@
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, targetW, targetH);
-            const res = canvas.toDataURL('image/jpeg', quality);
+            const res = canvas.toDataURL(supportsWebpEncoding ? 'image/webp' : 'image/jpeg', quality);
             canvas.width = 0; canvas.height = 0; // Giải phóng ngay lập tức buffer GPU của Canvas
             resolve(res);
           } else {
@@ -7965,7 +7975,7 @@
       return rep;
     }
 
-    function resizeImage(imageSource, maxDimension = 1280, quality = 0.88) {
+    function resizeImage(imageSource, maxDimension = 1280, quality = 0.88, preferWebp = false) {
       return new Promise((resolve) => {
         if (!imageSource) {
           resolve('');
@@ -8014,8 +8024,11 @@
 
             const isPng = (isBlobOrFile && imageSource.type === 'image/png') ||
               (typeof imageSource === 'string' && imageSource.startsWith('data:image/png'));
+            const outFormat = (preferWebp && supportsWebpEncoding && !isPng)
+              ? 'image/webp'
+              : (isPng ? 'image/png' : 'image/jpeg');
             try {
-              const res = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality);
+              const res = canvas.toDataURL(outFormat, quality);
               canvas.width = 0; canvas.height = 0; // Giải phóng ngay GPU Texture
               resolve(res);
             } catch (err) {
@@ -8303,7 +8316,7 @@
           }
           currentOriginalImg = dataUrl;
           const masterPhoto = await normalizeMasterPhoto(dataUrl);
-          const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+          const compressed = await resizeImage(masterPhoto, 1280, 0.85, true);
           savePhoto(compressed, masterPhoto, targetSnapshot);
           highlightTarget(targetSnapshot, element);
         }).catch(err => {
@@ -8757,7 +8770,7 @@
           const rawDataUrl = await readImageFileAsDataUrl(q.items[i].file);
           if (!rawDataUrl) { failed++; continue; }
           const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
-          const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+          const compressed = await resizeImage(masterPhoto, 1280, 0.85, true);
           if (!compressed) { failed++; continue; }
           prepared.push({ target: plan[i], img: compressed, original: masterPhoto });
         } catch (err) {
@@ -9114,10 +9127,10 @@
 
       if (copied && copied.original && (Date.now() - (copied.timestamp || 0) < 15 * 60 * 1000)) {
         masterPhoto = copied.original;
-        displayCropped = copied.img || (await resizeImage(masterPhoto, 1280, 0.88));
+        displayCropped = copied.img || (await resizeImage(masterPhoto, 1280, 0.88, true));
       } else {
         masterPhoto = await normalizeMasterPhoto(dataUrl);
-        displayCropped = await resizeImage(masterPhoto, 1280, 0.88);
+        displayCropped = await resizeImage(masterPhoto, 1280, 0.88, true);
       }
 
       currentOriginalImg = masterPhoto;
@@ -9723,7 +9736,7 @@
         const rawDataUrl = await readImageFileAsDataUrl(files[0]);
         if (!rawDataUrl) return;
         const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
-        const compressed = await resizeImage(masterPhoto, 1280, 0.85);
+        const compressed = await resizeImage(masterPhoto, 1280, 0.85, true);
         if (!compressed) {
           showToast('Photo processing error');
           return;
@@ -16143,9 +16156,9 @@
       if (!report) return null;
       const sources = new Set();
       const consider = (value) => {
-        if (typeof value === 'string' && value.startsWith('data:image') && value.length > 120000) {
-          sources.add(value);
-        }
+        if (typeof value !== 'string' || !value.startsWith('data:image')) return;
+        // WebP nhỏ hơn JPEG 25-35% nên có thể lọt ngưỡng 120k; vẫn phải qua resizeImage
+        if (value.startsWith('data:image/webp') || value.length > 120000) sources.add(value);
       };
       const walkPhoto = (p) => {
         if (!p) return;
@@ -16300,6 +16313,8 @@
       const addImg = (src, x, iy, iw, ih) => {
         if (!src) return null;
         const imgSrc = (pdfImageMap && pdfImageMap.get(src)) || src;
+        // jsPDF không nhúng được WebP: phải chỉ đúng định dạng thật của chuỗi sau khi map
+        const imgFormat = imgSrc.startsWith('data:image/png') ? 'PNG' : 'JPEG';
         try {
           // Kiểm tra tỉ lệ ảnh gốc để hiển thị đúng chuẩn "contain" (không méo hình)
           const imgProps = doc.getImageProperties(imgSrc);
@@ -16321,14 +16336,16 @@
             offsetX = (iw - renderW) / 2;
           }
 
-          doc.addImage(imgSrc, 'JPEG', x + offsetX, iy + offsetY, renderW, renderH);
+          doc.addImage(imgSrc, imgFormat, x + offsetX, iy + offsetY, renderW, renderH);
           return { x: x + offsetX, y: iy + offsetY, w: renderW, h: renderH };
         } catch (e) {
           // Dự phòng nếu không đọc được thuộc tính ảnh
           try {
-            doc.addImage(imgSrc, 'JPEG', x, iy, iw, ih);
+            doc.addImage(imgSrc, imgFormat, x, iy, iw, ih);
             return { x, y: iy, w: iw, h: ih };
           } catch (err) {
+            console.warn('[PDF] Không chèn được ảnh vào PDF', err);
+            showToast('⚠️ Một ảnh không chèn được vào PDF', 4000);
             return null;
           }
         }
