@@ -6845,7 +6845,7 @@
       </div>
       <div class="pq-summary" id="pqSummary"></div>
       <div class="pq-grid" id="pqGrid"></div>
-      <div class="pq-hint">Drag the strip to reorder · Tap ✕ to remove. Tap any photo later to crop.</div>
+      <div class="pq-hint">Up to 6 photos per batch · Drag the strip to reorder · Tap ✕ to remove. Tap any photo later to crop.</div>
       <div class="modal-foot pq-actions">
         <button type="button" class="sbar-btn sec pq-sort" id="pqSortBtn" onclick="sortPhotoQueueByName()">Sort A→Z</button>
         <button type="button" class="sbar-btn sec" onclick="closePhotoQueue()">Cancel</button>
@@ -8315,13 +8315,17 @@
 
     // ═══════════════ MULTI-PHOTO QUEUE ═══════════════
     const SPECIAL_FREE_KEYS = ['watchoutPhotos', 'testingPhotos', 'assemblyPhotos'];
+    const MAX_QUEUE_PHOTOS = 6;
     let photoQueue = null;
 
     function openPhotoQueue(files, target) {
       if (!target || !files || !files.length) return;
       closePhotoQueue();
       const base = Date.now().toString(36);
-      const items = Array.from(files).filter(isImageFile).map((file, i) => ({
+      const imageFiles = Array.from(files).filter(isImageFile);
+      const limitedFiles = imageFiles.slice(0, MAX_QUEUE_PHOTOS);
+      const overLimit = imageFiles.length - limitedFiles.length;
+      const items = limitedFiles.map((file, i) => ({
         id: `pq_${base}_${i}`,
         file,
         previewUrl: '',
@@ -8331,7 +8335,10 @@
         showToast('No supported images selected');
         return;
       }
-      photoQueue = { target: Object.assign({}, target), items, busy: false };
+      if (overLimit > 0) {
+        showToast(`Only ${MAX_QUEUE_PHOTOS} photos per batch — ${overLimit} skipped`, 3200);
+      }
+      photoQueue = { target: Object.assign({}, target), items, busy: false, overLimit };
       renderPhotoQueue();
       const modal = document.getElementById('photoQueueModal');
       if (modal) {
@@ -8411,6 +8418,7 @@
       const summary = document.getElementById('pqSummary');
       if (summary) {
         summary.innerHTML = `${escapeHtml(targetLabel(q.target))} · <strong>${photoCountText(q.items.length)}</strong>` +
+          (q.overLimit > 0 ? ` · <span class="pq-warn">${q.overLimit} over limit skipped</span>` : '') +
           (skipped > 0 ? ` · <span class="pq-warn">${skipped} will be skipped (no empty slot)</span>` : '');
       }
       const btn = document.getElementById('pqConfirmBtn');
@@ -8735,6 +8743,8 @@
       const prepared = [];
       for (let i = 0; i < total; i++) {
         try {
+          if (btn) btn.textContent = `Adding ${i + 1}/${total}...`;
+          await new Promise(resolve => setTimeout(resolve, 16));
           const rawDataUrl = await readImageFileAsDataUrl(q.items[i].file);
           if (!rawDataUrl) { failed++; continue; }
           const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
