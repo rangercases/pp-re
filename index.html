@@ -5789,6 +5789,129 @@
       font-weight: 600;
     }
 
+    @keyframes pqSheen {
+      0% {
+        transform: translateX(-120%);
+      }
+
+      100% {
+        transform: translateX(420%);
+      }
+    }
+
+    @keyframes pqSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .pq-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 8px 18px 2px;
+    }
+
+    .pq-progress[hidden] {
+      display: none;
+    }
+
+    .pq-progress-track {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--sunken, #f2f3f5);
+      overflow: hidden;
+    }
+
+    .pq-progress-fill {
+      position: relative;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--brand-theme, #1a3a2a);
+      transition: width .18s ease-out;
+    }
+
+    .pq-progress.is-active .pq-progress-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 25%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+      animation: pqSheen 1.2s linear infinite;
+    }
+
+    .pq-progress-text {
+      font-family: var(--font-body);
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--ink-soft, #777);
+      min-height: 15px;
+    }
+
+    .pq-spin {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(26, 58, 42, 0.18);
+      border-top-color: var(--brand-theme, #1a3a2a);
+      border-radius: 50%;
+      animation: pqSpin .75s linear infinite;
+    }
+
+    .pq-ph-pending {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .pq-item.is-done::after,
+    .pq-item.is-failed::after,
+    .pq-item.is-skipped::after {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 26px;
+      text-align: center;
+      z-index: 3;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .pq-item.is-done::after {
+      content: '✓';
+      background: #1a7f4b;
+    }
+
+    .pq-item.is-failed::after {
+      content: '!';
+      background: #b42318;
+    }
+
+    .pq-item.is-skipped {
+      opacity: 0.55;
+    }
+
+    .pq-item.is-skipped::after {
+      content: '–';
+      background: #6b7280;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pq-progress.is-active .pq-progress-fill::after,
+      .pq-spin {
+        animation: none;
+      }
+    }
+
     .pq-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -5947,6 +6070,10 @@
 
       .pq-summary {
         padding: 10px 14px 0;
+      }
+
+      .pq-progress {
+        padding: 6px 14px 0;
       }
 
       .pq-hint {
@@ -6844,11 +6971,19 @@
         <button type="button" class="modal-close" aria-label="Close dialog" onclick="closePhotoQueue()">✕</button>
       </div>
       <div class="pq-summary" id="pqSummary"></div>
+      <div class="pq-progress" id="pqProgress" hidden>
+        <div class="pq-progress-track" id="pqProgressTrack" role="progressbar" aria-valuemin="0"
+          aria-valuemax="100" aria-valuenow="0" aria-label="Photo processing progress">
+          <div class="pq-progress-fill" id="pqProgressFill"></div>
+        </div>
+        <div class="pq-progress-text" id="pqProgressText" role="status" aria-live="polite"
+          aria-atomic="true"></div>
+      </div>
       <div class="pq-grid" id="pqGrid"></div>
-      <div class="pq-hint">Drag the strip to reorder · Tap ✕ to remove. Tap any photo later to crop.</div>
+      <div class="pq-hint">Large batches are processed one photo at a time · Drag the strip to reorder · Tap ✕ to remove · Tap any photo later to crop.</div>
       <div class="modal-foot pq-actions">
         <button type="button" class="sbar-btn sec pq-sort" id="pqSortBtn" onclick="sortPhotoQueueByName()">Sort A→Z</button>
-        <button type="button" class="sbar-btn sec" onclick="closePhotoQueue()">Cancel</button>
+        <button type="button" class="sbar-btn sec" id="pqCancelBtn" onclick="closePhotoQueue()">Cancel</button>
         <button type="button" class="sbar-btn pri" id="pqConfirmBtn" data-autofocus
           onclick="applyPhotoQueue()">Add photos</button>
       </div>
@@ -8328,11 +8463,6 @@
 
     // ═══════════════ MULTI-PHOTO QUEUE ═══════════════
     const SPECIAL_FREE_KEYS = ['watchoutPhotos', 'testingPhotos', 'assemblyPhotos'];
-    const MAX_QUEUE_PHOTOS = 6;
-    function isIOSDevice() {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    }
     let photoQueue = null;
 
     function openPhotoQueue(files, target) {
@@ -8344,24 +8474,15 @@
         showToast('No supported images selected');
         return;
       }
-      const ios = isIOSDevice();
-      if (ios && imageFiles.length > MAX_QUEUE_PHOTOS) {
-        showToast(`Selected ${imageFiles.length} photos — max ${MAX_QUEUE_PHOTOS} per batch. Nothing added, please choose again.`, 5000);
-        return;
-      }
-      const hint = document.querySelector('#photoQueueModal .pq-hint');
-      if (hint) {
-        hint.textContent = ios
-          ? 'Max 6 photos per batch — over 6 must be selected again · Drag the strip to reorder · Tap ✕ to remove.'
-          : 'Drag the strip to reorder · Tap ✕ to remove. Tap any photo later to crop.';
-      }
       const items = imageFiles.map((file, i) => ({
         id: `pq_${base}_${i}`,
         file,
         previewUrl: '',
-        previewState: 'pending'
+        previewState: 'pending',
+        applyState: ''
       }));
-      photoQueue = { target: Object.assign({}, target), items, busy: false };
+      photoQueue = { target: Object.assign({}, target), items, busy: false, aborted: false };
+      resetQueueProgress();
       renderPhotoQueue();
       const modal = document.getElementById('photoQueueModal');
       if (modal) {
@@ -8373,6 +8494,14 @@
     }
 
     function closePhotoQueue() {
+      if (photoQueue && photoQueue.busy) {
+        showToast('Still adding photos — please wait', 1500);
+        return;
+      }
+      if (photoQueue) {
+        photoQueue.aborted = true;
+        photoQueue.items.forEach(it => { it.previewUrl = ''; });
+      }
       photoQueue = null;
       const grid = document.getElementById('pqGrid');
       if (grid && grid._pqSortable) {
@@ -8403,7 +8532,7 @@
       if (it.previewState === 'error') {
         return `<div class="pq-ph">✕<small>${name}</small></div>`;
       }
-      return `<div class="pq-ph">…<small>${name}</small></div>`;
+      return `<div class="pq-ph pq-ph-pending"><span class="pq-spin" aria-hidden="true"></span><small>${name}</small></div>`;
     }
 
     function renderPhotoQueue() {
@@ -8411,7 +8540,7 @@
       const grid = document.getElementById('pqGrid');
       if (!q || !grid) return;
       grid.innerHTML = q.items.map((it, i) => `
-        <div class="pq-item" data-id="${it.id}">
+        <div class="pq-item${it.applyState ? ' is-' + it.applyState : ''}" data-id="${it.id}">
           <span class="pq-num">${i + 1}</span>
           <div class="pq-thumb" data-preview-id="${it.id}">${queuePreviewBody(it)}</div>
           <button type="button" class="pq-remove" aria-label="Remove photo ${i + 1}"
@@ -8453,6 +8582,69 @@
       if (sortBtn) sortBtn.style.display = q.items.length > 1 ? '' : 'none';
     }
 
+    const pqProgressState = { phase: '', pct: -1 };
+
+    function resetQueueProgress() {
+      pqProgressState.phase = '';
+      pqProgressState.pct = -1;
+      const box = document.getElementById('pqProgress');
+      const fill = document.getElementById('pqProgressFill');
+      const track = document.getElementById('pqProgressTrack');
+      const text = document.getElementById('pqProgressText');
+      if (box) {
+        box.hidden = true;
+        box.classList.remove('is-active');
+      }
+      if (fill) fill.style.width = '0%';
+      if (track) track.setAttribute('aria-valuenow', '0');
+      if (text) text.textContent = '';
+    }
+
+    function updateQueueProgress(done, total, phase, detail = '', forceText = false) {
+      const box = document.getElementById('pqProgress');
+      if (!box || !total) return;
+      box.hidden = false;
+      box.classList.add('is-active');
+      const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+      const fill = document.getElementById('pqProgressFill');
+      const track = document.getElementById('pqProgressTrack');
+      if (fill) fill.style.width = pct + '%';
+      if (track) track.setAttribute('aria-valuenow', String(pct));
+      const text = document.getElementById('pqProgressText');
+      if (!text) return;
+      // Keep aria-live quiet: only rewrite the label on phase change, 5% steps or explicit request.
+      if (forceText || phase !== pqProgressState.phase || pct - pqProgressState.pct >= 5) {
+        text.textContent = `${phase} ${Math.min(done, total)} of ${total}${detail ? ' · ' + detail : ''}`;
+        pqProgressState.phase = phase;
+        pqProgressState.pct = pct;
+      }
+    }
+
+    // Resolve after a real paint, but never hang when rAF is paused (background tab).
+    function nextPaint(timeout = 120) {
+      return new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => setTimeout(finish, 0));
+        }
+        setTimeout(finish, timeout);
+      });
+    }
+
+    function markQueueItem(item, state) {
+      item.applyState = state || '';
+      const grid = document.getElementById('pqGrid');
+      const tile = grid && grid.querySelector(`.pq-item[data-id="${item.id}"]`);
+      if (!tile) return;
+      tile.classList.remove('is-done', 'is-failed', 'is-skipped');
+      if (state) tile.classList.add('is-' + state);
+    }
+
     // Decode a small bitmap on purpose: rendering a full-resolution blob URL at
     // 96px still costs ~47 MB per 12 MP photo in the browser's image cache.
     async function buildQueuePreview(file, maxDim = 480) {
@@ -8481,20 +8673,27 @@
 
     async function startQueuePreviews(q) {
       let heicNative = null;
-      for (let i = 0; i < q.items.length; i++) {
-        if (photoQueue !== q) return;
-        const item = q.items[i];
+      const list = q.items.slice();
+      const previewDim = list.length > 15 ? 320 : 480;
+      let done = 0;
+      updateQueueProgress(0, list.length, 'Preparing previews', '', true);
+      for (let i = 0; i < list.length; i++) {
+        if (photoQueue !== q || q.aborted) return;
+        const item = list[i];
+        if (!q.items.includes(item)) continue;
         try {
           if (isHeicFile(item.file)) {
             if (heicNative === null) heicNative = await canDecodeNatively(item.file);
             if (!heicNative) {
               item.previewState = 'heic';
               updateQueuePreviewSlot(item);
+              done++;
+              updateQueueProgress(done, list.length, 'Preparing previews');
               continue;
             }
           }
-          const url = await buildQueuePreview(item.file, 480);
-          if (photoQueue !== q) return;
+          const url = await buildQueuePreview(item.file, previewDim);
+          if (photoQueue !== q || q.aborted) return;
           if (url && url.startsWith('data:image')) {
             item.previewUrl = url;
             item.previewState = 'ready';
@@ -8506,9 +8705,15 @@
           item.previewState = 'error';
         }
         updateQueuePreviewSlot(item);
-        // Yield so scrolling/tapping stays responsive between photos.
-        await new Promise(r => setTimeout(r, 0));
+        done++;
+        updateQueueProgress(done, list.length, 'Preparing previews');
+        await nextPaint();
       }
+      if (photoQueue !== q || q.aborted) return;
+      updateQueueProgress(list.length, list.length, 'Previews ready', '', true);
+      setTimeout(() => {
+        if (photoQueue === q && !q.busy) resetQueueProgress();
+      }, 1200);
     }
 
     function mountPhotoQueueSortable(grid) {
@@ -8521,7 +8726,7 @@
         filter: '.pq-remove',
         preventOnFilter: false,
         onEnd: function () {
-          if (!photoQueue) return;
+          if (!photoQueue || photoQueue.busy) return;
           const order = Array.from(grid.querySelectorAll('.pq-item')).map(el => el.dataset.id);
           photoQueue.items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
           grid.querySelectorAll('.pq-item').forEach((el, i) => {
@@ -8753,47 +8958,102 @@
         return;
       }
       const total = Math.min(plan.length, q.items.length);
+      const target = q.target;
+      const reportRef = D;
       q.busy = true;
+      q.aborted = true;
       const btn = document.getElementById('pqConfirmBtn');
+      const cancelBtn = document.getElementById('pqCancelBtn');
+      const sortBtn = document.getElementById('pqSortBtn');
+      const grid = document.getElementById('pqGrid');
       if (btn) {
         btn.disabled = true;
         btn.textContent = `Adding ${total}...`;
       }
+      if (cancelBtn) cancelBtn.disabled = true;
+      if (sortBtn) sortBtn.disabled = true;
+      if (grid) {
+        grid.setAttribute('aria-busy', 'true');
+        if (grid._pqSortable) grid._pqSortable.option('disabled', true);
+      }
+      updateQueueProgress(0, total, 'Adding', '', true);
 
       let added = 0;
       let failed = 0;
-      const prepared = [];
-      for (let i = 0; i < total; i++) {
-        try {
-          if (btn) btn.textContent = `Adding ${i + 1}/${total}...`;
-          await new Promise(resolve => setTimeout(resolve, 16));
-          const rawDataUrl = await readImageFileAsDataUrl(q.items[i].file);
-          if (!rawDataUrl) { failed++; continue; }
-          const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
-          const compressed = await resizeImage(masterPhoto, 1280, 0.85, true);
-          if (!compressed) { failed++; continue; }
-          prepared.push({ target: plan[i], img: compressed, original: masterPhoto });
-        } catch (err) {
-          console.error('Queue photo failed:', err);
-          failed++;
+      let unreadable = 0;
+      let historyPushed = false;
+      let lastPersist = 0;
+
+      try {
+        for (let i = 0; i < total; i++) {
+          if (D !== reportRef) break;
+          const item = q.items[i];
+          const step = i + 1;
+          const fileName = queuePreviewName(item.file);
+          try {
+            updateQueueProgress(step, total, 'Reading', fileName, true);
+            await nextPaint();
+            const rawDataUrl = await readImageFileAsDataUrl(item.file);
+            if (!rawDataUrl) {
+              failed++;
+              unreadable++;
+              markQueueItem(item, 'failed');
+              updateQueueProgress(step, total, 'Adding', fileName);
+              continue;
+            }
+            updateQueueProgress(step, total, 'Optimizing', fileName);
+            await nextPaint();
+            const masterPhoto = await normalizeMasterPhoto(rawDataUrl);
+            updateQueueProgress(step, total, 'Compressing', fileName);
+            await nextPaint();
+            const compressed = await resizeImage(masterPhoto, 1280, 0.85, true);
+            if (!compressed) {
+              failed++;
+              markQueueItem(item, 'failed');
+              updateQueueProgress(step, total, 'Adding', fileName);
+              continue;
+            }
+            if (!historyPushed) {
+              pushHistory(`Add ${total} photo(s)`);
+              historyPushed = true;
+            }
+            writeQueuePhoto(plan[i], compressed, masterPhoto);
+            added++;
+            markQueueItem(item, 'done');
+            updateQueueProgress(step, total, 'Adding', fileName, true);
+            const now = Date.now();
+            if (now - lastPersist > 4000 || added % 5 === 0) {
+              lastPersist = now;
+              savePhotoChangeNow();
+            }
+          } catch (err) {
+            console.error('Queue photo failed:', err);
+            failed++;
+            markQueueItem(item, 'failed');
+            updateQueueProgress(step, total, 'Adding', fileName);
+          }
+        }
+      } finally {
+        q.busy = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Add photos';
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (sortBtn) sortBtn.disabled = false;
+        if (grid) {
+          grid.setAttribute('aria-busy', 'false');
+          if (grid._pqSortable) grid._pqSortable.option('disabled', false);
         }
       }
 
-      const target = q.target;
-      q.busy = false;
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = 'Add photos';
-      }
+      const skipped = q.items.length - total;
+      for (let i = total; i < q.items.length; i++) markQueueItem(q.items[i], 'skipped');
 
-      if (prepared.length) {
-        pushHistory(`Add ${prepared.length} photo(s)`);
-        prepared.forEach(item => writeQueuePhoto(item.target, item.img, item.original));
-        added = prepared.length;
+      if (added && D === reportRef) {
         refreshQueueTarget(target);
         as();
         savePhotoChangeNow();
-        const reportRef = D;
         const reportId = D.id;
         refreshReportThumbnail(reportRef, target.section === 'cover').then(() => {
           if (D === reportRef && D.id === reportId) {
@@ -8804,9 +9064,12 @@
       }
 
       closePhotoQueue();
-      if (added && failed) showToast(`✓ Added ${added} photo(s) · ${failed} failed`);
-      else if (added) showToast(`✓ Added ${added} photo(s)`);
-      else showToast('Photo processing error');
+      const parts = [];
+      if (added) parts.push(added === total ? `✓ Added ${photoCountText(added)}` : `✓ Added ${added} of ${total}`);
+      if (failed) parts.push(unreadable ? `${failed} failed (${unreadable} unreadable)` : `${failed} failed`);
+      if (skipped > 0) parts.push(`${skipped} skipped (no empty slot)`);
+      if (!parts.length) showToast('Photo processing error');
+      else showToast(parts.join(' · '), 4000);
     }
 
     // ═══════════════ CLIPBOARD PASTE SUPPORT (CTRL+V & DÁN) ═══════════════
