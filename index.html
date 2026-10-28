@@ -11,7 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="FASREP">
 
   <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/sofa.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>FASREP</title>
 
   <!-- Google Fonts: Archivo, Inter, Geist Mono (ArtCraft Design System) -->
@@ -204,43 +205,22 @@
       justify-self: start;
     }
 
-    .topbar-back {
-      font-family: var(--font-body);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: var(--card);
-      border: 1px solid var(--line-strong);
-      color: var(--ink);
-      padding: 0 12px;
-      height: 32px;
-      border-radius: var(--r-pill);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      flex-shrink: 0;
-    }
-
-    .topbar-back:hover:not(:disabled) {
-      background: #000000;
-      color: #ffffff;
-      border-color: #000000;
-      transform: translateY(-1px);
-    }
-
-    .topbar-back:active:not(:disabled) {
-      transform: scale(0.96);
-    }
-
     .topbar-brand {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
+      background: none;
+      border: 0;
+      padding: 6px 0;
+      margin: 0;
+      color: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .topbar-brand:active {
+      transform: scale(0.96);
     }
 
     .topbar-brand img {
@@ -258,20 +238,6 @@
       min-width: 0;
       text-align: center;
       justify-self: center;
-    }
-
-    .topbar-title {
-      font-family: var(--font-display);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--ink-strong);
-      user-select: none;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
     }
 
     .file-dirty-dot {
@@ -4590,33 +4556,19 @@
         max-width: 180px;
       }
 
-      .topbar-title {
-        max-width: 150px;
-      }
-
       .topbar-left {
         gap: 5px;
         padding-left: 2px;
       }
 
-      .topbar-back {
-        padding: 5px 9px;
-        border-radius: var(--r-pill, 9999px);
-        font-size: 10.5px;
-      }
-
       .topbar-brand {
-        padding: 0 2px;
+        padding: 6px 2px;
+        min-height: 40px;
       }
 
       .topbar-brand img {
         height: 12px;
         max-width: 66px;
-      }
-
-      /* In Editor mode on mobile, hide logo to give room for back button and title */
-      body.in-editor .topbar-brand {
-        display: none !important;
       }
 
       .topbar-center {
@@ -4626,17 +4578,6 @@
         gap: 4px;
         min-width: 0;
         overflow: hidden;
-      }
-
-      .topbar-title {
-        display: block !important;
-        max-width: 135px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
 
       .topbar-actions {
@@ -6095,27 +6036,13 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <button class="topbar-btn topbar-back" id="btnHubBack" onclick="backToLauncherHub()" style="display:none"
-        title="Back to Home">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-        <span class="btn-lbl">HOME</span>
+      <button type="button" class="topbar-brand" id="topbarBrand" onclick="onBrandClick(event)"
+        title="Về trang chủ" aria-label="Về trang chủ">
+        <img id="topbarBrandLogo" src="FASREP_Black.png" alt="FASREP">
       </button>
-      <button class="topbar-btn topbar-back" id="btnHome" onclick="goHome()" style="display:none"
-        title="Back to Reports">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-        <span class="btn-lbl">REPORTS</span>
-      </button>
-      <div class="topbar-brand"><img id="topbarBrandLogo" src="FASREP_Black.png" alt="FASREP"></div>
     </div>
 
     <div class="topbar-center">
-      <div class="topbar-title" id="topTitle">FASREP</div>
       <span class="file-dirty-dot" id="fileDirtyDot" style="display:none"
         title="Có thay đổi chưa lưu ra file">●</span>
     </div>
@@ -11325,7 +11252,7 @@
         try {
           leave = confirm('Báo cáo chưa lưu ra file.\n\nOK = Về trang chủ (bản trong app vẫn được giữ)\nCancel = Ở lại để lưu file (Ctrl+S)');
         } catch (err) { leave = true; }
-        if (!leave) return;
+        if (!leave) return false;
       }
       if (typeof flushReport === 'function') {
         try {
@@ -11333,7 +11260,7 @@
         } catch (err) {
           console.error('[goHome] Save failed, staying in editor', err);
           showToast('⚠️ Chưa lưu được báo cáo. Vui lòng thử lại hoặc xuất Backup JSON.');
-          return;
+          return false;
         }
       }
       currentId = null; curSec = 0;
@@ -11342,14 +11269,13 @@
       document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
-      ['tabsWrap', 'saveBar', 'btnHome', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
+      ['tabsWrap', 'saveBar', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
         const el = document.getElementById(elemId);
         if (el) el.style.display = 'none';
       });
       const btnStyler = document.getElementById('btnStyler');
       if (btnStyler) btnStyler.style.display = 'none'; // Locked in V2.0
 
-      const hubBack = document.getElementById('btnHubBack');
       const wsSettings = document.getElementById('workspaceSettingsWrap');
       const btnSel = document.getElementById('btnSelectMode');
 
@@ -11357,21 +11283,18 @@
         document.getElementById('launcherHubView').style.display = 'none';
         document.getElementById('moduleWorkspaceView').style.display = 'block';
         const modCfg = MODULE_THEMES[currentActiveModule] || MODULE_THEMES['pre-production'];
-        setTopbarTitle(modCfg.title);
         document.documentElement.style.setProperty('--module-theme', modCfg.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modCfg.lightColor);
-        if (hubBack) hubBack.style.display = 'inline-flex';
         if (wsSettings) wsSettings.style.display = 'inline-flex';
       } else {
         document.getElementById('launcherHubView').style.display = 'flex';
         document.getElementById('moduleWorkspaceView').style.display = 'none';
-        setTopbarTitle('FASREP');
-        if (hubBack) hubBack.style.display = 'none';
         if (wsSettings) wsSettings.style.display = 'none';
         if (btnSel) btnSel.style.display = 'none';
       }
       resetHistory();
       await renderHome();
+      return true;
     }
 
     let homeSearchQuery = '';
@@ -11419,17 +11342,71 @@
 
     let currentActiveModule = null;
 
+    // ── Đồng bộ nút Back của trình duyệt với các cấp màn hình ──
+    let navDepth = 0;
+    let navTraversing = false;
+    let navSuppressPush = false;
+
+    function navPush(depth, payload) {
+      if (navSuppressPush) return;
+      navDepth = depth;
+      try { history.pushState(Object.assign({ navDepth: depth }, payload || {}), ''); } catch (err) { }
+    }
+
+    function navGo(depth) {
+      const delta = navDepth - depth;
+      navDepth = depth;
+      if (delta <= 0) return;
+      navTraversing = true;
+      try { history.go(-delta); } catch (err) { navTraversing = false; }
+    }
+
+    async function onBrandClick(event) {
+      if (event) { event.preventDefault(); event.stopPropagation(); }
+      if (document.body.classList.contains('in-editor')) {
+        if (!await goHome()) return;
+      }
+      navGo(0);
+      backToLauncherHub();
+    }
+
+    window.addEventListener('popstate', async (event) => {
+      if (navTraversing) { navTraversing = false; return; }
+      const state = event.state || {};
+      const target = typeof state.navDepth === 'number' ? state.navDepth : 0;
+      if (target > navDepth) {
+        navDepth = target;
+        navSuppressPush = true;
+        try {
+          if (target >= 2 && state.reportId) await openReport(state.reportId);
+          else if (state.moduleId) openModule(state.moduleId);
+        } finally { navSuppressPush = false; }
+        return;
+      }
+      navDepth = Math.max(0, navDepth - 1);
+      if (document.body.classList.contains('in-editor')) {
+        const ok = await goHome();
+        if (!ok) {
+          navDepth += 1;
+          navTraversing = true;
+          try { history.forward(); } catch (err) { navTraversing = false; }
+          return;
+        }
+      }
+      if (navDepth === 0) backToLauncherHub();
+    });
+
+    try { history.replaceState({ navDepth: 0 }, ''); } catch (err) { }
+
     function openModule(modId) {
       currentActiveModule = modId;
+      navPush(navDepth + 1, { moduleId: modId });
       const modConfig = MODULE_THEMES[modId] || MODULE_THEMES['pre-production'];
       document.documentElement.style.setProperty('--module-theme', modConfig.themeColor);
       document.documentElement.style.setProperty('--module-theme-light', modConfig.lightColor);
 
       document.getElementById('launcherHubView').style.display = 'none';
       document.getElementById('moduleWorkspaceView').style.display = 'block';
-      setTopbarTitle(modConfig.title);
-      const hubBack = document.getElementById('btnHubBack');
-      if (hubBack) hubBack.style.display = 'inline-flex';
       const wsSettings = document.getElementById('workspaceSettingsWrap');
       if (wsSettings) wsSettings.style.display = 'inline-flex';
       window.scrollTo(0, 0);
@@ -11444,9 +11421,6 @@
 
       document.getElementById('moduleWorkspaceView').style.display = 'none';
       document.getElementById('launcherHubView').style.display = 'flex';
-      setTopbarTitle('FASREP');
-      const hubBack = document.getElementById('btnHubBack');
-      if (hubBack) hubBack.style.display = 'none';
       const wsSettings = document.getElementById('workspaceSettingsWrap');
       if (wsSettings) wsSettings.style.display = 'none';
       const btnSel = document.getElementById('btnSelectMode');
@@ -15142,15 +15116,7 @@
       }, { passive: true });
     }
 
-    function setTopbarTitle(text) {
-      const el = document.getElementById('topTitle');
-      if (!el) return;
-      el.textContent = text;
-      el.title = text;
-    }
-
     function updateTopbar() {
-      setTopbarTitle(getReportTitle(D));
       fileUpdateDot();
       const brandLogo = document.getElementById('topbarBrandLogo');
       if (brandLogo && typeof LOGO_BLACK !== 'undefined') {
@@ -15751,7 +15717,7 @@
         const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
         document.documentElement.style.setProperty('--module-theme', modConfig.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modConfig.lightColor);
-        setTopbarTitle(modConfig.title);
+        navPush(navDepth + 1, { reportId: id });
 
         curSec = 0;
         isDimSelectMode = false;
@@ -15769,12 +15735,10 @@
         }
         document.body.classList.add('in-editor');
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'btnHome', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
+        ['tabsWrap', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
           if (el) el.style.display = elemId === 'tabsWrap' ? 'block' : 'inline-flex';
         });
-        const hubBack = document.getElementById('btnHubBack');
-        if (hubBack) hubBack.style.display = 'none';
         const wsSettings = document.getElementById('workspaceSettingsWrap');
         if (wsSettings) wsSettings.style.display = 'none';
         const btnSel = document.getElementById('btnSelectMode');
