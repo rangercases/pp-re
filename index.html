@@ -7156,8 +7156,8 @@
     function applyThemeToWeb() {
       // Giữ nguyên giao diện và nút bấm web app luôn rõ ràng, không bị đổi theo màu PDF
       const brandLogo = document.getElementById('topbarBrandLogo');
-      if (brandLogo && typeof LOGO_WHITE !== 'undefined') {
-        brandLogo.src = LOGO_WHITE;
+      if (brandLogo && typeof LOGO_BLACK !== 'undefined') {
+        brandLogo.src = LOGO_BLACK;
       }
     }
 
@@ -15153,9 +15153,8 @@
       setTopbarTitle(getReportTitle(D));
       fileUpdateDot();
       const brandLogo = document.getElementById('topbarBrandLogo');
-      if (brandLogo && typeof LOGO_WHITE !== 'undefined') {
-        const isDark = true;
-        brandLogo.src = isDark ? LOGO_WHITE : LOGO_BLACK;
+      if (brandLogo && typeof LOGO_BLACK !== 'undefined') {
+        brandLogo.src = LOGO_BLACK;
       }
     }
 
