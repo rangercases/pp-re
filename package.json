@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/assert-build.js",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name super-report --branch main",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name fasrep --branch main",
     "deploy:worker": "npm run build && wrangler deploy"
   },
   "devDependencies": {
