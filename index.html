@@ -11247,7 +11247,7 @@
       e.target.value = '';
     }
 
-    async function goHome() {
+    async function goHome(opts) {
       if (D && D.id && D._fileDirty) {
         let leave = true;
         try {
@@ -11280,7 +11280,7 @@
       const wsSettings = document.getElementById('workspaceSettingsWrap');
       const btnSel = document.getElementById('btnSelectMode');
 
-      if (currentActiveModule) {
+      if (!(opts && opts.toHub) && currentActiveModule) {
         document.getElementById('launcherHubView').style.display = 'none';
         document.getElementById('moduleWorkspaceView').style.display = 'block';
         const modCfg = MODULE_THEMES[currentActiveModule] || MODULE_THEMES['pre-production'];
@@ -11365,7 +11365,7 @@
     async function onBrandClick(event) {
       if (event) { event.preventDefault(); event.stopPropagation(); }
       if (document.body.classList.contains('in-editor')) {
-        if (!await goHome()) return;
+        if (!await goHome({ toHub: true })) return;
       }
       navGo(0);
       backToLauncherHub();
@@ -11386,7 +11386,7 @@
       }
       navDepth = Math.max(0, navDepth - 1);
       if (document.body.classList.contains('in-editor')) {
-        const ok = await goHome();
+        const ok = await goHome({ toHub: navDepth === 0 });
         if (!ok) {
           navDepth += 1;
           navTraversing = true;
