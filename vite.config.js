@@ -13,8 +13,13 @@ export default defineConfig({
       name: 'stable-pwa-manifest-link',
       enforce: 'post',
       transformIndexHtml(html) {
-        return html.replace(/<link\b[^>]*\brel=["']manifest["'][^>]*>/i,
-          '<link rel="manifest" href="./manifest.json">');
+        return html
+          .replace(/<link\b[^>]*\brel=["']manifest["'][^>]*>/i,
+            '<link rel="manifest" href="./manifest.json">')
+          .replace(/<link\b[^>]*\brel=["']icon["'][^>]*>/i,
+            '<link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">')
+          .replace(/<link\b[^>]*\brel=["']apple-touch-icon["'][^>]*>/i,
+            '<link rel="apple-touch-icon" href="./apple-touch-icon.png">');
       }
     },
     cloudflare()
