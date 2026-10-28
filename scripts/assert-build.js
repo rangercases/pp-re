@@ -32,7 +32,7 @@ check('single-file bundle contains metadata storage', html.includes('dbGetAllMet
 check('single-file bundle contains escaping helper', html.includes('escapeHtml'));
 check('single-file bundle contains autosave queue', html.includes('drainSaveQueue'));
 check('single-file bundle contains small thumbnails', html.includes('thumbSmall'));
-check('single-file bundle shows SUPER REPORT', html.includes('SUPER REPORT'));
+check('single-file bundle shows FASREP', html.includes('FASREP'));
 check('single-file bundle has no DIGITAL REPORT', !html.includes('DIGITAL REPORT'));
 check('single-file bundle has APP_VERSION v3.2.0', html.includes("APP_VERSION = 'v3.2.0'"));
 check('single-file bundle shows V3.2.0 badge', html.includes('[V3.2.0]') && !html.includes('[V3.1.0]'));
@@ -49,8 +49,8 @@ try {
   check('dist/manifest.json is valid JSON', false, err.message);
 }
 if (manifest) {
-  check('manifest name is SUPER REPORT', manifest.name === 'SUPER REPORT', manifest.name);
-  check('manifest short_name is SUPER', manifest.short_name === 'SUPER', manifest.short_name);
+  check('manifest name is FASREP', manifest.name === 'FASREP', manifest.name);
+  check('manifest short_name is FASREP', manifest.short_name === 'FASREP', manifest.short_name);
   check('manifest start_url present', !!manifest.start_url, manifest.start_url);
 }
 

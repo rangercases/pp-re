@@ -1,6 +1,6 @@
 {
-  "name": "SUPER REPORT",
-  "short_name": "SUPER",
+  "name": "FASREP",
+  "short_name": "FASREP",
   "description": "Prototype Sample Review Report Tool for Furniture Manufacturing & Quality Control",
   "start_url": "./index.html",
   "scope": "./",

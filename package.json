@@ -1,7 +1,7 @@
 {
-  "name": "super-report",
+  "name": "fasrep",
   "version": "3.2.0",
-  "description": "Super Report PWA App - SOFACOMPANY",
+  "description": "FASREP PWA App - SOFACOMPANY",
   "type": "module",
   "scripts": {
     "dev": "vite",
