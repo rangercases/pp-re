@@ -1,0 +1,12 @@
+{
+  "name": "fasrep",
+  "pages_build_output_dir": "dist",
+  "compatibility_date": "2026-10-12",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fasrep-auth",
+      "database_id": "dabae723-d9e3-4240-9c48-80c8baf94fea"
+    }
+  ]
+}

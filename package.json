@@ -1,13 +1,13 @@
 {
   "name": "fasrep",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "FASREP PWA App - SOFACOMPANY",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/assert-build.js",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name fasrep --branch main",
+    "deploy": "npm run build && node scripts/prepare-pages-deploy.js && wrangler pages deploy dist --project-name fasrep --branch main",
     "deploy:worker": "npm run build && wrangler deploy"
   },
   "devDependencies": {

@@ -6029,10 +6029,576 @@
         min-height: 48px;
       }
     }
+
+    /* ══════════════════ AUTH GATE (ĐĂNG NHẬP / THIẾT LẬP ADMIN) ══════════════════ */
+    .auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 24px;
+      overflow: auto;
+      background: radial-gradient(1100px 600px at 50% -10%, #ffffff 0%, var(--bg) 55%, #ECE8E3 100%);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .10), 0 2px 8px rgba(0, 0, 0, .05);
+      padding: 32px 30px;
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .auth-brand img {
+      height: 22px;
+      width: auto;
+    }
+
+    .auth-brand-sub {
+      font-family: var(--font-hud);
+      font-size: 9px;
+      letter-spacing: .18em;
+      color: var(--faint);
+      text-transform: uppercase;
+    }
+
+    .auth-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 36px 0 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid var(--sunken);
+      border-top-color: var(--module-theme);
+      animation: authSpin .8s linear infinite;
+    }
+
+    @keyframes authSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .auth-form h1 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .auth-desc {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 6px 0 20px;
+    }
+
+    .auth-field {
+      display: block;
+      margin-bottom: 14px;
+    }
+
+    .auth-field > span {
+      display: block;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .auth-field input,
+    .auth-field select {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 0 12px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .auth-field input:focus,
+    .auth-field select:focus {
+      border-color: var(--module-theme);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-theme) 16%, transparent);
+    }
+
+    .auth-password-wrap {
+      position: relative;
+    }
+
+    .auth-password-wrap input {
+      padding-right: 64px;
+    }
+
+    .auth-eye {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 32px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--sunken);
+      color: var(--muted);
+      font-family: var(--font-hud);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      cursor: pointer;
+    }
+
+    .auth-error {
+      background: var(--red-bg);
+      border: 1px solid #FECACA;
+      color: var(--bad);
+      font-size: 12.5px;
+      line-height: 1.45;
+      border-radius: 9px;
+      padding: 9px 11px;
+      margin: 0 0 12px;
+    }
+
+    .auth-submit {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: var(--r-pill, 9999px);
+      background: var(--invert-bg);
+      color: var(--invert-fg);
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      cursor: pointer;
+      transition: transform .12s ease, opacity .12s ease;
+    }
+
+    .auth-submit:hover { opacity: .9; }
+    .auth-submit:active { transform: scale(.985); }
+    .auth-submit[disabled] { opacity: .55; cursor: wait; }
+
+    .auth-note {
+      font-size: 11.5px;
+      color: var(--faint);
+      line-height: 1.5;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .auth-note a {
+      color: var(--module-theme);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-footer {
+      font-family: var(--font-hud);
+      font-size: 9.5px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+
+    /* ══════════════════ ACCOUNT MENU (TOPBAR) ══════════════════ */
+    .account-menu-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .account-btn {
+      padding: 0 4px !important;
+      border-radius: 50% !important;
+    }
+
+    .account-avatar {
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      background: var(--invert-bg);
+      color: var(--invert-fg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .account-avatar-lg {
+      width: 38px;
+      height: 38px;
+      font-size: 13px;
+    }
+
+    .account-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 246px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .14);
+      padding: 8px;
+      z-index: 80;
+    }
+
+    .account-summary {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 8px 12px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 6px;
+    }
+
+    .account-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .account-email {
+      font-size: 11px;
+      color: var(--muted);
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    .account-role {
+      display: inline-block;
+      margin-top: 5px;
+      font-family: var(--font-hud);
+      font-size: 8.5px;
+      letter-spacing: .1em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--sunken);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .account-role.admin {
+      background: var(--module-light);
+      color: var(--module-theme);
+    }
+
+    .account-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .account-item:hover { background: var(--sunken); }
+    .account-item-danger { color: var(--bad); }
+
+    /* ══════════════════ ADMIN USER MANAGEMENT ══════════════════ */
+    .admin-users-box {
+      max-width: 640px;
+    }
+
+    .admin-body {
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .admin-create {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: var(--bg);
+      margin-bottom: 16px;
+    }
+
+    .admin-create h4 {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .admin-create-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
+    }
+
+    .admin-create-grid .auth-field { margin-bottom: 0; }
+
+    .admin-create-grid .auth-field input,
+    .admin-create-grid .auth-field select {
+      height: 38px;
+      font-size: 13px;
+    }
+
+    .admin-create-btn {
+      height: 40px;
+      margin-top: 12px;
+    }
+
+    .admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .admin-user-row {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .admin-user-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .admin-user-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .admin-user-email {
+      font-size: 11.5px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .admin-user-meta {
+      font-family: var(--font-hud);
+      font-size: 9px;
+      color: var(--faint);
+      letter-spacing: .05em;
+      margin-top: 3px;
+    }
+
+    .admin-badge {
+      font-family: var(--font-hud);
+      font-size: 8px;
+      letter-spacing: .08em;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .admin-badge.admin { background: var(--module-light); color: var(--module-theme); }
+    .admin-badge.user { background: var(--sunken); color: var(--muted); }
+    .admin-badge.inactive { background: var(--red-bg); color: var(--bad); }
+    .admin-badge.locked { background: #FFF7E6; color: var(--warn); }
+
+    .admin-edit-btn {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-family: var(--font-hud);
+      font-size: 9.5px;
+      letter-spacing: .06em;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .admin-edit-btn:hover { background: var(--sunken); }
+
+    .admin-user-editor {
+      border: 1px dashed var(--line-strong);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: -2px;
+      background: var(--bg);
+    }
+
+    .admin-user-editor .auth-field { margin-bottom: 10px; }
+
+    .admin-user-editor .auth-field input,
+    .admin-user-editor .auth-field select {
+      height: 38px;
+      font-size: 13px;
+    }
+
+    .admin-editor-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .admin-editor-actions .auth-submit { height: 38px; flex: 1; }
+    .admin-editor-actions .sbar-btn { flex: 1; height: 38px; min-height: 38px; font-size: 10px; }
+
+    .admin-empty {
+      text-align: center;
+      color: var(--faint);
+      font-size: 12.5px;
+      padding: 22px 0;
+    }
+
+    .admin-self-note {
+      font-size: 11px;
+      color: var(--faint);
+      margin: 2px 0 10px;
+    }
+
+    @media (max-width: 560px) {
+      .auth-card {
+        padding: 26px 20px;
+        border-radius: 16px;
+      }
+
+      .admin-create-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .account-dropdown {
+        position: fixed;
+        top: calc(env(safe-area-inset-top) + 54px);
+        right: 10px;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <!-- AUTH GATE: ĐĂNG NHẬP / THIẾT LẬP ADMIN ĐẦU TIÊN -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="FASREP_Black.png" alt="FASREP">
+        <span class="auth-brand-sub">Sofacompany</span>
+      </div>
+
+      <div class="auth-loading" id="authLoading">
+        <div class="auth-spinner" aria-hidden="true"></div>
+        <p>Đang kiểm tra phiên đăng nhập…</p>
+      </div>
+
+      <div class="auth-form" id="authLoginForm" hidden>
+        <h1>Đăng nhập</h1>
+        <p class="auth-desc">Truy cập hệ thống báo cáo bằng tài khoản đã được cấp.</p>
+        <form onsubmit="submitLogin(event)" novalidate>
+          <label class="auth-field"><span>Email</span>
+            <input id="authLoginEmail" type="email" autocomplete="username" inputmode="email"
+              autocapitalize="off" spellcheck="false" required>
+          </label>
+          <label class="auth-field"><span>Mật khẩu</span>
+            <div class="auth-password-wrap">
+              <input id="authLoginPassword" type="password" autocomplete="current-password" required>
+              <button type="button" class="auth-eye"
+                onclick="togglePasswordField('authLoginPassword', this)">HIỆN</button>
+            </div>
+          </label>
+          <p class="auth-error" id="authLoginError" hidden></p>
+          <button class="auth-submit" id="authLoginBtn" type="submit">ĐĂNG NHẬP</button>
+        </form>
+        <p class="auth-note">Thiết bị này ghi nhớ đăng nhập 30 ngày. Không dùng tài khoản chung trên máy của
+          nhiều người.</p>
+      </div>
+
+      <div class="auth-form" id="authSignupForm" hidden>
+        <h1>Thiết lập tài khoản quản trị</h1>
+        <p class="auth-desc">Lần đầu sử dụng: tài khoản tạo tại đây sẽ là <b>Admin</b>, có quyền quản lý các tài
+          khoản khác.</p>
+        <form onsubmit="submitSignup(event)" novalidate>
+          <label class="auth-field"><span>Họ tên</span>
+            <input id="authSignupName" type="text" autocomplete="name" maxlength="80"
+              placeholder="Nguyễn Văn A">
+          </label>
+          <label class="auth-field"><span>Email</span>
+            <input id="authSignupEmail" type="email" autocomplete="username" inputmode="email"
+              autocapitalize="off" spellcheck="false" required>
+          </label>
+          <label class="auth-field"><span>Mật khẩu (tối thiểu 8 ký tự)</span>
+            <div class="auth-password-wrap">
+              <input id="authSignupPassword" type="password" autocomplete="new-password" minlength="8" required>
+              <button type="button" class="auth-eye"
+                onclick="togglePasswordField('authSignupPassword', this)">HIỆN</button>
+            </div>
+          </label>
+          <label class="auth-field"><span>Nhập lại mật khẩu</span>
+            <input id="authSignupConfirm" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <p class="auth-error" id="authSignupError" hidden></p>
+          <button class="auth-submit" id="authSignupBtn" type="submit">TẠO TÀI KHOẢN ADMIN</button>
+        </form>
+        <p class="auth-note">Sau khi tạo, chỉ Admin mới có thể thêm tài khoản mới.</p>
+      </div>
+
+      <div class="auth-form" id="authUnavailable" hidden>
+        <h1>Chưa thể đăng nhập</h1>
+        <p class="auth-desc" id="authUnavailableText"></p>
+        <button class="auth-submit" type="button" onclick="location.reload()">THỬ LẠI</button>
+        <p class="auth-note" id="authOfficialNote" hidden>Bản GitHub Pages chỉ là bản sao giao diện.
+          <a id="authOfficialLink" href="https://fasrep.pages.dev/">Mở fasrep.pages.dev</a></p>
+      </div>
+    </div>
+    <p class="auth-footer">FASREP · Sample Review Report System</p>
+  </div>
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="topbar-left">
@@ -6122,6 +6688,28 @@
         </svg>
         <span class="btn-lbl">PDF</span>
       </button>
+
+      <div class="account-menu-wrap" id="accountMenuWrap" style="display:none">
+        <button type="button" class="topbar-btn icon-btn account-btn" id="btnAccountMenu"
+          onclick="toggleAccountMenu(event)" title="Tài khoản" aria-label="Tài khoản" aria-haspopup="true"
+          aria-expanded="false">
+          <span class="account-avatar" id="accountAvatar">?</span>
+        </button>
+        <div class="account-dropdown" id="accountDropdown" hidden>
+          <div class="account-summary">
+            <span class="account-avatar account-avatar-lg" id="accountAvatarLarge">?</span>
+            <div style="min-width:0;">
+              <div class="account-name" id="accountName">—</div>
+              <div class="account-email" id="accountEmail">—</div>
+              <span class="account-role" id="accountRole">USER</span>
+            </div>
+          </div>
+          <button type="button" class="account-item" onclick="openChangePasswordModal()">Đổi mật khẩu</button>
+          <button type="button" class="account-item" id="accountAdminItem" onclick="openAdminPanel()"
+            hidden>Quản trị tài khoản</button>
+          <button type="button" class="account-item account-item-danger" onclick="doLogout()">Đăng xuất</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="tabsWrap" class="tabs-wrap" style="display:none">
@@ -6138,7 +6726,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.2.0]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.3.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -6867,6 +7455,70 @@
     </div>
   </div>
 
+  <!-- MODAL: ĐỔI MẬT KHẨU -->
+  <div class="modal-overlay hidden" id="changePasswordModal" style="z-index: 330;"
+    onclick="if (event.target === this) closeChangePasswordModal()">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-head">
+        <h3>Đổi mật khẩu</h3>
+        <button type="button" class="modal-close" aria-label="Đóng"
+          onclick="closeChangePasswordModal()">✕</button>
+      </div>
+      <div style="padding:16px; overflow:auto;">
+        <form onsubmit="submitChangePassword(event)" novalidate>
+          <label class="auth-field"><span>Mật khẩu hiện tại</span>
+            <input id="cpCurrent" type="password" autocomplete="current-password" required>
+          </label>
+          <label class="auth-field"><span>Mật khẩu mới (tối thiểu 8 ký tự)</span>
+            <input id="cpNew" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <label class="auth-field"><span>Nhập lại mật khẩu mới</span>
+            <input id="cpConfirm" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <p class="auth-error" id="cpError" hidden></p>
+          <button class="auth-submit" id="cpBtn" type="submit">CẬP NHẬT MẬT KHẨU</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QUẢN TRỊ TÀI KHOẢN (ADMIN) -->
+  <div class="modal-overlay hidden" id="adminUsersModal" style="z-index: 340;"
+    onclick="if (event.target === this) closeAdminPanel()">
+    <div class="modal-box admin-users-box">
+      <div class="modal-head">
+        <h3>Quản trị tài khoản</h3>
+        <button type="button" class="modal-close" aria-label="Đóng" onclick="closeAdminPanel()">✕</button>
+      </div>
+      <div class="admin-body">
+        <form class="admin-create" onsubmit="submitCreateUser(event)" novalidate>
+          <h4>Tạo tài khoản mới</h4>
+          <div class="admin-create-grid">
+            <label class="auth-field"><span>Họ tên</span>
+              <input id="adminNewName" type="text" maxlength="80" autocomplete="off">
+            </label>
+            <label class="auth-field"><span>Email</span>
+              <input id="adminNewEmail" type="email" autocomplete="off" autocapitalize="off" spellcheck="false"
+                required>
+            </label>
+            <label class="auth-field"><span>Mật khẩu (tối thiểu 8 ký tự)</span>
+              <input id="adminNewPassword" type="text" autocomplete="new-password" minlength="8" required>
+            </label>
+            <label class="auth-field"><span>Vai trò</span>
+              <select id="adminNewRole">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+          </div>
+          <p class="auth-error" id="adminCreateError" hidden></p>
+          <button class="auth-submit admin-create-btn" id="adminCreateBtn" type="submit">TẠO TÀI KHOẢN</button>
+        </form>
+        <div class="admin-list" id="adminUserList"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: IN-APP CONFIRMATION (replaces native confirm for destructive actions) -->
   <div class="modal-overlay hidden" id="appConfirmModal" style="z-index: 300;"
     onclick="if (event.target === this) closeAppConfirm(false)">
@@ -7330,7 +7982,7 @@
       if (revInput) {
         revInput.addEventListener('input', (e) => {
           const val = (e.target.value || '').trim();
-          if (val) localStorage.setItem('DEFAULT_REVIEWER_NAME', val);
+          if (val) localStorage.setItem(scopedStorageKey('DEFAULT_REVIEWER_NAME'), val);
         });
       }
       applyThemeToWeb();
@@ -7397,7 +8049,8 @@
     }
 
     // ═══════════════ INDEXED DB STORAGE ═══════════════
-    const DB_NAME = 'SofaCompanyPP_DB_Lite';
+    // Tên DB được gán lại theo tài khoản trong prepareUserStorage() (hậu tố ::<userId>).
+    let DB_NAME = 'SofaCompanyPP_DB_Lite';
     const STORE_NAME = 'reports';
     let db = null;
 
@@ -7630,7 +8283,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.2.0';
+    const APP_VERSION = 'v3.3.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -14468,7 +15121,7 @@
        ════════════════════════════════════════════════════════════════════════════ */
     function getActiveDefaultChecklist() {
       try {
-        const custom = localStorage.getItem('user_custom_default_checklist');
+        const custom = localStorage.getItem(scopedStorageKey('user_custom_default_checklist'));
         if (custom) {
           const parsed = JSON.parse(custom);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -14910,14 +15563,14 @@
         }
       });
 
-      localStorage.setItem('user_custom_default_checklist', JSON.stringify(cleanTemplate));
+      localStorage.setItem(scopedStorageKey('user_custom_default_checklist'), JSON.stringify(cleanTemplate));
       showToast('⭐ Saved as default template for new reports!');
     }
 
     function resetDefaultChecklist() {
       if (!confirm('Restore checklist to original 13 standard default groups?')) return;
       D.checklist = JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_CONFIG));
-      localStorage.removeItem('user_custom_default_checklist');
+      localStorage.removeItem(scopedStorageKey('user_custom_default_checklist'));
       pushHistory('Restore default checklist');
       renderChecklist();
       as();
@@ -14959,7 +15612,7 @@
           const el = document.getElementById(id);
           if (el) {
             if (keys[i] === 'reviewer' && !D[keys[i]]) {
-              D[keys[i]] = localStorage.getItem('DEFAULT_REVIEWER_NAME') || 'Quoc Hung';
+              D[keys[i]] = localStorage.getItem(scopedStorageKey('DEFAULT_REVIEWER_NAME')) || 'Quoc Hung';
             }
             el.value = D[keys[i]] || '';
           }
@@ -15276,7 +15929,7 @@
           console.warn('[Snapshot] Snapshot too large, skipping');
           return;
         }
-        localStorage.setItem(SNAPSHOT_KEY_PREFIX + report.id, str);
+        localStorage.setItem(scopedStorageKey(SNAPSHOT_KEY_PREFIX + report.id), str);
       } catch (err) {
         console.warn('[Snapshot] localStorage write failed (private browsing or quota)', err);
       }
@@ -15285,7 +15938,7 @@
     function getDraftSnapshot(reportId) {
       if (!reportId) return null;
       try {
-        const raw = localStorage.getItem(SNAPSHOT_KEY_PREFIX + reportId);
+        const raw = localStorage.getItem(scopedStorageKey(SNAPSHOT_KEY_PREFIX + reportId));
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -15302,7 +15955,7 @@
             typeof existing.revision === 'number' && existing.revision > savedRevision) {
           return;
         }
-        localStorage.removeItem(SNAPSHOT_KEY_PREFIX + reportId);
+        localStorage.removeItem(scopedStorageKey(SNAPSHOT_KEY_PREFIX + reportId));
       } catch (e) {}
     }
 
@@ -15800,7 +16453,7 @@
           id, 
           moduleType: modKey,
           reportTitle: modCfg.pdfTitle,
-          model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: localStorage.getItem('DEFAULT_REVIEWER_NAME') || 'Quoc Hung', numS: 1, numR: 1,
+          model: '', desc: '', dim: '', date: `${now.getDate()}-${mo[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`, factory: '', reviewer: localStorage.getItem(scopedStorageKey('DEFAULT_REVIEWER_NAME')) || 'Quoc Hung', numS: 1, numR: 1,
           checks: { stage: {}, sample: {}, comfort: {}, rating: {} },
           coverPhotos: {},
           coverTitles: {},
@@ -15842,7 +16495,8 @@
     }
 
     /* ============ SAVE ONE JSON FILE PER REPORT + LEGACY ARCHIVE RESTORE ============ */
-    const FS_DB_NAME = 'SofaCompanyPP_FS';
+    // Tên DB được gán lại theo tài khoản trong prepareUserStorage() (hậu tố ::<userId>).
+    let FS_DB_NAME = 'SofaCompanyPP_FS';
     const FS_STORE_NAME = 'kv';
     const FS_DIR_KEY = 'archiveDir';
     const FS_VERSION = 1;
@@ -17854,7 +18508,676 @@
       });
     }
 
-    initDB().then(() => { renderHome(); initHomeDragAndDrop(); fsInit().catch(() => { }); }).catch(err => { console.error('IndexedDB initialization error:', err); showToast('IndexedDB storage error'); });
+    // ═══════════════ AUTHENTICATION (CLOUDFLARE D1 + PAGES FUNCTIONS) ═══════════════
+    const AUTH_SESSION_KEY = 'fasrep.session.v1';
+    const AUTH_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+    const AUTH_OFFICIAL_URL = 'https://fasrep.pages.dev/';
+    let currentUser = null;
+    let appInitialized = false;
+    let authAdminUsers = [];
+
+    function readCachedSession() {
+      try {
+        const raw = localStorage.getItem(AUTH_SESSION_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.user || !parsed.expiresAt) return null;
+        return parsed;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function writeCachedSession(user) {
+      try {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({
+          user: user,
+          expiresAt: Date.now() + AUTH_SESSION_TTL_MS
+        }));
+      } catch (err) { }
+    }
+
+    function clearCachedSession() {
+      try { localStorage.removeItem(AUTH_SESSION_KEY); } catch (err) { }
+    }
+
+    async function apiFetch(path, options = {}) {
+      const opts = Object.assign({ credentials: 'same-origin', cache: 'no-store' }, options);
+      opts.headers = Object.assign({}, options.headers || {});
+      if (opts.body !== undefined && typeof opts.body !== 'string') {
+        opts.body = JSON.stringify(opts.body);
+        opts.headers['Content-Type'] = 'application/json';
+      }
+      const res = await fetch(path, opts);
+      const type = res.headers.get('content-type') || '';
+      let data = null;
+      if (type.includes('application/json')) {
+        try { data = await res.json(); } catch (err) { }
+      }
+      return { res: res, data: data };
+    }
+
+    function withTimeout(promise, ms) {
+      return Promise.race([
+        promise,
+        new Promise((resolve, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms))
+      ]);
+    }
+
+    function authErrorMessage(data) {
+      const code = data && data.error;
+      switch (code) {
+        case 'INVALID_CREDENTIALS':
+          return 'Email hoặc mật khẩu không đúng.' +
+            (data.attemptsLeft !== undefined ? ` Còn ${data.attemptsLeft} lần thử.` : '');
+        case 'ACCOUNT_LOCKED': {
+          const mins = Math.max(1, Math.ceil((data.retryAfter || 900) / 60));
+          return `Tài khoản tạm khóa do nhập sai nhiều lần. Thử lại sau ${mins} phút.`;
+        }
+        case 'ACCOUNT_DISABLED': return 'Tài khoản đã bị vô hiệu hóa. Liên hệ quản trị viên.';
+        case 'SIGNUP_CLOSED': return 'Hệ thống đã có tài khoản. Vui lòng đăng nhập hoặc liên hệ Admin.';
+        case 'EMAIL_TAKEN': return 'Email này đã được sử dụng.';
+        case 'INVALID_EMAIL': return 'Email không hợp lệ.';
+        case 'PASSWORD_TOO_SHORT': return 'Mật khẩu phải có ít nhất 8 ký tự.';
+        case 'PASSWORD_TOO_LONG': return 'Mật khẩu quá dài (tối đa 200 ký tự).';
+        case 'WRONG_PASSWORD': return 'Mật khẩu hiện tại không đúng.';
+        case 'LAST_ADMIN': return 'Không thể hạ quyền hoặc khóa Admin cuối cùng.';
+        case 'CANNOT_CHANGE_SELF': return 'Không thể tự hạ quyền hoặc tự khóa tài khoản đang đăng nhập.';
+        case 'USER_NOT_FOUND': return 'Không tìm thấy tài khoản.';
+        case 'AUTH_REQUIRED': return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+        case 'FORBIDDEN': return 'Bạn không có quyền thực hiện thao tác này.';
+        case 'DB_NOT_INITIALIZED': return 'Cơ sở dữ liệu tài khoản chưa được khởi tạo trên máy chủ.';
+        case 'DB_UNAVAILABLE': return 'Máy chủ chưa sẵn sàng. Vui lòng thử lại sau.';
+        default: return 'Có lỗi xảy ra. Vui lòng thử lại.';
+      }
+    }
+
+    function showAuthPanel(mode) {
+      const screen = document.getElementById('authScreen');
+      const loading = document.getElementById('authLoading');
+      const login = document.getElementById('authLoginForm');
+      const signup = document.getElementById('authSignupForm');
+      const unavailable = document.getElementById('authUnavailable');
+      if (screen) screen.classList.remove('hidden');
+      if (loading) loading.style.display = mode === 'loading' ? '' : 'none';
+      if (login) login.hidden = mode !== 'login';
+      if (signup) signup.hidden = mode !== 'signup';
+      if (unavailable) unavailable.hidden = mode !== 'unavailable';
+      if (mode === 'login') setTimeout(() => { const el = document.getElementById('authLoginEmail'); if (el) el.focus(); }, 60);
+      if (mode === 'signup') setTimeout(() => { const el = document.getElementById('authSignupName'); if (el) el.focus(); }, 60);
+    }
+
+    function hideAuthScreen() {
+      const screen = document.getElementById('authScreen');
+      if (screen) screen.classList.add('hidden');
+    }
+
+    function showAuthUnavailable(message) {
+      showAuthPanel('unavailable');
+      const textEl = document.getElementById('authUnavailableText');
+      if (textEl) textEl.textContent = message;
+      const isGithub = /\.github\.io$/i.test(location.hostname);
+      const note = document.getElementById('authOfficialNote');
+      if (note) note.hidden = !isGithub;
+      const link = document.getElementById('authOfficialLink');
+      if (link) link.href = AUTH_OFFICIAL_URL;
+    }
+
+    function setAuthError(id, message) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!message) {
+        el.hidden = true;
+        el.textContent = '';
+        return;
+      }
+      el.textContent = message;
+      el.hidden = false;
+    }
+
+    function setButtonBusy(btn, busy, busyText) {
+      if (!btn) return;
+      if (busy) {
+        btn.dataset.label = btn.textContent;
+        btn.textContent = busyText || 'ĐANG XỬ LÝ…';
+        btn.disabled = true;
+      } else {
+        if (btn.dataset.label) btn.textContent = btn.dataset.label;
+        btn.disabled = false;
+      }
+    }
+
+    function togglePasswordField(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      if (btn) btn.textContent = show ? 'ẨN' : 'HIỆN';
+    }
+
+    function initialsFor(user) {
+      const name = (user && (user.name || user.email)) || '?';
+      const parts = String(name).trim().split(/\s+/).filter(Boolean);
+      const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : String(name).slice(0, 2);
+      return (letters || '?').toUpperCase();
+    }
+
+    function updateAccountUI() {
+      const wrap = document.getElementById('accountMenuWrap');
+      if (wrap) wrap.style.display = currentUser ? 'flex' : 'none';
+      if (!currentUser) return;
+      const initials = initialsFor(currentUser);
+      ['accountAvatar', 'accountAvatarLarge'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = initials;
+      });
+      const nameEl = document.getElementById('accountName');
+      if (nameEl) nameEl.textContent = currentUser.name || currentUser.email;
+      const emailEl = document.getElementById('accountEmail');
+      if (emailEl) emailEl.textContent = currentUser.email;
+      const roleEl = document.getElementById('accountRole');
+      if (roleEl) {
+        roleEl.textContent = currentUser.role === 'admin' ? 'ADMIN' : 'USER';
+        roleEl.classList.toggle('admin', currentUser.role === 'admin');
+      }
+      const adminItem = document.getElementById('accountAdminItem');
+      if (adminItem) adminItem.hidden = currentUser.role !== 'admin';
+    }
+
+    function toggleAccountMenu(event) {
+      if (event) { event.preventDefault(); event.stopPropagation(); }
+      const dd = document.getElementById('accountDropdown');
+      const btn = document.getElementById('btnAccountMenu');
+      if (!dd) return;
+      dd.hidden = !dd.hidden;
+      if (btn) btn.setAttribute('aria-expanded', dd.hidden ? 'false' : 'true');
+    }
+
+    function closeAccountMenu() {
+      const dd = document.getElementById('accountDropdown');
+      const btn = document.getElementById('btnAccountMenu');
+      if (dd) dd.hidden = true;
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('accountMenuWrap');
+      if (wrap && !wrap.contains(e.target)) closeAccountMenu();
+    });
+
+    // ─── PHẠM VI DỮ LIỆU THEO TÀI KHOẢN ───
+    const AUTH_LEGACY_DB_NAME = 'SofaCompanyPP_DB_Lite';
+    const AUTH_FS_BASE_NAME = 'SofaCompanyPP_FS';
+    const AUTH_LEGACY_PROMPT_KEY = 'fasrep.legacyPrompted.v1';
+
+    function scopedStorageKey(key) {
+      return (currentUser && currentUser.id != null) ? key + '::' + currentUser.id : key;
+    }
+
+    function prepareUserStorage(user) {
+      const suffix = (user && user.id != null) ? '::' + user.id : '';
+      DB_NAME = AUTH_LEGACY_DB_NAME + suffix;
+      FS_DB_NAME = AUTH_FS_BASE_NAME + suffix;
+    }
+
+    function openIdbByName(name) {
+      return new Promise((res, rej) => {
+        const req = indexedDB.open(name);
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    function idbGetAll(dbRef, storeName) {
+      return new Promise((res, rej) => {
+        if (!dbRef.objectStoreNames.contains(storeName)) { res([]); return; }
+        const tx = dbRef.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).getAll();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function countLegacyReports() {
+      if (!('databases' in indexedDB)) return null;
+      try {
+        const dbs = await indexedDB.databases();
+        if (!dbs.some(d => d && d.name === AUTH_LEGACY_DB_NAME)) return 0;
+      } catch (err) {
+        return null;
+      }
+      let legacyDb = null;
+      try {
+        legacyDb = await openIdbByName(AUTH_LEGACY_DB_NAME);
+        const reports = await idbGetAll(legacyDb, STORE_NAME);
+        return reports.length;
+      } finally {
+        if (legacyDb) legacyDb.close();
+      }
+    }
+
+    // Chỉ hỏi một lần trên mỗi thiết bị; dữ liệu gốc không bị xoá.
+    async function maybeOfferLegacyMigration(user) {
+      if (!user || user.id == null) return;
+      try {
+        if (localStorage.getItem(AUTH_LEGACY_PROMPT_KEY)) return;
+      } catch (err) { return; }
+      const count = await countLegacyReports();
+      if (count == null) return;
+      try { localStorage.setItem(AUTH_LEGACY_PROMPT_KEY, '1'); } catch (err) { }
+      if (!count) return;
+      const copy = await appConfirm(
+        'Máy này có ' + count + ' báo cáo được lưu từ trước khi tạo tài khoản. Sao chép toàn bộ vào tài khoản ' + (user.email || '') + '? Dữ liệu gốc vẫn được giữ nguyên.',
+        { title: 'Dữ liệu báo cáo cũ', confirmLabel: 'Sao chép' }
+      );
+      if (!copy) return;
+      let legacyDb = null;
+      let copied = 0;
+      try {
+        legacyDb = await openIdbByName(AUTH_LEGACY_DB_NAME);
+        const reports = await idbGetAll(legacyDb, STORE_NAME);
+        for (const report of reports) {
+          if (!report || report.id == null) continue;
+          const existing = await dbGet(report.id);
+          if (existing) continue;
+          await dbPut(report);
+          copied++;
+        }
+      } catch (err) {
+        console.error('Legacy report migration error:', err);
+        showToast('Không sao chép được toàn bộ dữ liệu cũ');
+        return;
+      } finally {
+        if (legacyDb) legacyDb.close();
+      }
+      if (copied > 0) showToast('Đã sao chép ' + copied + ' báo cáo vào tài khoản này');
+      else showToast('Báo cáo cũ đã có trong tài khoản này');
+    }
+
+    function startApp() {
+      if (appInitialized) return;
+      appInitialized = true;
+      prepareUserStorage(currentUser);
+      initDB().then(async () => {
+        try { await maybeOfferLegacyMigration(currentUser); } catch (err) { console.warn('Legacy migration skipped', err); }
+        renderHome();
+        initHomeDragAndDrop();
+        fsInit().catch(() => { });
+      }).catch(err => { console.error('IndexedDB initialization error:', err); showToast('IndexedDB storage error'); });
+    }
+
+    async function bootAuth() {
+      showAuthPanel('loading');
+      const cached = readCachedSession();
+      let state = null;
+      try {
+        const result = await withTimeout(apiFetch('/api/auth/state'), 12000);
+        if (result.res.ok && result.data && result.data.ok) {
+          state = result.data;
+        } else if (result.data && result.data.error === 'DB_NOT_INITIALIZED') {
+          showAuthUnavailable('Cơ sở dữ liệu tài khoản chưa được khởi tạo trên máy chủ. Liên hệ quản trị viên Cloudflare.');
+          return;
+        } else {
+          throw new Error('AUTH_API_UNAVAILABLE');
+        }
+      } catch (err) {
+        if (cached && cached.expiresAt > Date.now() && cached.user) {
+          currentUser = cached.user;
+          updateAccountUI();
+          hideAuthScreen();
+          startApp();
+          showToast('Đang dùng ngoại tuyến — phiên đăng nhập còn hiệu lực', 3200);
+          return;
+        }
+        showAuthUnavailable(navigator.onLine
+          ? 'Máy chủ đăng nhập chưa sẵn sàng. Kiểm tra kết nối rồi thử lại.'
+          : 'Thiết bị đang ngoại tuyến và chưa có phiên đăng nhập được ghi nhớ trên máy này.');
+        return;
+      }
+
+      if (state.user) {
+        currentUser = state.user;
+        writeCachedSession(currentUser);
+        updateAccountUI();
+        hideAuthScreen();
+        startApp();
+        return;
+      }
+
+      clearCachedSession();
+      if (!state.hasUsers) showAuthPanel('signup');
+      else showAuthPanel('login');
+    }
+
+    async function submitLogin(event) {
+      event.preventDefault();
+      const emailEl = document.getElementById('authLoginEmail');
+      const pwEl = document.getElementById('authLoginPassword');
+      const btn = document.getElementById('authLoginBtn');
+      if (!emailEl || !pwEl) return;
+      const email = emailEl.value.trim();
+      const password = pwEl.value;
+      setAuthError('authLoginError', '');
+      if (!email || !password) {
+        setAuthError('authLoginError', 'Vui lòng nhập email và mật khẩu.');
+        return;
+      }
+      setButtonBusy(btn, true, 'ĐANG ĐĂNG NHẬP…');
+      try {
+        const result = await apiFetch('/api/auth/login', { method: 'POST', body: { email: email, password: password } });
+        if (result.res.ok && result.data && result.data.ok && result.data.user) {
+          currentUser = result.data.user;
+          writeCachedSession(currentUser);
+          updateAccountUI();
+          pwEl.value = '';
+          hideAuthScreen();
+          startApp();
+          showToast(`Xin chào ${currentUser.name || currentUser.email}`);
+          return;
+        }
+        setAuthError('authLoginError', authErrorMessage(result.data));
+      } catch (err) {
+        setAuthError('authLoginError', 'Không kết nối được máy chủ đăng nhập. Kiểm tra mạng rồi thử lại.');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    async function submitSignup(event) {
+      event.preventDefault();
+      const nameEl = document.getElementById('authSignupName');
+      const emailEl = document.getElementById('authSignupEmail');
+      const pwEl = document.getElementById('authSignupPassword');
+      const confirmEl = document.getElementById('authSignupConfirm');
+      const btn = document.getElementById('authSignupBtn');
+      if (!emailEl || !pwEl || !confirmEl) return;
+      const email = emailEl.value.trim();
+      const password = pwEl.value;
+      setAuthError('authSignupError', '');
+      if (!email) { setAuthError('authSignupError', 'Vui lòng nhập email.'); return; }
+      if (!password || password.length < 8) { setAuthError('authSignupError', 'Mật khẩu phải có ít nhất 8 ký tự.'); return; }
+      if (password !== confirmEl.value) { setAuthError('authSignupError', 'Mật khẩu nhập lại không khớp.'); return; }
+      setButtonBusy(btn, true, 'ĐANG TẠO…');
+      try {
+        const result = await apiFetch('/api/auth/signup', {
+          method: 'POST',
+          body: { name: nameEl ? nameEl.value.trim() : '', email: email, password: password }
+        });
+        if (result.res.ok && result.data && result.data.ok && result.data.user) {
+          currentUser = result.data.user;
+          writeCachedSession(currentUser);
+          updateAccountUI();
+          pwEl.value = '';
+          confirmEl.value = '';
+          hideAuthScreen();
+          startApp();
+          showToast('✓ Đã tạo tài khoản Admin');
+          return;
+        }
+        setAuthError('authSignupError', authErrorMessage(result.data));
+      } catch (err) {
+        setAuthError('authSignupError', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    async function doLogout() {
+      closeAccountMenu();
+      const ok = await appConfirm('Đăng xuất khỏi thiết bị này? Phiên đăng nhập được ghi nhớ sẽ bị xóa.', {
+        title: 'Đăng xuất',
+        confirmLabel: 'Đăng xuất'
+      });
+      if (!ok) return;
+      try {
+        if (typeof flushReport === 'function') await flushReport();
+      } catch (err) { }
+      try {
+        await withTimeout(apiFetch('/api/auth/logout', { method: 'POST' }), 8000);
+      } catch (err) { }
+      clearCachedSession();
+      location.reload();
+    }
+
+    function openChangePasswordModal() {
+      closeAccountMenu();
+      setAuthError('cpError', '');
+      ['cpCurrent', 'cpNew', 'cpConfirm'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      const modal = document.getElementById('changePasswordModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        lockBodyScroll();
+      }
+      setTimeout(() => { const el = document.getElementById('cpCurrent'); if (el) el.focus(); }, 80);
+    }
+
+    function closeChangePasswordModal() {
+      const modal = document.getElementById('changePasswordModal');
+      if (modal) modal.classList.add('hidden');
+      unlockBodyScroll();
+    }
+
+    async function submitChangePassword(event) {
+      event.preventDefault();
+      const currentEl = document.getElementById('cpCurrent');
+      const nextEl = document.getElementById('cpNew');
+      const confirmEl = document.getElementById('cpConfirm');
+      const btn = document.getElementById('cpBtn');
+      if (!currentEl || !nextEl || !confirmEl) return;
+      setAuthError('cpError', '');
+      if (!currentEl.value) { setAuthError('cpError', 'Nhập mật khẩu hiện tại.'); return; }
+      if (!nextEl.value || nextEl.value.length < 8) { setAuthError('cpError', 'Mật khẩu mới phải có ít nhất 8 ký tự.'); return; }
+      if (nextEl.value !== confirmEl.value) { setAuthError('cpError', 'Mật khẩu nhập lại không khớp.'); return; }
+      setButtonBusy(btn, true, 'ĐANG CẬP NHẬT…');
+      try {
+        const result = await apiFetch('/api/auth/password', {
+          method: 'POST',
+          body: { currentPassword: currentEl.value, newPassword: nextEl.value }
+        });
+        if (result.res.ok && result.data && result.data.ok) {
+          closeChangePasswordModal();
+          showToast('✓ Đã đổi mật khẩu');
+          return;
+        }
+        setAuthError('cpError', authErrorMessage(result.data));
+      } catch (err) {
+        setAuthError('cpError', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    function fmtAccountDate(ms) {
+      if (!ms) return '—';
+      try { return new Date(ms).toLocaleDateString('vi-VN'); } catch (err) { return '—'; }
+    }
+
+    function openAdminPanel() {
+      closeAccountMenu();
+      if (!currentUser || currentUser.role !== 'admin') return;
+      setAuthError('adminCreateError', '');
+      const modal = document.getElementById('adminUsersModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        lockBodyScroll();
+      }
+      loadAdminUsers();
+    }
+
+    function closeAdminPanel() {
+      const modal = document.getElementById('adminUsersModal');
+      if (modal) modal.classList.add('hidden');
+      unlockBodyScroll();
+    }
+
+    async function loadAdminUsers() {
+      const list = document.getElementById('adminUserList');
+      if (!list) return;
+      list.innerHTML = '<div class="admin-empty">Đang tải…</div>';
+      try {
+        const result = await apiFetch('/api/admin/users');
+        if (result.res.status === 401) {
+          clearCachedSession();
+          location.reload();
+          return;
+        }
+        if (!result.res.ok || !result.data || !result.data.ok) {
+          list.innerHTML = '<div class="admin-empty">' + escapeHtml(authErrorMessage(result.data)) + '</div>';
+          return;
+        }
+        authAdminUsers = result.data.users || [];
+        renderAdminUsers();
+      } catch (err) {
+        list.innerHTML = '<div class="admin-empty">Không tải được danh sách tài khoản.</div>';
+      }
+    }
+
+    function renderAdminUsers() {
+      const list = document.getElementById('adminUserList');
+      if (!list) return;
+      if (!authAdminUsers.length) {
+        list.innerHTML = '<div class="admin-empty">Chưa có tài khoản.</div>';
+        return;
+      }
+      list.innerHTML = authAdminUsers.map(u => {
+        const isSelf = currentUser && u.id === currentUser.id;
+        const locked = u.locked_until && u.locked_until > Date.now();
+        const badges = [
+          '<span class="admin-badge ' + (u.role === 'admin' ? 'admin' : 'user') + '">' + (u.role === 'admin' ? 'ADMIN' : 'USER') + '</span>',
+          u.is_active ? '' : '<span class="admin-badge inactive">ĐÃ KHÓA</span>',
+          locked ? '<span class="admin-badge locked">TẠM KHÓA</span>' : ''
+        ].join('');
+        return '' +
+          '<div class="admin-user-row">' +
+            '<div class="admin-user-main">' +
+              '<span class="account-avatar">' + escapeHtml(initialsFor(u)) + '</span>' +
+              '<div style="min-width:0;">' +
+                '<div class="admin-user-name">' + escapeHtml(u.name || u.email) + ' ' + badges + '</div>' +
+                '<div class="admin-user-email">' + escapeHtml(u.email) + '</div>' +
+                '<div class="admin-user-meta">Tạo ' + escapeHtml(fmtAccountDate(u.created_at)) + ' · Đăng nhập cuối ' + escapeHtml(fmtAccountDate(u.last_login_at)) + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<button type="button" class="admin-edit-btn" onclick="toggleAdminEditor(' + u.id + ')">SỬA</button>' +
+          '</div>' +
+          '<div class="admin-user-editor" id="adminEditor-' + u.id + '" hidden>' +
+            '<label class="auth-field"><span>Họ tên</span><input id="adminEditName-' + u.id + '" type="text" maxlength="80" value="' + escapeHtml(u.name || '') + '"></label>' +
+            '<label class="auth-field"><span>Vai trò</span><select id="adminEditRole-' + u.id + '"' + (isSelf ? ' disabled' : '') + '>' +
+              '<option value="user"' + (u.role === 'user' ? ' selected' : '') + '>User</option>' +
+              '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
+            '</select></label>' +
+            '<label class="auth-field"><span>Trạng thái</span><select id="adminEditActive-' + u.id + '"' + (isSelf ? ' disabled' : '') + '>' +
+              '<option value="1"' + (u.is_active ? ' selected' : '') + '>Hoạt động</option>' +
+              '<option value="0"' + (u.is_active ? '' : ' selected') + '>Vô hiệu hóa</option>' +
+            '</select></label>' +
+            '<label class="auth-field"><span>Mật khẩu mới (bỏ trống nếu giữ nguyên)</span><input id="adminEditPassword-' + u.id + '" type="text" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự"></label>' +
+            (isSelf ? '<p class="admin-self-note">Không thể tự hạ quyền hoặc tự khóa tài khoản đang đăng nhập.</p>' : '') +
+            '<div class="admin-editor-actions">' +
+              '<button type="button" class="auth-submit" onclick="saveAdminUser(' + u.id + ')">LƯU</button>' +
+              '<button type="button" class="sbar-btn sec" onclick="toggleAdminEditor(' + u.id + ', false)">HỦY</button>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function toggleAdminEditor(id, force) {
+      const el = document.getElementById('adminEditor-' + id);
+      if (!el) return;
+      el.hidden = force === undefined ? !el.hidden : !force;
+    }
+
+    async function saveAdminUser(id) {
+      const user = authAdminUsers.find(u => u.id === id);
+      if (!user) return;
+      const nameEl = document.getElementById('adminEditName-' + id);
+      const roleEl = document.getElementById('adminEditRole-' + id);
+      const activeEl = document.getElementById('adminEditActive-' + id);
+      const pwEl = document.getElementById('adminEditPassword-' + id);
+      const body = {};
+      if (nameEl && nameEl.value.trim() !== (user.name || '')) body.name = nameEl.value.trim();
+      if (roleEl && !roleEl.disabled && roleEl.value !== user.role) body.role = roleEl.value;
+      if (activeEl && !activeEl.disabled) {
+        const active = activeEl.value === '1';
+        if (!!user.is_active !== active) body.is_active = active;
+      }
+      if (pwEl && pwEl.value) body.password = pwEl.value;
+      if (!Object.keys(body).length) {
+        showToast('Không có thay đổi');
+        return;
+      }
+      try {
+        const result = await apiFetch('/api/admin/users/' + id, { method: 'PATCH', body: body });
+        if (result.res.ok && result.data && result.data.ok) {
+          showToast('✓ Đã cập nhật tài khoản');
+          await loadAdminUsers();
+          return;
+        }
+        showToast(authErrorMessage(result.data));
+      } catch (err) {
+        showToast('Không kết nối được máy chủ.');
+      }
+    }
+
+    async function submitCreateUser(event) {
+      event.preventDefault();
+      const nameEl = document.getElementById('adminNewName');
+      const emailEl = document.getElementById('adminNewEmail');
+      const pwEl = document.getElementById('adminNewPassword');
+      const roleEl = document.getElementById('adminNewRole');
+      const btn = document.getElementById('adminCreateBtn');
+      setAuthError('adminCreateError', '');
+      const email = emailEl ? emailEl.value.trim() : '';
+      const password = pwEl ? pwEl.value : '';
+      if (!email) { setAuthError('adminCreateError', 'Nhập email.'); return; }
+      if (!password || password.length < 8) { setAuthError('adminCreateError', 'Mật khẩu phải có ít nhất 8 ký tự.'); return; }
+      setButtonBusy(btn, true, 'ĐANG TẠO…');
+      try {
+        const result = await apiFetch('/api/admin/users', {
+          method: 'POST',
+          body: {
+            name: nameEl ? nameEl.value.trim() : '',
+            email: email,
+            password: password,
+            role: roleEl ? roleEl.value : 'user'
+          }
+        });
+        if (result.res.ok && result.data && result.data.ok) {
+          if (nameEl) nameEl.value = '';
+          if (emailEl) emailEl.value = '';
+          if (pwEl) pwEl.value = '';
+          if (roleEl) roleEl.value = 'user';
+          showToast('✓ Đã tạo tài khoản');
+          await loadAdminUsers();
+          return;
+        }
+        setAuthError('adminCreateError', authErrorMessage(result.data));
+      } catch (err) {
+        setAuthError('adminCreateError', 'Không kết nối được máy chủ.');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    window.addEventListener('online', async () => {
+      if (!currentUser) return;
+      try {
+        const result = await withTimeout(apiFetch('/api/auth/me'), 10000);
+        if (result.res.status === 401) {
+          clearCachedSession();
+          location.reload();
+          return;
+        }
+        if (result.res.ok && result.data && result.data.user) {
+          currentUser = result.data.user;
+          writeCachedSession(currentUser);
+          updateAccountUI();
+        }
+      } catch (err) { }
+    });
+
+    bootAuth();
   </script>
   <script>
     // Roboto-Regular TrueType Font for jsPDF Vietnamese Unicode support

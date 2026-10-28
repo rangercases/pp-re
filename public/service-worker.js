@@ -1,5 +1,5 @@
 // Service Worker for SUPER REPORT (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v3.2.0';
+const CACHE_NAME = 'pp-review-v3.3.0';
 
 const STATIC_ASSETS = [
   './',
@@ -58,6 +58,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // 0. Auth/API traffic is never cached: it must always reach D1 live.
+  if (url.pathname.startsWith('/api/')) return;
 
   // 1. CDN and External Vendor assets -> Cache-First
   const isCdn = url.hostname.includes('cdnjs.cloudflare.com') ||

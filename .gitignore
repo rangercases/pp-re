@@ -25,6 +25,11 @@
 !apple-touch-icon.png
 !src/
 !src/**
+!functions/
+!functions/**
+!db/
+!db/**
+!wrangler.json
 
 # Bỏ qua các thư mục tạm và dependencies
 node_modules/
