@@ -30,6 +30,7 @@
 !db/
 !db/**
 !wrangler.json
+!HANDOFF-FASREP.md
 
 # Bỏ qua các thư mục tạm và dependencies
 node_modules/
