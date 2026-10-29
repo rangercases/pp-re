@@ -1,17 +1,17 @@
 ---
 trigger: always_on
-description: Mandatory ElevenLabs Design System and UI/UX rules for Super Report V3.0
+description: Mandatory ElevenLabs Design System and UI/UX rules for FASREP
 ---
 
-# MANDATORY UI/UX & DESIGN SYSTEM RULE (V3.0 ONLY - ELEVENLABS STYLE)
-> ⚠️ **PHẠM VI ĐỘC QUYỀN:** Rule này CHỈ ÁP DỤNG cho thư mục `Super Report V3.0`.
-> Tuyệt đối KHÔNG áp dụng cho `Super Report V2.0` (V2.0 sử dụng ArtCraft Studio Style với 0px border-radius).
+# MANDATORY UI/UX & DESIGN SYSTEM RULE (FASREP - ELEVENLABS STYLE)
+> ⚠️ **PHẠM VI ĐỘC QUYỀN:** Rule này CHỈ ÁP DỤNG cho dự án FASREP.
+> Tuyệt đối KHÔNG áp dụng cho phiên bản V2.0 cũ (ArtCraft Studio Style với 0px border-radius).
 
-Khi thực hiện bất kỳ công việc nào liên quan đến giao diện (UI), trải nghiệm người dùng (UX), CSS/styling, layout, màu sắc, font chữ hoặc các tương tác frontend trên dự án **Super Report V3.0**:
+Khi thực hiện bất kỳ công việc nào liên quan đến giao diện (UI), trải nghiệm người dùng (UX), CSS/styling, layout, màu sắc, font chữ hoặc các tương tác frontend trên dự án **FASREP**:
 
 ## 1. BẮT BUỘC ĐỌC VÀ TUÂN THỦ TÀI LIỆU THIẾT KẾ:
 - Bạn PHẢI luôn tham chiếu và áp dụng các nguyên tắc, bảng mã màu, typography, khoảng cách (spacing), Bento Grid, và animation được định nghĩa chi tiết tại:
-  `d:\OneDrive\Antigravity Hung\Super Report V3.0\elevenlabs-design-system-rules.md`
+  `.agents/rules/elevenlabs_design_system.md` (mục 2 dưới đây)
 
 ---
 

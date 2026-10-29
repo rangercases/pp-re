@@ -6,17 +6,17 @@ Tài liệu này để AI/người tiếp nhận trên máy khác nắm đúng t
 
 FASREP — PWA nội bộ SOFACOMPANY để làm báo cáo audit (ảnh + checklist), xuất PDF. Toàn bộ app nằm trong MỘT file `index.html` ở repo root (~19.200 dòng, Vite + vite-plugin-singlefile, `minify:false`, `treeshake:false`), build ra `dist/index.html`.
 
-- Thư mục hiện tại: `C:\Users\vn.technical03\OneDrive - SOFACOMPANY\Antigravity SCHung\Super Report`
+- Thư mục hiện tại: `C:\Users\vn.technical03\OneDrive - SOFACOMPANY\Antigravity SCHung\Super Report` — **chưa đổi tên** vì Qoder đang giữ thư mục; kế hoạch đổi thành `FASREP` khi đóng Qoder (script `%TEMP%\rename-fasrep-folder.cmd`); **repo GitHub vẫn là `pp-re`, không đổi**
 - Repo: https://github.com/rangercases/pp-re (nhánh `main`)
-- Commit mới nhất trên GitHub: `d781d31 docs: add FASREP handoff notes for another machine`
-- **Working tree đang có thay đổi chưa commit** của bản v3.4.0 (đăng ký mở + OTP email) — đã deploy Cloudflare nhưng **chưa push lên GitHub** (chờ duyệt).
+- Commit mới nhất trên GitHub: xem `git log -1` (sau commit dọn tên 2026-10-29; trước đó là `d781d31`)
+- Working tree sạch sau commit 2026-10-29: middleware redirect pages.dev + đợt dọn tên FASREP (cache `fasrep-v3.4.0`) — đã deploy Cloudflare deployment `2a926666`.
 
 ## 2. Ba bề mặt đang chạy
 
 | Bề mặt | Địa chỉ | Cách cập nhật |
 |---|---|---|
 | **Chính thức** | https://fasrep.com (+ www.fasrep.com) | `npm run deploy` (build + wrangler pages deploy project `fasrep`) |
-| Bản phụ | https://fasrep.pages.dev | cùng project Pages, cùng lần deploy |
+| Bản phụ | https://fasrep.pages.dev | cùng project Pages, cùng lần deploy — **từ 2026-10-29 mọi request 301 sang fasrep.com** (middleware) |
 | GitHub Pages | https://rangercases.github.io/pp-re | tự chạy workflow `Deploy to GitHub Pages` mỗi lần push `main` |
 | Project cũ | ~~https://super-report.pages.dev~~ | **đã xoá project 2026-10-29** (bản v3.2.0 không còn truy cập được) |
 
@@ -53,7 +53,7 @@ Có `pages (write)`, `challenge-widgets.write` (Turnstile), `email_sending (writ
 - Schema: `db/schema.sql` (bảng `users`, `sessions`, `signup_codes` + index) — đã apply remote, dữ liệu cũ nguyên vẹn
 - Frontend: khối auth trong `index.html` (~dòng 18580 là `AUTH_OFFICIAL_URL`); boot gate trước `initDB()`; session cache localStorage `fasrep.session.v1` (30 ngày, dùng offline); màn GitHub Pages thông báo ~dòng 6640; `APP_VERSION` dòng 8352; badge `[V3.4.0]` dòng 6795
 - Tách dữ liệu theo tài khoản: `SofaCompanyPP_DB_Lite::<userId>` và `SofaCompanyPP_FS::<userId>`; localStorage bọc qua `scopedStorageKey()`; DB gốc giữ nguyên; lần đầu đăng nhập hỏi sao chép báo cáo cũ một lần
-- Service worker: `pp-review-v3.4.0` (2 bản: `service-worker.js` và `public/service-worker.js`, phải sửa cả hai), bypass `/api/*`
+- Service worker: cache `fasrep-v3.4.0` (2 bản: `service-worker.js` và `public/service-worker.js`, phải sửa cả hai cho giống hệt nhau), bypass `/api/*`
 
 ## 5. Đăng ký mở + OTP — ĐÃ XONG (v3.4.0, deploy 2026-10-29)
 
@@ -73,10 +73,11 @@ Người dùng tự đăng ký: nhập họ tên/email/mật khẩu → hệ th�
 
 ## 6. Việc còn lại
 
-1. (Chờ duyệt) Commit + push `main` cho bản v3.4.0 — hiện mới deploy Cloudflare, GitHub Pages vẫn là bản cũ.
-2. Người dùng tự đăng ký thử trên https://fasrep.com bằng email thật để xác nhận thư Resend về hộp.
-3. Tuỳ chọn: bật Turnstile nếu bị spam đăng ký.
-4. Tuỳ chọn: chặn/redirect `fasrep.pages.dev` → `fasrep.com` (Cloudflare Access hoặc Worker). `super-report.pages.dev` đã xoá 2026-10-29.
+1. Đã xong 2026-10-29: commit + push `main` (v3.4.0 + `functions/_middleware.js` + dọn tên FASREP).
+2. Đã xong 2026-10-29: deploy Cloudflare đổi cache service worker sang `fasrep-v3.4.0`; đã kiểm chứng `https://fasrep.com/service-worker.js` và hash `dist/index.html` khớp production. Người dùng tải lại app một lần để SW mới nhận cache.
+3. Người dùng tự đăng ký thử trên https://fasrep.com bằng email thật để xác nhận thư Resend về hộp. **Đã thử thành công 2026-10-29.**
+4. Tuỳ chọn: bật Turnstile nếu bị spam đăng ký.
+5. Đã xong: `fasrep.pages.dev` (và mọi `<hash>.fasrep.pages.dev`) 301 → `fasrep.com` bằng `functions/_middleware.js`. `super-report.pages.dev` đã xoá 2026-10-29.
 
 ## 7. Lệnh và lỗi cần biết
 
@@ -104,7 +105,7 @@ npx wrangler pages dev dist --persist-to="%TEMP%\fasrep-dev" --port 8788   # tes
 - Lệnh bị cấm tuyệt đối: `del /s`, `rmdir /s`, `rd /s`, `rm -rf`, `Remove-Item -Recurse/-Force`, `format`, `diskpart`, `regedit`, `takeown`, `icacls /grant`, vòng `for ... do del`, `xcopy/robocopy /MIR`.
 - Vùng bảo vệ: `C:\Windows`, `C:\Program Files*`, `C:\ProgramData`, `C:\Users\*\AppData`; đặc biệt `C:\Users\vn.technical03\OneDrive - SOFACOMPANY\General\` và toàn bộ OneDrive công ty — **không ghi file nháp/benchmark vào OneDrive, dùng `%TEMP%`**.
 - Không thêm dependency npm nếu chưa được duyệt; không refactor ngoài phạm vi.
-- Không đổi tên IndexedDB `SofaCompanyPP_DB_Lite` / `SofaCompanyPP_FS` (chỉ được thêm hậu tố `::<userId>`), không đổi key localStorage cũ (chỉ thêm hậu tố scoped), không đổi `start_url`/`scope` manifest, không đổi tên repo/thư mục.
+- Không đổi tên IndexedDB `SofaCompanyPP_DB_Lite` / `SofaCompanyPP_FS` (chỉ được thêm hậu tố `::<userId>`), không đổi key localStorage cũ (chỉ thêm hậu tố scoped), không đổi `start_url`/`scope` manifest, **không đổi tên repo `pp-re`**; thư mục local đã được người dùng cho phép đổi thành `FASREP` (2026-10-29).
 - Không xoá dữ liệu người dùng khi chưa được yêu cầu rõ ràng.
 - Chỉ commit/push khi được yêu cầu; mỗi lần push xin duyệt riêng.
 - Cách xưng hô: không gọi người/agent khác là "nó".

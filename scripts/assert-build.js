@@ -65,7 +65,7 @@ if (manifest) {
 }
 
 const sw = read('service-worker.js');
-check('dist/service-worker.js has v3.4.0 cache', sw.includes("pp-review-v3.4.0"));
+check('dist/service-worker.js has v3.4.0 cache', sw.includes("fasrep-v3.4.0"));
 check('dist/service-worker.js never caches /api/', sw.includes("url.pathname.startsWith('/api/')"));
 check('dist/service-worker.js pins SortableJS 1.15.2', sw.includes('sortablejs@1.15.2'));
 check('dist/service-worker.js has no @latest', !sw.includes('@latest'));
