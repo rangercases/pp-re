@@ -54,28 +54,28 @@ async function sendWithResend(env, payload) {
 
 function codeEmail(name, code) {
   const safeName = escapeHtml(name || '');
-  const greeting = safeName ? `Chào ${safeName},` : 'Chào bạn,';
+  const greeting = safeName ? `Hi ${safeName},` : 'Hi there,';
   return {
-    subject: `Mã xác thực FASREP: ${code}`,
+    subject: `FASREP verification code: ${code}`,
     text: [
       greeting,
       '',
-      `Mã xác thực FASREP của bạn là: ${code}`,
-      'Mã có hiệu lực 15 phút và chỉ dùng được một lần.',
+      `Your FASREP verification code is: ${code}`,
+      'This code is valid for 15 minutes and can be used once.',
       '',
-      'Nếu không phải bạn yêu cầu tạo tài khoản, hãy bỏ qua email này.',
+      'If you did not request an account, you can ignore this email.',
       '',
       APP_URL,
     ].join('\n'),
-    html: `<!doctype html><html lang="vi"><body style="margin:0;padding:24px;background:#f5f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2a24;">
+    html: `<!doctype html><html lang="en"><body style="margin:0;padding:24px;background:#f5f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2a24;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e3e7e2;border-radius:12px;padding:28px;">
     <p style="margin:0 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7a70;font-weight:700;">FASREP</p>
-    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;">Mã xác thực đăng ký</h1>
+    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;">Your sign-up code</h1>
     <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">${greeting}</p>
-    <p style="margin:0 0 10px;font-size:14px;line-height:1.6;">Dùng mã dưới đây để hoàn tất tạo tài khoản:</p>
+    <p style="margin:0 0 10px;font-size:14px;line-height:1.6;">Use the code below to finish creating your account:</p>
     <p style="margin:0 0 16px;font-size:32px;letter-spacing:.28em;font-weight:700;font-family:Consolas,Menlo,monospace;color:#0A7E5C;">${code}</p>
-    <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#55635b;">Mã có hiệu lực <b>15 phút</b> và chỉ dùng được một lần.</p>
-    <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:#55635b;">Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>
+    <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#55635b;">This code is valid for <b>15 minutes</b> and can be used once.</p>
+    <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:#55635b;">If you did not request this, you can ignore this email.</p>
     <p style="margin:18px 0 0;font-size:13px;"><a href="${APP_URL}" style="color:#0A7E5C;">${APP_URL}</a></p>
   </div>
 </body></html>`,
@@ -84,26 +84,26 @@ function codeEmail(name, code) {
 
 function existingAccountEmail(name) {
   const safeName = escapeHtml(name || '');
-  const greeting = safeName ? `Chào ${safeName},` : 'Chào bạn,';
+  const greeting = safeName ? `Hi ${safeName},` : 'Hi there,';
   return {
-    subject: 'Email này đã có tài khoản FASREP',
+    subject: 'This email already has a FASREP account',
     text: [
       greeting,
       '',
-      'Email này đã được dùng để tạo tài khoản FASREP.',
-      `Nếu là bạn, hãy đăng nhập tại ${APP_URL}`,
-      'Nếu quên mật khẩu, liên hệ support@fasrep.com để được cấp lại.',
+      'This email is already used for a FASREP account.',
+      `If this is you, sign in at ${APP_URL}`,
+      'Forgot your password? Contact support@fasrep.com to have it reset.',
       '',
-      'Nếu không phải bạn yêu cầu, hãy bỏ qua email này.',
+      'If you did not request this, you can ignore this email.',
     ].join('\n'),
-    html: `<!doctype html><html lang="vi"><body style="margin:0;padding:24px;background:#f5f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2a24;">
+    html: `<!doctype html><html lang="en"><body style="margin:0;padding:24px;background:#f5f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2a24;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e3e7e2;border-radius:12px;padding:28px;">
     <p style="margin:0 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7a70;font-weight:700;">FASREP</p>
-    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;">Email đã có tài khoản</h1>
+    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;">Account already exists</h1>
     <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">${greeting}</p>
-    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">Email này đã được dùng để tạo tài khoản FASREP. Nếu là bạn, hãy đăng nhập tại <a href="${APP_URL}" style="color:#0A7E5C;">${APP_URL}</a>.</p>
-    <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#55635b;">Nếu quên mật khẩu, liên hệ <a href="mailto:support@fasrep.com" style="color:#0A7E5C;">support@fasrep.com</a> để được cấp lại.</p>
-    <p style="margin:0;font-size:13px;line-height:1.6;color:#55635b;">Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">This email is already used for a FASREP account. If this is you, sign in at <a href="${APP_URL}" style="color:#0A7E5C;">${APP_URL}</a>.</p>
+    <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#55635b;">Forgot your password? Contact <a href="mailto:support@fasrep.com" style="color:#0A7E5C;">support@fasrep.com</a> to have it reset.</p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:#55635b;">If you did not request this, you can ignore this email.</p>
   </div>
 </body></html>`,
   };
@@ -111,7 +111,7 @@ function existingAccountEmail(name) {
 
 export async function sendSignupCodeEmail(env, request, { email, name, code }) {
   if (devMailMode(env, request)) {
-    console.log(`[DEV MAIL] mã xác thực cho ${email}: ${code}`);
+    console.log(`[DEV MAIL] verification code for ${email}: ${code}`);
     return true;
   }
   const mail = codeEmail(name, code);
@@ -127,7 +127,7 @@ export async function sendSignupCodeEmail(env, request, { email, name, code }) {
 
 export async function sendExistingAccountEmail(env, request, { email, name }) {
   if (devMailMode(env, request)) {
-    console.log(`[DEV MAIL] báo email đã có tài khoản: ${email}`);
+    console.log(`[DEV MAIL] account already exists notice: ${email}`);
     return true;
   }
   const mail = existingAccountEmail(name);

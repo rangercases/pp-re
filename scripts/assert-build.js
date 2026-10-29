@@ -34,9 +34,9 @@ check('single-file bundle contains autosave queue', html.includes('drainSaveQueu
 check('single-file bundle contains small thumbnails', html.includes('thumbSmall'));
 check('single-file bundle shows FASREP', html.includes('FASREP'));
 check('single-file bundle has no DIGITAL REPORT', !html.includes('DIGITAL REPORT'));
-check('single-file bundle has APP_VERSION v3.4.0', html.includes("APP_VERSION = 'v3.4.0'"));
-check('single-file bundle shows V3.4.0 badge', html.includes('[V3.4.0]') && !html.includes('[V3.3.0]'));
-check('package.json version is 3.4.0', pkg.version === '3.4.0', pkg.version);
+check('single-file bundle has APP_VERSION v3.5.0', html.includes("APP_VERSION = 'v3.5.0'"));
+check('single-file bundle shows V3.5.0 badge', html.includes('[V3.5.0]') && !html.includes('[V3.4.0]'));
+check('package.json version is 3.5.0', pkg.version === '3.5.0', pkg.version);
 check('single-file bundle has auth boot gate', html.includes('function bootAuth'));
 check('single-file bundle scopes storage per account', html.includes('prepareUserStorage'));
 check('single-file bundle offers legacy migration', html.includes('maybeOfferLegacyMigration'));
@@ -65,7 +65,7 @@ if (manifest) {
 }
 
 const sw = read('service-worker.js');
-check('dist/service-worker.js has v3.4.0 cache', sw.includes("fasrep-v3.4.0"));
+check('dist/service-worker.js has v3.5.0 cache', sw.includes("fasrep-v3.5.0"));
 check('dist/service-worker.js never caches /api/', sw.includes("url.pathname.startsWith('/api/')"));
 check('dist/service-worker.js pins SortableJS 1.15.2', sw.includes('sortablejs@1.15.2'));
 check('dist/service-worker.js has no @latest', !sw.includes('@latest'));
