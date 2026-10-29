@@ -1,5 +1,5 @@
 // Service Worker for SUPER REPORT (Offline & PWA Support)
-const CACHE_NAME = 'pp-review-v3.3.0';
+const CACHE_NAME = 'pp-review-v3.4.0';
 
 const STATIC_ASSETS = [
   './',

@@ -6221,6 +6221,50 @@
       text-decoration: none;
     }
 
+    .auth-toggle {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .auth-link {
+      border: 0;
+      background: none;
+      padding: 0;
+      color: var(--module-theme);
+      font-family: var(--font-body);
+      font-size: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .auth-field input.auth-code-input {
+      text-align: center;
+      font-family: var(--font-hud);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: .32em;
+      padding-left: .32em;
+    }
+
+    .auth-resend {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .auth-resend button[disabled] {
+      color: var(--faint);
+      cursor: default;
+      text-decoration: none;
+    }
+
     .auth-footer {
       font-family: var(--font-hud);
       font-size: 9.5px;
@@ -6340,6 +6384,7 @@
     }
 
     .account-item:hover { background: var(--sunken); }
+    .account-item[hidden] { display: none; }
     .account-item-danger { color: var(--bad); }
 
     /* ══════════════════ ADMIN USER MANAGEMENT ══════════════════ */
@@ -6558,12 +6603,14 @@
         </form>
         <p class="auth-note">Thiết bị này ghi nhớ đăng nhập 30 ngày. Không dùng tài khoản chung trên máy của
           nhiều người.</p>
+        <p class="auth-toggle">Chưa có tài khoản?
+          <button type="button" class="auth-link" onclick="showAuthPanel('signup')">Đăng ký</button></p>
       </div>
 
       <div class="auth-form" id="authSignupForm" hidden>
-        <h1>Thiết lập tài khoản quản trị</h1>
-        <p class="auth-desc">Lần đầu sử dụng: tài khoản tạo tại đây sẽ là <b>Admin</b>, có quyền quản lý các tài
-          khoản khác.</p>
+        <h1>Tạo tài khoản</h1>
+        <p class="auth-desc">Nhập thông tin bên dưới. Hệ thống sẽ gửi mã xác thực 6 số tới email để hoàn tất
+          đăng ký.</p>
         <form onsubmit="submitSignup(event)" novalidate>
           <label class="auth-field"><span>Họ tên</span>
             <input id="authSignupName" type="text" autocomplete="name" maxlength="80"
@@ -6584,9 +6631,28 @@
             <input id="authSignupConfirm" type="password" autocomplete="new-password" minlength="8" required>
           </label>
           <p class="auth-error" id="authSignupError" hidden></p>
-          <button class="auth-submit" id="authSignupBtn" type="submit">TẠO TÀI KHOẢN ADMIN</button>
+          <button class="auth-submit" id="authSignupBtn" type="submit">GỬI MÃ XÁC THỰC</button>
         </form>
-        <p class="auth-note">Sau khi tạo, chỉ Admin mới có thể thêm tài khoản mới.</p>
+        <p class="auth-toggle">Đã có tài khoản?
+          <button type="button" class="auth-link" onclick="showAuthPanel('login')">Đăng nhập</button></p>
+      </div>
+
+      <div class="auth-form" id="authVerifyForm" hidden>
+        <h1>Nhập mã xác thực</h1>
+        <p class="auth-desc">Đã gửi mã 6 số tới <b id="authVerifyEmail"></b>. Mã hết hạn sau 15 phút.</p>
+        <form onsubmit="submitSignupVerify(event)" novalidate>
+          <label class="auth-field"><span>Mã xác thực</span>
+            <input id="authCodeInput" class="auth-code-input" type="text" inputmode="numeric"
+              autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="______" required>
+          </label>
+          <p class="auth-error" id="authVerifyError" hidden></p>
+          <button class="auth-submit" id="authVerifyBtn" type="submit">XÁC THỰC &amp; TẠO TÀI KHOẢN</button>
+        </form>
+        <p class="auth-resend">Chưa nhận được mã?
+          <button type="button" id="authResendBtn" class="auth-link" onclick="resendSignupCode()">Gửi lại</button>
+          <span id="authResendHint"></span></p>
+        <p class="auth-toggle">
+          <button type="button" class="auth-link" onclick="backToSignupStep1()">← Nhập lại thông tin</button></p>
       </div>
 
       <div class="auth-form" id="authUnavailable" hidden>
@@ -6594,7 +6660,7 @@
         <p class="auth-desc" id="authUnavailableText"></p>
         <button class="auth-submit" type="button" onclick="location.reload()">THỬ LẠI</button>
         <p class="auth-note" id="authOfficialNote" hidden>Bản GitHub Pages chỉ là bản sao giao diện.
-          <a id="authOfficialLink" href="https://fasrep.pages.dev/">Mở fasrep.pages.dev</a></p>
+          <a id="authOfficialLink" href="https://fasrep.com/">Mở fasrep.com</a></p>
       </div>
     </div>
     <p class="auth-footer">FASREP · Sample Review Report System</p>
@@ -6726,7 +6792,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.3.0]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.4.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8283,7 +8349,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.3.0';
+    const APP_VERSION = 'v3.4.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -18511,10 +18577,12 @@
     // ═══════════════ AUTHENTICATION (CLOUDFLARE D1 + PAGES FUNCTIONS) ═══════════════
     const AUTH_SESSION_KEY = 'fasrep.session.v1';
     const AUTH_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-    const AUTH_OFFICIAL_URL = 'https://fasrep.pages.dev/';
+    const AUTH_OFFICIAL_URL = 'https://fasrep.com/';
     let currentUser = null;
     let appInitialized = false;
     let authAdminUsers = [];
+    let pendingSignup = null;
+    let signupResendTimer = null;
 
     function readCachedSession() {
       try {
@@ -18575,8 +18643,22 @@
           return `Tài khoản tạm khóa do nhập sai nhiều lần. Thử lại sau ${mins} phút.`;
         }
         case 'ACCOUNT_DISABLED': return 'Tài khoản đã bị vô hiệu hóa. Liên hệ quản trị viên.';
-        case 'SIGNUP_CLOSED': return 'Hệ thống đã có tài khoản. Vui lòng đăng nhập hoặc liên hệ Admin.';
-        case 'EMAIL_TAKEN': return 'Email này đã được sử dụng.';
+        case 'EMAIL_TAKEN': return 'Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.';
+        case 'INVALID_CODE':
+          return 'Mã xác thực không đúng.' +
+            (data.attemptsLeft !== undefined ? ` Còn ${data.attemptsLeft} lần thử.` : '');
+        case 'CODE_EXPIRED': return 'Mã xác thực đã hết hạn. Bấm "Gửi lại" để nhận mã mới.';
+        case 'CODE_LOCKED': return 'Nhập sai quá nhiều lần. Bấm "Gửi lại" để nhận mã mới.';
+        case 'CODE_COOLDOWN': {
+          const secs = Math.max(1, Math.ceil(data.retryAfter || 60));
+          return `Vui lòng đợi ${secs} giây rồi gửi lại mã.`;
+        }
+        case 'RATE_LIMITED':
+          return data.scope === 'ip'
+            ? 'Có quá nhiều yêu cầu từ kết nối này. Vui lòng thử lại sau.'
+            : 'Email này đã yêu cầu mã quá nhiều lần. Vui lòng thử lại sau.';
+        case 'MAIL_SEND_FAILED': return 'Không gửi được email xác thực. Vui lòng thử lại sau ít phút.';
+        case 'MAIL_NOT_CONFIGURED': return 'Máy chủ chưa cấu hình gửi email. Liên hệ quản trị viên.';
         case 'INVALID_EMAIL': return 'Email không hợp lệ.';
         case 'PASSWORD_TOO_SHORT': return 'Mật khẩu phải có ít nhất 8 ký tự.';
         case 'PASSWORD_TOO_LONG': return 'Mật khẩu quá dài (tối đa 200 ký tự).';
@@ -18597,14 +18679,17 @@
       const loading = document.getElementById('authLoading');
       const login = document.getElementById('authLoginForm');
       const signup = document.getElementById('authSignupForm');
+      const verify = document.getElementById('authVerifyForm');
       const unavailable = document.getElementById('authUnavailable');
       if (screen) screen.classList.remove('hidden');
       if (loading) loading.style.display = mode === 'loading' ? '' : 'none';
       if (login) login.hidden = mode !== 'login';
       if (signup) signup.hidden = mode !== 'signup';
+      if (verify) verify.hidden = mode !== 'signupCode';
       if (unavailable) unavailable.hidden = mode !== 'unavailable';
       if (mode === 'login') setTimeout(() => { const el = document.getElementById('authLoginEmail'); if (el) el.focus(); }, 60);
       if (mode === 'signup') setTimeout(() => { const el = document.getElementById('authSignupName'); if (el) el.focus(); }, 60);
+      if (mode === 'signupCode') setTimeout(() => { const el = document.getElementById('authCodeInput'); if (el) el.focus(); }, 60);
     }
 
     function hideAuthScreen() {
@@ -18883,6 +18968,50 @@
       }
     }
 
+    function maskEmail(email) {
+      const parts = String(email || '').split('@');
+      if (parts.length !== 2) return email || '';
+      return parts[0].slice(0, 2) + '***@' + parts[1];
+    }
+
+    function clearSignupState() {
+      pendingSignup = null;
+      if (signupResendTimer) { clearInterval(signupResendTimer); signupResendTimer = null; }
+      const hint = document.getElementById('authResendHint');
+      if (hint) hint.textContent = '';
+      const resendBtn = document.getElementById('authResendBtn');
+      if (resendBtn) resendBtn.disabled = false;
+    }
+
+    function startSignupCountdown(seconds) {
+      if (signupResendTimer) { clearInterval(signupResendTimer); signupResendTimer = null; }
+      const btn = document.getElementById('authResendBtn');
+      const hint = document.getElementById('authResendHint');
+      let left = Math.max(0, Math.round(seconds));
+      const render = () => {
+        if (left > 0) {
+          if (hint) hint.textContent = `(${left}s)`;
+          if (btn) btn.disabled = true;
+          return;
+        }
+        if (hint) hint.textContent = '';
+        if (btn) btn.disabled = false;
+        if (signupResendTimer) { clearInterval(signupResendTimer); signupResendTimer = null; }
+      };
+      render();
+      signupResendTimer = setInterval(() => { left -= 1; render(); }, 1000);
+    }
+
+    function showSignupCodeStep(email, resendAfter) {
+      const emailEl = document.getElementById('authVerifyEmail');
+      if (emailEl) emailEl.textContent = maskEmail(email);
+      const codeEl = document.getElementById('authCodeInput');
+      if (codeEl) codeEl.value = '';
+      setAuthError('authVerifyError', '');
+      showAuthPanel('signupCode');
+      startSignupCountdown(resendAfter || 60);
+    }
+
     async function submitSignup(event) {
       event.preventDefault();
       const nameEl = document.getElementById('authSignupName');
@@ -18897,21 +19026,21 @@
       if (!email) { setAuthError('authSignupError', 'Vui lòng nhập email.'); return; }
       if (!password || password.length < 8) { setAuthError('authSignupError', 'Mật khẩu phải có ít nhất 8 ký tự.'); return; }
       if (password !== confirmEl.value) { setAuthError('authSignupError', 'Mật khẩu nhập lại không khớp.'); return; }
-      setButtonBusy(btn, true, 'ĐANG TẠO…');
+      if (!navigator.onLine) { setAuthError('authSignupError', 'Cần kết nối mạng để nhận mã xác thực.'); return; }
+      const name = nameEl ? nameEl.value.trim() : '';
+      setButtonBusy(btn, true, 'ĐANG GỬI MÃ…');
       try {
-        const result = await apiFetch('/api/auth/signup', {
+        const result = await apiFetch('/api/auth/signup/request', {
           method: 'POST',
-          body: { name: nameEl ? nameEl.value.trim() : '', email: email, password: password }
+          body: { name: name, email: email, password: password }
         });
-        if (result.res.ok && result.data && result.data.ok && result.data.user) {
-          currentUser = result.data.user;
-          writeCachedSession(currentUser);
-          updateAccountUI();
+        if (result.res.ok && result.data && result.data.ok) {
+          pendingSignup = { name: name, email: email, password: password };
           pwEl.value = '';
           confirmEl.value = '';
-          hideAuthScreen();
-          startApp();
-          showToast('✓ Đã tạo tài khoản Admin');
+          showSignupCodeStep(email, result.data.resendAfter);
+          if (result.data.devCode) setAuthError('authVerifyError', 'DEV — mã xác thực: ' + result.data.devCode);
+          showToast('Đã gửi mã xác thực — kiểm tra email');
           return;
         }
         setAuthError('authSignupError', authErrorMessage(result.data));
@@ -18920,6 +19049,74 @@
       } finally {
         setButtonBusy(btn, false);
       }
+    }
+
+    async function submitSignupVerify(event) {
+      event.preventDefault();
+      const codeEl = document.getElementById('authCodeInput');
+      const btn = document.getElementById('authVerifyBtn');
+      if (!pendingSignup || !codeEl) { showAuthPanel('signup'); return; }
+      const code = codeEl.value.replace(/\s+/g, '');
+      setAuthError('authVerifyError', '');
+      if (!/^\d{6}$/.test(code)) { setAuthError('authVerifyError', 'Vui lòng nhập đủ 6 chữ số.'); return; }
+      setButtonBusy(btn, true, 'ĐANG XÁC THỰC…');
+      try {
+        const result = await apiFetch('/api/auth/signup/verify', {
+          method: 'POST',
+          body: { name: pendingSignup.name, email: pendingSignup.email, password: pendingSignup.password, code: code }
+        });
+        if (result.res.ok && result.data && result.data.ok && result.data.user) {
+          currentUser = result.data.user;
+          writeCachedSession(currentUser);
+          updateAccountUI();
+          clearSignupState();
+          hideAuthScreen();
+          startApp();
+          showToast('✓ Đã tạo tài khoản — chào ' + (currentUser.name || currentUser.email));
+          return;
+        }
+        setAuthError('authVerifyError', authErrorMessage(result.data));
+        if (result.data && result.data.error === 'CODE_EXPIRED') codeEl.value = '';
+      } catch (err) {
+        setAuthError('authVerifyError', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    async function resendSignupCode() {
+      if (!pendingSignup) { showAuthPanel('signup'); return; }
+      const btn = document.getElementById('authResendBtn');
+      if (btn) btn.disabled = true;
+      setAuthError('authVerifyError', '');
+      try {
+        const result = await apiFetch('/api/auth/signup/request', {
+          method: 'POST',
+          body: { name: pendingSignup.name, email: pendingSignup.email, password: pendingSignup.password }
+        });
+        if (result.res.ok && result.data && result.data.ok) {
+          startSignupCountdown(result.data.resendAfter);
+          if (result.data.devCode) setAuthError('authVerifyError', 'DEV — mã xác thực: ' + result.data.devCode);
+          showToast('Đã gửi lại mã xác thực');
+          return;
+        }
+        setAuthError('authVerifyError', authErrorMessage(result.data));
+        if (result.data && result.data.retryAfter) startSignupCountdown(result.data.retryAfter);
+        else if (btn) btn.disabled = false;
+      } catch (err) {
+        setAuthError('authVerifyError', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function backToSignupStep1() {
+      const nameEl = document.getElementById('authSignupName');
+      const emailEl = document.getElementById('authSignupEmail');
+      if (nameEl && pendingSignup) nameEl.value = pendingSignup.name || '';
+      if (emailEl && pendingSignup) emailEl.value = pendingSignup.email || '';
+      clearSignupState();
+      setAuthError('authSignupError', '');
+      showAuthPanel('signup');
     }
 
     async function doLogout() {
