@@ -34,9 +34,9 @@ check('single-file bundle contains autosave queue', html.includes('drainSaveQueu
 check('single-file bundle contains small thumbnails', html.includes('thumbSmall'));
 check('single-file bundle shows FASREP', html.includes('FASREP'));
 check('single-file bundle has no DIGITAL REPORT', !html.includes('DIGITAL REPORT'));
-check('single-file bundle has APP_VERSION v3.5.0', html.includes("APP_VERSION = 'v3.5.0'"));
-check('single-file bundle shows V3.5.0 badge', html.includes('[V3.5.0]') && !html.includes('[V3.4.0]'));
-check('package.json version is 3.5.0', pkg.version === '3.5.0', pkg.version);
+check('single-file bundle has APP_VERSION v3.6.0', html.includes("APP_VERSION = 'v3.6.0'"));
+check('single-file bundle shows V3.6.0 badge', html.includes('[V3.6.0]') && !html.includes('[V3.5.0]'));
+check('package.json version is 3.6.0', pkg.version === '3.6.0', pkg.version);
 check('single-file bundle has auth boot gate', html.includes('function bootAuth'));
 check('single-file bundle scopes storage per account', html.includes('prepareUserStorage'));
 check('single-file bundle offers legacy migration', html.includes('maybeOfferLegacyMigration'));
@@ -65,7 +65,7 @@ if (manifest) {
 }
 
 const sw = read('service-worker.js');
-check('dist/service-worker.js has v3.5.0 cache', sw.includes("fasrep-v3.5.0"));
+check('dist/service-worker.js has v3.6.0 cache', sw.includes("fasrep-v3.6.0"));
 check('dist/service-worker.js never caches /api/', sw.includes("url.pathname.startsWith('/api/')"));
 check('dist/service-worker.js pins SortableJS 1.15.2', sw.includes('sortablejs@1.15.2'));
 check('dist/service-worker.js has no @latest', !sw.includes('@latest'));
@@ -82,6 +82,12 @@ check('root manifest mirrors public/manifest.json',
   normalize(readFileSync(join(root, 'manifest.json'), 'utf8')) === normalize(publicManifestText));
 check('root service-worker mirrors public/service-worker.js',
   normalize(readFileSync(join(root, 'service-worker.js'), 'utf8')) === normalize(publicSwText));
+
+const distFontFile = join(dist, 'font_roboto.js');
+const distFontExists = existsSync(distFontFile);
+const distFontSize = distFontExists ? statSync(distFontFile).size : 0;
+check('dist/font_roboto.js exists and has size > 300000 bytes',
+  distFontExists && distFontSize > 300000, `${distFontSize} bytes`);
 
 const passCount = checks.filter(c => c.ok).length;
 checks.forEach(c => {

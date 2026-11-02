@@ -29,6 +29,8 @@
 !functions/**
 !db/
 !db/**
+!tests/
+!tests/**
 !wrangler.json
 !HANDOFF-FASREP.md
 
@@ -38,6 +40,7 @@ dist/
 scratch/
 graphify-out/
 backup_index_monolith.html
+.agents/teamwork/
 
 # wrangler files
 .wrangler
