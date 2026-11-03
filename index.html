@@ -1342,64 +1342,7 @@
       gap: 8px;
     }
 
-    .sec-head .drag-mode-segmented {
-      background: var(--sunken);
-      padding: 2px;
-      border-radius: var(--r-pill);
-      border: 1px solid var(--line);
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      flex-shrink: 0;
-    }
 
-    .sec-head .drag-mode-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0 10px;
-      height: 24px;
-      font-family: var(--font-body);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-radius: var(--r-pill);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      line-height: 1;
-      user-select: none;
-    }
-
-    .sec-head .drag-mode-btn:last-child {
-      border-right: none;
-    }
-
-    .sec-head .drag-mode-btn svg {
-      opacity: 0.8;
-      stroke: currentColor;
-      flex-shrink: 0;
-    }
-
-    .sec-head .drag-mode-btn:hover {
-      background: rgba(255, 255, 255, 0.6);
-      color: var(--ink);
-    }
-
-    .sec-head .drag-mode-btn.active {
-      background: #ffffff;
-      color: #000000;
-      font-weight: 700;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-    }
-
-    .sec-head .drag-mode-btn.active svg {
-      opacity: 1;
-      stroke: #000000;
-    }
 
     /* MODULE ACTIONS & HEADER TOOLBAR */
     .module-head-left {
@@ -2540,16 +2483,18 @@
       box-shadow: var(--sh-sm);
     }
 
+    /* ═══════════════ iOS SPRINGBOARD FLUID DRAG & DROP ═══════════════ */
     .assembly-slot.sortable-ghost,
     .watchout-slot.sortable-ghost,
     .testing-slot.sortable-ghost,
     .dim-slot.sortable-ghost,
     .free-photo-item.sortable-ghost,
     .photo-slot.sortable-ghost {
-      opacity: 0.3 !important;
-      transform: scale(0.96);
-      background: #e8f5ec !important;
-      border: 2px dashed #2d5a3d !important;
+      opacity: 0.22 !important;
+      transform: scale(0.96) !important;
+      background: rgba(0, 0, 0, 0.04) !important;
+      border: 1.5px dashed rgba(0, 0, 0, 0.2) !important;
+      border-radius: var(--r-card, 16px) !important;
     }
 
     .assembly-slot.sortable-chosen,
@@ -2558,17 +2503,11 @@
     .dim-slot.sortable-chosen,
     .free-photo-item.sortable-chosen,
     .photo-slot.sortable-chosen {
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16) !important;
-      transform: scale(1.02);
-      z-index: 40;
-    }
-
-    .sortable-swap-highlight {
-      outline: 2.5px solid var(--accent) !important;
-      box-shadow: 0 0 18px rgba(45, 90, 61, 0.45) !important;
-      background: #eef7f1 !important;
-      transform: scale(1.02);
-      transition: all 0.15s ease !important;
+      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 6px 14px -4px rgba(0, 0, 0, 0.12) !important;
+      transform: scale(1.035) rotate(0.4deg) !important;
+      z-index: 99999 !important;
+      cursor: grabbing !important;
+      transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.18s ease !important;
     }
 
     .assembly-caption-box,
@@ -4780,15 +4719,7 @@
         font-size: 11px !important;
       }
 
-      .sec-head .drag-mode-segmented {
-        height: 34px !important;
-        box-sizing: border-box !important;
-      }
 
-      .sec-head .drag-mode-btn {
-        height: 28px !important;
-        padding: 0 10px !important;
-      }
 
       /* 📱 ADAPTIVE CHECKLIST ACTIONS: Lưới 2x2 cân đối, nút to chuẩn 42px, không ngắt chữ */
       .apple-overview-actions {
@@ -5241,75 +5172,7 @@
 
 
     /* ═══════════════ ELEVENLABS DRAG MODE CONTROL ═══════════════ */
-    .drag-mode-bar-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 6px 14px 4px;
-      gap: 8px;
-    }
 
-    .drag-mode-segmented {
-      display: inline-flex;
-      align-items: center;
-      background: var(--sunken);
-      border: 1px solid var(--line);
-      border-radius: var(--r-pill, 9999px);
-      padding: 2px;
-      user-select: none;
-      gap: 2px;
-    }
-
-    .drag-mode-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 0 12px;
-      height: 26px;
-      font-family: var(--font-hud);
-      font-size: 10.5px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-radius: var(--r-pill, 9999px);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      line-height: 1;
-      user-select: none;
-    }
-
-    .drag-mode-btn svg {
-      opacity: 0.8;
-      stroke: currentColor;
-      flex-shrink: 0;
-    }
-
-    .drag-mode-btn:hover {
-      background: rgba(0, 0, 0, 0.05);
-      color: var(--ink);
-    }
-
-    .drag-mode-btn.active {
-      background: var(--card);
-      color: var(--ink-strong);
-      font-weight: 700;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .drag-mode-btn.active svg {
-      opacity: 1;
-      stroke: var(--ink-strong);
-    }
-
-    .sortable-swap-highlight {
-      outline: 2px solid var(--accent) !important;
-      outline-offset: -2px !important;
-      background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
-      border-radius: var(--rs, 8px) !important;
-    }
 
     /* PHOTO MARKUP TOOLBAR & CANVAS */
     .markup-canvas-overlay {
@@ -6874,7 +6737,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.8.0]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -7118,7 +6981,6 @@
         <div class="sec-head">
           <span>Product Dimension & Details</span>
           <div style="display:flex; align-items:center; gap:6px;">
-            <button class="dim-head-btn" id="btnCopyDims" onclick="copyDimensionsFromLatestReport()" title="Sync dimension template from latest report">📥 Import Recent Dimensions</button>
             <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">SELECT</button>
           </div>
         </div>
@@ -8433,7 +8295,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.8.0';
+    const APP_VERSION = 'v3.9.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -12647,23 +12509,10 @@
                    onkeydown="if(event.key==='Enter') this.blur()">
           </div>
           <div class="module-head-actions">
-            ${mod.type === 'dimensions' ? `<button type="button" class="dim-head-btn" id="btnCopyDims" onclick="copyDimensionsFromLatestReport()" title="Sync dimension template from latest report">📥 Import Recent Dimensions</button>` : ''}
             ${dimBtn ? `<button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">${dimBtn.textContent.trim() === 'DONE' ? 'Done' : (dimBtn.textContent.trim() === 'SELECT' ? 'Select' : dimBtn.textContent.trim()) || 'Select'}</button>` : ''}
-            ${hasDrag ? `
-              <div class="drag-mode-segmented" title="Photo drag mode (Drag & Sort)">
-                <button type="button" class="drag-mode-btn ${globalDragMode === 'swap' ? 'active' : ''}" data-mode="swap" onclick="setDragMode('swap'); event.stopPropagation();" title="1-to-1 Swap (Keep other slots in place)">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 16V4m0 0L3 8m4-4l4 4m10 4v12m0 0l4-4m-4 4l-4-4" /></svg>
-                  <span>Swap</span>
-                </button>
-                <button type="button" class="drag-mode-btn ${globalDragMode === 'insert' ? 'active' : ''}" data-mode="insert" onclick="setDragMode('insert'); event.stopPropagation();" title="Queue Insert (Shift adjacent slots)">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 4h6v6m0-6L10 14m-6 6h6v-6" /></svg>
-                  <span>Queue</span>
-                </button>
-              </div>` : ''}
           </div>
         `;
       });
-      updateDragModeUI();
     }
 
     function onModuleRename(moduleId, newName) {
@@ -13734,19 +13583,24 @@
       if (typeof Sortable !== 'undefined' && containerId === 'coverPhotos') {
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
-          animation: 180,
-          delay: 220,
+          animation: 260,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          delay: 200,
           delayOnTouchOnly: true,
-          touchStartThreshold: 10,
+          touchStartThreshold: 8,
           draggable: '.photo-slot',
           handle: '.free-drag-handle, .photo-slot',
           filter: 'input, textarea, select, button, .pact, .tap-option, .dual-tap-box, .ignore-drag',
           preventOnFilter: false,
-          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-          swapClass: 'sortable-swap-highlight',
+          swap: false,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(30);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
@@ -14004,19 +13858,24 @@
         }
         if (!isDimSelectMode) {
           grid._sortable = new Sortable(grid, {
-            animation: 180,
-            delay: 220,
+            animation: 260,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+            delay: 200,
             delayOnTouchOnly: true,
-            touchStartThreshold: 10,
+            touchStartThreshold: 8,
             draggable: '.dim-slot:not(.add-dim-btn)',
             handle: '.dim-slot-topbar, .dim-drag-handle',
             filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
             preventOnFilter: false,
-            swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-            swapClass: 'sortable-swap-highlight',
+            swap: false,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-chosen',
+            onStart: function () {
+              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(30);
+              }
+            },
             onEnd: function (evt) {
               if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
               if (evt.oldIndex === evt.newIndex) return;
@@ -14030,17 +13889,9 @@
                 buildDimGrid();
                 return;
               }
-              const isSwap = (globalDragMode === 'swap');
-              if (isSwap) {
-                pushHistory('Swap dimensions (1-to-1)');
-                const temp = D.dimensions[from];
-                D.dimensions[from] = D.dimensions[to];
-                D.dimensions[to] = temp;
-              } else {
-                pushHistory('Reorder dimension position');
-                const moved = D.dimensions.splice(from, 1)[0];
-                D.dimensions.splice(to, 0, moved);
-              }
+              pushHistory('Reorder dimension position');
+              const moved = D.dimensions.splice(from, 1)[0];
+              D.dimensions.splice(to, 0, moved);
               as();
               buildDimGrid();
             }
@@ -14374,19 +14225,24 @@
       if (typeof Sortable !== 'undefined') {
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
-          animation: 180,
-          delay: 220,
+          animation: 260,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          delay: 200,
           delayOnTouchOnly: true,
-          touchStartThreshold: 10,
+          touchStartThreshold: 8,
           draggable: '.free-photo-item',
           handle: '.free-drag-handle, .free-photo-item',
           filter: 'input, textarea, select, button, .pact, .free-caption, .free-caption input, .ignore-drag',
           preventOnFilter: false,
-          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-          swapClass: 'sortable-swap-highlight',
+          swap: false,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(30);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
@@ -14400,17 +14256,9 @@
               renderFreePhotos(key);
               return;
             }
-            const isSwap = (globalDragMode === 'swap');
-            if (isSwap) {
-              pushHistory('Swap photos (1-to-1)');
-              const temp = D[key][from];
-              D[key][from] = D[key][to];
-              D[key][to] = temp;
-            } else {
-              pushHistory('Reorder photo');
-              const moved = D[key].splice(from, 1)[0];
-              D[key].splice(to, 0, moved);
-            }
+            pushHistory('Reorder photo');
+            const moved = D[key].splice(from, 1)[0];
+            D[key].splice(to, 0, moved);
             as(); renderFreePhotos(key);
           }
         });
@@ -14547,19 +14395,24 @@
       if (typeof Sortable !== 'undefined') {
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
-          animation: 180,
-          delay: 220,
+          animation: 260,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          delay: 200,
           delayOnTouchOnly: true,
-          touchStartThreshold: 10,
+          touchStartThreshold: 8,
           draggable: '.watchout-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
-          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-          swapClass: 'sortable-swap-highlight',
+          swap: false,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(30);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
@@ -14573,17 +14426,9 @@
               renderWatchoutPhotos();
               return;
             }
-            const isSwap = (globalDragMode === 'swap');
-            if (isSwap) {
-              pushHistory('Swap Quality Watch Out (1-to-1)');
-              const temp = D.watchoutPhotos[from];
-              D.watchoutPhotos[from] = D.watchoutPhotos[to];
-              D.watchoutPhotos[to] = temp;
-            } else {
-              pushHistory('Reorder Quality Watch Out');
-              const moved = D.watchoutPhotos.splice(from, 1)[0];
-              D.watchoutPhotos.splice(to, 0, moved);
-            }
+            pushHistory('Reorder Quality Watch Out');
+            const moved = D.watchoutPhotos.splice(from, 1)[0];
+            D.watchoutPhotos.splice(to, 0, moved);
             as();
             renderWatchoutPhotos();
           }
@@ -14780,19 +14625,24 @@
       if (typeof Sortable !== 'undefined') {
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
-          animation: 180,
-          delay: 220,
+          animation: 260,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          delay: 200,
           delayOnTouchOnly: true,
-          touchStartThreshold: 10,
+          touchStartThreshold: 8,
           draggable: '.testing-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
-          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-          swapClass: 'sortable-swap-highlight',
+          swap: false,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(30);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
@@ -14806,17 +14656,9 @@
               renderTestingPhotos();
               return;
             }
-            const isSwap = (globalDragMode === 'swap');
-            if (isSwap) {
-              pushHistory('Swap Testing Photo (1-to-1)');
-              const temp = D.testingPhotos[from];
-              D.testingPhotos[from] = D.testingPhotos[to];
-              D.testingPhotos[to] = temp;
-            } else {
-              pushHistory('Reorder Testing Photo');
-              const moved = D.testingPhotos.splice(from, 1)[0];
-              D.testingPhotos.splice(to, 0, moved);
-            }
+            pushHistory('Reorder Testing Photo');
+            const moved = D.testingPhotos.splice(from, 1)[0];
+            D.testingPhotos.splice(to, 0, moved);
             as();
             renderTestingPhotos();
           }
@@ -15013,19 +14855,24 @@
       if (typeof Sortable !== 'undefined') {
         if (el._sortable) el._sortable.destroy();
         el._sortable = new Sortable(el, {
-          animation: 180,
-          delay: 220,
+          animation: 260,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          delay: 200,
           delayOnTouchOnly: true,
-          touchStartThreshold: 10,
+          touchStartThreshold: 8,
           draggable: '.assembly-slot',
           handle: '.dim-slot-topbar, .dim-drag-handle',
           filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
           preventOnFilter: false,
-          swap: (typeof globalDragMode !== 'undefined' ? globalDragMode === 'swap' : true),
-          swapClass: 'sortable-swap-highlight',
+          swap: false,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-chosen',
+          onStart: function () {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate(30);
+            }
+          },
           onEnd: function (evt) {
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
@@ -15039,17 +14886,9 @@
               renderAssemblyPhotos();
               return;
             }
-            const isSwap = (globalDragMode === 'swap');
-            if (isSwap) {
-              pushHistory('Swap assembly photo positions (1-to-1)');
-              const temp = D.assemblyPhotos[from];
-              D.assemblyPhotos[from] = D.assemblyPhotos[to];
-              D.assemblyPhotos[to] = temp;
-            } else {
-              pushHistory('Reorder assembly photo position');
-              const moved = D.assemblyPhotos.splice(from, 1)[0];
-              D.assemblyPhotos.splice(to, 0, moved);
-            }
+            pushHistory('Reorder assembly photo position');
+            const moved = D.assemblyPhotos.splice(from, 1)[0];
+            D.assemblyPhotos.splice(to, 0, moved);
             as();
             renderAssemblyPhotos();
           }
