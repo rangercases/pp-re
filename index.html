@@ -6745,7 +6745,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.2]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.3]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8303,7 +8303,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.9.2';
+    const APP_VERSION = 'v3.9.3';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -13519,6 +13519,23 @@
       renderCoverSlots();
     }
 
+    function cleanupOrphanedSortableFallbacks() {
+      try {
+        const fallbacks = document.querySelectorAll('.sortable-fallback');
+        if (fallbacks.length) {
+          fallbacks.forEach(el => el.remove());
+        }
+      } catch (err) { }
+    }
+
+    if (typeof window !== 'undefined') {
+      ['mouseup', 'touchend', 'pointerup', 'pointercancel'].forEach(evtName => {
+        window.addEventListener(evtName, () => {
+          setTimeout(cleanupOrphanedSortableFallbacks, 50);
+        }, { passive: true });
+      });
+    }
+
     function renderCoverSlots() {
       const containerId = 'coverPhotos';
       const el = document.getElementById(containerId);
@@ -13613,6 +13630,7 @@
             }
           },
           onEnd: function (evt) {
+            cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
             const ckeys = getCoverSlotKeys();
@@ -13622,7 +13640,10 @@
             ckeys.splice(to, 0, ckeys.splice(from, 1)[0]);
             pushHistory('Reorder Overview photos');
             as();
-            renderCoverSlots();
+            setTimeout(() => {
+              cleanupOrphanedSortableFallbacks();
+              renderCoverSlots();
+            }, 0);
           }
         });
       }
@@ -13891,6 +13912,7 @@
               }
             },
             onEnd: function (evt) {
+              cleanupOrphanedSortableFallbacks();
               if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
               if (evt.oldIndex === evt.newIndex) return;
               if (!D.dimensions || !D.dimensions.length) return;
@@ -13900,14 +13922,20 @@
               if (from >= total) from = total - 1;
               if (to >= total) to = total - 1;
               if (from === to) {
-                buildDimGrid();
+                setTimeout(() => {
+                  cleanupOrphanedSortableFallbacks();
+                  buildDimGrid();
+                }, 0);
                 return;
               }
               pushHistory('Reorder dimension position');
               const moved = D.dimensions.splice(from, 1)[0];
               D.dimensions.splice(to, 0, moved);
               as();
-              buildDimGrid();
+              setTimeout(() => {
+                cleanupOrphanedSortableFallbacks();
+                buildDimGrid();
+              }, 0);
             }
           });
         }
@@ -14261,6 +14289,7 @@
             }
           },
           onEnd: function (evt) {
+            cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
             if (!D[key] || !D[key].length) return;
@@ -14270,13 +14299,20 @@
             if (from >= total) from = total - 1;
             if (to >= total) to = total - 1;
             if (from === to) {
-              renderFreePhotos(key);
+              setTimeout(() => {
+                cleanupOrphanedSortableFallbacks();
+                renderFreePhotos(key);
+              }, 0);
               return;
             }
             pushHistory('Reorder photo');
             const moved = D[key].splice(from, 1)[0];
             D[key].splice(to, 0, moved);
-            as(); renderFreePhotos(key);
+            as();
+            setTimeout(() => {
+              cleanupOrphanedSortableFallbacks();
+              renderFreePhotos(key);
+            }, 0);
           }
         });
       }
@@ -14434,6 +14470,7 @@
             }
           },
           onEnd: function (evt) {
+            cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
             if (!D.watchoutPhotos || !D.watchoutPhotos.length) return;
@@ -14443,14 +14480,20 @@
             if (from >= total) from = total - 1;
             if (to >= total) to = total - 1;
             if (from === to) {
-              renderWatchoutPhotos();
+              setTimeout(() => {
+                cleanupOrphanedSortableFallbacks();
+                renderWatchoutPhotos();
+              }, 0);
               return;
             }
             pushHistory('Reorder Quality Watch Out');
             const moved = D.watchoutPhotos.splice(from, 1)[0];
             D.watchoutPhotos.splice(to, 0, moved);
             as();
-            renderWatchoutPhotos();
+            setTimeout(() => {
+              cleanupOrphanedSortableFallbacks();
+              renderWatchoutPhotos();
+            }, 0);
           }
         });
       }
@@ -14667,6 +14710,7 @@
             }
           },
           onEnd: function (evt) {
+            cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
             if (!D.testingPhotos || !D.testingPhotos.length) return;
@@ -14676,14 +14720,20 @@
             if (from >= total) from = total - 1;
             if (to >= total) to = total - 1;
             if (from === to) {
-              renderTestingPhotos();
+              setTimeout(() => {
+                cleanupOrphanedSortableFallbacks();
+                renderTestingPhotos();
+              }, 0);
               return;
             }
             pushHistory('Reorder Testing Photo');
             const moved = D.testingPhotos.splice(from, 1)[0];
             D.testingPhotos.splice(to, 0, moved);
             as();
-            renderTestingPhotos();
+            setTimeout(() => {
+              cleanupOrphanedSortableFallbacks();
+              renderTestingPhotos();
+            }, 0);
           }
         });
       }
@@ -14900,6 +14950,7 @@
             }
           },
           onEnd: function (evt) {
+            cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
             if (!D.assemblyPhotos || !D.assemblyPhotos.length) return;
@@ -14909,14 +14960,20 @@
             if (from >= total) from = total - 1;
             if (to >= total) to = total - 1;
             if (from === to) {
-              renderAssemblyPhotos();
+              setTimeout(() => {
+                cleanupOrphanedSortableFallbacks();
+                renderAssemblyPhotos();
+              }, 0);
               return;
             }
             pushHistory('Reorder assembly photo position');
             const moved = D.assemblyPhotos.splice(from, 1)[0];
             D.assemblyPhotos.splice(to, 0, moved);
             as();
-            renderAssemblyPhotos();
+            setTimeout(() => {
+              cleanupOrphanedSortableFallbacks();
+              renderAssemblyPhotos();
+            }, 0);
           }
         });
       }
