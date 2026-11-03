@@ -34,9 +34,9 @@ check('single-file bundle contains autosave queue', html.includes('drainSaveQueu
 check('single-file bundle contains small thumbnails', html.includes('thumbSmall'));
 check('single-file bundle shows FASREP', html.includes('FASREP'));
 check('single-file bundle has no DIGITAL REPORT', !html.includes('DIGITAL REPORT'));
-check('single-file bundle has APP_VERSION v3.6.0', html.includes("APP_VERSION = 'v3.6.0'"));
-check('single-file bundle shows V3.6.0 badge', html.includes('[V3.6.0]') && !html.includes('[V3.5.0]'));
-check('package.json version is 3.6.0', pkg.version === '3.6.0', pkg.version);
+check('single-file bundle has APP_VERSION v3.7.0', html.includes("APP_VERSION = 'v3.7.0'"));
+check('single-file bundle shows V3.7.0 badge', html.includes('[V3.7.0]') && !html.includes('[V3.6.0]'));
+check('package.json version is 3.7.0', pkg.version === '3.7.0', pkg.version);
 check('single-file bundle has auth boot gate', html.includes('function bootAuth'));
 check('single-file bundle scopes storage per account', html.includes('prepareUserStorage'));
 check('single-file bundle offers legacy migration', html.includes('maybeOfferLegacyMigration'));
@@ -52,6 +52,21 @@ check('no absolute /manifest.json link', !html.includes('href="/manifest.json"')
 check('no unpinned CDN @latest', !html.includes('@latest'));
 check('Vite assets are inlined', !/<script[^>]+src="\.\/assets\//.test(html) && !/<link[^>]+href="\.\/assets\//.test(html));
 
+// Negative assertions for removed features (Audit Requirements: Features 1, 2, and 3)
+check('no Feature 1 dim-manual-indicator', !html.includes('dim-manual-indicator'));
+check('no Feature 1 reevaluateDimStatus', !html.includes('reevaluateDimStatus'));
+check('no Feature 1 manualStatus', !html.includes('manualStatus'));
+check('no Feature 2 dim-preset', !html.includes('dim-preset'));
+check('no Feature 2 DIMENSION_PRESETS', !html.includes('DIMENSION_PRESETS'));
+check('no Feature 2 detectFurniturePreset', !html.includes('detectFurniturePreset'));
+check('no Feature 2 applyDimensionPreset', !html.includes('applyDimensionPreset'));
+check('no Feature 3 badge-approved', !html.includes('badge-approved'));
+check('no Feature 3 badge-new-sample', !html.includes('badge-new-sample'));
+check('no Feature 3 badge-repair', !html.includes('badge-repair'));
+check('no Feature 3 badge-in-progress', !html.includes('badge-in-progress'));
+check('no Feature 3 getReportVerdict', !html.includes('getReportVerdict'));
+check('filter tab displays DONE rather than APPROVED', html.includes('DONE <span id="countPillDone">') && !html.includes('APPROVED <span id="countPillDone">'));
+
 let manifest = null;
 try {
   manifest = JSON.parse(read('manifest.json'));
@@ -65,7 +80,7 @@ if (manifest) {
 }
 
 const sw = read('service-worker.js');
-check('dist/service-worker.js has v3.6.0 cache', sw.includes("fasrep-v3.6.0"));
+check('dist/service-worker.js has v3.7.0 cache', sw.includes("fasrep-v3.7.0"));
 check('dist/service-worker.js never caches /api/', sw.includes("url.pathname.startsWith('/api/')"));
 check('dist/service-worker.js pins SortableJS 1.15.2', sw.includes('sortablejs@1.15.2'));
 check('dist/service-worker.js has no @latest', !sw.includes('@latest'));

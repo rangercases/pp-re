@@ -1139,24 +1139,12 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .badge-done,
-    .badge-approved {
+    .badge-done {
       background: #e8f6f0;
       color: #0a7e5c;
     }
 
-    .badge-new-sample {
-      background: #fde8e8;
-      color: #c81e1e;
-    }
-
-    .badge-repair {
-      background: #fef7e6;
-      color: #8a5800;
-    }
-
-    .badge-wip,
-    .badge-in-progress {
+    .badge-wip {
       background: #ebe8e4;
       color: #5f5e5b;
     }
@@ -2891,60 +2879,6 @@
       font-weight: 600;
     }
 
-    .dim-preset-pill {
-      background: var(--surface, #ffffff);
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
-      color: var(--ink, #1c1917);
-      font-family: var(--font-body);
-      font-size: 11px;
-      font-weight: 550;
-      letter-spacing: 0.01em;
-      cursor: pointer;
-      height: 26px;
-      padding: 0 12px;
-      border-radius: var(--r-pill, 9999px);
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      user-select: none;
-    }
-
-    .dim-preset-pill:hover {
-      background: var(--surface-hover, rgba(0, 0, 0, 0.04));
-      border-color: var(--line-strong, rgba(0, 0, 0, 0.16));
-    }
-
-    .dim-preset-pill:active {
-      transform: scale(0.98);
-    }
-
-    .dim-preset-pill.active {
-      background: var(--ink, #000000);
-      color: #ffffff;
-      border-color: var(--ink, #000000);
-      font-weight: 600;
-    }
-
-    .dim-manual-indicator {
-      font-size: 9px;
-      padding: 1px 6px;
-      border-radius: var(--r-pill, 9999px);
-      background: rgba(0, 0, 0, 0.06);
-      color: var(--ink-secondary, #57534e);
-      cursor: pointer;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      display: inline-flex;
-      align-items: center;
-      transition: all 0.15s ease;
-    }
-
-    .dim-manual-indicator:hover {
-      background: rgba(0, 0, 0, 0.12);
-      color: var(--ink, #000000);
-    }
 
     .dim-batch-bar {
       display: none;
@@ -6940,7 +6874,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.6.0]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.7.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -7050,7 +6984,7 @@
           <div class="home-filter-pills" id="homeFilterPills">
             <button type="button" class="filter-pill-btn active" data-filter="all"
               onclick="setHomeFilter('all')">ALL <span id="countPillAll">(0)</span></button>
-            <button type="button" class="filter-pill-btn" data-filter="done" onclick="setHomeFilter('done')">APPROVED <span id="countPillDone">(0)</span></button>
+            <button type="button" class="filter-pill-btn" data-filter="done" onclick="setHomeFilter('done')">DONE <span id="countPillDone">(0)</span></button>
             <button type="button" class="filter-pill-btn" data-filter="wip" onclick="setHomeFilter('wip')">WIP <span id="countPillWip">(0)</span></button>
           </div>
         </div>
@@ -7189,20 +7123,6 @@
           </div>
         </div>
 
-        <div class="dim-preset-toolbar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 14px; margin:8px 0 10px 0; background:var(--card-subtle, #f9f8f6); border-radius:14px; border:1px solid rgba(0,0,0,0.065);">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary, #78716c);">Preset:</span>
-            <div class="dim-preset-pills" id="dimPresetPills" style="display:inline-flex; gap:6px;">
-              <button type="button" class="dim-preset-pill active" data-preset="sofa" onclick="applyDimensionPreset('sofa')">🛋️ Sofa</button>
-              <button type="button" class="dim-preset-pill" data-preset="table" onclick="applyDimensionPreset('table')">🪵 Table / Coffee</button>
-              <button type="button" class="dim-preset-pill" data-preset="chair" onclick="applyDimensionPreset('chair')">🪑 Chair</button>
-            </div>
-            <span id="dimPresetSuggestNotice" style="font-size:11px; color:#b45309; font-weight:600; display:none;"></span>
-          </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" class="dim-head-btn" id="btnReevalAllDims" onclick="reevaluateAllDimStatuses()" title="Re-evaluate automatic tolerance for all dimensions">⚡ Auto Tolerance</button>
-          </div>
-        </div>
 
         <div class="legend-row">
           <div class="legend-item"><span class="dim-status-icon shape-ok"><span
@@ -8396,8 +8316,6 @@
                 updatedAt: r.updatedAt || r.date || '',
                 _fileDirty: !!r._fileDirty,
                 photoCount: coverCount + prodCount,
-                checks: r.checks || null,
-                verdict: r.verdict || null,
                 // Only the tiny 96px thumbnail is loaded for the home list. Never
                 // return a full-resolution data URL here.
                 thumbSrc: r.thumbSmall || ''
@@ -8515,7 +8433,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.6.0';
+    const APP_VERSION = 'v3.7.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -8613,62 +8531,6 @@
       comfort: ['Normal', 'Soft', 'Super Soft', 'Luxury Comfort'], rating: ['Repair', 'New Sample', 'To send for final approval', 'Approved']
     };
 
-    const DIMENSION_PRESETS = {
-      sofa: {
-        id: 'sofa',
-        name: 'Sofa',
-        fullName: 'Sofa / Lounge',
-        icon: '🛋️',
-        fields: [
-          { name: 'Overall Width', unit: 'mm' },
-          { name: 'Overall Depth', unit: 'mm' },
-          { name: 'Overall Height', unit: 'mm' },
-          { name: 'Seat Width', unit: 'mm' },
-          { name: 'Seat Depth', unit: 'mm' },
-          { name: 'Seat Height', unit: 'mm' },
-          { name: 'Arm Height', unit: 'mm' },
-          { name: 'Back Height', unit: 'mm' },
-          { name: 'Middle Height', unit: 'mm' },
-          { name: 'Arm Thickness', unit: 'mm' },
-          { name: 'Back Thickness', unit: 'mm' },
-          { name: 'Arm to Seat', unit: 'mm' },
-          { name: 'Back to Seat', unit: 'mm' },
-          { name: 'Net Weight', unit: 'kg' }
-        ]
-      },
-      table: {
-        id: 'table',
-        name: 'Table',
-        fullName: 'Table / Coffee Table',
-        icon: '🪵',
-        fields: [
-          { name: 'Total Length / Diameter', unit: 'mm' },
-          { name: 'Total Width', unit: 'mm' },
-          { name: 'Total Height', unit: 'mm' },
-          { name: 'Tabletop Thickness', unit: 'mm' },
-          { name: 'Under-table Clearance / Leg Height', unit: 'mm' },
-          { name: 'Leg Width / Diameter', unit: 'mm' },
-          { name: 'Net Weight', unit: 'kg' }
-        ]
-      },
-      chair: {
-        id: 'chair',
-        name: 'Chair',
-        fullName: 'Chair / Dining Chair',
-        icon: '🪑',
-        fields: [
-          { name: 'Total Width', unit: 'mm' },
-          { name: 'Total Depth', unit: 'mm' },
-          { name: 'Total Height', unit: 'mm' },
-          { name: 'Seat Height', unit: 'mm' },
-          { name: 'Seat Depth', unit: 'mm' },
-          { name: 'Seat Width', unit: 'mm' },
-          { name: 'Armrest Height', unit: 'mm' },
-          { name: 'Backrest Height', unit: 'mm' },
-          { name: 'Net Weight', unit: 'kg' }
-        ]
-      }
-    };
 
     const DIM_MAPPING = {
       'Overall Width': 'ow', 'Overall Depth': 'od', 'Overall Height': 'oh',
@@ -12417,22 +12279,6 @@
       }
     });
 
-    function getReportVerdict(r) {
-      if (!r) return { status: 'IN PROGRESS', badgeClass: 'badge-in-progress', label: 'IN PROGRESS' };
-      const rating = r.checks?.rating || (typeof r.rating === 'object' ? r.rating : null);
-      const verdictStr = (typeof r.verdict === 'string' ? r.verdict : (typeof r.rating === 'string' ? r.rating : '')).trim();
-
-      if (rating?.['Approved'] || rating?.Approved || verdictStr.toLowerCase() === 'approved') {
-        return { status: 'APPROVED', badgeClass: 'badge-approved', label: 'APPROVED' };
-      }
-      if (rating?.['New Sample'] || rating?.NewSample || verdictStr.toLowerCase() === 'new sample') {
-        return { status: 'NEW SAMPLE', badgeClass: 'badge-new-sample', label: 'NEW SAMPLE' };
-      }
-      if (rating?.['Repair'] || rating?.Repair || rating?.['Repair / Resample'] || verdictStr.toLowerCase().startsWith('repair')) {
-        return { status: 'REPAIR', badgeClass: 'badge-repair', label: 'REPAIR' };
-      }
-      return { status: 'IN PROGRESS', badgeClass: 'badge-in-progress', label: 'IN PROGRESS' };
-    }
 
     async function renderHome() {
       try {
@@ -12465,15 +12311,18 @@
         // Lọc danh sách báo cáo theo module đang active trong Level 2
         const activeModuleReports = (currentActiveModule === 'prototype') ? protoReports : preProdReports;
 
-        // Cập nhật số lượng đếm (counters) cho các tab ALL / APPROVED / WIP của module đang mở
+        // Cập nhật số lượng đếm (counters) cho các tab ALL / DONE / WIP của module đang mở
         const allCount = activeModuleReports.length;
-        const approvedCount = activeModuleReports.filter(r => getReportVerdict(r).status === 'APPROVED').length;
-        const wipCount = allCount - approvedCount;
+        const doneCount = activeModuleReports.filter(r => {
+          const photos = (typeof r.photoCount === 'number') ? r.photoCount : (Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length);
+          return photos >= 4;
+        }).length;
+        const wipCount = allCount - doneCount;
 
         const elAll = document.getElementById('countPillAll');
         if (elAll) elAll.textContent = `(${allCount})`;
         const elDone = document.getElementById('countPillDone');
-        if (elDone) elDone.textContent = `(${approvedCount})`;
+        if (elDone) elDone.textContent = `(${doneCount})`;
         const elWip = document.getElementById('countPillWip');
         if (elWip) elWip.textContent = `(${wipCount})`;
 
@@ -12481,7 +12330,7 @@
         const elStatTotal = document.getElementById('statTotalReports');
         if (elStatTotal) elStatTotal.textContent = allCount;
         const elStatDone = document.getElementById('statDoneReports');
-        if (elStatDone) elStatDone.textContent = approvedCount;
+        if (elStatDone) elStatDone.textContent = doneCount;
         const elStatWip = document.getElementById('statWipReports');
         if (elStatWip) elStatWip.textContent = wipCount;
 
@@ -12512,12 +12361,12 @@
           });
         }
 
-        // Lọc theo trạng thái (all, approved, wip)
+        // Lọc theo trạng thái (all, done, wip)
         if (homeFilterMode !== 'all') {
           filteredReports = filteredReports.filter(r => {
-            const v = getReportVerdict(r);
-            const isApproved = v.status === 'APPROVED';
-            return homeFilterMode === 'done' ? isApproved : !isApproved;
+            const photos = (typeof r.photoCount === 'number') ? r.photoCount : (Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length);
+            const done = photos >= 4;
+            return homeFilterMode === 'done' ? done : !done;
           });
         }
 
@@ -12529,7 +12378,8 @@
         empty.style.display = 'none';
 
         filteredReports.forEach(r => {
-          const verdict = getReportVerdict(r);
+          const photos = (typeof r.photoCount === 'number') ? r.photoCount : (Object.keys(r.coverPhotos || {}).length + (r.prodPhotos || []).length);
+          const done = photos >= 4;
           const d = document.createElement('div');
           d.className = 'report-card';
           d.dataset.id = String(r.id);
@@ -12571,7 +12421,7 @@
               <div style="min-width:0; flex:1;">
                 <div class="rc-title">
                   <span class="rc-title-text" title="${safeTitle}">${safeTitle}</span>
-                  <span class="rc-badge ${verdict.badgeClass}">${verdict.label}</span>
+                  <span class="rc-badge ${done ? 'badge-done' : 'badge-wip'}">${done ? 'DONE' : 'WIP'}</span>
                 </div>
                 <div class="rc-sub">${metaText}</div>
               </div>
@@ -14005,7 +13855,6 @@
     // ═══════════════ DYNAMIC DIMENSIONS (FLEXIBLE PHOTO LAYOUTS) ═══════════════
     function buildDimGrid() {
       const grid = document.getElementById('dimGrid'); if (!grid) return; grid.innerHTML = '';
-      if (typeof renderDimPresetPills === 'function') renderDimPresetPills();
 
       (D.dimensions || []).forEach((d, i) => {
         const div = document.createElement('div');
@@ -14107,7 +13956,6 @@
           <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
             <input class="dim-name-input" value="${escapeHtml(d.name || '')}" placeholder="DIMENSION NAME..." oninput="updateDimField(${i}, 'name', this.value)" style="margin-bottom:0;">
             <div style="display:inline-flex; align-items:center; gap:4px;">
-              ${(d.isManual || d.manualStatus) ? `<span class="dim-manual-indicator" title="Manual status override active. Click to reset to auto." onclick="reevaluateDimStatus(${i});event.stopPropagation()">Manual ↺</span>` : ''}
               <span class="dim-status-icon-badge" id="dimStatusBadge_${i}">
                 ${renderDimStatusShape(d.color || 'color-green')}
               </span>
@@ -14248,114 +14096,6 @@
       return 'color-green';
     }
 
-    function detectFurniturePreset(report) {
-      if (!report) return 'sofa';
-      const text = [
-        report.model,
-        report.modelNumber,
-        report.productName,
-        report.desc,
-        report.reportTitle,
-        report.title
-      ].filter(Boolean).join(' ').toUpperCase();
-
-      if (text.includes('TABLE') || text.includes('COFFEE')) {
-        return 'table';
-      }
-      if (text.includes('CHAIR') || text.includes('STOOL') || text.includes('BENCH')) {
-        return 'chair';
-      }
-      return 'sofa';
-    }
-
-    function renderDimPresetPills() {
-      const currentPreset = (D && D.dimensionPreset) ? D.dimensionPreset : detectFurniturePreset(D);
-      document.querySelectorAll('.dim-preset-pill').forEach(btn => {
-        const pKey = btn.dataset.preset;
-        if (pKey === currentPreset) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-
-      const noticeEl = document.getElementById('dimPresetSuggestNotice');
-      if (noticeEl && D) {
-        const detected = detectFurniturePreset(D);
-        if (detected === 'table' && currentPreset !== 'table') {
-          noticeEl.style.display = 'inline';
-          noticeEl.innerHTML = `💡 Detected Table item. <a href="javascript:void(0)" onclick="applyDimensionPreset('table')" style="text-decoration:underline; font-weight:600; color:inherit;">Switch to Table preset</a>`;
-        } else if (detected === 'chair' && currentPreset !== 'chair') {
-          noticeEl.style.display = 'inline';
-          noticeEl.innerHTML = `💡 Detected Chair item. <a href="javascript:void(0)" onclick="applyDimensionPreset('chair')" style="text-decoration:underline; font-weight:600; color:inherit;">Switch to Chair preset</a>`;
-        } else {
-          noticeEl.style.display = 'none';
-          noticeEl.innerHTML = '';
-        }
-      }
-    }
-
-    function applyDimensionPreset(presetKey, force = false) {
-      const preset = DIMENSION_PRESETS[presetKey] || DIMENSION_PRESETS.sofa;
-      if (!preset) return;
-
-      const hasExistingData = (D.dimensions || []).some(d => d && (d.actual || d.drawing || d.img || d.imgSub));
-      if (!force && hasExistingData) {
-        if (!confirm(`Apply ${preset.fullName} preset? Existing dimension values will be replaced.`)) {
-          return;
-        }
-      }
-
-      pushHistory(`Apply ${preset.fullName} dimension preset`);
-      D.dimensionPreset = preset.id;
-      D.dimensions = preset.fields.map(f => ({
-        id: 'dim_' + Math.random().toString(36).substr(2, 9),
-        name: f.name,
-        actual: '',
-        drawing: '',
-        actualUnit: f.unit || 'mm',
-        drawingUnit: f.unit || 'mm',
-        color: 'color-green',
-        photoLayout: '3:1',
-        img: null,
-        original: null,
-        imgSub: null,
-        originalSub: null,
-        isManual: false,
-        manualStatus: false
-      }));
-
-      buildDimGrid();
-      renderDimPresetPills();
-      as();
-      showToast(`✓ Applied ${preset.fullName} dimension preset`);
-    }
-
-    function reevaluateDimStatus(index) {
-      if (!D.dimensions || !D.dimensions[index]) return;
-      pushHistory('Re-evaluate dimension tolerance');
-      const dim = D.dimensions[index];
-      dim.isManual = false;
-      dim.manualStatus = false;
-      const autoColor = getAutomaticDimensionColor(dim);
-      if (autoColor) dim.color = autoColor;
-      buildDimGrid();
-      as();
-    }
-
-    function reevaluateAllDimStatuses() {
-      if (!D.dimensions || !D.dimensions.length) return;
-      pushHistory('Re-evaluate all dimension tolerances');
-      D.dimensions.forEach(dim => {
-        dim.isManual = false;
-        dim.manualStatus = false;
-        const autoColor = getAutomaticDimensionColor(dim);
-        if (autoColor) dim.color = autoColor;
-      });
-      buildDimGrid();
-      as();
-      showToast('✓ Auto tolerance re-evaluated for all dimensions');
-    }
 
     function normalizeDimensionMeasurement(dimension, field) {
       const unitField = field + 'Unit';
@@ -14392,16 +14132,7 @@
       const dimension = D.dimensions[index];
 
       if (field === 'color') {
-        if (val === 'auto') {
-          dimension.isManual = false;
-          dimension.manualStatus = false;
-          const automaticColor = getAutomaticDimensionColor(dimension);
-          if (automaticColor) dimension.color = automaticColor;
-        } else {
-          dimension.color = val;
-          dimension.isManual = true;
-          dimension.manualStatus = true;
-        }
+        dimension.color = val;
         pushHistory('Change dimension status');
         buildDimGrid();
         as();
@@ -14411,17 +14142,15 @@
       dimension[field] = val;
 
       if (field === 'actual' || field === 'drawing' || field === 'actualUnit' || field === 'drawingUnit') {
-        if (!dimension.isManual && !dimension.manualStatus) {
-          const automaticColor = getAutomaticDimensionColor(dimension);
-          if (automaticColor) {
-            dimension.color = automaticColor;
-            const statusBadge = document.getElementById(`dimStatusBadge_${index}`);
-            if (statusBadge) {
-              statusBadge.innerHTML = renderDimStatusShape(automaticColor);
-            }
-            const statusSelect = document.querySelector(`[data-dim-index="${index}"] .dim-fields select`);
-            if (statusSelect) statusSelect.value = automaticColor;
+        const automaticColor = getAutomaticDimensionColor(dimension);
+        if (automaticColor) {
+          dimension.color = automaticColor;
+          const statusBadge = document.getElementById(`dimStatusBadge_${index}`);
+          if (statusBadge) {
+            statusBadge.innerHTML = renderDimStatusShape(automaticColor);
           }
+          const statusSelect = document.querySelector(`[data-dim-index="${index}"] .dim-fields select`);
+          if (statusSelect) statusSelect.value = automaticColor;
         }
       }
 
@@ -14431,23 +14160,19 @@
     function addDimSlot() {
       pushHistory('Add dimension');
       if (!D.dimensions) D.dimensions = [];
-      const currentPresetKey = (D && D.dimensionPreset) ? D.dimensionPreset : 'sofa';
-      const defUnit = (currentPresetKey === 'table' || currentPresetKey === 'chair') ? 'mm' : 'mm';
       D.dimensions.push({
         id: 'dim_' + Math.random().toString(36).substr(2, 9),
         name: 'DIMENSION NAME',
         actual: '',
         drawing: '',
-        actualUnit: defUnit,
-        drawingUnit: defUnit,
+        actualUnit: 'mm',
+        drawingUnit: 'mm',
         color: 'color-green',
         photoLayout: '3:1',
         img: null,
         original: null,
         imgSub: null,
-        originalSub: null,
-        isManual: false,
-        manualStatus: false
+        originalSub: null
       });
       buildDimGrid(); as();
     }
@@ -14455,11 +14180,6 @@
     // Expose helpers globally for test runners and auditor verification
     if (typeof window !== 'undefined') {
       window.getAutomaticDimensionColor = getAutomaticDimensionColor;
-      window.DIMENSION_PRESETS = DIMENSION_PRESETS;
-      window.detectFurniturePreset = detectFurniturePreset;
-      window.applyDimensionPreset = applyDimensionPreset;
-      window.reevaluateDimStatus = reevaluateDimStatus;
-      window.reevaluateAllDimStatuses = reevaluateAllDimStatuses;
     }
 
     async function delDimPhoto(index, subType = 'main') {
@@ -16108,15 +15828,10 @@
         document.getElementById('fNumS').value = D.numS || 1; document.getElementById('fNumR').value = D.numR || 1;
         Object.entries(CHECK_OPTS).forEach(([g, opts]) => { opts.forEach(o => { const el = document.getElementById(`ck_${g}_${o}`); if (el) { if ((D.checks || {})[g] && D.checks[g][o]) el.classList.add('on'); else el.classList.remove('on'); } }); });
 
-        if (!D.dimensionPreset) {
-          D.dimensionPreset = detectFurniturePreset(D);
-        }
-        const activePreset = DIMENSION_PRESETS[D.dimensionPreset] || DIMENSION_PRESETS.sofa;
-
         if (!D.dimensions) {
           D.dimensions = [];
-          for (let i = 0; i < activePreset.fields.length; i++) {
-            let f = activePreset.fields[i];
+          for (let i = 0; i < DEFAULT_DIM_FIELDS.length; i++) {
+            let f = DEFAULT_DIM_FIELDS[i];
             let actualVal = '', drawingVal = '', colorVal = 'color-green', imgVal = null, originalVal = null;
 
             if (D.dimData) {
@@ -16143,33 +15858,8 @@
               img: imgVal,
               original: originalVal,
               imgSub: null,
-              originalSub: null,
-              isManual: false,
-              manualStatus: false
+              originalSub: null
             });
-          }
-        } else {
-          const isBlankSofa = D.dimensions.length === 14 &&
-            D.dimensions.every(d => !d.actual && !d.drawing && !d.img && !d.imgSub) &&
-            D.dimensions[0] && D.dimensions[0].name === 'Overall Width';
-          if (isBlankSofa && detectFurniturePreset(D) === 'table') {
-            D.dimensionPreset = 'table';
-            D.dimensions = DIMENSION_PRESETS.table.fields.map(f => ({
-              id: 'dim_' + Math.random().toString(36).substr(2, 9),
-              name: f.name,
-              actual: '',
-              drawing: '',
-              actualUnit: f.unit || 'mm',
-              drawingUnit: f.unit || 'mm',
-              color: 'color-green',
-              photoLayout: '3:1',
-              img: null,
-              original: null,
-              imgSub: null,
-              originalSub: null,
-              isManual: false,
-              manualStatus: false
-            }));
           }
         }
 
@@ -16688,7 +16378,6 @@
       });
       const elNumS = document.getElementById('fNumS'); if (elNumS) D.numS = elNumS.value;
       const elNumR = document.getElementById('fNumR'); if (elNumR) D.numR = elNumR.value;
-      if (typeof renderDimPresetPills === 'function') renderDimPresetPills();
     }
 
     async function executeSave(payload) {
@@ -16885,9 +16574,6 @@
         if (D && !D.moduleType && ((((D.reportTitle || '') + ' ' + (D.model || '') + ' ' + (D.desc || '')).toUpperCase().includes('PROTOTYPE')))) {
           D.moduleType = 'prototype';
         }
-        if (D && !D.dimensionPreset) {
-          D.dimensionPreset = detectFurniturePreset(D);
-        }
         const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
         currentActiveModule = modKey;
         const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
@@ -16989,7 +16675,6 @@
           comparisonPhotos: [], comparisonNotes: '',
           docAttachments: [], docNotes: '',
           greenlabelPhotos: [], greenlabelNotes: '',
-          dimensionPreset: detectFurniturePreset({ reportTitle: modCfg.pdfTitle }),
           modules: JSON.parse(JSON.stringify(modCfg.defaultModules))
         };
 
