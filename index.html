@@ -425,7 +425,6 @@
     /* Tab khi đang bám ngón tay di chuyển trên iOS */
     .tab.sortable-fallback {
       opacity: 0.95 !important;
-      transform: scale(1.06) !important;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
       cursor: grabbing !important;
       z-index: 99999 !important;
@@ -2485,18 +2484,12 @@
 
     /* ═══════════════ iOS SPRINGBOARD FLUID DRAG & DROP ═══════════════ */
     .sortable-fallback {
-      opacity: 0.98 !important;
-      transform: scale(1.05) rotate(1deg) !important;
-      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.28), 0 12px 24px -8px rgba(0, 0, 0, 0.16) !important;
+      opacity: 1 !important;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.32), 0 12px 24px -8px rgba(0, 0, 0, 0.18) !important;
       cursor: grabbing !important;
       z-index: 999999 !important;
       pointer-events: none !important;
       border-radius: var(--rs, 14px) !important;
-      transition: transform 0.08s ease-out !important;
-    }
-
-    .sortable-drag {
-      opacity: 0 !important;
     }
 
     .assembly-slot.sortable-ghost,
@@ -6752,7 +6745,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.1]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.2]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8310,7 +8303,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.9.1';
+    const APP_VERSION = 'v3.9.2';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
