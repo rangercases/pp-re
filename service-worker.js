@@ -1,5 +1,5 @@
 // Service Worker for FASREP (Offline & PWA Support)
-const CACHE_NAME = 'fasrep-v3.9.0';
+const CACHE_NAME = 'fasrep-v3.9.1';
 
 const STATIC_ASSETS = [
   './',
