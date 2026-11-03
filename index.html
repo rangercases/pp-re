@@ -6874,7 +6874,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.7.0]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.8.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8433,7 +8433,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.7.0';
+    const APP_VERSION = 'v3.8.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -13961,8 +13961,8 @@
               </span>
             </div>
           </div>
-          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.actual || '')}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" value="${escapeHtml(d.actualUnit || d.unit || 'mm')}" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div></div>
-          <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.drawing || '')}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" value="${escapeHtml(d.drawingUnit || d.unit || 'mm')}" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
+          <div class="dim-row"><label>Actual</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.actual || '')}" placeholder="0" oninput="updateDimField(${i},'actual',this.value)"><input class="dim-unit-input" data-unit-for="actual" value="${escapeHtml(d.actualUnit || d.drawingUnit || d.unit || 'mm')}" placeholder="mm" aria-label="Actual unit" oninput="updateDimField(${i},'actualUnit',this.value)"></div></div>
+          <div class="dim-row"><label>Drawing</label><div class="dim-measure-group"><input class="dim-value-input" value="${escapeHtml(d.drawing || '')}" placeholder="0" oninput="updateDimField(${i},'drawing',this.value)"><input class="dim-unit-input" data-unit-for="drawing" value="${escapeHtml(d.drawingUnit || d.actualUnit || d.unit || 'mm')}" placeholder="mm" aria-label="Drawing unit" oninput="updateDimField(${i},'drawingUnit',this.value)"></div></div>
           <div class="dim-row"><label>Status</label>
             <select onchange="updateDimField(${i},'color',this.value)">
               <option value="color-green" ${(d.color === 'color-green' || d.color === 'color-blue' || !d.color) ? 'selected' : ''}>✓ OK</option>
@@ -14071,19 +14071,40 @@
       const drawing = Number.parseFloat(dimension.drawing);
       if (!Number.isFinite(actual) || !Number.isFinite(drawing)) return null;
 
-      const diff = Math.abs(actual - drawing);
-      const unit = String(dimension.unit || dimension.actualUnit || dimension.drawingUnit || 'mm').trim().toLowerCase();
+      const toMm = (val, u) => {
+        const unitStr = String(u || '').trim().toLowerCase();
+        if (unitStr === 'cm') return val * 10;
+        if (unitStr === 'm') return val * 1000;
+        if (unitStr === 'in' || unitStr === 'inch' || unitStr === 'inches') return val * 25.4;
+        return val;
+      };
+
+      const actualUnit = String(dimension.actualUnit || dimension.unit || 'mm').trim().toLowerCase();
+      const drawingUnit = String(dimension.drawingUnit || dimension.unit || 'mm').trim().toLowerCase();
+
+      let diff;
+      let unitForThreshold = 'mm';
+
+      if (actualUnit === drawingUnit) {
+        diff = Math.abs(actual - drawing);
+        unitForThreshold = actualUnit;
+      } else {
+        const actualMm = toMm(actual, actualUnit);
+        const drawingMm = toMm(drawing, drawingUnit);
+        diff = Math.abs(actualMm - drawingMm);
+        unitForThreshold = 'mm';
+      }
 
       let orangeThreshold = 10;
       let redThreshold = 20;
 
-      if (unit === 'cm') {
+      if (unitForThreshold === 'cm') {
         orangeThreshold = 1.0;
         redThreshold = 2.0;
-      } else if (unit === 'kg') {
+      } else if (unitForThreshold === 'kg') {
         orangeThreshold = 0.5;
         redThreshold = 1.0;
-      } else if (unit === 'in' || unit === 'inch' || unit === 'inches') {
+      } else if (unitForThreshold === 'in' || unitForThreshold === 'inch' || unitForThreshold === 'inches') {
         orangeThreshold = 0.5;
         redThreshold = 1.0;
       } else {
@@ -14140,6 +14161,20 @@
       }
 
       dimension[field] = val;
+
+      if (field === 'actualUnit' || field === 'drawingUnit') {
+        dimension.actualUnit = val;
+        dimension.drawingUnit = val;
+        dimension.unit = val;
+        const otherUnitType = field === 'actualUnit' ? 'drawing' : 'actual';
+        const card = document.querySelector(`[data-dim-index="${index}"]`);
+        if (card) {
+          const otherInput = card.querySelector(`.dim-unit-input[data-unit-for="${otherUnitType}"]`);
+          if (otherInput && otherInput.value !== val) {
+            otherInput.value = val;
+          }
+        }
+      }
 
       if (field === 'actual' || field === 'drawing' || field === 'actualUnit' || field === 'drawingUnit') {
         const automaticColor = getAutomaticDimensionColor(dimension);
@@ -15658,9 +15693,9 @@
         D.dimensions = sourceReport.dimensions.map(d => ({
           name: d.name || '',
           drawing: d.drawing || '',
-          drawingUnit: d.drawingUnit || 'cm',
+          drawingUnit: d.drawingUnit || d.actualUnit || d.unit || 'mm',
           actual: '',
-          actualUnit: d.actualUnit || 'cm',
+          actualUnit: d.actualUnit || d.drawingUnit || d.unit || 'mm',
           color: 'color-blue',
           img: null,
           imgSub: null,

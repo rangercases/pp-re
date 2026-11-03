@@ -99,4 +99,38 @@ describe('Tier 1: Feature 4 — Prototype Sample Review Module Structure (R1)', 
     assert.ok(datePattern.test(fixture.date), `Date format ${fixture.date} must match DD-MMM-YY`);
     assert.ok(typeof fixture.reviewer === 'string' && fixture.reviewer.trim().length > 0);
   });
+
+  it('TC-4.6: getAutomaticDimensionColor correctly evaluates tolerances and flags unit mismatch', () => {
+    const indexHtml = fs.readFileSync(path.resolve(projectRoot, 'index.html'), 'utf8');
+    
+    // Extract getAutomaticDimensionColor function implementation from index.html
+    const funcMatch = indexHtml.match(/function getAutomaticDimensionColor\(dimension\) \{([\s\S]*?)\n    \}/);
+    assert.ok(funcMatch, 'getAutomaticDimensionColor must be defined in index.html');
+
+    const evalFn = new Function('dimension', funcMatch[1]);
+
+    // Test 1: identical measurements in mm -> color-green
+    assert.equal(evalFn({ actual: '12', drawing: '12', actualUnit: 'mm', drawingUnit: 'mm' }), 'color-green');
+
+    // Test 2: slight diff within tolerance in mm (<= 10 mm) -> color-green
+    assert.equal(evalFn({ actual: '1005', drawing: '1000', actualUnit: 'mm', drawingUnit: 'mm' }), 'color-green');
+
+    // Test 3: diff between 10mm and 20mm -> color-orange
+    assert.equal(evalFn({ actual: '1015', drawing: '1000', actualUnit: 'mm', drawingUnit: 'mm' }), 'color-orange');
+
+    // Test 4: diff > 20mm -> color-red
+    assert.equal(evalFn({ actual: '1035', drawing: '1000', actualUnit: 'mm', drawingUnit: 'mm' }), 'color-red');
+
+    // Test 5: Bug fix scenario: 12 cm vs 12 mm (120mm vs 12mm -> diff 108mm > 20mm) -> color-red
+    assert.equal(evalFn({ actual: '12', drawing: '12', actualUnit: 'cm', drawingUnit: 'mm' }), 'color-red');
+  });
+
+  it('TC-4.7: Dimension inputs default to mm and support 2-way unit auto-sync markup', () => {
+    const indexHtml = fs.readFileSync(path.resolve(projectRoot, 'index.html'), 'utf8');
+
+    // Verify Actual and Drawing inputs have data-unit-for and default to mm
+    assert.ok(indexHtml.includes('data-unit-for="actual"'), 'Actual unit input must have data-unit-for="actual"');
+    assert.ok(indexHtml.includes('data-unit-for="drawing"'), 'Drawing unit input must have data-unit-for="drawing"');
+    assert.ok(indexHtml.includes('placeholder="mm"'), 'Unit inputs must have placeholder="mm"');
+  });
 });
