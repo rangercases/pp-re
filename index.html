@@ -2489,12 +2489,13 @@
 
     /* ═══════════════ iOS SPRINGBOARD FLUID DRAG & DROP ═══════════════ */
     .sortable-fallback {
-      opacity: 1 !important;
+      opacity: 0.98 !important;
       box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.32), 0 12px 24px -8px rgba(0, 0, 0, 0.18) !important;
       cursor: grabbing !important;
       z-index: 999999 !important;
       pointer-events: none !important;
-      border-radius: var(--rs, 14px) !important;
+      border-radius: var(--r-card, 16px) !important;
+      transition: none !important;
     }
 
     .assembly-slot.sortable-ghost,
@@ -2504,11 +2505,9 @@
     .free-photo-item.sortable-ghost,
     .photo-slot.sortable-ghost {
       opacity: 0.15 !important;
-      transform: scale(0.96) !important;
       background: rgba(0, 0, 0, 0.05) !important;
       border: 1.5px dashed rgba(0, 0, 0, 0.25) !important;
       border-radius: var(--r-card, 16px) !important;
-      transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1) !important;
     }
 
     .assembly-slot.sortable-chosen,
@@ -2518,7 +2517,6 @@
     .free-photo-item.sortable-chosen,
     .photo-slot.sortable-chosen {
       box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 6px 14px -4px rgba(0, 0, 0, 0.12) !important;
-      transform: scale(1.035) rotate(0.4deg) !important;
       z-index: 99999 !important;
       cursor: grabbing !important;
     }
@@ -6750,7 +6748,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.3]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.4]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8308,7 +8306,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.9.3';
+    const APP_VERSION = 'v3.9.4';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -13904,8 +13902,8 @@
             delay: 0,
             touchStartThreshold: 5,
             draggable: '.dim-slot:not(.add-dim-btn)',
-            handle: '.dim-slot-topbar, .dim-drag-handle',
-            filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag',
+            handle: '.dim-slot, .dim-slot-topbar, .dim-drag-handle',
+            filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag',
             preventOnFilter: false,
             swap: false,
             ghostClass: 'sortable-ghost',
@@ -14462,8 +14460,8 @@
           delay: 0,
           touchStartThreshold: 5,
           draggable: '.watchout-slot',
-          handle: '.dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+          handle: '.watchout-slot, .dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
           swap: false,
           ghostClass: 'sortable-ghost',
@@ -14702,8 +14700,8 @@
           delay: 0,
           touchStartThreshold: 5,
           draggable: '.testing-slot',
-          handle: '.dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+          handle: '.testing-slot, .dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
           preventOnFilter: false,
           swap: false,
           ghostClass: 'sortable-ghost',
@@ -14942,8 +14940,8 @@
           delay: 0,
           touchStartThreshold: 5,
           draggable: '.assembly-slot',
-          handle: '.dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
+          handle: '.assembly-slot, .dim-slot-topbar, .dim-drag-handle',
+          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
           preventOnFilter: false,
           swap: false,
           ghostClass: 'sortable-ghost',
