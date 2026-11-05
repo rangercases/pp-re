@@ -1676,8 +1676,8 @@
     .btn-add-cover-pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 4px 12px;
+      gap: 6px;
+      padding: 5px 13px;
       font-family: var(--font-body);
       font-size: 11px;
       font-weight: 600;
@@ -1685,10 +1685,11 @@
       border-radius: 9999px;
       background: #ffffff;
       color: var(--ink-strong);
-      border: 1px solid var(--line);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.18);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       cursor: pointer;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
     }
     .btn-add-cover-pill:hover {
       background: var(--module-light, #F4F4F5);
@@ -13541,6 +13542,10 @@
         if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
           D.coverSlots = ['FRONT_VIEW'];
         }
+        // If an existing report has 2 slots but the second slot has no photo, start with 1 centered slot and show the + button
+        if (D.coverSlots.length > 1 && (!D.coverPhotos || !D.coverPhotos[D.coverSlots[1]]) && (!D.coverTitles || !D.coverTitles[D.coverSlots[1]] || D.coverTitles[D.coverSlots[1]] === 'DETAIL VIEW')) {
+          D.coverSlots = ['FRONT_VIEW'];
+        }
         return D.coverSlots.slice(0, 2);
       }
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
@@ -13717,27 +13722,27 @@
       buildSlotGrid(containerId, slots, 'slot', 'cover');
 
       const btnAdd = document.getElementById('btnAddCoverPhoto');
-      if (D && D.moduleType === 'sample-review-recap') {
-        if (btnAdd) btnAdd.style.display = (keys.length < 2) ? 'inline-flex' : 'none';
-      } else {
-        if (btnAdd) btnAdd.style.display = 'none';
+      const isRecap = D && D.moduleType === 'sample-review-recap';
+      const canAdd = isRecap ? (keys.length < 2) : (getCoverCapacityUsage() < 4);
+      if (btnAdd) {
+        btnAdd.style.display = canAdd ? 'inline-flex' : 'none';
+      }
+      if (!isRecap && getCoverCapacityUsage() < 4) {
         // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
-        if (getCoverCapacityUsage() < 4) {
-          const addBtn = document.createElement('div');
-          addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
-          addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
-          addBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
+        const addBtn = document.createElement('div');
+        addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
+        addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
+        addBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
             <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
-          `;
-          addBtn.onclick = () => addCoverSlot();
-          attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
-          el.appendChild(addBtn);
-        }
+        `;
+        addBtn.onclick = () => addCoverSlot();
+        attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
+        el.appendChild(addBtn);
       }
     }
 
@@ -16020,6 +16025,7 @@
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
         renderDocAttachments();
         initDocDropZone();
+        renderCoverSlots();
         refreshAllSlots();
       } catch (err) {
         alert("Error loading report data: " + err.message);
