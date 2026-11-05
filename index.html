@@ -1630,6 +1630,18 @@
       grid-template-columns: 1fr 1fr;
     }
 
+    /* SAMPLE REVIEW RECAP - MINIMAL OVERVIEW DISPLAY */
+    body.recap-mode #fcellDim,
+    body.recap-mode #fcellNumSample,
+    body.recap-mode #row_stage,
+    body.recap-mode #row_sample,
+    body.recap-mode #row_comfort {
+      display: none !important;
+    }
+    body.recap-mode #fcellReviewer {
+      grid-column: span 2;
+    }
+
     .fcell {
       padding: 10px 14px;
       border-bottom: 1px solid var(--line);
@@ -6796,11 +6808,41 @@
           </div>
         </div>
 
-        <!-- MODULE 03: FUTURE MODULE PLACEHOLDER (MASS PRODUCTION) -->
+        <!-- MODULE 03: SAMPLE REVIEW RECAP CRAFT CARD -->
+        <div class="craft-module-card" id="cardModuleRecap" onclick="openModule('sample-review-recap')">
+          <div class="craft-card-strip">
+            <div class="craft-card-num-box" style="background-color: #52525B;">03</div>
+            <span class="hud-label" style="color:#52525B; font-weight:700;">[NEW]</span>
+          </div>
+          <div class="craft-card-body">
+            <div class="craft-card-header-row">
+              <div class="craft-app-icon" style="background:#F4F4F5; border:1px solid rgba(82, 82, 91, 0.2);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#52525B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  <path d="M9 14l2 2 4-4"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="craft-card-title">Sample Review Recap</div>
+                <div class="craft-card-tagline">Overview &amp; Watch Out</div>
+              </div>
+            </div>
+            <div class="craft-card-meta">
+              <span class="craft-badge-active" style="background:#F4F4F5; color:#52525B; border-color:rgba(82, 82, 91, 0.25);">ACTIVE</span>
+            </div>
+          </div>
+          <div class="craft-card-foot">
+            <button class="craft-btn-launch"
+              onclick="event.stopPropagation(); openModule('sample-review-recap')">OPEN</button>
+          </div>
+        </div>
+
+        <!-- MODULE 04: FUTURE MODULE PLACEHOLDER (MASS PRODUCTION) -->
         <div class="craft-module-card" style="opacity: 0.55; cursor: default; border-style: dashed;"
           onclick="event.stopPropagation()">
           <div class="craft-card-strip">
-            <div class="craft-card-num-box" style="background-color:var(--muted); color:#ffffff;">03</div>
+            <div class="craft-card-num-box" style="background-color:var(--muted); color:#ffffff;">04</div>
             <span class="hud-label">[UPCOMING]</span>
           </div>
           <div class="craft-card-body">
@@ -6912,7 +6954,7 @@
           <div class="fcell">
             <div class="flabel">Description</div><input id="fDesc" placeholder="Swivel Chair (Skylar)" oninput="as()">
           </div>
-          <div class="fcell">
+          <div class="fcell" id="fcellDim">
             <div class="flabel">Dimension</div><input id="fDim" placeholder="110.5 x 93 x 77.5" oninput="as()">
           </div>
           <div class="fcell">
@@ -6936,11 +6978,11 @@
           <div class="fcell">
             <div class="flabel">Factory</div><input id="fFactory" placeholder="NHAN HOANG" oninput="as()">
           </div>
-          <div class="fcell">
+          <div class="fcell" id="fcellReviewer">
             <div class="flabel">Reviewed by</div><input id="fReviewer" placeholder="Your name"
               oninput="as()">
           </div>
-          <div class="fcell" style="grid-column: span 2;">
+          <div class="fcell" id="fcellNumSample" style="grid-column: span 2;">
             <div class="flabel">Number Sample / Review</div>
             <div style="display:flex;gap:8px;padding-top:4px">
               <input id="fNumS" type="number" value="1"
@@ -6951,19 +6993,19 @@
             </div>
           </div>
         </div>
-        <div class="check-row">
+        <div class="check-row" id="row_stage">
           <div class="check-row-label">Stage</div>
           <div class="checks" id="ck_stage"></div>
         </div>
-        <div class="check-row">
+        <div class="check-row" id="row_sample">
           <div class="check-row-label">Sample</div>
           <div class="checks" id="ck_sample"></div>
         </div>
-        <div class="check-row">
+        <div class="check-row" id="row_comfort">
           <div class="check-row-label">Comfort</div>
           <div class="checks" id="ck_comfort"></div>
         </div>
-        <div class="check-row">
+        <div class="check-row" id="row_rating">
           <div class="check-row-label">Rating</div>
           <div class="checks" id="ck_rating"></div>
         </div>
@@ -8559,6 +8601,12 @@
       { id: 'sec_testing', type: 'testing', name: 'Testing', key: 'testingPhotos', notesKey: 'testingNotes', canDelete: true, canDuplicate: true },
       { id: 'sec_checklist', type: 'checklist', name: 'Check List', canDelete: true, canDuplicate: false },
       { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true }
+    ];
+
+    // ═══════════════ DEFAULT 2 MODULES (SAMPLE REVIEW RECAP) ═══════════════
+    const DEFAULT_MODULES_RECAP = [
+      { id: 'sec_overall', type: 'overall', name: 'OVERVIEW', canDelete: false, canDuplicate: false },
+      { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: false, canDuplicate: true }
     ];
 
     const DEFAULT_MODULES = DEFAULT_MODULES_PREPROD;
@@ -11929,6 +11977,7 @@
     }
 
     async function goHome(opts) {
+      document.body.classList.remove('recap-mode');
       if (D && D.id && D._fileDirty) {
         let leave = true;
         try {
@@ -12021,6 +12070,14 @@
         title: 'PROTOTYPE',
         pdfTitle: 'PROTOTYPE SAMPLE REVIEW REPORT',
         defaultModules: DEFAULT_MODULES_PROTOTYPE
+      },
+      'sample-review-recap': {
+        id: 'sample-review-recap',
+        themeColor: '#52525B',
+        lightColor: '#F4F4F5',
+        title: 'SAMPLE REVIEW RECAP',
+        pdfTitle: 'SAMPLE REVIEW RECAP',
+        defaultModules: DEFAULT_MODULES_RECAP
       }
     };
 
@@ -12100,6 +12157,7 @@
     function backToLauncherHub() {
       currentActiveModule = null;
       document.body.classList.remove('in-editor');
+      document.body.classList.remove('recap-mode');
       document.documentElement.style.removeProperty('--module-theme');
       document.documentElement.style.removeProperty('--module-theme-light');
 
@@ -12165,9 +12223,19 @@
           limitEl.style.color = over ? 'var(--warn)' : 'var(--ink-soft)';
         }
 
-        const isProtoReport = r => r.moduleType === 'prototype' || ((!r.moduleType || r.moduleType === 'pre-production') && (((r.reportTitle || '') + ' ' + (r.desc || '') + ' ' + (r.model || '')).toUpperCase().includes('PROTOTYPE')));
-        const protoReports = reports.filter(isProtoReport);
-        const preProdReports = reports.filter(r => !isProtoReport(r));
+        const getReportModKey = r => {
+          if (r.moduleType === 'sample-review-recap' || (!r.moduleType && (r.reportTitle || '').toUpperCase().includes('RECAP'))) {
+            return 'sample-review-recap';
+          }
+          if (r.moduleType === 'prototype' || ((!r.moduleType || r.moduleType === 'pre-production') && (((r.reportTitle || '') + ' ' + (r.desc || '') + ' ' + (r.model || '')).toUpperCase().includes('PROTOTYPE')))) {
+            return 'prototype';
+          }
+          return 'pre-production';
+        };
+
+        const protoReports = reports.filter(r => getReportModKey(r) === 'prototype');
+        const recapReports = reports.filter(r => getReportModKey(r) === 'sample-review-recap');
+        const preProdReports = reports.filter(r => getReportModKey(r) === 'pre-production');
 
         // Update stats on Level 1 Craft Module Cards
         const hubCountEl = document.getElementById('hubReportCountText');
@@ -12180,9 +12248,18 @@
           const count = protoReports.length;
           hubProtoCountEl.textContent = count === 1 ? '1 Report stored' : `${count} Reports stored`;
         }
+        const hubRecapCountEl = document.getElementById('hubRecapCountText');
+        if (hubRecapCountEl) {
+          const count = recapReports.length;
+          hubRecapCountEl.textContent = count === 1 ? '1 Report stored' : `${count} Reports stored`;
+        }
 
         // Lọc danh sách báo cáo theo module đang active trong Level 2
-        const activeModuleReports = (currentActiveModule === 'prototype') ? protoReports : preProdReports;
+        const activeModuleReports = (currentActiveModule === 'prototype')
+          ? protoReports
+          : (currentActiveModule === 'sample-review-recap')
+            ? recapReports
+            : preProdReports;
 
         // Cập nhật số lượng đếm (counters) cho các tab ALL / DONE / WIP của module đang mở
         const allCount = activeModuleReports.length;
@@ -12358,10 +12435,16 @@
     }
 
     function ensureReportModules() {
-      if (D && !D.moduleType && ((((D.reportTitle || '') + ' ' + (D.model || '') + ' ' + (D.desc || '')).toUpperCase().includes('PROTOTYPE')))) {
-        D.moduleType = 'prototype';
+      if (D && !D.moduleType) {
+        if ((D.reportTitle || '').toUpperCase().includes('RECAP')) {
+          D.moduleType = 'sample-review-recap';
+        } else if ((((D.reportTitle || '') + ' ' + (D.model || '') + ' ' + (D.desc || '')).toUpperCase().includes('PROTOTYPE'))) {
+          D.moduleType = 'prototype';
+        } else {
+          D.moduleType = currentActiveModule || 'pre-production';
+        }
       }
-      const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
+      const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
       const defMods = (MODULE_THEMES[modKey] || MODULE_THEMES['pre-production']).defaultModules;
       if (!D.modules || !Array.isArray(D.modules) || D.modules.length === 0) {
         D.modules = JSON.parse(JSON.stringify(defMods));
@@ -12894,7 +12977,7 @@
     // 2. GIAO DIỆN THÊM MODULE (CHỈ HIỆN MODULE CHƯA ACTIVE - TIẾNG ANH & ICON-HÓA)
     function renderTabMgrAddView(body) {
       ensureReportModules();
-      const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
+      const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
       const defMods = (MODULE_THEMES[modKey] || MODULE_THEMES['pre-production']).defaultModules;
 
       // Active modules are 100% hidden; only missing standard modules appear
@@ -13391,6 +13474,12 @@
     }
 
     function getCoverSlotKeys() {
+      if (D && D.moduleType === 'sample-review-recap') {
+        if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
+          D.coverSlots = ['FRONT_VIEW', 'DETAIL_VIEW'];
+        }
+        return D.coverSlots.slice(0, 2);
+      }
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
         D.coverSlots = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
       }
@@ -13507,6 +13596,10 @@
     }
 
     function addCoverSlot() {
+      if (D && D.moduleType === 'sample-review-recap' && getCoverSlotKeys().length >= 2) {
+        showToast('Maximum 2 cover photos allowed for Recap report');
+        return;
+      }
       if (getCoverCapacityUsage() >= 4) {
         showToast('Overview layout: max 2 large, 1 large + 2 small, or 4 small photos (fits 1 page)');
         return;
@@ -15196,6 +15289,19 @@
       if (!el || !D) return;
 
       const m = getReportQuickMetrics(D);
+      if (D.moduleType === 'sample-review-recap') {
+        const watchBadge = (m.watchCount > 0)
+          ? `<div class="summary-badge badge-danger">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span><b>${m.watchCount}</b> Quality Watch-out${m.watchCount > 1 ? 's' : ''}</span>
+            </div>`
+          : `<div class="summary-badge badge-success">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>0 Watch-outs (Clean)</span>
+            </div>`;
+        el.innerHTML = watchBadge;
+        return;
+      }
 
       // Watch-out badge
       let watchBadge = '';
@@ -15775,13 +15881,14 @@
               D[keys[i]] = localStorage.getItem(scopedStorageKey('DEFAULT_REVIEWER_NAME')) || (typeof currentUser !== 'undefined' && currentUser?.name) || 'Inspector';
             }
             if (keys[i] === 'reportTitle') {
-              const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
+              const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
               const modCfg = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
               el.placeholder = modCfg.pdfTitle || 'PROTOTYPE SAMPLE REVIEW REPORT';
             }
             el.value = D[keys[i]] || '';
           }
         });
+        document.body.classList.toggle('recap-mode', D && D.moduleType === 'sample-review-recap');
         updateTodayBtnState(D.date || '');
         const fNativeEl = document.getElementById('fDateNative');
         if (fNativeEl) fNativeEl.value = parseSofaDateToYMD(D.date || '');
@@ -16531,14 +16638,19 @@
           : repData;
         reports = []; // Release report list array from memory while editing
 
-        if (D && !D.moduleType && ((((D.reportTitle || '') + ' ' + (D.model || '') + ' ' + (D.desc || '')).toUpperCase().includes('PROTOTYPE')))) {
-          D.moduleType = 'prototype';
+        if (D && !D.moduleType) {
+          if ((D.reportTitle || '').toUpperCase().includes('RECAP')) {
+            D.moduleType = 'sample-review-recap';
+          } else if ((((D.reportTitle || '') + ' ' + (D.model || '') + ' ' + (D.desc || '')).toUpperCase().includes('PROTOTYPE'))) {
+            D.moduleType = 'prototype';
+          }
         }
-        const modKey = (D && D.moduleType === 'prototype') ? 'prototype' : 'pre-production';
+        const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
         currentActiveModule = modKey;
         const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
         document.documentElement.style.setProperty('--module-theme', modConfig.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modConfig.lightColor);
+        document.body.classList.toggle('recap-mode', modKey === 'sample-review-recap');
         navPush(navDepth + 1, { reportId: id });
 
         curSec = 0;
@@ -16615,7 +16727,7 @@
         if (typeof flushReport === 'function') await flushReport();
         if (!(await ensureLocalReportCapacity())) return;
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
-        const modKey = (currentActiveModule === 'prototype') ? 'prototype' : 'pre-production';
+        const modKey = (currentActiveModule && MODULE_THEMES[currentActiveModule]) ? currentActiveModule : 'pre-production';
         const modCfg = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
         const r = {
           id, 
@@ -17287,8 +17399,9 @@
 
       const pdfImageMap = await preparePdfImageMap(D);
 
+      const isRecap = (D && D.moduleType === 'sample-review-recap') || ((!D || !D.moduleType) && (D.reportTitle || '').toUpperCase().includes('RECAP'));
       const isProto = (D && D.moduleType === 'prototype') || ((!D || !D.moduleType) && ((((D.reportTitle || '') + ' ' + (D.desc || '') + ' ' + (D.model || '')).toUpperCase().includes('PROTOTYPE'))));
-      const modKey = isProto ? 'prototype' : 'pre-production';
+      const modKey = isRecap ? 'sample-review-recap' : (isProto ? 'prototype' : 'pre-production');
       const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
       const defaultThemeColor = modConfig.themeColor;
       const defaultPdfTitle = modConfig.pdfTitle;
@@ -17634,11 +17747,17 @@
       doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center', baseline: 'middle' });
       y = bannerH + 6;
 
-      const infoRows = [
-        ['Model No.', D.model], ['Description', D.desc],
-        ['Dimension', D.dim], ['Date', D.date],
-        ['Factory', D.factory], ['Reviewed by', D.reviewer]
-      ];
+      const infoRows = isRecap
+        ? [
+            ['Model No.', D.model], ['Description', D.desc],
+            ['Date', D.date], ['Factory', D.factory],
+            ['Reviewed by', D.reviewer], ['Status / Verdict', (Object.keys(D.checks?.rating || {}).find(k => D.checks.rating[k]) || 'Pending')]
+          ]
+        : [
+            ['Model No.', D.model], ['Description', D.desc],
+            ['Dimension', D.dim], ['Date', D.date],
+            ['Factory', D.factory], ['Reviewed by', D.reviewer]
+          ];
 
       const hw = (W - M * 2) / 2 - 2;
       for (let i = 0; i < infoRows.length; i += 2) {
@@ -17670,7 +17789,9 @@
           doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 6.5;
       };
-      ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); }); y += 2.5;
+      const checkGroups = isRecap ? ['rating'] : ['stage', 'sample', 'comfort', 'rating'];
+      const checkLabels = isRecap ? ['Rating'] : ['Stage', 'Sample', 'Comfort', 'Rating'];
+      checkGroups.forEach((g, i) => { chkLine(checkLabels[i], g); }); y += 2.5;
 
       // ================= EXECUTIVE QUALITY SUMMARY STRIP (DYNAMIC WRAP & AUTO-HEIGHT) =================
       const qm = getReportQuickMetrics(D);
@@ -17678,11 +17799,19 @@
       const badgeH = 5.6;
 
       const pdfBadges = [];
-      // 1. Watch-out
-      if (qm.watchCount > 0) {
-        pdfBadges.push({ text: `${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
+      if (isRecap) {
+        if (qm.watchCount > 0) {
+          pdfBadges.push({ text: `${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
+        } else {
+          pdfBadges.push({ text: "0 Watch-outs", bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+        }
       } else {
-        pdfBadges.push({ text: "0 Watch-outs", bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+        // 1. Watch-out
+        if (qm.watchCount > 0) {
+          pdfBadges.push({ text: `${qm.watchCount} Watch-out${qm.watchCount > 1 ? 's' : ''}`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
+        } else {
+          pdfBadges.push({ text: "0 Watch-outs", bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
+        }
       }
 
       // 2. Testing BV
