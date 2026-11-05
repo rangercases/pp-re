@@ -3,6 +3,7 @@
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Script } from 'node:vm';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -104,6 +105,26 @@ check('root service-worker mirrors public/service-worker.js',
 const distFontFile = join(dist, 'font_roboto.js');
 const distFontExists = existsSync(distFontFile);
 const distFontSize = distFontExists ? statSync(distFontFile).size : 0;
+// Script syntax validation on all inline scripts in dist/index.html
+const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+let scriptMatch;
+let scriptIdx = 0;
+let scriptSyntaxOk = true;
+let scriptSyntaxError = '';
+while ((scriptMatch = scriptRegex.exec(html)) !== null) {
+  scriptIdx++;
+  const code = scriptMatch[1];
+  if (!code.trim()) continue;
+  try {
+    new Script(code);
+  } catch (err) {
+    scriptSyntaxOk = false;
+    scriptSyntaxError = `Script #${scriptIdx}: ${err.message}`;
+    break;
+  }
+}
+check('all inline <script> tags have valid JavaScript syntax', scriptSyntaxOk, scriptSyntaxError);
+
 check('dist/font_roboto.js exists and has size > 300000 bytes',
   distFontExists && distFontSize > 300000, `${distFontSize} bytes`);
 
