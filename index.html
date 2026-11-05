@@ -1635,11 +1635,68 @@
     body.recap-mode #fcellNumSample,
     body.recap-mode #row_stage,
     body.recap-mode #row_sample,
-    body.recap-mode #row_comfort {
+    body.recap-mode #row_comfort,
+    body.recap-mode #row_rating {
       display: none !important;
     }
     body.recap-mode #fcellReviewer {
       grid-column: span 2;
+    }
+    body.recap-mode #sec_overall {
+      display: flex;
+      flex-direction: column;
+    }
+    body.recap-mode #cardProductInfo {
+      order: 1;
+      margin-bottom: 12px;
+    }
+    body.recap-mode #cardOverviewPhotos {
+      order: 2;
+      margin-bottom: 12px;
+    }
+    body.recap-mode #overviewSummaryStrip {
+      order: 3;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+    body.recap-mode .photo-slot.is-lone-center {
+      grid-column: 1 / -1 !important;
+      justify-self: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      width: 65% !important;
+      max-width: 520px !important;
+      aspect-ratio: 16 / 10 !important;
+    }
+    @media (max-width: 640px) {
+      body.recap-mode .photo-slot.is-lone-center {
+        width: 100% !important;
+      }
+    }
+    .btn-add-cover-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: 9999px;
+      background: #ffffff;
+      color: var(--ink-strong);
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-add-cover-pill:hover {
+      background: var(--module-light, #F4F4F5);
+      border-color: rgba(0,0,0,0.15);
+      color: var(--module-theme, #52525B);
+    }
+    .btn-add-cover-pill:active {
+      transform: scale(0.97);
     }
 
     .fcell {
@@ -6941,7 +6998,7 @@
 
     <!-- S0: OVERALL -->
     <div id="sec_overall" class="sec-block">
-      <div class="sec-card">
+      <div class="sec-card" id="cardProductInfo">
         <div class="sec-head">Product Information</div>
         <div class="form-grid">
           <div class="fcell" style="grid-column: span 2;">
@@ -7014,8 +7071,14 @@
       <!-- EXECUTIVE SUMMARY STRIP (QUICK METRICS) -->
       <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
 
-      <div class="sec-card">
-        <div class="sec-head">OVERVIEW</div>
+      <div class="sec-card" id="cardOverviewPhotos">
+        <div class="sec-head" id="headOverviewPhotos" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>OVERVIEW</span>
+          <button type="button" class="btn-add-cover-pill" id="btnAddCoverPhoto" onclick="addCoverSlot()" style="display:none;" title="Add second photo">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Photo</span>
+          </button>
+        </div>
         <div class="photo-grid-2" id="coverPhotos"></div>
       </div>
     </div>
@@ -13476,7 +13539,7 @@
     function getCoverSlotKeys() {
       if (D && D.moduleType === 'sample-review-recap') {
         if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
-          D.coverSlots = ['FRONT_VIEW', 'DETAIL_VIEW'];
+          D.coverSlots = ['FRONT_VIEW'];
         }
         return D.coverSlots.slice(0, 2);
       }
@@ -13596,8 +13659,19 @@
     }
 
     function addCoverSlot() {
-      if (D && D.moduleType === 'sample-review-recap' && getCoverSlotKeys().length >= 2) {
-        showToast('Maximum 2 cover photos allowed for Recap report');
+      const keys = getCoverSlotKeys();
+      if (D && D.moduleType === 'sample-review-recap') {
+        if (keys.length >= 2) {
+          showToast('Maximum 2 cover photos allowed for Recap report');
+          return;
+        }
+        const newKey = keys.includes('FRONT_VIEW') ? 'DETAIL_VIEW' : `VIEW_${Date.now()}`;
+        keys.push(newKey);
+        if (!D.coverTitles) D.coverTitles = {};
+        D.coverTitles[newKey] = 'DETAIL VIEW';
+        as();
+        renderCoverSlots();
+        showToast('✓ Added second photo slot');
         return;
       }
       if (getCoverCapacityUsage() >= 4) {
@@ -13643,22 +13717,28 @@
       });
       buildSlotGrid(containerId, slots, 'slot', 'cover');
 
-      // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
-      if (getCoverCapacityUsage() < 4) {
-        const addBtn = document.createElement('div');
-        addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
-        addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
-        addBtn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
-          <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
-        `;
-        addBtn.onclick = () => addCoverSlot();
-        attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
-        el.appendChild(addBtn);
+      const btnAdd = document.getElementById('btnAddCoverPhoto');
+      if (D && D.moduleType === 'sample-review-recap') {
+        if (btnAdd) btnAdd.style.display = (keys.length < 2) ? 'inline-flex' : 'none';
+      } else {
+        if (btnAdd) btnAdd.style.display = 'none';
+        // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
+        if (getCoverCapacityUsage() < 4) {
+          const addBtn = document.createElement('div');
+          addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
+          addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
+          addBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
+            <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
+          `;
+          addBtn.onclick = () => addCoverSlot();
+          attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
+          el.appendChild(addBtn);
+        }
       }
     }
 
@@ -17751,7 +17831,7 @@
         ? [
             ['Model No.', D.model], ['Description', D.desc],
             ['Date', D.date], ['Factory', D.factory],
-            ['Reviewed by', D.reviewer], ['Status / Verdict', (Object.keys(D.checks?.rating || {}).find(k => D.checks.rating[k]) || 'Pending')]
+            ['Reviewed by', D.reviewer], ['', '']
           ]
         : [
             ['Model No.', D.model], ['Description', D.desc],
@@ -17789,9 +17869,10 @@
           doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 6.5;
       };
-      const checkGroups = isRecap ? ['rating'] : ['stage', 'sample', 'comfort', 'rating'];
-      const checkLabels = isRecap ? ['Rating'] : ['Stage', 'Sample', 'Comfort', 'Rating'];
-      checkGroups.forEach((g, i) => { chkLine(checkLabels[i], g); }); y += 2.5;
+      if (!isRecap) {
+        ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); });
+        y += 2.5;
+      }
 
       // ================= EXECUTIVE QUALITY SUMMARY STRIP (DYNAMIC WRAP & AUTO-HEIGHT) =================
       const qm = getReportQuickMetrics(D);
