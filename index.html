@@ -19276,15 +19276,152 @@
       return 0;
     }
 
-    function cloudSnapshotForPush(report) {
-      const body = Object.assign({}, report);
+    // ── Photos in R2 (content-addressed) ─────────────────────────────
+    // Big photos are uploaded once to /api/photos/<sha256> and the cloud
+    // payload references them as `fasrep-r2://<hash>` markers, keeping the
+    // D1 payload small. Local storage is untouched: IndexedDB, drafts and
+    // backups always hold full data URLs. If R2 is unavailable (e.g. the
+    // PHOTOS binding is missing), uploads fail soft and the photo stays
+    // inline in the payload exactly as before.
+    const R2_MARKER_PREFIX = 'fasrep-r2://';
+    const cloudUploadedPhotoHashes = new Set(); // hashes already in R2 this session
+
+    function dataUrlToBytes(dataUrl) {
+      const comma = dataUrl.indexOf(',');
+      if (comma < 0) return null;
+      const header = dataUrl.slice(0, comma);
+      const mimeMatch = /data:([^;,]+)/.exec(header);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+      const raw = dataUrl.slice(comma + 1);
+      if (header.includes(';base64')) {
+        const bin = atob(raw);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return { bytes: bytes, mime: mime };
+      }
+      return { bytes: new TextEncoder().encode(decodeURIComponent(raw)), mime: mime };
+    }
+
+    async function sha256HexOfBytes(bytes) {
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function sha256HexOfDataUrl(dataUrl) {
+      const decoded = dataUrlToBytes(dataUrl);
+      if (!decoded) return null;
+      return sha256HexOfBytes(decoded.bytes);
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function cloudUploadPhoto(dataUrl) {
+      // Returns the fasrep-r2:// marker, or null when the photo must stay
+      // inline (R2 not configured, upload failed, undecodable data URL).
+      try {
+        const decoded = dataUrlToBytes(dataUrl);
+        if (!decoded) return null;
+        const hash = await sha256HexOfBytes(decoded.bytes);
+        if (!cloudUploadedPhotoHashes.has(hash)) {
+          const res = await fetch('/api/photos/' + hash, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': decoded.mime },
+            body: decoded.bytes,
+          });
+          if (!res.ok) return null; // includes 503 PHOTOS_NOT_CONFIGURED
+          cloudUploadedPhotoHashes.add(hash);
+        }
+        return R2_MARKER_PREFIX + hash;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function externalizePhotosForPush(node) {
+      if (typeof node === 'string') {
+        if (node.length > 1000 && node.startsWith('data:')) {
+          const marker = await cloudUploadPhoto(node);
+          return marker || node;
+        }
+        return node;
+      }
+      if (Array.isArray(node)) {
+        const values = await Promise.all(node.map(item => externalizePhotosForPush(item)));
+        for (let i = 0; i < node.length; i++) node[i] = values[i];
+        return node;
+      }
+      if (node && typeof node === 'object') {
+        const keys = Object.keys(node);
+        const values = await Promise.all(keys.map(k => externalizePhotosForPush(node[k])));
+        keys.forEach((k, i) => { node[k] = values[i]; });
+        return node;
+      }
+      return node;
+    }
+
+    async function cloudFetchPhotoDataUrl(hash) {
+      const res = await fetch('/api/photos/' + hash, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('photo download failed (HTTP ' + res.status + ')');
+      const blob = await res.blob();
+      return blobToDataUrl(blob);
+    }
+
+    // Replace every fasrep-r2:// marker in a server payload with the real
+    // data URL. Throws when any photo cannot be downloaded — callers must
+    // then keep the local copy and never let markers reach IndexedDB.
+    async function rehydratePhotosFromCloud(report) {
+      const hashes = new Set();
+      (function collect(node) {
+        if (typeof node === 'string') {
+          if (node.startsWith(R2_MARKER_PREFIX)) hashes.add(node.slice(R2_MARKER_PREFIX.length));
+          return;
+        }
+        if (Array.isArray(node)) { node.forEach(collect); return; }
+        if (node && typeof node === 'object') Object.values(node).forEach(collect);
+      })(report);
+      if (!hashes.size) return report;
+      const dataUrls = new Map();
+      for (const hash of hashes) {
+        dataUrls.set(hash, await cloudFetchPhotoDataUrl(hash));
+      }
+      (function substitute(node) {
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) node[i] = substitute(node[i]);
+          return node;
+        }
+        if (node && typeof node === 'object') {
+          for (const key of Object.keys(node)) node[key] = substitute(node[key]);
+          return node;
+        }
+        if (typeof node === 'string' && node.startsWith(R2_MARKER_PREFIX)) {
+          return dataUrls.get(node.slice(R2_MARKER_PREFIX.length));
+        }
+        return node;
+      })(report);
+      return report;
+    }
+
+    async function cloudSnapshotForPush(report) {
+      // Work on a deep clone: the live/local report object is never
+      // mutated, so local data keeps its full data URLs.
+      let body;
+      try { body = structuredClone(report); }
+      catch (err) { body = JSON.parse(JSON.stringify(report)); }
       // Local-only fields must not go to the server.
       delete body.archiveFolder;
       delete body._fileDirty;
       delete body._fileSavedAt;
       delete body.revision; // the server owns the revision counter
       body.userId = (currentUser && currentUser.id != null) ? currentUser.id : null;
-      return body;
+      return externalizePhotosForPush(body);
     }
 
     async function cloudPatchReport(id, body, expectedRev) {
@@ -19296,7 +19433,7 @@
       if (!currentUser || !report || !report.id) return;
       const id = String(report.id);
       try {
-        const body = cloudSnapshotForPush(report);
+        const body = await cloudSnapshotForPush(report);
         const knownRev = cloudRevisions[id];
         if (knownRev) {
           const r = await cloudPatchReport(id, body, knownRev);
@@ -19320,8 +19457,15 @@
             if (!(typeof currentId !== 'undefined' && currentId && String(currentId) === id)) {
               const full = await apiFetch('/api/reports/' + encodeURIComponent(id));
               if (full.res.ok && full.data && full.data.report) {
-                await dbPut(full.data.report);
-                if (typeof renderHome === 'function') renderHome();
+                try {
+                  await rehydratePhotosFromCloud(full.data.report);
+                  await dbPut(full.data.report);
+                  if (typeof renderHome === 'function') renderHome();
+                } catch (photoErr) {
+                  // A photo could not be downloaded: keep the local copy
+                  // rather than storing fasrep-r2:// markers in IndexedDB.
+                  console.warn('[CloudSync] photo download failed; local copy kept for report ' + id, photoErr);
+                }
               }
             }
           }
@@ -19381,6 +19525,14 @@
             if (typeof currentId !== 'undefined' && currentId && String(currentId) === id) continue;
             const full = await apiFetch('/api/reports/' + encodeURIComponent(id));
             if (full.res.ok && full.data && full.data.report) {
+              try {
+                await rehydratePhotosFromCloud(full.data.report);
+              } catch (photoErr) {
+                // Abort this report only: the local copy stays untouched
+                // and markers never reach IndexedDB.
+                console.warn('[CloudSync] photo download failed; skipped report ' + id, photoErr);
+                continue;
+              }
               await dbPut(full.data.report);
               if (full.data.revision) cloudRevisions[id] = full.data.revision;
               pulled++;
