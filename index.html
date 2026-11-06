@@ -17066,11 +17066,12 @@
     async function handleReportLimitReached() {
       let doBackup = false;
       try {
-        doBackup = confirm(
-          'The app has reached its limit of ' + MAX_LOCAL_REPORTS + ' reports.\n\n' +
-          'OK = Export a JSON backup now\n' +
-          'Cancel = No backup\n\n' +
-          'Then delete some reports in the app (files already saved stay intact) and try again.'
+        doBackup = await appConfirm(
+          L(
+            'Thiết bị này đã chứa tối đa ' + MAX_LOCAL_REPORTS + ' báo cáo lưu trong app.\n\nHãy xuất bản sao lưu JSON ngay, rồi xoá bớt báo cáo trong app (các file đã lưu vẫn nguyên vẹn) và thử lại.',
+            'This device already holds the maximum of ' + MAX_LOCAL_REPORTS + ' reports stored in the app.\n\nExport a JSON backup now, then delete some reports in the app (files already saved stay intact) and try again.'
+          ),
+          { title: 'Report limit reached', confirmLabel: 'Export backup now', cancelLabel: 'Not now' }
         );
       } catch (err) { doBackup = false; }
       if (doBackup) {
