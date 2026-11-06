@@ -6,6 +6,7 @@ import {
   invokeFunction,
   readJson,
   loadPhotosHandlers,
+  loadAdminPhotosUsageHandlers,
   loadReportsHandlers,
   createDirectUser,
   createDirectSession,
@@ -268,5 +269,154 @@ describe('Tier 3: Cross-Feature 6 — R2 Photo Storage (content-addressed, per-u
     const getJson = await readJson(getRes);
     assert.equal(getJson.status, 200);
     assert.equal(getJson.body.report.prodPhotos[0].url, marker);
+  });
+});
+
+describe('Tier 3: Cross-Feature 6b — R2 Budget Guard (photo_objects ledger)', () => {
+  let db;
+  let env;
+  let photos;
+  let usage;
+
+  const photoBytes = new TextEncoder().encode('fake-jpeg-binary-content-for-r2-tests');
+  const photo2Bytes = new TextEncoder().encode('a-second-distinct-photo-payload');
+  let photoHash;
+  let photo2Hash;
+
+  beforeEach(async () => {
+    db = createMockD1();
+    env = createTestEnv(db);
+    photos = await loadPhotosHandlers();
+    usage = await loadAdminPhotosUsageHandlers();
+    photoHash = await sha256Hex(photoBytes);
+    photo2Hash = await sha256Hex(photo2Bytes);
+  });
+
+  async function makeUser(email, role = 'user', targetEnv = env) {
+    const user = await createDirectUser(targetEnv, { email, role });
+    const { cookieValue } = await createDirectSession(targetEnv, user.id);
+    return { user, cookie: cookieValue };
+  }
+
+  async function putPhoto(cookie, hash = photoHash, bytes = photoBytes, targetEnv = env) {
+    return invokePhoto(photos.photoPut, {
+      method: 'PUT',
+      hash,
+      cookie,
+      body: bytes,
+      contentType: 'image/jpeg',
+      env: targetEnv,
+    });
+  }
+
+  async function ledgerRows() {
+    const rows = await db.prepare(
+      'SELECT object_key, user_id, size_bytes FROM photo_objects ORDER BY object_key'
+    ).all();
+    return rows.results;
+  }
+
+  it('TC-C34: A successful PUT records one ledger row with the exact byte size', async () => {
+    const a = await makeUser('ledger.a@sofacompany.com');
+
+    const res = await putPhoto(a.cookie);
+    assert.equal((await readJson(res)).status, 200);
+
+    const rows = await ledgerRows();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].object_key, `u${a.user.id}/${photoHash}`);
+    assert.equal(rows[0].user_id, String(a.user.id));
+    assert.equal(rows[0].size_bytes, photoBytes.length);
+  });
+
+  it('TC-C35: Re-uploading the same photo returns ok without double counting or re-storing', async () => {
+    const a = await makeUser('ledger.a@sofacompany.com');
+
+    assert.equal((await readJson(await putPhoto(a.cookie))).status, 200);
+    const again = await putPhoto(a.cookie);
+    const againJson = await readJson(again);
+    assert.equal(againJson.status, 200);
+    assert.equal(againJson.body.ok, true);
+
+    assert.equal((await ledgerRows()).length, 1);
+    assert.equal(env.PHOTOS._store.size, 1);
+  });
+
+  it('TC-C36: PUT beyond the storage budget is refused (507) and stores nothing', async () => {
+    // Budget fits the first photo with a little headroom, never both.
+    const budgetEnv = createTestEnv(db, { R2_BUDGET_BYTES: String(photoBytes.length + 10) });
+    const a = await makeUser('ledger.a@sofacompany.com', 'user', budgetEnv);
+
+    const first = await putPhoto(a.cookie, photoHash, photoBytes, budgetEnv);
+    assert.equal((await readJson(first)).status, 200);
+
+    const second = await putPhoto(a.cookie, photo2Hash, photo2Bytes, budgetEnv);
+    const secondJson = await readJson(second);
+    assert.equal(secondJson.status, 507);
+    assert.equal(secondJson.body.error, 'R2_STORAGE_BUDGET_EXCEEDED');
+
+    // No object stored for the second photo, and the ledger is unchanged
+    assert.equal(budgetEnv.PHOTOS._store.size, 1);
+    assert.equal((await ledgerRows()).length, 1);
+    const getRes = await invokePhoto(photos.photoGet, {
+      method: 'GET',
+      hash: photo2Hash,
+      cookie: a.cookie,
+      env: budgetEnv,
+    });
+    assert.equal(getRes.status, 404);
+  });
+
+  it('TC-C37: Admin photos-usage reports the ledger; regular users are forbidden', async () => {
+    const a = await makeUser('ledger.a@sofacompany.com');
+    const admin = await makeUser('ledger.admin@sofacompany.com', 'admin');
+    await putPhoto(a.cookie);
+    await putPhoto(a.cookie, photo2Hash, photo2Bytes);
+
+    const res = await invokeFunction(usage.photosUsageGet, {
+      method: 'GET',
+      url: 'http://localhost/api/admin/photos-usage',
+      headers: { cookie: admin.cookie },
+      env,
+    });
+    const json = await readJson(res);
+    assert.equal(json.status, 200);
+    assert.equal(json.body.ok, true);
+    assert.equal(json.body.objects, 2);
+    assert.equal(json.body.bytesUsed, photoBytes.length + photo2Bytes.length);
+    assert.equal(json.body.budgetBytes, 9000000000);
+    assert.equal(json.body.percentUsed, 0);
+
+    const userRes = await invokeFunction(usage.photosUsageGet, {
+      method: 'GET',
+      url: 'http://localhost/api/admin/photos-usage',
+      headers: { cookie: a.cookie },
+      env,
+    });
+    assert.equal((await readJson(userRes)).status, 403);
+
+    const anonRes = await invokeFunction(usage.photosUsageGet, {
+      method: 'GET',
+      url: 'http://localhost/api/admin/photos-usage',
+      env,
+    });
+    assert.equal(anonRes.status, 401);
+  });
+
+  it('TC-C38: DELETE removes both the stored object and its ledger row', async () => {
+    const a = await makeUser('ledger.a@sofacompany.com');
+    await putPhoto(a.cookie);
+    assert.equal((await ledgerRows()).length, 1);
+
+    const delRes = await invokePhoto(photos.photoDelete, {
+      method: 'DELETE',
+      hash: photoHash,
+      cookie: a.cookie,
+      env,
+    });
+    assert.equal((await readJson(delRes)).status, 200);
+
+    assert.equal((await ledgerRows()).length, 0);
+    assert.equal(env.PHOTOS._store.size, 0);
   });
 });
