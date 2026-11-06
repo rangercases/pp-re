@@ -1,5 +1,6 @@
 import { fail, json, serverError } from '../../_lib/http.js';
 import { requireUser } from '../../_lib/session.js';
+import { r2BudgetBytes } from '../../_lib/r2budget.js';
 
 // Content-addressed photo storage in R2. Clients upload a photo's raw
 // bytes under its SHA-256 hash; report payloads in D1 then reference the
@@ -49,7 +50,54 @@ export async function onRequestPut({ request, env, params }) {
 
     const contentType = request.headers.get('content-type') || 'application/octet-stream';
     const key = `u${session.user.id}/${hash}`;
+
+    // ── R2 free-tier budget guard ──────────────────────────────────
+    // The app is the only writer to the bucket and R2 bills storage
+    // past the 10 GB free allowance, so every stored object is
+    // accounted for in the D1 photo_objects ledger and new uploads
+    // are refused before the budget (default 9 GB, see _lib/r2budget)
+    // can be crossed. Re-uploading an already-counted object is a
+    // no-op: the bytes behind a hash never change, so this also saves
+    // Class A operations. If the ledger cannot be read, fail safe for
+    // the wallet (503, store nothing) — the client degrades to inline
+    // payload storage on any upload failure, so the app keeps working.
+    const budget = r2BudgetBytes(env);
+    try {
+      const existing = await env.DB.prepare(
+        'SELECT object_key FROM photo_objects WHERE object_key = ?'
+      )
+        .bind(key)
+        .first();
+      if (existing) return json({ ok: true, hash });
+      const totalRow = await env.DB.prepare(
+        'SELECT COALESCE(SUM(size_bytes), 0) AS total FROM photo_objects'
+      ).first();
+      const totalBytes = totalRow && Number(totalRow.total) ? Number(totalRow.total) : 0;
+      if (totalBytes + bytes.length > budget) {
+        return fail('R2_STORAGE_BUDGET_EXCEEDED', 507);
+      }
+    } catch {
+      return fail('PHOTOS_ACCOUNTING_UNAVAILABLE', 503);
+    }
+
     await env.PHOTOS.put(key, bytes, { httpMetadata: { contentType } });
+
+    try {
+      await env.DB.prepare(
+        'INSERT OR IGNORE INTO photo_objects (object_key, user_id, size_bytes, created_at) VALUES (?, ?, ?, ?)'
+      )
+        .bind(key, String(session.user.id), bytes.length, Date.now())
+        .run();
+    } catch {
+      // The object is stored but uncounted; remove it again so the
+      // ledger never under-counts what the bucket actually holds.
+      try {
+        await env.PHOTOS.delete(key);
+      } catch {
+        // Best effort only.
+      }
+      return fail('PHOTOS_ACCOUNTING_UNAVAILABLE', 503);
+    }
     return json({ ok: true, hash });
   } catch (err) {
     return serverError(err);
@@ -103,6 +151,13 @@ export async function onRequestDelete({ request, env, params }) {
 
     const key = `u${session.user.id}/${hash}`;
     await env.PHOTOS.delete(key);
+    // Keep the budget ledger in step. Best-effort: a missing ledger
+    // table must never break a delete.
+    try {
+      await env.DB.prepare('DELETE FROM photo_objects WHERE object_key = ?').bind(key).run();
+    } catch {
+      // Ignored on purpose.
+    }
     return json({ ok: true, hash });
   } catch (err) {
     return serverError(err);
