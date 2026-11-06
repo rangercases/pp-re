@@ -8,5 +8,11 @@
       "database_name": "fasrep-auth",
       "database_id": "dabae723-d9e3-4240-9c48-80c8baf94fea"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "fasrep-photos"
+    }
   ]
 }

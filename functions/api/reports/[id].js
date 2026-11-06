@@ -276,6 +276,9 @@ export async function onRequestDelete({ request, env, params }) {
       return error('Report not found', 404);
     }
 
+    // Note: photos referenced by this report (fasrep-r2://<hash> markers)
+    // are intentionally NOT deleted from R2 — the objects are
+    // content-addressed and may be shared with other reports.
     const nowIso = new Date().toISOString();
     await env.DB.prepare(
       `UPDATE reports SET deleted_at = ? WHERE id = ?`
