@@ -1659,45 +1659,9 @@
       margin-top: 4px;
       margin-bottom: 16px;
     }
-    body.recap-mode .photo-slot.is-lone-center {
-      grid-column: 1 / -1 !important;
-      justify-self: center !important;
-      margin-left: auto !important;
-      margin-right: auto !important;
-      width: 65% !important;
-      max-width: 520px !important;
-      aspect-ratio: 16 / 10 !important;
-    }
-    @media (max-width: 640px) {
-      body.recap-mode .photo-slot.is-lone-center {
-        width: 100% !important;
-      }
-    }
-    .btn-add-cover-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 13px;
-      font-family: var(--font-body);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      border-radius: 9999px;
-      background: #ffffff;
-      color: var(--ink-strong);
-      border: 1px solid rgba(0,0,0,0.18);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      user-select: none;
-    }
-    .btn-add-cover-pill:hover {
-      background: var(--module-light, #F4F4F5);
-      border-color: rgba(0,0,0,0.15);
-      color: var(--module-theme, #52525B);
-    }
-    .btn-add-cover-pill:active {
-      transform: scale(0.97);
+    /* RECAP OVERVIEW: PURE IMAGE WITHOUT TITLE INPUT BAR */
+    body.recap-mode #cardOverviewPhotos .pbar {
+      display: none !important;
     }
 
     .fcell {
@@ -7073,13 +7037,7 @@
       <div class="overview-summary-strip" id="overviewSummaryStrip"></div>
 
       <div class="sec-card" id="cardOverviewPhotos">
-        <div class="sec-head" id="headOverviewPhotos" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>OVERVIEW</span>
-          <button type="button" class="btn-add-cover-pill" id="btnAddCoverPhoto" onclick="addCoverSlot()" style="display:none;" title="Add second photo">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>Add Photo</span>
-          </button>
-        </div>
+        <div class="sec-head" id="headOverviewPhotos">OVERVIEW</div>
         <div class="photo-grid-2" id="coverPhotos"></div>
       </div>
     </div>
@@ -13537,19 +13495,16 @@
       label.onclick = () => toggleCheck(group, opt); return label;
     }
 
+    function getMaxCoverCapacity() {
+      return (D && D.moduleType === 'sample-review-recap') ? 2 : 4;
+    }
+
     function getCoverSlotKeys() {
-      if (D && D.moduleType === 'sample-review-recap') {
-        if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
-          D.coverSlots = ['FRONT_VIEW'];
-        }
-        // If an existing report has 2 slots but the second slot has no photo, start with 1 centered slot and show the + button
-        if (D.coverSlots.length > 1 && (!D.coverPhotos || !D.coverPhotos[D.coverSlots[1]]) && (!D.coverTitles || !D.coverTitles[D.coverSlots[1]] || D.coverTitles[D.coverSlots[1]] === 'DETAIL VIEW')) {
-          D.coverSlots = ['FRONT_VIEW'];
-        }
-        return D.coverSlots.slice(0, 2);
-      }
+      const defaultSlots = (D && D.moduleType === 'sample-review-recap')
+        ? ['FRONT_VIEW', 'DETAIL_VIEW']
+        : COVER_SLOTS.map(s => s.replace(/ /g, '_'));
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
-        D.coverSlots = COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+        D.coverSlots = defaultSlots.slice();
       }
       return D.coverSlots;
     }
@@ -13664,30 +13619,20 @@
     }
 
     function addCoverSlot() {
+      const maxCap = getMaxCoverCapacity();
+      if (getCoverCapacityUsage() >= maxCap) {
+        showToast(maxCap === 2
+          ? 'Overview layout: max 2 photos'
+          : 'Overview layout: max 2 large, 1 large + 2 small, or 4 small photos (fits 1 page)'
+        );
+        return;
+      }
       const keys = getCoverSlotKeys();
-      if (D && D.moduleType === 'sample-review-recap') {
-        if (keys.length >= 2) {
-          showToast('Maximum 2 cover photos allowed for Recap report');
-          return;
-        }
-        const newKey = keys.includes('FRONT_VIEW') ? 'DETAIL_VIEW' : `VIEW_${Date.now()}`;
-        keys.push(newKey);
-        if (!D.coverTitles) D.coverTitles = {};
-        D.coverTitles[newKey] = 'DETAIL VIEW';
-        as();
-        renderCoverSlots();
-        showToast('✓ Added second photo slot');
-        return;
-      }
-      if (getCoverCapacityUsage() >= 4) {
-        showToast('Overview layout: max 2 large, 1 large + 2 small, or 4 small photos (fits 1 page)');
-        return;
-      }
       const nextNum = keys.length + 1;
       const newKey = `ANGLE_VIEW_${Date.now()}`;
       keys.push(newKey);
       if (!D.coverTitles) D.coverTitles = {};
-      D.coverTitles[newKey] = `PHOTO VIEW #${nextNum}`;
+      D.coverTitles[newKey] = (D && D.moduleType === 'sample-review-recap') ? '' : `PHOTO VIEW #${nextNum}`;
       pushHistory('Add Overview slot');
       as();
       renderCoverSlots();
@@ -13715,20 +13660,17 @@
       const el = document.getElementById(containerId);
       if (!el) return;
       const keys = getCoverSlotKeys();
+      const isRecap = D && D.moduleType === 'sample-review-recap';
+      const defaultLabels = isRecap ? ['', ''] : COVER_SLOTS;
       const slots = keys.map((k, i) => {
-        const defaultLabel = COVER_SLOTS[i] || k.replace(/_/g, ' ');
+        const defaultLabel = defaultLabels[i] || (isRecap ? '' : k.replace(/_/g, ' '));
         return { key: k, label: defaultLabel };
       });
       buildSlotGrid(containerId, slots, 'slot', 'cover');
 
-      const btnAdd = document.getElementById('btnAddCoverPhoto');
-      const isRecap = D && D.moduleType === 'sample-review-recap';
-      const canAdd = isRecap ? (keys.length < 2) : (getCoverCapacityUsage() < 4);
-      if (btnAdd) {
-        btnAdd.style.display = canAdd ? 'inline-flex' : 'none';
-      }
-      if (!isRecap && getCoverCapacityUsage() < 4) {
-        // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá 4 điểm
+      const maxCap = getMaxCoverCapacity();
+      if (getCoverCapacityUsage() < maxCap) {
+        // Tự động gắn thẻ Add Photo trực tiếp vào lưới như bên photo nếu chưa vượt quá maxCap
         const addBtn = document.createElement('div');
         addBtn.className = 'add-photo-btn ignore-drag is-lone-center';
         addBtn.title = 'Click to add slot, drop or press Ctrl+V to paste';
@@ -13738,7 +13680,7 @@
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
           <span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span>
-            <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
+          <span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>
         `;
         addBtn.onclick = () => addCoverSlot();
         attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
@@ -17991,9 +17933,11 @@
         const dataObj = cp[key];
         const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         if (img) {
-          const slotTitle = (D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) 
-            ? D.coverTitles[key].trim() 
-            : (COVER_SLOTS[i] || key.replace(/_/g, ' '));
+          const slotTitle = isRecap
+            ? ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) || '')
+            : ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) 
+                ? D.coverTitles[key].trim() 
+                : (COVER_SLOTS[i] || key.replace(/_/g, ' ')));
           const isFull = isCoverSlotFull(key);
           validCovers.push({ key, img, title: slotTitle, isFull });
         }
@@ -18052,12 +17996,15 @@
                 barW = bounds.w;
                 barY = bounds.y + bounds.h;
               }
-              doc.setFillColor(245, 242, 237);
-              doc.rect(barX, barY, barW, barH, 'F');
-              doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
-              doc.text(c0.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
-
-              y = barY + barH + gapY;
+              if (c0.title) {
+                doc.setFillColor(245, 242, 237);
+                doc.rect(barX, barY, barW, barH, 'F');
+                doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
+                doc.text(c0.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+                y = barY + barH + gapY;
+              } else {
+                y = barY + gapY;
+              }
               cIdx++;
             } else {
               // ẢNH BÌNH THƯỜNG: 2 ẢNH / HÀNG (HOẶC CĂN GIỮA NẾU CHỈ CÓ 1 ẢNH TRÊN HÀNG)
@@ -18077,12 +18024,15 @@
                   barW = bounds.w;
                   barY = bounds.y + bounds.h;
                 }
-                doc.setFillColor(245, 242, 237);
-                doc.rect(barX, barY, barW, barH, 'F');
-                doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
-                doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
-
-                if (barY + barH > maxY) maxY = barY + barH;
+                if (c.title) {
+                  doc.setFillColor(245, 242, 237);
+                  doc.rect(barX, barY, barW, barH, 'F');
+                  doc.setTextColor(80, 75, 70); doc.setFont(fontFam, 'bold'); doc.setFontSize(7.5);
+                  doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+                  if (barY + barH > maxY) maxY = barY + barH;
+                } else {
+                  if (barY > maxY) maxY = barY;
+                }
               });
 
               y = maxY + gapY;
@@ -18109,14 +18059,17 @@
             barY = bounds.y + bounds.h;
           }
 
-          doc.setFillColor(245, 242, 237);
-          doc.rect(barX, barY, barW, barH, 'F');
-          doc.setTextColor(80, 75, 70);
-          doc.setFont(fontFam, 'bold');
-          doc.setFontSize(7.5);
-          doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
-
-          y = barY + barH + 6;
+          if (c.title) {
+            doc.setFillColor(245, 242, 237);
+            doc.rect(barX, barY, barW, barH, 'F');
+            doc.setTextColor(80, 75, 70);
+            doc.setFont(fontFam, 'bold');
+            doc.setFontSize(7.5);
+            doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+            y = barY + barH + 6;
+          } else {
+            y = barY + 6;
+          }
         } else if (validCovers.length === 2) {
           // 2 ẢNH: XẾP SONG SONG 2 BÊN CÂN ĐỐI
           const pw = (totalContentW - gapX) / 2;
@@ -18137,14 +18090,17 @@
               barY = bounds.y + bounds.h;
             }
 
-            doc.setFillColor(245, 242, 237);
-            doc.rect(barX, barY, barW, barH, 'F');
-            doc.setTextColor(80, 75, 70);
-            doc.setFont(fontFam, 'bold');
-            doc.setFontSize(7.5);
-            doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
-
-            if (barY + barH > maxY) maxY = barY + barH;
+            if (c.title) {
+              doc.setFillColor(245, 242, 237);
+              doc.rect(barX, barY, barW, barH, 'F');
+              doc.setTextColor(80, 75, 70);
+              doc.setFont(fontFam, 'bold');
+              doc.setFontSize(7.5);
+              doc.text(c.title.toUpperCase(), barX + barW / 2, barY + (barH / 2) + 1, { align: 'center', maxWidth: barW - 2 });
+              if (barY + barH > maxY) maxY = barY + barH;
+            } else {
+              if (barY > maxY) maxY = barY;
+            }
           });
 
           y = maxY + 6;
