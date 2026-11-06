@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createPrototypeReportFixture } from '../helpers/fixtures.js';
 
@@ -13,18 +15,21 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-B4.1: Reject report update when provided revision does not match current server revision (HTTP 409)', async () => {
     const fixture = createPrototypeReportFixture({ id: 'revision_conflict_test' });
 
     // Create (revision 1)
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -32,7 +37,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     });
 
     // Attempt PATCH providing stale revision 99
-    const patchRes = await invokeFunction(reports.reportPatch, {
+    const patchRes = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/revision_conflict_test',
       params: { id: 'revision_conflict_test' },
@@ -54,14 +59,14 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
   it('TC-B4.2: Update succeeds when expectedRevision matches and increments revision counter', async () => {
     const fixture = createPrototypeReportFixture({ id: 'rev_match_test' });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
       env,
     });
 
-    const patchRes = await invokeFunction(reports.reportPatch, {
+    const patchRes = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/rev_match_test',
       params: { id: 'rev_match_test' },
@@ -83,7 +88,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     const fixture = createPrototypeReportFixture({ id: 'sequential_rev_test' });
 
     // Rev 1
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -91,7 +96,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     });
 
     // Rev 1 -> 2
-    const res2 = await invokeFunction(reports.reportPatch, {
+    const res2 = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/sequential_rev_test',
       params: { id: 'sequential_rev_test' },
@@ -101,7 +106,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     assert.equal((await readJson(res2)).body.revision, 2);
 
     // Rev 2 -> 3
-    const res3 = await invokeFunction(reports.reportPatch, {
+    const res3 = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/sequential_rev_test',
       params: { id: 'sequential_rev_test' },
@@ -112,7 +117,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     assert.equal(json3.body.revision, 3);
 
     // Verify GET returns revision 3
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/sequential_rev_test?meta=1',
       params: { id: 'sequential_rev_test' },
@@ -126,7 +131,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     const fixture = createPrototypeReportFixture({ id: 'concurrent_sim_test' });
 
     // Create report (rev 1)
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -138,7 +143,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     const clientB_revision = 1;
 
     // Client A saves first -> revision becomes 2
-    const resA = await invokeFunction(reports.reportPatch, {
+    const resA = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/concurrent_sim_test',
       params: { id: 'concurrent_sim_test' },
@@ -148,7 +153,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
     assert.equal((await readJson(resA)).status, 200);
 
     // Client B tries to save with original revision 1 -> rejected with 409
-    const resB = await invokeFunction(reports.reportPatch, {
+    const resB = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/concurrent_sim_test',
       params: { id: 'concurrent_sim_test' },
@@ -161,7 +166,7 @@ describe('Tier 2: Boundary 4 — Optimistic Concurrency & Revision Locking (F3)'
   });
 
   it('TC-B4.5: Updating non-existent report returns HTTP 404 Report not found', async () => {
-    const patchRes = await invokeFunction(reports.reportPatch, {
+    const patchRes = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/non_existent_id',
       params: { id: 'non_existent_id' },

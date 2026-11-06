@@ -28,15 +28,18 @@ describe('Tier 3: Cross-Feature 4 — User Isolation & Session Security', () => 
     reports = await loadReportsHandlers();
   });
 
-  it('TC-C16: Report creation tracks creating userId from payload', async () => {
+  it('TC-C16: Report creation files the report under the session user and ignores body userId', async () => {
     const userA = await createDirectUser(env, { email: 'engineer.a@sofacompany.com', name: 'Engineer A' });
+    const { cookieValue } = await createDirectSession(env, userA.id);
     const fixture = createPrototypeReportFixture({
       id: 'user_a_report',
-      userId: String(userA.id),
+      // A forged owner in the body must not win over the session.
+      userId: '999999',
     });
 
     const postRes = await invokeFunction(reports.reportsPost, {
       method: 'POST',
+      headers: { cookie: cookieValue },
       body: fixture,
       env,
     });
@@ -46,6 +49,7 @@ describe('Tier 3: Cross-Feature 4 — User Isolation & Session Security', () => 
       method: 'GET',
       url: 'http://localhost/api/reports/user_a_report?meta=1',
       params: { id: 'user_a_report' },
+      headers: { cookie: cookieValue },
       env,
     });
     const getJson = await readJson(getRes);
@@ -53,14 +57,21 @@ describe('Tier 3: Cross-Feature 4 — User Isolation & Session Security', () => 
   });
 
   it('TC-C17: Direct DB verification confirms report user_id association and index presence', async () => {
+    const user = await createDirectUser(env, { email: 'engineer.db@sofacompany.com', name: 'Engineer DB' });
+    const { cookieValue } = await createDirectSession(env, user.id);
     const fixture = createPrototypeReportFixture({
       id: 'db_index_test',
       userId: '42',
     });
-    await invokeFunction(reports.reportsPost, { method: 'POST', body: fixture, env });
+    await invokeFunction(reports.reportsPost, {
+      method: 'POST',
+      headers: { cookie: cookieValue },
+      body: fixture,
+      env,
+    });
 
     const row = await db.prepare('SELECT id, user_id FROM reports WHERE id = ?').bind('db_index_test').first();
-    assert.equal(row.user_id, '42');
+    assert.equal(row.user_id, String(user.id));
 
     // Verify index exists
     const idx = await db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_reports_user_id'").first();

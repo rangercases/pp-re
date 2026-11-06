@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createPrototypeReportFixture } from '../helpers/fixtures.js';
 
@@ -13,17 +15,20 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-2.1: POST /api/reports creates a new report and returns HTTP 200 with id and revision 1', async () => {
     const fixture = createPrototypeReportFixture({ id: '1730528400001' });
 
-    const res = await invokeFunction(reports.reportsPost, {
+    const res = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -46,7 +51,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     });
 
     // Create report
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -54,7 +59,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     });
 
     // Get report
-    const res = await invokeFunction(reports.reportGet, {
+    const res = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/1730528400002',
       params: { id: '1730528400002' },
@@ -78,14 +83,14 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
       verdict: 'APPROVED',
     });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
       env,
     });
 
-    const res = await invokeFunction(reports.reportGet, {
+    const res = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/1730528400003?meta=1',
       params: { id: '1730528400003' },
@@ -110,7 +115,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
         productName: `Item ${i}`,
         createdAt: new Date(Date.now() + i * 1000).toISOString(),
       });
-      await invokeFunction(reports.reportsPost, {
+      await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
         method: 'POST',
         url: 'http://localhost/api/reports',
         body: f,
@@ -118,7 +123,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
       });
     }
 
-    const res = await invokeFunction(reports.reportsGet, {
+    const res = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?page=1&limit=2',
       env,
@@ -139,7 +144,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
       verdict: 'IN PROGRESS',
     });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -147,7 +152,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     });
 
     // Update verdict to APPROVED
-    const patchRes = await invokeFunction(reports.reportPatch, {
+    const patchRes = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/1730528400005',
       params: { id: '1730528400005' },
@@ -166,7 +171,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     assert.equal(patchJson.body.message, 'Report updated');
 
     // Verify GET reflects revision 2 and updated verdict
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/1730528400005',
       params: { id: '1730528400005' },
@@ -180,7 +185,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
   it('TC-2.6: DELETE /api/reports/:id soft deletes report and excludes it from subsequent GET list', async () => {
     const fixture = createPrototypeReportFixture({ id: '1730528400006' });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -188,7 +193,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     });
 
     // Delete report
-    const delRes = await invokeFunction(reports.reportDelete, {
+    const delRes = await invokeFunction(reports.reportDelete, { headers: { cookie: ownerCookie },
       method: 'DELETE',
       url: 'http://localhost/api/reports/1730528400006',
       params: { id: '1730528400006' },
@@ -200,7 +205,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     assert.equal(delJson.body.message, 'Report deleted');
 
     // Subsequent GET :id returns 404
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/1730528400006',
       params: { id: '1730528400006' },
@@ -210,7 +215,7 @@ describe('Tier 1: Feature 2 — Standardized Reports CRUD API', () => {
     assert.equal(getJson.status, 404);
 
     // Excluded from GET list
-    const listRes = await invokeFunction(reports.reportsGet, {
+    const listRes = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports',
       env,

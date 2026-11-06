@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createPrototypeReportFixture, createPreProdReportFixture } from '../helpers/fixtures.js';
 
@@ -13,15 +15,18 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
 
     // Seed 4 varied reports
     // 1. Prototype - Ricardo Table - APPROVED
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       body: createPrototypeReportFixture({
         id: 'rep_1',
@@ -36,7 +41,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
     });
 
     // 2. Prototype - Hubert Table - REPAIR
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       body: createPrototypeReportFixture({
         id: 'rep_2',
@@ -51,7 +56,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
     });
 
     // 3. Pre-production - Paula Sofa - APPROVED
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       body: createPreProdReportFixture({
         id: 'rep_3',
@@ -66,7 +71,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
     });
 
     // 4. Pre-production - Astha Chaise - IN PROGRESS
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       body: createPreProdReportFixture({
         id: 'rep_4',
@@ -82,7 +87,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
   });
 
   it('TC-C1: Filter by moduleType=prototype returns only prototype reports', async () => {
-    const res = await invokeFunction(reports.reportsGet, {
+    const res = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?moduleType=prototype',
       env,
@@ -97,7 +102,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
   });
 
   it('TC-C2: Filter by status=APPROVED returns only approved reports across modules', async () => {
-    const res = await invokeFunction(reports.reportsGet, {
+    const res = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?status=APPROVED',
       env,
@@ -112,7 +117,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
   });
 
   it('TC-C3: Combined filter: moduleType=prototype AND search=Ricardo AND status=APPROVED', async () => {
-    const res = await invokeFunction(reports.reportsGet, {
+    const res = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?moduleType=prototype&search=Ricardo&status=APPROVED',
       env,
@@ -126,7 +131,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
   });
 
   it('TC-C4: Pagination limits results per page and calculates total matching', async () => {
-    const res = await invokeFunction(reports.reportsGet, {
+    const res = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?page=2&limit=2',
       env,
@@ -142,7 +147,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
 
   it('TC-C5: Search term matches across factory, model number, and PO number', async () => {
     // Search by factory "Vien Lam"
-    const resFactory = await invokeFunction(reports.reportsGet, {
+    const resFactory = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?search=' + encodeURIComponent('Vien Lam'),
       env,
@@ -150,7 +155,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
     assert.equal((await readJson(resFactory)).body.total, 1);
 
     // Search by model number "MD 2756"
-    const resModel = await invokeFunction(reports.reportsGet, {
+    const resModel = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?search=2756',
       env,
@@ -158,7 +163,7 @@ describe('Tier 3: Cross-Feature 1 — Filter by ModuleType, Status & Search Text
     assert.equal((await readJson(resModel)).body.total, 1);
 
     // Search by PO number "PO-7711"
-    const resPO = await invokeFunction(reports.reportsGet, {
+    const resPO = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?search=7711',
       env,

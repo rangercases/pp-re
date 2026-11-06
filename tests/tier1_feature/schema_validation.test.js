@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createPrototypeReportFixture, createLargePayloadFixture } from '../helpers/fixtures.js';
 
@@ -13,18 +15,21 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-3.1: Rejects report creation when id is missing or empty (HTTP 400)', async () => {
     const fixture = createPrototypeReportFixture();
     delete fixture.id;
 
-    const res = await invokeFunction(reports.reportsPost, {
+    const res = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -46,7 +51,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
       desc: '',
     });
 
-    const res = await invokeFunction(reports.reportsPost, {
+    const res = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -63,7 +68,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     const res = await invokeFunction(reports.reportsPost, {
       method: 'POST',
       url: 'http://localhost/api/reports',
-      headers: { 'content-type': 'application/json' },
+      headers: { cookie: ownerCookie, 'content-type': 'application/json' },
       body: '{ malformed json: not valid }',
       env,
     });
@@ -78,7 +83,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     const res = await invokeFunction(reports.reportsPost, {
       method: 'POST',
       url: 'http://localhost/api/reports',
-      headers: { 'content-type': 'text/plain' },
+      headers: { cookie: ownerCookie, 'content-type': 'text/plain' },
       body: 'plain text content',
       env,
     });
@@ -93,7 +98,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     const fixture = createPrototypeReportFixture({ id: 'duplicate_test_100' });
 
     // First create succeeds
-    const res1 = await invokeFunction(reports.reportsPost, {
+    const res1 = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -102,7 +107,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     assert.equal((await readJson(res1)).status, 200);
 
     // Second create with same ID returns 409
-    const res2 = await invokeFunction(reports.reportsPost, {
+    const res2 = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -119,7 +124,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     // Generate ~1.2MB payload
     const largeFixture = createLargePayloadFixture(1200000, { id: 'chunk_test_large' });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: largeFixture,
@@ -140,7 +145,7 @@ describe('Tier 1: Feature 3 — Report Schema Validation & Chunk Storage', () =>
     }
 
     // Verify GET reassembles identical large payload
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/chunk_test_large',
       params: { id: 'chunk_test_large' },

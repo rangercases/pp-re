@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { UNICODE_VIETNAMESE_SAMPLES, createPrototypeReportFixture } from '../helpers/fixtures.js';
 
@@ -13,11 +15,14 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-B3.1: Preserves full Vietnamese diacritics in title, product, factory, and notes without character loss', async () => {
@@ -35,7 +40,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
       ],
     });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -43,7 +48,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/vn_unicode_report_1',
       params: { id: 'vn_unicode_report_1' },
@@ -66,7 +71,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
       factory: 'Safe "Factory" & Co. <Vietnam>',
     });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -74,7 +79,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/xss_sanitization_report',
       params: { id: 'xss_sanitization_report' },
@@ -94,7 +99,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
       productName: emojiText,
     });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -102,7 +107,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/emoji_test_report',
       params: { id: 'emoji_test_report' },
@@ -121,7 +126,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
       factory: 'Thịnh Phú Co., Ltd',
     });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -129,7 +134,7 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
     });
 
     // Search by "Cà Phê"
-    const searchRes = await invokeFunction(reports.reportsGet, {
+    const searchRes = await invokeFunction(reports.reportsGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports?search=' + encodeURIComponent('Cà Phê'),
       env,
@@ -149,14 +154,14 @@ describe('Tier 2: Boundary 3 — Vietnamese Unicode Typography & Special Charact
       reportTitle: textWithAccents,
     });
 
-    await invokeFunction(reports.reportsPost, {
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
       env,
     });
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/accents_test_report?meta=1',
       params: { id: 'accents_test_report' },

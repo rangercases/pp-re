@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createLargePayloadFixture, createPrototypeReportFixture } from '../helpers/fixtures.js';
 
@@ -13,11 +15,14 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-C6: Splits 2.5MB payload across 5+ chunks and reassembles exact original JSON object', async () => {
@@ -28,7 +33,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
     });
 
     // Save
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -44,7 +49,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
     assert.ok(chunkRows.results.length >= 5, `Expected >= 5 chunks, got ${chunkRows.results.length}`);
 
     // Reassemble via GET
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/chunk_reassemble_2_5mb',
       params: { id: 'chunk_reassemble_2_5mb' },
@@ -61,7 +66,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
   it('TC-C7: Updating report with larger payload replaces obsolete chunks and re-chunks correctly', async () => {
     // Stage 1: create with 1MB (approx 2 chunks)
     const initialFixture = createLargePayloadFixture(1000000, { id: 'rechunk_test' });
-    await invokeFunction(reports.reportsPost, { method: 'POST', body: initialFixture, env });
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie }, method: 'POST', body: initialFixture, env });
 
     const initialChunks = await db.prepare(
       'SELECT COUNT(*) as c FROM report_payload_chunks WHERE id = ?'
@@ -75,7 +80,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
       reviewer: 'Updated Reviewer Name',
     });
 
-    const patchRes = await invokeFunction(reports.reportPatch, {
+    const patchRes = await invokeFunction(reports.reportPatch, { headers: { cookie: ownerCookie },
       method: 'PATCH',
       url: 'http://localhost/api/reports/rechunk_test',
       params: { id: 'rechunk_test' },
@@ -90,7 +95,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
     assert.ok(updatedChunks.c >= 6, `Expected >= 6 chunks after expansion, got ${updatedChunks.c}`);
 
     // Verify GET reassembles updated data
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/rechunk_test',
       params: { id: 'rechunk_test' },
@@ -103,7 +108,7 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
 
   it('TC-C8: Chunk ordering integrity: joined strictly by chunk_index ascending', async () => {
     const fixture = createLargePayloadFixture(1500000, { id: 'order_test' });
-    await invokeFunction(reports.reportsPost, { method: 'POST', body: fixture, env });
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie }, method: 'POST', body: fixture, env });
 
     // Read chunks from SQLite
     const chunks = await db.prepare(
@@ -117,10 +122,10 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
 
   it('TC-C9: Large payload reassembly benchmark: 2.5MB payload reassembles in under 250ms', async () => {
     const fixture = createLargePayloadFixture(2500000, { id: 'benchmark_reassembly' });
-    await invokeFunction(reports.reportsPost, { method: 'POST', body: fixture, env });
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie }, method: 'POST', body: fixture, env });
 
     const startTime = performance.now();
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/benchmark_reassembly',
       params: { id: 'benchmark_reassembly' },
@@ -140,12 +145,12 @@ describe('Tier 3: Cross-Feature 2 — Multi-Chunk Storage & Reassembly Engine (F
 
   it('TC-C10: Corrupted chunk data returns HTTP 500 with descriptive error', async () => {
     const fixture = createPrototypeReportFixture({ id: 'corrupt_test' });
-    await invokeFunction(reports.reportsPost, { method: 'POST', body: fixture, env });
+    await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie }, method: 'POST', body: fixture, env });
 
     // Corrupt the chunk data directly in database
     await db.prepare('UPDATE report_payload_chunks SET data = ? WHERE id = ?').bind('INVALID_JSON_CORRUPT{', 'corrupt_test').run();
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/corrupt_test',
       params: { id: 'corrupt_test' },

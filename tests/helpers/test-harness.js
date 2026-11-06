@@ -289,6 +289,22 @@ export async function loadAdminHandlers() {
 }
 
 /**
+ * Dynamically loads Admin Allowlist Pages Function endpoints.
+ */
+export async function loadAdminAllowlistHandlers() {
+  const [allowlistIndex, allowlistEmail] = await Promise.all([
+    import('../../functions/api/admin/allowlist/index.js'),
+    import('../../functions/api/admin/allowlist/[email].js'),
+  ]);
+
+  return {
+    allowlistGet: allowlistIndex.onRequestGet,
+    allowlistPost: allowlistIndex.onRequestPost,
+    allowlistDelete: allowlistEmail.onRequestDelete,
+  };
+}
+
+/**
  * Dynamically loads Reports Pages Function endpoints.
  */
 export async function loadReportsHandlers() {

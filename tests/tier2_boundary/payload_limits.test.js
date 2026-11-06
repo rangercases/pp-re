@@ -6,6 +6,8 @@ import {
   invokeFunction,
   readJson,
   loadReportsHandlers,
+  createDirectUser,
+  createDirectSession,
 } from '../helpers/test-harness.js';
 import { createPrototypeReportFixture, createLargePayloadFixture } from '../helpers/fixtures.js';
 
@@ -13,11 +15,14 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
   let db;
   let env;
   let reports;
+  let ownerCookie;
 
   beforeEach(async () => {
     db = createMockD1();
     env = createTestEnv(db);
     reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'reports.owner@sofacompany.com' });
+    ownerCookie = (await createDirectSession(env, owner.id)).cookieValue;
   });
 
   it('TC-B2.1: Huge text inputs (15,000+ characters) in notes and descriptions process without truncation', async () => {
@@ -37,7 +42,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
       ],
     });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: fixture,
@@ -45,7 +50,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/huge_text_report',
       params: { id: 'huge_text_report' },
@@ -69,7 +74,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
       poNumber: '',
     };
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: minimalFixture,
@@ -77,7 +82,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/minimal_blank_report?meta=1',
       params: { id: 'minimal_blank_report' },
@@ -94,7 +99,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
   it('TC-B2.3: Oversized simulated photo payload (>3MB base64) splits across multiple chunks and reassembles intact', async () => {
     const oversizedFixture = createLargePayloadFixture(3500000, { id: 'oversized_3mb_report' });
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: oversizedFixture,
@@ -110,7 +115,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
     assert.ok(chunkCount.c >= 7, `Expected at least 7 chunks for 3.5MB, got ${chunkCount.c}`);
 
     // Reassemble via GET
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/oversized_3mb_report',
       params: { id: 'oversized_3mb_report' },
@@ -130,7 +135,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
       productName: 'Empty Payload Test',
     };
 
-    const postRes = await invokeFunction(reports.reportsPost, {
+    const postRes = await invokeFunction(reports.reportsPost, { headers: { cookie: ownerCookie },
       method: 'POST',
       url: 'http://localhost/api/reports',
       body: emptyBody,
@@ -138,7 +143,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
     });
     assert.equal((await readJson(postRes)).status, 200);
 
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/empty_payload_report',
       params: { id: 'empty_payload_report' },
@@ -150,7 +155,7 @@ describe('Tier 2: Boundary 2 — Report Storage, Sizing & Payload Limits', () =>
   });
 
   it('TC-B2.5: Missing / non-existent report ID on GET returns HTTP 404 Report not found', async () => {
-    const getRes = await invokeFunction(reports.reportGet, {
+    const getRes = await invokeFunction(reports.reportGet, { headers: { cookie: ownerCookie },
       method: 'GET',
       url: 'http://localhost/api/reports/non_existent_id_99999',
       params: { id: 'non_existent_id_99999' },

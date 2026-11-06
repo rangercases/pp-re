@@ -88,14 +88,17 @@ describe('Tier 1: Feature 5 — Report Metadata Extraction & Normalization', () 
   });
 
   it('TC-5.4: Fallback product name extraction from legacy "desc" property', async () => {
-    const { createMockD1, createTestEnv, invokeFunction, readJson, loadReportsHandlers } = await import('../helpers/test-harness.js');
+    const { createMockD1, createTestEnv, invokeFunction, readJson, loadReportsHandlers, createDirectUser, createDirectSession } = await import('../helpers/test-harness.js');
     const env = createTestEnv(createMockD1());
     const reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'legacy.owner@sofacompany.com' });
+    const { cookieValue } = await createDirectSession(env, owner.id);
 
     // Body with legacy "desc" instead of productName
     const res = await invokeFunction(reports.reportsPost, {
       method: 'POST',
       url: 'http://localhost/api/reports',
+      headers: { cookie: cookieValue },
       body: {
         id: 'legacy_desc_test',
         reportTitle: 'PROTOTYPE SAMPLE REVIEW REPORT',
@@ -110,6 +113,7 @@ describe('Tier 1: Feature 5 — Report Metadata Extraction & Normalization', () 
       method: 'GET',
       url: 'http://localhost/api/reports/legacy_desc_test?meta=1',
       params: { id: 'legacy_desc_test' },
+      headers: { cookie: cookieValue },
       env,
     });
     const getJson = await readJson(getRes);
@@ -117,13 +121,16 @@ describe('Tier 1: Feature 5 — Report Metadata Extraction & Normalization', () 
   });
 
   it('TC-5.5: Fallback model number extraction from legacy "model" property', async () => {
-    const { createMockD1, createTestEnv, invokeFunction, readJson, loadReportsHandlers } = await import('../helpers/test-harness.js');
+    const { createMockD1, createTestEnv, invokeFunction, readJson, loadReportsHandlers, createDirectUser, createDirectSession } = await import('../helpers/test-harness.js');
     const env = createTestEnv(createMockD1());
     const reports = await loadReportsHandlers();
+    const owner = await createDirectUser(env, { email: 'legacy.owner@sofacompany.com' });
+    const { cookieValue } = await createDirectSession(env, owner.id);
 
     const res = await invokeFunction(reports.reportsPost, {
       method: 'POST',
       url: 'http://localhost/api/reports',
+      headers: { cookie: cookieValue },
       body: {
         id: 'legacy_model_test',
         reportTitle: 'PROTOTYPE SAMPLE REVIEW REPORT',
@@ -138,6 +145,7 @@ describe('Tier 1: Feature 5 — Report Metadata Extraction & Normalization', () 
       method: 'GET',
       url: 'http://localhost/api/reports/legacy_model_test?meta=1',
       params: { id: 'legacy_model_test' },
+      headers: { cookie: cookieValue },
       env,
     });
     const getJson = await readJson(getRes);
