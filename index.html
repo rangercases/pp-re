@@ -8792,31 +8792,53 @@
     async function normalizeReportPhotos(rep) {
       if (!rep || typeof rep !== 'object') return rep;
       try {
-        if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
-          for (const k of Object.keys(rep.coverPhotos)) {
-            const p = rep.coverPhotos[k];
-            if (p && typeof p === 'object') {
-              if (p.original && typeof p.original === 'string' && p.original.length > 400000) {
-                p.original = await normalizeMasterPhoto(p.original);
-              }
-              if (p.img && typeof p.img === 'string' && p.img.length > 400000) {
-                p.img = await resizeImage(p.img, 1280, 0.72);
-              }
+        // TB-01: normalize one photo record's image fields (all of them, not
+        // just master/src). markupBase/markupBaseSub are intentionally left
+        // alone — they share a coordinate space with the markup shapes.
+        const normItem = async (p) => {
+          if (!p || typeof p !== 'object') return;
+          if (typeof p.master === 'string' && p.master.length > 400000) {
+            p.master = await normalizeMasterPhoto(p.master);
+          }
+          if (typeof p.original === 'string' && p.original.length > 400000) {
+            p.original = await normalizeMasterPhoto(p.original);
+          }
+          if (typeof p.originalSub === 'string' && p.originalSub.length > 400000) {
+            p.originalSub = await normalizeMasterPhoto(p.originalSub);
+          }
+          if (typeof p.src === 'string' && p.src.length > 400000) {
+            p.src = await normalizeMasterPhoto(p.src);
+          }
+          for (const f of ['img', 'imgSub', 'image']) {
+            if (typeof p[f] === 'string' && p[f].length > 400000) {
+              p[f] = await resizeImage(p[f], 1280, 0.72);
             }
           }
+          if (typeof p.data === 'string' && p.data.startsWith('data:image') && p.data.length > 400000 && p.data !== p.img) {
+            p.data = await resizeImage(p.data, 1280, 0.72);
+          }
+        };
+
+        if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
+          for (const k of Object.keys(rep.coverPhotos)) {
+            await normItem(rep.coverPhotos[k]);
+          }
         }
-        const photoKeys = ['prodPhotos', 'hardwarePhotos', 'cartonPhotos', 'markingPhotos', 'internalPhotos', 'testingPhotos', 'watchoutPhotos', 'assemblyPhotos'];
-        for (const arrKey of photoKeys) {
+
+        // TB-01: cover EVERY photo array in the report — the fixed 8-key list
+        // missed checklistPhotos / comparisonPhotos / greenlabelPhotos /
+        // custom module keys / dimensions / docAttachments.
+        const arrayKeys = new Set(['dimensions', 'docAttachments']);
+        Object.keys(rep).forEach(k => {
+          if (/(Photos|Attachments)$/.test(k)) arrayKeys.add(k);
+        });
+        if (typeof FREE_PHOTO_KEYS !== 'undefined' && Array.isArray(FREE_PHOTO_KEYS)) {
+          FREE_PHOTO_KEYS.forEach(k => arrayKeys.add(k));
+        }
+        for (const arrKey of arrayKeys) {
           if (Array.isArray(rep[arrKey])) {
             for (const p of rep[arrKey]) {
-              if (p && typeof p === 'object') {
-                if (p.master && typeof p.master === 'string' && p.master.length > 400000) {
-                  p.master = await normalizeMasterPhoto(p.master);
-                }
-                if (p.src && typeof p.src === 'string' && p.src.length > 400000) {
-                  p.src = await normalizeMasterPhoto(p.src);
-                }
-              }
+              await normItem(p);
             }
           }
         }
@@ -8875,17 +8897,47 @@
 
             const isPng = (isBlobOrFile && imageSource.type === 'image/png') ||
               (typeof imageSource === 'string' && imageSource.startsWith('data:image/png'));
-            const outFormat = (preferWebp && supportsWebpEncoding && !isPng)
+            // TB-04: a LARGE opaque PNG (photo/screenshot) re-encodes to a
+            // fraction of the size as JPEG/WebP. Only keep PNG when the
+            // source is small or actually uses transparency.
+            let keepPng = isPng;
+            if (isPng) {
+              const srcBytes = isBlobOrFile ? (imageSource.size || 0)
+                : (typeof imageSource === 'string' ? imageSource.length : 0);
+              if (srcBytes > 300000) {
+                let hasAlpha = true;
+                try {
+                  const probe = document.createElement('canvas');
+                  probe.width = 48; probe.height = 48;
+                  const pctx = probe.getContext('2d');
+                  pctx.drawImage(canvas, 0, 0, 48, 48);
+                  const px = pctx.getImageData(0, 0, 48, 48).data;
+                  hasAlpha = false;
+                  for (let pi = 3; pi < px.length; pi += 4) {
+                    if (px[pi] < 250) { hasAlpha = true; break; }
+                  }
+                } catch (probeErr) { hasAlpha = true; }
+                if (!hasAlpha) keepPng = false;
+              }
+            }
+            const outFormat = (preferWebp && supportsWebpEncoding && !keepPng)
               ? 'image/webp'
-              : (isPng ? 'image/png' : 'image/jpeg');
+              : (keepPng ? 'image/png' : 'image/jpeg');
             try {
               const res = canvas.toDataURL(outFormat, quality);
               canvas.width = 0; canvas.height = 0; // Giải phóng ngay GPU Texture
               resolve(res);
             } catch (err) {
-              const res = canvas.toDataURL('image/png');
-              canvas.width = 0; canvas.height = 0;
-              resolve(res);
+              // TB-06: the fallback encode must never throw out of onload —
+              // an exception here left the promise unsettled forever and
+              // froze the photo queue.
+              try {
+                const res = canvas.toDataURL('image/png');
+                canvas.width = 0; canvas.height = 0;
+                resolve(res);
+              } catch (err2) {
+                resolve(typeof imageSource === 'string' ? imageSource : '');
+              }
             }
           } else {
             resolve(typeof imageSource === 'string' ? imageSource : '');
@@ -13401,6 +13453,9 @@
                 await page.render({ canvasContext: ctx, viewport }).promise;
                 const pageImg = canvas.toDataURL('image/jpeg', 0.92);
 
+                // TB-02: store the rendered page ONCE in `img`. Readers use
+                // img || data, and legacy records that only have `data`
+                // still work — no second full copy of the same data URL.
                 D.docAttachments.push({
                   id: 'doc_' + Date.now() + '_' + p + '_' + Math.random().toString(36).substr(2, 4),
                   name: totalPages > 1 ? `${f.name} (Page ${p}/${totalPages})` : f.name,
@@ -13410,7 +13465,6 @@
                   type: 'application/pdf',
                   size: f.size,
                   img: pageImg,
-                  data: pageImg,
                   width: viewport.width,
                   height: viewport.height
                 });
@@ -13441,6 +13495,7 @@
             const dataUrl = await new Promise((res, rej) => {
               const r = new FileReader(); r.onload = ev => res(ev.target.result); r.onerror = rej; r.readAsDataURL(f);
             });
+            // TB-02: single copy in `img` (see note above).
             D.docAttachments.push({
               id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
               name: f.name,
@@ -13449,8 +13504,7 @@
               totalPages: 1,
               type: f.type || 'image/jpeg',
               size: f.size,
-              img: dataUrl,
-              data: dataUrl
+              img: dataUrl
             });
             addedPages++;
           } catch (err) {
@@ -13559,6 +13613,13 @@
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
         D.coverSlots = defaultSlots.slice();
       }
+      // R-01: Recap is hard-capped at 2 cover slots at READ time as well, so
+      // legacy/imported data with extra slots can never render or export
+      // more than 2 overview photos. Extra photos stay in D.coverPhotos.
+      if (D && D.moduleType === 'sample-review-recap' && D.coverSlots.length > 2) {
+        console.warn('[Recap] coverSlots had ' + D.coverSlots.length + ' entries; capped to 2');
+        D.coverSlots = D.coverSlots.slice(0, 2);
+      }
       return D.coverSlots;
     }
 
@@ -13571,9 +13632,12 @@
 
     function getCoverCapacityUsage() {
       const keys = getCoverSlotKeys();
+      // R-05: Recap capacity is counted by NUMBER of photos (max 2), a
+      // full-width photo still counts as 1. Prototype keeps the points model.
+      const isRecap = D && D.moduleType === 'sample-review-recap';
       let usage = 0;
       keys.forEach(k => {
-        usage += isCoverSlotFull(k) ? 2 : 1;
+        usage += (!isRecap && isCoverSlotFull(k)) ? 2 : 1;
       });
       return usage;
     }
@@ -17504,7 +17568,11 @@
       for (const src of sources) {
         try {
           const small = await resizeImage(src, 1100, 0.78);
-          if (small && small.startsWith('data:image') && small.length < src.length) {
+          // C-01: a WebP source must ALWAYS be mapped to its JPEG re-encode —
+          // jsPDF cannot embed WebP, so "only keep if smaller" dropped compact
+          // WebP photos from the PDF entirely.
+          const isWebp = src.startsWith('data:image/webp');
+          if (small && small.startsWith('data:image') && (small.length < src.length || isWebp)) {
             map.set(src, small);
           }
         } catch (err) {
@@ -17555,6 +17623,7 @@
       }
 
       const pdfImageMap = await preparePdfImageMap(D);
+      const pdfFailedImages = [];
 
       const isRecap = (D && D.moduleType === 'sample-review-recap') || ((!D || !D.moduleType) && (D.reportTitle || '').toUpperCase().includes('RECAP'));
       const isProto = (D && D.moduleType === 'prototype') || ((!D || !D.moduleType) && ((((D.reportTitle || '') + ' ' + (D.desc || '') + ' ' + (D.model || '')).toUpperCase().includes('PROTOTYPE'))));
@@ -17672,7 +17741,7 @@
             return { x, y: iy, w: iw, h: ih };
           } catch (err) {
             console.warn('[PDF] Could not insert image into PDF', err);
-            showToast('⚠️ A photo could not be inserted into the PDF', 4000);
+            pdfFailedImages.push(imgFormat);
             return null;
           }
         }
@@ -18053,9 +18122,10 @@
       y += sumBoxH + 8.5;
 
       const cp = D.coverPhotos || {};
-      const ckeys = (D.coverSlots && Array.isArray(D.coverSlots) && D.coverSlots.length > 0)
+      const ckeysRaw = (D.coverSlots && Array.isArray(D.coverSlots) && D.coverSlots.length > 0)
         ? D.coverSlots
         : COVER_SLOTS.map(s => s.replace(/ /g, '_'));
+      const ckeys = isRecap ? ckeysRaw.slice(0, 2) : ckeysRaw; // R-01
 
       // Tự động lọc các ảnh thực tế có trong Overview (Không có ảnh -> Tuyệt đối không hiện ô và không hiện chữ)
       const validCovers = [];
@@ -18063,10 +18133,12 @@
         const dataObj = cp[key];
         const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         if (img) {
+          // R-04 (option A): Recap PDFs NEVER draw the photo title bar,
+          // even for older reports that still have coverTitles saved.
           const slotTitle = isRecap
-            ? ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) || '')
-            : ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim()) 
-                ? D.coverTitles[key].trim() 
+            ? ''
+            : ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim())
+                ? D.coverTitles[key].trim()
                 : (COVER_SLOTS[i] || key.replace(/_/g, ' ')));
           const isFull = isCoverSlotFull(key);
           validCovers.push({ key, img, title: slotTitle, isFull });
@@ -18877,6 +18949,9 @@
         const blob = doc.output('blob');
         fsSavePdfBlob(blob, safeFileName);
         showToast('✓ PDF download complete!');
+      }
+      if (pdfFailedImages.length) {
+        showToast(`⚠️ ${pdfFailedImages.length} photo(s) could not be inserted into the PDF — please check the exported file`, 6000);
       }
       if (typeof window !== 'undefined' && window._lastGeneratedDoc) {
         delete window._lastGeneratedDoc;
