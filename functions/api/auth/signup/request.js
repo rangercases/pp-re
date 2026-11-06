@@ -85,6 +85,22 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: true, expiresIn: EXPIRES_IN_SECONDS, resendAfter: RESEND_AFTER_SECONDS });
     }
 
+    // Allowlist do admin quản lý: khi danh sách có ít nhất một email, chỉ
+    // email trong danh sách mới được nhận mã. Danh sách rỗng giữ đăng ký mở
+    // (bootstrap). Bảng chưa được tạo (DDL chưa áp dụng) cũng được coi là
+    // chưa có allowlist để không làm hỏng luồng đăng ký.
+    try {
+      const allowCount = await env.DB.prepare('SELECT COUNT(*) AS n FROM signup_allowlist').first();
+      if (allowCount && allowCount.n > 0) {
+        const allowed = await env.DB.prepare('SELECT email FROM signup_allowlist WHERE email = ?')
+          .bind(email)
+          .first();
+        if (!allowed) return fail('EMAIL_NOT_ALLOWED', 403);
+      }
+    } catch {
+      // Bỏ qua: coi như chưa bật allowlist.
+    }
+
     const code = randomCode();
     const codeHash = await sha256Hex(email + ':' + code);
     await env.DB.prepare('UPDATE signup_codes SET consumed_at = ? WHERE email = ? AND consumed_at IS NULL')
