@@ -12248,15 +12248,9 @@
 
     async function goHome(opts) {
       document.body.classList.remove('recap-mode');
-      if (D && D.id && D._fileDirty) {
-        let leave = true;
-        try {
-          leave = confirm(
-            'Report not saved to file yet.\n\nOK = Go home (the in-app copy is kept)\nCancel = Stay to save the file (Ctrl+S)'
-          );
-        } catch (err) { leave = true; }
-        if (!leave) return false;
-      }
+      // POP-1 (v4.0.3): no "not saved to file yet" confirm — the in-app copy
+      // is always kept, and flushReport() below still guards real save
+      // failures (stay in editor + toast).
       if (typeof flushReport === 'function') {
         try {
           await flushReport();
