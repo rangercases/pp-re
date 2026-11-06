@@ -209,12 +209,13 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
   const setActionBody = extractFnBody(indexHtml, 'function setWatchoutAction(index, actionId)', 'setWatchoutAction');
   const autoSummaryBody = extractFnBody(indexHtml, 'function renderRecapAutoSummary()', 'renderRecapAutoSummary');
 
-  it('TC-REC1.4.1: Watch Out chip row renders only for Recap reports', () => {
+  it('TC-REC1.4.1: the Watch Out status chip renders only for Recap reports (Style B: one chip per slot)', () => {
     assert.ok(renderWatchoutBody.includes('const isRecap = isRecapReport();'));
-    assert.ok(renderWatchoutBody.includes('${isRecap ? `'), 'chip row must be conditional on isRecap');
-    assert.ok(renderWatchoutBody.includes('wo-action-chips'));
-    assert.ok(renderWatchoutBody.includes("setWatchoutAction(${i}, '${a.id}')"));
-    assert.ok(renderWatchoutBody.includes('p.action === a.id'), 'selected chip must get the .on state');
+    assert.ok(renderWatchoutBody.includes('${isRecap ? `'), 'status chip must be conditional on isRecap');
+    assert.ok(renderWatchoutBody.includes('wo-action-bar'));
+    assert.ok(renderWatchoutBody.includes('woStatusChipHtml(i, p)'), 'the slot delegates to the single-chip builder');
+    assert.ok(!renderWatchoutBody.includes('wo-act-chip'), 'the old 4-chip row markup must be gone');
+    assert.ok(!renderWatchoutBody.includes('wo-action-chips'), 'the old chip-row container must be gone');
   });
 
   it('TC-REC1.4.2: isRecapReport keys off moduleType sample-review-recap', () => {
@@ -225,11 +226,12 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     assert.equal(recapD.isRecapReport(), true, 'falls back to the open report D when none is passed');
   });
 
-  it('TC-REC1.4.3: setWatchoutAction pushes history BEFORE mutating, toggles off on re-tap, saves via as()', () => {
+  it('TC-REC1.4.3: setWatchoutAction pushes history BEFORE mutating, sets the value explicitly, saves via as()', () => {
     const histIdx = setActionBody.indexOf('pushHistory(');
-    const mutIdx = setActionBody.indexOf('.action =');
+    const mutIdx = setActionBody.indexOf('.action = next');
     assert.ok(histIdx !== -1 && mutIdx !== -1 && histIdx < mutIdx, 'pushHistory must precede the mutation');
-    assert.ok(setActionBody.includes('(cur === actionId) ? null : actionId'), 're-tapping the selected chip must clear the action');
+    assert.ok(!setActionBody.includes('? null : actionId'), 'the tap-to-toggle ternary must be gone (Style B sets explicitly)');
+    assert.ok(setActionBody.includes('if (cur === next) return;'), 'a no-change call must be a no-op');
     assert.ok(setActionBody.includes('as();'));
     assert.ok(setActionBody.includes('renderWatchoutPhotos();'));
   });
@@ -260,7 +262,8 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
       "['Chưa xử lý', 'Not decided']",
       "['Tóm tắt chất lượng', 'QUALITY SUMMARY']",
       "['Chưa có mô tả', 'No description yet']",
-      "['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded']"
+      "['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded']",
+      "['Bỏ chọn', 'Clear selection']"
     ];
     for (const pair of pairs) {
       assert.ok(indexHtml.includes(pair), `missing i18n pair ${pair}`);
@@ -299,5 +302,119 @@ describe('TC-REC1.5: PDF gating (source assertions)', () => {
     // Caption height must grow when a chip is present, otherwise the chip
     // would overlap the next row.
     assert.ok(gridBody.includes('slotCapBlockH('), 'caption block height must account for the chip');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-REC1.6 — Style B (v4.1.2): single status chip + picker sheet
+// The chip builder and the mutation are evaluated with stubs; the sheet is
+// DOM-building code, so it is covered by source assertions.
+// ─────────────────────────────────────────────────────────────────────────────
+function makePickerApi() {
+  const woActionsBody = extract(indexHtml, /const WO_ACTIONS = \[([\s\S]*?)\n    \];/, 'WO_ACTIONS');
+  const woActionMapSrc = extract(indexHtml, /const WO_ACTION_MAP = \{\};[\s\S]*?WO_ACTION_MAP\[a\.id\] = a; \}\);/, 'WO_ACTION_MAP init');
+  const woActionNoneSrc = extract(indexHtml, /const WO_ACTION_NONE = \{[^}]*\};/, 'WO_ACTION_NONE');
+  const woMetaBody = extractFnBody(indexHtml, 'function woActionMeta(action)', 'woActionMeta');
+  const chipBody = extractFnBody(indexHtml, 'function woStatusChipHtml(index, slot)', 'woStatusChipHtml');
+  const setActionBody = extractFnBody(indexHtml, 'function setWatchoutAction(index, actionId)', 'setWatchoutAction');
+  const calls = [];
+  const state = { D: { watchoutPhotos: [] } };
+  const factory = new Function(
+    'D', 'pushHistory', 'as', 'renderWatchoutPhotos',
+    `const WO_ACTIONS = [${woActionsBody}];
+     ${woActionMapSrc}
+     ${woActionNoneSrc}
+     function woActionMeta(action) {${woMetaBody}}
+     function woStatusChipHtml(index, slot) {${chipBody}}
+     function setWatchoutAction(index, actionId) {${setActionBody}}
+     return { woStatusChipHtml, setWatchoutAction };`
+  );
+  const api = factory(
+    state.D,
+    () => calls.push('pushHistory'),
+    () => calls.push('as'),
+    () => calls.push('renderWatchoutPhotos')
+  );
+  return { api, calls, state };
+}
+
+describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
+  it('TC-REC1.6.1: an unselected slot renders ONE muted "+ Not decided" chip that opens the sheet', () => {
+    const { api } = makePickerApi();
+    for (const slot of [{}, { action: null }, { action: 'bogus-value' }, null]) {
+      const html = api.woStatusChipHtml(2, slot);
+      assert.equal((html.match(/<button/g) || []).length, 1, 'exactly one chip button per slot');
+      assert.ok(html.includes('wo-status-chip none'), 'unselected chip uses the muted .none style');
+      assert.ok(html.includes('<span class="wo-plus"'), 'the "+" is its own span (keeps the label translatable)');
+      assert.ok(html.includes('Not decided'), 'chip shows the Not decided label');
+      assert.ok(html.includes('openWatchoutActionSheet(2)'), 'chip opens the picker sheet for its slot');
+      assert.ok(!html.includes('data-wo-action'), 'unselected chip carries no status color hook');
+    }
+  });
+
+  it('TC-REC1.6.2: a selected slot renders exactly ONE chip with the status label + color hook', () => {
+    const { api } = makePickerApi();
+    const html = api.woStatusChipHtml(0, { action: 'note' });
+    assert.equal((html.match(/<button/g) || []).length, 1, 'exactly one chip button per slot');
+    assert.ok(html.includes('wo-status-chip'));
+    assert.ok(!html.includes('wo-status-chip none'), 'selected chip is not the muted variant');
+    assert.ok(html.includes('data-wo-action="note"'), 'chip carries the status color hook (CSS vars)');
+    assert.ok(html.includes('Take note'), 'chip shows the selected status label');
+    assert.ok(html.includes('wo-chev'), 'chip shows the tappable affordance');
+    assert.ok(html.includes('openWatchoutActionSheet(0)'), 'chip opens the picker sheet for its slot');
+  });
+
+  it('TC-REC1.6.3: setWatchoutAction sets explicitly — no toggle, clear via null, no-change is a no-op', () => {
+    const { api, calls, state } = makePickerApi();
+    state.D.watchoutPhotos = [{ caption: 'x' }, { caption: 'y', action: 'note' }];
+
+    api.setWatchoutAction(0, 'fix-now');
+    assert.equal(state.D.watchoutPhotos[0].action, 'fix-now');
+    assert.deepEqual(calls, ['pushHistory', 'as', 'renderWatchoutPhotos'],
+      'mutation discipline: history BEFORE the change, then save, then re-render');
+
+    // Picking the already-selected value must NOT clear it (no toggle) and
+    // must not push a history entry either.
+    calls.length = 0;
+    api.setWatchoutAction(0, 'fix-now');
+    assert.equal(state.D.watchoutPhotos[0].action, 'fix-now');
+    assert.deepEqual(calls, [], 're-picking the current value is a no-op');
+
+    // The sheet's clear row passes null, which clears.
+    api.setWatchoutAction(1, null);
+    assert.equal(state.D.watchoutPhotos[1].action, null);
+
+    // Unknown values normalize to null; out-of-range slots are ignored.
+    api.setWatchoutAction(0, 'bogus-value');
+    assert.equal(state.D.watchoutPhotos[0].action, null);
+    api.setWatchoutAction(9, 'note');
+    assert.equal(state.D.watchoutPhotos.length, 2);
+  });
+
+  it('TC-REC1.6.4: the picker sheet is a single .modal-overlay with 4 status rows, a check mark, and a clear row', () => {
+    const openBody = extractFnBody(indexHtml, 'function openWatchoutActionSheet(index)', 'openWatchoutActionSheet');
+    const closeBody = extractFnBody(indexHtml, 'function closeWatchoutActionSheet()', 'closeWatchoutActionSheet');
+    const pickBody = extractFnBody(indexHtml, 'function pickWatchoutAction(actionId)', 'pickWatchoutAction');
+
+    assert.ok(openBody.includes("overlay.className = 'modal-overlay wo-sheet-overlay'"),
+      'sheet reuses the app overlay class (version-mark hiding, scroll lock)');
+    assert.ok(openBody.includes('closeWatchoutActionSheet();'),
+      'opening first closes any existing sheet — one instance at a time');
+    assert.ok(openBody.includes('WO_ACTIONS.map('), 'one row per status');
+    assert.ok(openBody.includes('wo-sheet-row'));
+    assert.ok(openBody.includes('wo-dot'), 'each row carries its status color dot');
+    assert.ok(openBody.includes('cur === a.id') && openBody.includes('wo-check'),
+      'the currently selected row carries the check mark');
+    assert.ok(openBody.includes('wo-sheet-divider'), 'a divider separates the clear row');
+    assert.ok(openBody.includes('Clear selection'), 'the clear row exists');
+    assert.ok(openBody.includes('pickWatchoutAction(null)'), 'the clear row sets the action to null');
+    assert.ok(openBody.includes("pickWatchoutAction('${a.id}')"), 'status rows pick their value');
+    assert.ok(openBody.includes('e.target === overlay'), 'tapping the backdrop closes with no change');
+    assert.ok(openBody.includes('lockBodyScroll();'));
+    assert.ok(closeBody.includes('sheet.remove()'), 'closing removes the sheet DOM');
+    assert.ok(closeBody.includes('unlockBodyScroll();'));
+    assert.ok(pickBody.includes('setWatchoutAction(index, actionId)'),
+      'sheet picks route through the shared setWatchoutAction mutation path');
+    assert.ok(pickBody.includes('closeWatchoutActionSheet();'), 'picking closes the sheet');
   });
 });
