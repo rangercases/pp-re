@@ -233,7 +233,10 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     assert.ok(!setActionBody.includes('? null : actionId'), 'the tap-to-toggle ternary must be gone (Style B sets explicitly)');
     assert.ok(setActionBody.includes('if (cur === next) return;'), 'a no-change call must be a no-op');
     assert.ok(setActionBody.includes('as();'));
-    assert.ok(setActionBody.includes('renderWatchoutPhotos();'));
+    assert.ok(setActionBody.includes('refreshWatchoutStatusChip(index);'),
+      'after saving, only the picked slot\'s chip is refreshed in place (v4.1.6)');
+    assert.ok(!setActionBody.includes('renderWatchoutPhotos();'),
+      'setWatchoutAction must NOT rebuild the whole grid — the rebuild collapsed the document and threw the scroll back to the top');
   });
 
   it('TC-REC1.4.4: the Overview auto summary is Recap-gated, builder-driven, and has an empty state', () => {
@@ -308,35 +311,57 @@ describe('TC-REC1.5: PDF gating (source assertions)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-REC1.6 — Style B (v4.1.2): single status chip + status picker
 // Picker presentation changed in v4.1.3: anchored dropdown, not a modal sheet.
+// v4.1.6: a pick refreshes ONLY the slot's chip in place — the old full
+// renderWatchoutPhotos() rebuild collapsed the document (fresh <img>s have
+// no height until decode) and the browser clamped scroll back to the top.
 // The chip builder and the mutation are evaluated with stubs; the dropdown is
 // DOM-building code, so it is covered by source assertions.
 // ─────────────────────────────────────────────────────────────────────────────
-function makePickerApi() {
+function makePickerApi(docMode = 'bar') {
   const woActionsBody = extract(indexHtml, /const WO_ACTIONS = \[([\s\S]*?)\n    \];/, 'WO_ACTIONS');
   const woActionMapSrc = extract(indexHtml, /const WO_ACTION_MAP = \{\};[\s\S]*?WO_ACTION_MAP\[a\.id\] = a; \}\);/, 'WO_ACTION_MAP init');
   const woActionNoneSrc = extract(indexHtml, /const WO_ACTION_NONE = \{[^}]*\};/, 'WO_ACTION_NONE');
   const woMetaBody = extractFnBody(indexHtml, 'function woActionMeta(action)', 'woActionMeta');
   const chipBody = extractFnBody(indexHtml, 'function woStatusChipHtml(index, slot)', 'woStatusChipHtml');
   const setActionBody = extractFnBody(indexHtml, 'function setWatchoutAction(index, actionId)', 'setWatchoutAction');
+  const refreshBody = extractFnBody(indexHtml, 'function refreshWatchoutStatusChip(index)', 'refreshWatchoutStatusChip');
   const calls = [];
   const state = { D: { watchoutPhotos: [] } };
+  // Stub DOM for the in-place chip refresh: docMode 'bar' exposes one
+  // .wo-action-bar whose innerHTML setter records the swap ('chipUpdate');
+  // docMode 'missing' renders a grid with no matching slot, which must
+  // force the defensive fallback to renderWatchoutPhotos().
+  const bar = {
+    _html: 'STALE CHIP',
+    set innerHTML(v) { this._html = v; calls.push('chipUpdate'); },
+    get innerHTML() { return this._html; }
+  };
+  const documentStub = docMode === 'missing'
+    ? { getElementById: () => ({ querySelector: () => null }) }
+    : {
+        getElementById: (id) => (id === 'watchoutPhotos'
+          ? { querySelector: () => ({ querySelector: (sel) => (sel === '.wo-action-bar' ? bar : null) }) }
+          : null)
+      };
   const factory = new Function(
-    'D', 'pushHistory', 'as', 'renderWatchoutPhotos',
+    'D', 'document', 'pushHistory', 'as', 'renderWatchoutPhotos',
     `const WO_ACTIONS = [${woActionsBody}];
      ${woActionMapSrc}
      ${woActionNoneSrc}
      function woActionMeta(action) {${woMetaBody}}
      function woStatusChipHtml(index, slot) {${chipBody}}
      function setWatchoutAction(index, actionId) {${setActionBody}}
-     return { woStatusChipHtml, setWatchoutAction };`
+     function refreshWatchoutStatusChip(index) {${refreshBody}}
+     return { woStatusChipHtml, setWatchoutAction, refreshWatchoutStatusChip };`
   );
   const api = factory(
     state.D,
+    documentStub,
     () => calls.push('pushHistory'),
     () => calls.push('as'),
     () => calls.push('renderWatchoutPhotos')
   );
-  return { api, calls, state };
+  return { api, calls, state, bar };
 }
 
 describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropdown v4.1.3)', () => {
@@ -366,13 +391,18 @@ describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropd
   });
 
   it('TC-REC1.6.3: setWatchoutAction sets explicitly — no toggle, clear via null, no-change is a no-op', () => {
-    const { api, calls, state } = makePickerApi();
+    const { api, calls, state, bar } = makePickerApi();
     state.D.watchoutPhotos = [{ caption: 'x' }, { caption: 'y', action: 'note' }];
 
     api.setWatchoutAction(0, 'fix-now');
     assert.equal(state.D.watchoutPhotos[0].action, 'fix-now');
-    assert.deepEqual(calls, ['pushHistory', 'as', 'renderWatchoutPhotos'],
-      'mutation discipline: history BEFORE the change, then save, then re-render');
+    assert.deepEqual(calls, ['pushHistory', 'as', 'chipUpdate'],
+      'mutation discipline: history BEFORE the change, then save, then ONLY the slot chip is refreshed in place (v4.1.6)');
+    assert.ok(bar.innerHTML.includes('data-wo-action="fix-now"'),
+      'the chip bar of the slot now shows the picked status');
+    assert.ok(bar.innerHTML.includes('Fix immediately'), 'the refreshed chip carries the new label');
+    assert.ok(!calls.includes('renderWatchoutPhotos'),
+      'the grid is NOT rebuilt after a pick — a rebuild collapsed the document and reset scroll to the top');
 
     // Picking the already-selected value must NOT clear it (no toggle) and
     // must not push a history entry either.
@@ -390,6 +420,26 @@ describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropd
     assert.equal(state.D.watchoutPhotos[0].action, null);
     api.setWatchoutAction(9, 'note');
     assert.equal(state.D.watchoutPhotos.length, 2);
+  });
+
+  it('TC-REC1.6.5: when the chip bar is not in the DOM, the refresh falls back to exactly one full re-render', () => {
+    const { api, calls, state } = makePickerApi('missing');
+    state.D.watchoutPhotos = [{ caption: 'x' }];
+
+    api.setWatchoutAction(0, 'note');
+    assert.equal(state.D.watchoutPhotos[0].action, 'note');
+    assert.deepEqual(calls, ['pushHistory', 'as', 'renderWatchoutPhotos'],
+      'defensive fallback: no chip bar found → one renderWatchoutPhotos(), exactly as before v4.1.6');
+  });
+
+  it('TC-REC1.6.6: refreshWatchoutStatusChip targets the slot by data-index and rewrites only its chip bar', () => {
+    const refreshBody = extractFnBody(indexHtml, 'function refreshWatchoutStatusChip(index)', 'refreshWatchoutStatusChip');
+    assert.ok(refreshBody.includes("getElementById('watchoutPhotos')"), 'the refresh looks inside the Watch Out grid');
+    assert.ok(refreshBody.includes('.watchout-slot[data-index="'), 'the slot is located by its data-index');
+    assert.ok(refreshBody.includes("querySelector('.wo-action-bar')"), 'only the chip bar of that slot is touched');
+    assert.ok(refreshBody.includes('bar.innerHTML = woStatusChipHtml(index, D.watchoutPhotos[index])'),
+      'the bar is re-filled from the shared chip builder with the mutated slot');
+    assert.ok(refreshBody.includes('renderWatchoutPhotos();'), 'a missing bar falls back to the full re-render');
   });
 
   it('TC-REC1.6.4: the picker is an anchored dropdown — no overlay, no scroll lock, single instance, outside-tap close, full teardown', () => {
