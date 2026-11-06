@@ -18204,12 +18204,24 @@
             ['Factory', D.factory], ['Reviewed by', D.reviewer]
           ];
 
+      // Bỏ qua mọi trường có nhãn trống (áp dụng cho mọi module, ví dụ ô đệm cuối
+      // của Recap) để PDF không hiện ô vô nghĩa chỉ có dấu ":" — trường có nhãn
+      // nhưng trống giá trị vẫn hiện "—" như trước.
+      const visibleInfoRows = infoRows.filter(row => row && row[0] && String(row[0]).trim());
       const hw = (W - M * 2) / 2 - 2;
-      for (let i = 0; i < infoRows.length; i += 2) {
-        const [l1, v1] = infoRows[i], [l2, v2] = infoRows[i + 1] || ['', ''];
-        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 9, 'FD'); doc.rect(M + hw + 4, y, hw, 9, 'FD');
-        doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9); doc.text(l2 + ':', M + hw + 6, y + 5.9);
-        doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9); y += 10;
+      for (let i = 0; i < visibleInfoRows.length; i += 2) {
+        const [l1, v1] = visibleInfoRows[i];
+        const secondRow = visibleInfoRows[i + 1] || null;
+        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 9, 'FD');
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9);
+        doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9);
+        if (secondRow) {
+          const [l2, v2] = secondRow;
+          doc.setFillColor(248, 246, 242); doc.rect(M + hw + 4, y, hw, 9, 'FD');
+          doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l2 + ':', M + hw + 6, y + 5.9);
+          doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9);
+        }
+        y += 10;
       } y += 4;
 
       const chkLine = (label, group) => {
