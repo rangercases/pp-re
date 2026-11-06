@@ -59,7 +59,9 @@ describe('TC-PDF1: PDF info grid skips blank-label fields', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-PDF2 — Summary strip: Recap renders ONLY the Watch-outs chip
+// TC-PDF2 — Summary strip: skipped entirely for Recap (v4.1.1 — the REC-1
+// QUALITY SUMMARY block under the Overview photos carries that information);
+// non-Recap modules keep the strip with module-aware chips.
 // ─────────────────────────────────────────────────────────────────────────────
 const badgeRegion = extract(
   indexHtml,
@@ -67,10 +69,17 @@ const badgeRegion = extract(
   'pdfBadges build region'
 );
 
-describe('TC-PDF2: PDF summary chips are module-aware', () => {
-  it('TC-PDF2.1: Watch-outs chip is still built for Recap', () => {
-    assert.match(badgeRegion, /if \(isRecap\) \{/);
-    assert.ok(badgeRegion.includes('Watch-out'), 'watch-outs badge text present');
+describe('TC-PDF2: PDF summary strip is skipped for Recap, module-aware otherwise', () => {
+  it('TC-PDF2.1: the whole strip (metrics, badges, draw, y-advance) is wrapped in if (!isRecap)', () => {
+    const guardOpen = indexHtml.indexOf('if (!isRecap) {\n      const qm = getReportQuickMetrics(D);');
+    const stripTitle = indexHtml.indexOf('doc.text("QUALITY SUMMARY", M + 3, y + 3.8);');
+    const guardClose = indexHtml.indexOf("y += sumBoxH + 8.5;\n      } // end if (!isRecap) — QUALITY SUMMARY strip");
+    assert.ok(guardOpen !== -1, 'strip must open with the !isRecap guard');
+    assert.ok(stripTitle !== -1, 'strip title draw still present for non-Recap');
+    assert.ok(guardClose !== -1, 'strip must close right after the y-advance');
+    assert.ok(guardOpen < stripTitle && stripTitle < guardClose,
+      'for Recap the strip title is never drawn and y never advances past a strip box');
+    assert.ok(badgeRegion.includes('Watch-out'), 'non-Recap strip still builds the watch-outs badge');
   });
 
   it('TC-PDF2.2: every Testing badge branch is gated on !isRecap', () => {
