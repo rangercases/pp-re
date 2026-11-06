@@ -306,8 +306,9 @@ describe('TC-REC1.5: PDF gating (source assertions)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-REC1.6 — Style B (v4.1.2): single status chip + picker sheet
-// The chip builder and the mutation are evaluated with stubs; the sheet is
+// TC-REC1.6 — Style B (v4.1.2): single status chip + status picker
+// Picker presentation changed in v4.1.3: anchored dropdown, not a modal sheet.
+// The chip builder and the mutation are evaluated with stubs; the dropdown is
 // DOM-building code, so it is covered by source assertions.
 // ─────────────────────────────────────────────────────────────────────────────
 function makePickerApi() {
@@ -338,8 +339,8 @@ function makePickerApi() {
   return { api, calls, state };
 }
 
-describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
-  it('TC-REC1.6.1: an unselected slot renders ONE muted "+ Not decided" chip that opens the sheet', () => {
+describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropdown v4.1.3)', () => {
+  it('TC-REC1.6.1: an unselected slot renders ONE muted "+ Not decided" chip that toggles the dropdown', () => {
     const { api } = makePickerApi();
     for (const slot of [{}, { action: null }, { action: 'bogus-value' }, null]) {
       const html = api.woStatusChipHtml(2, slot);
@@ -347,7 +348,7 @@ describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
       assert.ok(html.includes('wo-status-chip none'), 'unselected chip uses the muted .none style');
       assert.ok(html.includes('<span class="wo-plus"'), 'the "+" is its own span (keeps the label translatable)');
       assert.ok(html.includes('Not decided'), 'chip shows the Not decided label');
-      assert.ok(html.includes('openWatchoutActionSheet(2)'), 'chip opens the picker sheet for its slot');
+      assert.ok(html.includes('toggleWatchoutActionMenu(2, this)'), 'chip toggles the anchored dropdown for its slot');
       assert.ok(!html.includes('data-wo-action'), 'unselected chip carries no status color hook');
     }
   });
@@ -361,7 +362,7 @@ describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
     assert.ok(html.includes('data-wo-action="note"'), 'chip carries the status color hook (CSS vars)');
     assert.ok(html.includes('Take note'), 'chip shows the selected status label');
     assert.ok(html.includes('wo-chev'), 'chip shows the tappable affordance');
-    assert.ok(html.includes('openWatchoutActionSheet(0)'), 'chip opens the picker sheet for its slot');
+    assert.ok(html.includes('toggleWatchoutActionMenu(0, this)'), 'chip toggles the anchored dropdown for its slot');
   });
 
   it('TC-REC1.6.3: setWatchoutAction sets explicitly — no toggle, clear via null, no-change is a no-op', () => {
@@ -380,7 +381,7 @@ describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
     assert.equal(state.D.watchoutPhotos[0].action, 'fix-now');
     assert.deepEqual(calls, [], 're-picking the current value is a no-op');
 
-    // The sheet's clear row passes null, which clears.
+    // The dropdown's clear row passes null, which clears.
     api.setWatchoutAction(1, null);
     assert.equal(state.D.watchoutPhotos[1].action, null);
 
@@ -391,30 +392,76 @@ describe('TC-REC1.6: Style B single chip + picker sheet (v4.1.2)', () => {
     assert.equal(state.D.watchoutPhotos.length, 2);
   });
 
-  it('TC-REC1.6.4: the picker sheet is a single .modal-overlay with 4 status rows, a check mark, and a clear row', () => {
-    const openBody = extractFnBody(indexHtml, 'function openWatchoutActionSheet(index)', 'openWatchoutActionSheet');
-    const closeBody = extractFnBody(indexHtml, 'function closeWatchoutActionSheet()', 'closeWatchoutActionSheet');
+  it('TC-REC1.6.4: the picker is an anchored dropdown — no overlay, no scroll lock, single instance, outside-tap close, full teardown', () => {
+    const toggleBody = extractFnBody(indexHtml, 'function toggleWatchoutActionMenu(index, anchorEl)', 'toggleWatchoutActionMenu');
+    const openBody = extractFnBody(indexHtml, 'function openWatchoutActionMenu(index, anchorEl)', 'openWatchoutActionMenu');
+    const closeBody = extractFnBody(indexHtml, 'function closeWatchoutActionMenu()', 'closeWatchoutActionMenu');
+    const outsideBody = extractFnBody(indexHtml, 'function woMenuOutsideTap(e)', 'woMenuOutsideTap');
     const pickBody = extractFnBody(indexHtml, 'function pickWatchoutAction(actionId)', 'pickWatchoutAction');
+    const menuCss = extract(indexHtml, /\.wo-menu \{([\s\S]*?)\}/, '.wo-menu CSS');
 
-    assert.ok(openBody.includes("overlay.className = 'modal-overlay wo-sheet-overlay'"),
-      'sheet reuses the app overlay class (version-mark hiding, scroll lock)');
-    assert.ok(openBody.includes('closeWatchoutActionSheet();'),
-      'opening first closes any existing sheet — one instance at a time');
+    // It is a menu, not a dialog: no modal overlay, no backdrop dim, no scroll lock.
+    assert.ok(openBody.includes("menu.className = 'wo-menu'"), 'picker is a plain .wo-menu element');
+    assert.ok(!openBody.includes('modal-overlay'), 'the dropdown must NOT use the modal overlay');
+    assert.ok(!openBody.includes('lockBodyScroll'), 'the dropdown must NOT lock body scroll');
+    assert.ok(!closeBody.includes('unlockBodyScroll'), 'closing has no scroll lock to release');
+    assert.ok(!indexHtml.includes('wo-sheet'), 'the old sheet styles/markup are gone');
+    assert.ok(!indexHtml.includes('openWatchoutActionSheet'), 'the old sheet opener is gone');
+
+    // Anchored positioning: fixed menu placed from the chip's rect, flipped
+    // above the chip when it would run off the bottom of the viewport.
+    assert.ok(menuCss.includes('position: fixed'),
+      'the menu is position:fixed (the slot card clips overflow, so an in-card absolute menu would be cut off)');
+    assert.ok(openBody.includes('document.body.appendChild(menu)'), 'menu lives on <body>, outside the clipping card');
+    assert.ok(openBody.includes('anchorEl.getBoundingClientRect()'), 'position comes from the chip rect');
+    assert.ok(openBody.includes('menu.offsetHeight'), 'the flip decision measures the real menu height');
+    assert.ok(openBody.includes('rect.bottom + 6') && openBody.includes('rect.top - 6 - menuH'),
+      'menu opens directly below the chip, flipping above it when space runs out');
+
+    // Single instance + toggle discipline.
+    assert.ok(openBody.includes('closeWatchoutActionMenu();'),
+      'opening first closes any existing menu — one instance at a time');
+    assert.ok(toggleBody.includes('woMenuSlotIndex === index'),
+      'tapping the chip of the already-open slot toggles its menu closed');
+    assert.ok(toggleBody.includes('closeWatchoutActionMenu();'));
+    assert.ok(toggleBody.includes('openWatchoutActionMenu(index, anchorEl)'));
+
+    // Rows carry the same content as the old sheet: dot + label per status,
+    // a check mark on the current value, a divider, and a clear row.
     assert.ok(openBody.includes('WO_ACTIONS.map('), 'one row per status');
-    assert.ok(openBody.includes('wo-sheet-row'));
+    assert.ok(openBody.includes('wo-menu-row'));
     assert.ok(openBody.includes('wo-dot'), 'each row carries its status color dot');
     assert.ok(openBody.includes('cur === a.id') && openBody.includes('wo-check'),
       'the currently selected row carries the check mark');
-    assert.ok(openBody.includes('wo-sheet-divider'), 'a divider separates the clear row');
+    assert.ok(openBody.includes('wo-menu-divider'), 'a divider separates the clear row');
     assert.ok(openBody.includes('Clear selection'), 'the clear row exists');
     assert.ok(openBody.includes('pickWatchoutAction(null)'), 'the clear row sets the action to null');
     assert.ok(openBody.includes("pickWatchoutAction('${a.id}')"), 'status rows pick their value');
-    assert.ok(openBody.includes('e.target === overlay'), 'tapping the backdrop closes with no change');
-    assert.ok(openBody.includes('lockBodyScroll();'));
-    assert.ok(closeBody.includes('sheet.remove()'), 'closing removes the sheet DOM');
-    assert.ok(closeBody.includes('unlockBodyScroll();'));
+
+    // Outside-tap + scroll/resize close: listeners registered on open and
+    // removed again on close, so nothing leaks past the menu's lifetime.
+    assert.ok(openBody.includes("document.addEventListener('pointerdown', woMenuOutsideTap, true)"),
+      'outside taps are watched while the menu is open');
+    assert.ok(openBody.includes("document.addEventListener('scroll', closeWatchoutActionMenu, true)"),
+      'any scroll closes the menu instead of leaving it floating detached from its chip');
+    assert.ok(openBody.includes("window.addEventListener('resize', closeWatchoutActionMenu)"));
+    assert.ok(outsideBody.includes('menu.contains(e.target)'), 'taps inside the menu are not "outside"');
+    assert.ok(outsideBody.includes('woMenuAnchorEl.contains(e.target)'), 'taps on the anchor chip are not "outside"');
+    assert.ok(outsideBody.includes('closeWatchoutActionMenu();'), 'a true outside tap closes with no change');
+    assert.ok(closeBody.includes('menu.remove()'), 'closing removes the menu DOM');
+    assert.ok(closeBody.includes("document.removeEventListener('pointerdown', woMenuOutsideTap, true)"),
+      'closing unregisters the outside-tap listener');
+    assert.ok(closeBody.includes("document.removeEventListener('scroll', closeWatchoutActionMenu, true)"));
+    assert.ok(closeBody.includes("window.removeEventListener('resize', closeWatchoutActionMenu)"));
+
+    // A re-render replaces the chips, so it must not leave a stale menu
+    // floating over a chip that no longer exists.
+    const rwIdx = indexHtml.indexOf('function renderWatchoutPhotos()');
+    assert.ok(rwIdx !== -1 && indexHtml.slice(rwIdx, rwIdx + 220).includes('closeWatchoutActionMenu();'),
+      'renderWatchoutPhotos closes the dropdown before replacing the chips');
+
     assert.ok(pickBody.includes('setWatchoutAction(index, actionId)'),
-      'sheet picks route through the shared setWatchoutAction mutation path');
-    assert.ok(pickBody.includes('closeWatchoutActionSheet();'), 'picking closes the sheet');
+      'dropdown picks route through the shared setWatchoutAction mutation path');
+    assert.ok(pickBody.includes('closeWatchoutActionMenu();'), 'picking closes the dropdown');
   });
 });
