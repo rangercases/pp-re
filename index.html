@@ -19196,12 +19196,20 @@
               addHeader('QUALITY SUMMARY');
               drawTableHead();
             }
+            // Đệm trên/dưới bằng nhau ở mọi hàng (v4.1.4): khối chữ (cap-top
+            // -> chân descender = (n-1)*3.9 + 3.7) và chip được căn giữa vùng
+            // nội dung phía trên đường kẻ chân hàng (rowH - 0.6). Hàng 2+
+            // dòng cho đúng baseline cũ y + 4; hàng 1 dòng hết thừa đệm dưới.
+            // Chip vẫn bám cột phải W - M thẳng hàng như trước.
+            const rowZoneH = rowH - 0.6;
+            const capBlockH = (lines.length - 1) * 3.9 + 3.7;
+            const rowBaseY = y + (rowZoneH - capBlockH) / 2 + 3.0;
             doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(140, 130, 122);
-            doc.text('#' + it.index, M, y + 4);
+            doc.text('#' + it.index, M, rowBaseY);
             doc.setFont(fontFam, 'normal'); doc.setTextColor(45, 40, 35);
-            lines.forEach((ln, li) => { doc.text(ln, M + idxW, y + 4 + li * 3.9); });
+            lines.forEach((ln, li) => { doc.text(ln, M + idxW, rowBaseY + li * 3.9); });
             const meta = actionChipMeta(it.action);
-            drawActionChip(W - M - actionChipWidth(meta), y + 0.6, meta);
+            drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);
             doc.setDrawColor(233, 229, 223); doc.setLineWidth(0.2);
             doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
             y += rowH;
