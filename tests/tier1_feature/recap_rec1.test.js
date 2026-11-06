@@ -237,7 +237,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
   it('TC-REC1.4.4: the Overview auto summary is Recap-gated, builder-driven, and has an empty state', () => {
     assert.ok(autoSummaryBody.includes('if (!isRecapReport())'));
     assert.ok(autoSummaryBody.includes('buildRecapWatchoutSummary(D)'));
-    assert.ok(autoSummaryBody.includes('AUTO SUMMARY'));
+    assert.ok(autoSummaryBody.includes('QUALITY SUMMARY'));
     assert.ok(autoSummaryBody.includes('✓ No issues recorded'));
     assert.ok(autoSummaryBody.includes('No description yet'));
     assert.ok(autoSummaryBody.includes('recapSummaryTallyText(s)'));
@@ -258,7 +258,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
       "['Ghi nhận', 'Take note']",
       "['Chấp nhận', 'Accepted']",
       "['Chưa xử lý', 'Not decided']",
-      "['Tóm tắt tự động', 'AUTO SUMMARY']",
+      "['Tóm tắt chất lượng', 'QUALITY SUMMARY']",
       "['Chưa có mô tả', 'No description yet']",
       "['✓ Không có vấn đề nào được ghi nhận', '✓ No issues recorded']"
     ];
@@ -272,8 +272,8 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
 // TC-REC1.5 — PDF gating: summary block + Watch Out caption chips
 // ─────────────────────────────────────────────────────────────────────────────
 describe('TC-REC1.5: PDF gating (source assertions)', () => {
-  it('TC-REC1.5.1: the page-1 AUTO SUMMARY block is Recap-gated and uses the shared builder in English', () => {
-    assert.ok(indexHtml.includes('REC-1: RECAP AUTO SUMMARY'));
+  it('TC-REC1.5.1: the page-1 QUALITY SUMMARY block is Recap-gated and uses the shared builder in English', () => {
+    assert.ok(indexHtml.includes('REC-1: RECAP QUALITY SUMMARY'));
     assert.ok(indexHtml.includes('const recapSummary = buildRecapWatchoutSummary(D);'));
     assert.ok(indexHtml.includes("recapSummaryTallyText(recapSummary, 'en')"), 'PDF tally must be forced to English');
     assert.ok(indexHtml.includes("if (isRecap) {\n        const recapSummary = buildRecapWatchoutSummary(D);"));

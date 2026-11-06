@@ -15675,7 +15675,7 @@
     }
 
     /* ════════════════════════════════════════════════════════════════════════════
-       REC-1 (v4.1.0) — RECAP WATCH OUT DISPOSITIONS + AUTO SUMMARY
+       REC-1 (v4.1.0) — RECAP WATCH OUT DISPOSITIONS + QUALITY SUMMARY
        One shared builder feeds the editor Overview block and the PDF block so
        both always agree. Only Recap reads/writes the slot `action` field.
        ════════════════════════════════════════════════════════════════════════════ */
@@ -15757,7 +15757,7 @@
       const s = buildRecapWatchoutSummary(D);
       el.style.display = '';
       if (s.total === 0) {
-        el.innerHTML = '<div class="ras-head">AUTO SUMMARY</div>' +
+        el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
           '<div class="ras-empty">✓ No issues recorded</div>';
         return;
       }
@@ -15771,7 +15771,7 @@
           : `<span class="ras-cap is-empty">No description yet</span>`;
         return `<div class="ras-row"><span class="ras-idx">#${it.index}</span>${cap}${chip}</div>`;
       }).join('');
-      el.innerHTML = '<div class="ras-head">AUTO SUMMARY</div>' +
+      el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
         `<div class="ras-tally">${escapeHtml(recapSummaryTallyText(s))}</div>` +
         `<div class="ras-list">${rows}</div>`;
     }
@@ -18926,15 +18926,15 @@
         }
       }
 
-      // ================= REC-1: RECAP AUTO SUMMARY (NGAY DƯỚI ẢNH OVERVIEW) =================
-      // Tóm tắt tự động từ Watch Out: người đọc mở trang đầu là biết ngay lỗi gì,
+      // ================= REC-1: RECAP QUALITY SUMMARY (NGAY DƯỚI ẢNH OVERVIEW) =================
+      // Tóm tắt chất lượng từ Watch Out: người đọc mở trang đầu là biết ngay lỗi gì,
       // trạng thái xử lý ra sao. Nếu tràn cuối trang thì tiếp tục ở trang sau
       // qua addHeader/BOTTOM_LIMIT như mọi section khác.
       if (isRecap) {
         const recapSummary = buildRecapWatchoutSummary(D);
-        if (y + 16 > BOTTOM_LIMIT) addHeader('AUTO SUMMARY');
+        if (y + 16 > BOTTOM_LIMIT) addHeader('QUALITY SUMMARY');
         doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40);
-        doc.text("AUTO SUMMARY", M, y); y += 6.5;
+        doc.text("QUALITY SUMMARY", M, y); y += 6.5;
 
         if (recapSummary.total === 0) {
           doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
@@ -18964,7 +18964,7 @@
             const lines = doc.splitTextToSize(capText, capW);
             const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;
             if (y + rowH > BOTTOM_LIMIT) {
-              addHeader('AUTO SUMMARY');
+              addHeader('QUALITY SUMMARY');
               drawTableHead();
             }
             doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(140, 130, 122);
@@ -21016,7 +21016,7 @@
       ['Ghi nhận', 'Take note'],
       ['Chấp nhận', 'Accepted'],
       ['Chưa xử lý', 'Not decided'],
-      ['Tóm tắt tự động', 'AUTO SUMMARY'],
+      ['Tóm tắt chất lượng', 'QUALITY SUMMARY'],
       ['Chưa có mô tả', 'No description yet'],
       ['✓ Không có vấn đề nào được ghi nhận', '✓ No issues recorded']
     ];
