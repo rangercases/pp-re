@@ -98,7 +98,7 @@ export async function onRequestGet({ request, env }) {
       }
     } else {
       whereClauses.push('user_id = ?');
-      bindParams.push(session.user.id);
+      bindParams.push(String(session.user.id));
     }
 
     if (moduleType) {
@@ -183,7 +183,8 @@ export async function onRequestPost({ request, env }) {
     // The owner is always the session user; body.userId / body.user_id are
     // ignored so a client cannot file a report under someone else's account.
     // (Refined below for the resurrect-a-soft-deleted-report path.)
-    let userId = session.user.id;
+    // user_id is a TEXT column, so the id is bound in string form.
+    let userId = String(session.user.id);
     const moduleType = (body.moduleType || body.module_type || 'prototype').trim();
     const modelNumber = (body.modelNumber || body.model_number || body.model || '').trim();
     const poNumber = (body.poNumber || body.po_number || body.po || '').trim();
@@ -218,7 +219,7 @@ export async function onRequestPost({ request, env }) {
 
     // Resurrecting a soft-deleted report keeps its original owner.
     if (existing && existing.user_id != null) {
-      userId = existing.user_id;
+      userId = String(existing.user_id);
     }
     body.userId = String(userId);
     body.user_id = String(userId);
