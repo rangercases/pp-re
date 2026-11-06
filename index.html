@@ -13007,6 +13007,7 @@
       document.getElementById('appConfirmTitle').textContent = translateI18nText(opts.title || 'Delete this item?');
       document.getElementById('appConfirmMessage').textContent = translateI18nText(message);
       document.getElementById('appConfirmOk').textContent = translateI18nText(opts.confirmLabel || 'Delete');
+      document.getElementById('appConfirmCancel').textContent = translateI18nText(opts.cancelLabel || 'Cancel');
       modal.classList.remove('hidden');
       lockBodyScroll();
       return new Promise(resolve => { appConfirmResolver = resolve; });
@@ -19875,8 +19876,11 @@
       if (count == null) return;
       try { localStorage.setItem(AUTH_LEGACY_PROMPT_KEY, '1'); } catch (err) { }
       const copy = await appConfirm(
-        'This device has ' + count + ' report(s) saved before the account existed. Copy them all into ' + (user.email || '') + '? The original data is kept.',
-        { title: 'Old report data', confirmLabel: 'Copy' }
+        L(
+          'Máy này có ' + count + ' báo cáo được lưu trước khi bạn đăng nhập. Sao chép vào tài khoản của bạn?',
+          'This device has ' + count + ' report(s) saved before you signed in. Copy them into your account?'
+        ),
+        { title: 'Local reports found', confirmLabel: 'Copy to my account', cancelLabel: 'Skip' }
       );
       if (!copy) return;
       let legacyDb = null;
