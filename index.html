@@ -2655,40 +2655,128 @@
     [data-wo-action="note"] { --wo-c: #3788dd; --wo-bg: #eef5fd; --wo-tx: #1e5ab4; }
     [data-wo-action="accepted"] { --wo-c: #34a853; --wo-bg: #edf7ee; --wo-tx: #1e7832; }
 
-    .wo-action-chips {
+    /* REC-1 (v4.1.2): Style B — ONE status chip per slot; tapping it opens the
+       picker sheet below. The 4-chip row (v4.1.0) wrapped to two rows and read
+       as clutter, so the slot now shows only its current state. */
+    .wo-action-bar {
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
       align-items: center;
       padding: 2px 9px 9px;
       background: #ffffff;
     }
 
-    .wo-act-chip {
+    .wo-status-chip {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
       font-family: var(--font-body);
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       user-select: none;
-      padding: 5px 11px;
-      min-height: 30px;
+      padding: 5px 12px;
+      min-height: 32px;
       border-radius: var(--r-pill, 9999px);
-      background: var(--sunken, #f7f6f4);
-      border: 1px solid var(--line, #e6e3df);
-      color: var(--muted, #8a8378);
+      background: var(--wo-bg);
+      border: 1px solid var(--wo-c);
+      color: var(--wo-tx);
       transition: all 0.15s ease;
       -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
     }
 
-    .wo-act-chip:active { transform: scale(0.96); }
+    .wo-status-chip:active { transform: scale(0.96); }
 
-    .wo-act-chip.on {
-      background: var(--wo-bg);
-      border-color: var(--wo-c);
+    /* Unselected: muted dashed outline, reads as "tap to set". */
+    .wo-status-chip.none {
+      background: transparent;
+      border: 1px dashed #cfc9c0;
+      color: var(--muted, #8a8378);
+    }
+
+    .wo-status-chip .wo-plus { font-weight: 700; }
+
+    .wo-status-chip .wo-chev { font-size: 8px; opacity: 0.65; }
+
+    /* Status picker sheet: reuses .modal-overlay (so the version mark hides
+       and scroll locking behave as with every other dialog). Bottom sheet on
+       narrow screens, small centered panel on desktop. */
+    .wo-sheet {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r, 16px);
+      box-shadow: var(--sh-xl);
+      width: 100%;
+      max-width: 380px;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .wo-sheet-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text, #2c2c2c);
+      cursor: pointer;
+      text-align: left;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .wo-sheet-row:hover,
+    .wo-sheet-row:active { background: var(--sunken, #f7f6f4); }
+
+    .wo-sheet-row .wo-dot {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--wo-c);
+    }
+
+    .wo-sheet-row .wo-dot.is-spacer { background: transparent; }
+
+    .wo-sheet-row .wo-check {
+      margin-left: auto;
+      font-weight: 700;
       color: var(--wo-tx);
+    }
+
+    .wo-sheet-divider {
+      height: 1px;
+      background: var(--line);
+      margin: 6px 12px;
+    }
+
+    .wo-sheet-clear { color: var(--muted, #8a8378); }
+
+    @media (max-width: 640px) {
+      .wo-sheet-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .wo-sheet {
+        max-width: none;
+        border: none;
+        border-radius: 18px 18px 0 0;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        animation: woSheetUp 0.22s ease;
+      }
+    }
+
+    @keyframes woSheetUp {
+      from { transform: translateY(24px); opacity: 0.4; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .recap-auto-summary {
@@ -14942,10 +15030,8 @@
           <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Quality Watch Out notes, inspection remarks..." oninput="updateCaption('watchoutPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
         </div>
         ${isRecap ? `
-        <!-- REC-1: HÀNG CHIP TRẠNG THÁI XỬ LÝ (CHỈ HIỆN Ở RECAP) -->
-        <div class="wo-action-chips ignore-drag">
-          ${WO_ACTIONS.map(a => `<button type="button" class="wo-act-chip${p && p.action === a.id ? ' on' : ''}" data-wo-action="${a.id}" onclick="setWatchoutAction(${i}, '${a.id}');event.stopPropagation()">${a.en}</button>`).join('')}
-        </div>` : ''}`;
+        <!-- REC-1: MỘT CHIP TRẠNG THÁI — chạm mở sheet chọn (CHỈ HIỆN Ở RECAP) -->
+        <div class="wo-action-bar ignore-drag">${woStatusChipHtml(i, p)}</div>` : ''}`;
 
         const mainPhotoEl = div.querySelector('.dim-main-photo');
         const subPhotoEl = div.querySelector('.dim-sub-photo');
@@ -15734,13 +15820,79 @@
       return head + ': ' + parts.join(' · ');
     }
 
+    // REC-1 (v4.1.2, Style B): the slot shows a SINGLE chip — its current
+    // status in color, or a muted "+ Not decided" when unset. The label stays
+    // its own text node so the i18n observer can translate it; the "+" and
+    // the "▾" affordance are separate spans.
+    function woStatusChipHtml(index, slot) {
+      const meta = woActionMeta(slot && slot.action);
+      if (meta) {
+        return `<button type="button" class="wo-status-chip" data-wo-action="${meta.id}" onclick="openWatchoutActionSheet(${index});event.stopPropagation()">${meta.en}<span class="wo-chev" aria-hidden="true">▾</span></button>`;
+      }
+      return `<button type="button" class="wo-status-chip none" onclick="openWatchoutActionSheet(${index});event.stopPropagation()"><span class="wo-plus" aria-hidden="true">+</span>${WO_ACTION_NONE.en}<span class="wo-chev" aria-hidden="true">▾</span></button>`;
+    }
+
+    // Explicit set-to-value semantics (v4.1.2): the picker sheet sets exactly
+    // the chosen value, or null to clear — the old tap-chip-to-toggle gesture
+    // is gone. Unknown values normalize to null; a no-change call is a no-op
+    // (no history entry, no save churn).
     function setWatchoutAction(index, actionId) {
       if (!D.watchoutPhotos || !D.watchoutPhotos[index]) return;
-      pushHistory('Set Watch Out status');
+      const next = woActionMeta(actionId) ? actionId : null;
       const cur = D.watchoutPhotos[index].action || null;
-      D.watchoutPhotos[index].action = (cur === actionId) ? null : actionId;
+      if (cur === next) return;
+      pushHistory('Set Watch Out status');
+      D.watchoutPhotos[index].action = next;
       as();
       renderWatchoutPhotos();
+    }
+
+    /* ── Status picker sheet ──────────────────────────────────────────────
+       One instance at a time: opening re-targets by rebuilding, closing
+       removes the DOM (mirroring appConfirm's overlay discipline, on the
+       same .modal-overlay class so scroll lock + version-mark hiding apply). */
+    let woSheetSlotIndex = null;
+
+    function closeWatchoutActionSheet() {
+      const sheet = document.getElementById('woActionSheet');
+      if (sheet) sheet.remove();
+      woSheetSlotIndex = null;
+      unlockBodyScroll();
+    }
+
+    function openWatchoutActionSheet(index) {
+      if (!D.watchoutPhotos || !D.watchoutPhotos[index]) return;
+      closeWatchoutActionSheet();
+      woSheetSlotIndex = index;
+      const cur = D.watchoutPhotos[index].action || null;
+      const overlay = document.createElement('div');
+      overlay.id = 'woActionSheet';
+      overlay.className = 'modal-overlay wo-sheet-overlay';
+      overlay.style.zIndex = '310';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      const rows = WO_ACTIONS.map(a => `
+        <button type="button" class="wo-sheet-row" data-wo-action="${a.id}" onclick="pickWatchoutAction('${a.id}')">
+          <span class="wo-dot"></span><span class="wo-sheet-label">${a.en}</span>${cur === a.id ? '<span class="wo-check">✓</span>' : ''}
+        </button>`).join('');
+      overlay.innerHTML = `
+      <div class="wo-sheet">
+        ${rows}
+        <div class="wo-sheet-divider"></div>
+        <button type="button" class="wo-sheet-row wo-sheet-clear" onclick="pickWatchoutAction(null)">
+          <span class="wo-dot is-spacer"></span><span class="wo-sheet-label">Clear selection</span>
+        </button>
+      </div>`;
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeWatchoutActionSheet(); });
+      document.body.appendChild(overlay);
+      lockBodyScroll();
+    }
+
+    function pickWatchoutAction(actionId) {
+      const index = woSheetSlotIndex;
+      closeWatchoutActionSheet();
+      if (index === null || index === undefined) return;
+      setWatchoutAction(index, actionId);
     }
 
     // Read-only auto summary rendered under the Recap Overview photo grid.
@@ -21018,7 +21170,9 @@
       ['Chưa xử lý', 'Not decided'],
       ['Tóm tắt chất lượng', 'QUALITY SUMMARY'],
       ['Chưa có mô tả', 'No description yet'],
-      ['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded']
+      ['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded'],
+      // REC-1 Style B (v4.1.2): the status picker sheet's clear row
+      ['Bỏ chọn', 'Clear selection']
     ];
 
     const I18N_MAPS = { en: new Map(), vi: new Map() };
