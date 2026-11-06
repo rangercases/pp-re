@@ -1,5 +1,5 @@
 // Service Worker for FASREP (Offline & PWA Support)
-const CACHE_NAME = 'fasrep-v3.9.4';
+const CACHE_NAME = 'fasrep-v3.9.5';
 
 const STATIC_ASSETS = [
   './',
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js',
   'https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif-wasm/libheif-bundle.js',
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
-  'https://img.icons8.com/color/180/sofa.png'
+  './icon-192.png'
 ];
 
 // Install: Precache core assets & CDNs (individual caching for resilience)
@@ -64,8 +64,7 @@ self.addEventListener('fetch', (event) => {
 
   // 1. CDN and External Vendor assets -> Cache-First
   const isCdn = url.hostname.includes('cdnjs.cloudflare.com') ||
-                url.hostname.includes('jsdelivr.net') ||
-                url.hostname.includes('icons8.com');
+                url.hostname.includes('jsdelivr.net');
 
   if (isCdn) {
     event.respondWith(

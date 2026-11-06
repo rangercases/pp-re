@@ -1,26 +1,26 @@
-name: Deploy to GitHub Pages
+name: CI — build & test check
+
+# A-03: This workflow used to DEPLOY to GitHub Pages on every push to main.
+# That produced a second, broken copy of the app (GitHub Pages has no
+# Cloudflare Functions/D1, so sign-in and the API were dead there) and it
+# confused diagnosis. Production deploys ONLY go to Cloudflare Pages
+# (fasrep.com) via `npm run deploy`. This workflow is now check-only.
 
 on:
   push:
     branches: ["main"]
+  pull_request:
   workflow_dispatch:
 
-# Cấp quyền bắt buộc cho GITHUB_TOKEN để deploy GitHub Pages
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Chỉ cho phép 1 lần deploy chạy tại một thời điểm
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,17 +34,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build with Vite (Single-File)
+      - name: Build with Vite (Single-File) + assertions
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Run test suite
+        run: npm test

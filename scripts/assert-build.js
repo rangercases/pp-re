@@ -35,9 +35,10 @@ check('single-file bundle contains autosave queue', html.includes('drainSaveQueu
 check('single-file bundle contains small thumbnails', html.includes('thumbSmall'));
 check('single-file bundle shows FASREP', html.includes('FASREP'));
 check('single-file bundle has no DIGITAL REPORT', !html.includes('DIGITAL REPORT'));
-check('single-file bundle has APP_VERSION v3.9.4', html.includes("APP_VERSION = 'v3.9.4'"));
-check('single-file bundle shows V3.9.4 badge', html.includes('[V3.9.4]') && !html.includes('[V3.9.3]'));
-check('package.json version is 3.9.4', pkg.version === '3.9.4', pkg.version);
+check('single-file bundle has APP_VERSION v' + pkg.version, html.includes("APP_VERSION = 'v" + pkg.version + "'"));
+const versionBadges = html.match(/\[V\d+\.\d+\.\d+\]/g) || [];
+check('single-file bundle shows V' + pkg.version + ' badge', versionBadges.length > 0 && versionBadges.every(b => b === '[V' + pkg.version + ']'));
+check('package.json version is ' + pkg.version, /^\d+\.\d+\.\d+$/.test(pkg.version || ''), pkg.version);
 check('dimension unit inputs default to mm with data-unit-for', html.includes('data-unit-for="actual"') && html.includes('data-unit-for="drawing"'));
 check('no Import Recent Dimensions button in bundle', !html.includes('btnCopyDims') && !html.includes('Import Recent Dimensions'));
 check('no drag-mode-segmented buttons in module headers', !html.includes('drag-mode-segmented'));
@@ -84,7 +85,7 @@ if (manifest) {
 }
 
 const sw = read('service-worker.js');
-check('dist/service-worker.js has v3.9.4 cache', sw.includes("fasrep-v3.9.4"));
+check('dist/service-worker.js has v' + pkg.version + ' cache', sw.includes('fasrep-v' + pkg.version));
 check('dist/service-worker.js never caches /api/', sw.includes("url.pathname.startsWith('/api/')"));
 check('dist/service-worker.js pins SortableJS 1.15.2', sw.includes('sortablejs@1.15.2'));
 check('dist/service-worker.js has no @latest', !sw.includes('@latest'));

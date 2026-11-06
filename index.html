@@ -6782,7 +6782,7 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.4]</span>
+            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.9.5]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8376,7 +8376,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.9.4';
+    const APP_VERSION = 'v3.9.5';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -11714,6 +11714,7 @@
       for (const id of selectedReportIds) {
         try {
           await dbDelete(id);
+          if (typeof cloudDeleteReport === 'function') cloudDeleteReport(id);
           deletedCount++;
         } catch (err) {
           failedCount++;
@@ -12615,6 +12616,7 @@
               if (!(await appConfirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`, { title: 'Delete report?' }))) return;
               try {
                 await dbDelete(r.id);
+                if (typeof cloudDeleteReport === 'function') cloudDeleteReport(r.id);
                 showToast('✓ Report deleted');
               } catch (delErr) {
                 console.error('Failed to delete report', r.id, delErr);
@@ -16739,6 +16741,8 @@
         // an explicit full-size JSON deep clone (which would duplicate every photo).
         await dbPut(payload);
         if (isCurrentReport) knownDbUpdatedAt = payload.updatedAt;
+        // A-01: best-effort cloud backup after the local save has landed.
+        if (typeof cloudPushReport === 'function') cloudPushReport(payload);
 
         if (isCurrentReport) {
           lastSavedRevision = Math.max(lastSavedRevision, revisionAtStart);
@@ -19208,6 +19212,160 @@
       return { res: res, data: data };
     }
 
+    // ═══════════════ CLOUD SYNC (/api/reports, D1) ═══════════════
+    // A-01: the reports API existed server-side but the client never called
+    // it. Sync is strictly best-effort: it only runs while signed in, and a
+    // sync failure NEVER blocks or breaks the local save path.
+    // Policy: local save first, then push. On sign-in, pull and merge by
+    // updatedAt — the newer copy wins. Revision conflicts resolve the same
+    // way (newer updatedAt wins), using the server revision for the PATCH.
+    const cloudRevisions = {}; // reportId -> last known server revision
+
+    function reportUpdatedMs(r) {
+      if (!r) return 0;
+      const u = r.updatedAt;
+      if (typeof u === 'number') return u;
+      if (typeof u === 'string') {
+        const t = u.trim();
+        if (t && !isNaN(Number(t))) return Number(t);
+        const p = Date.parse(t);
+        return isNaN(p) ? 0 : p;
+      }
+      return 0;
+    }
+
+    function cloudSnapshotForPush(report) {
+      const body = Object.assign({}, report);
+      // Local-only fields must not go to the server.
+      delete body.archiveFolder;
+      delete body._fileDirty;
+      delete body._fileSavedAt;
+      delete body.revision; // the server owns the revision counter
+      body.userId = (currentUser && currentUser.id != null) ? currentUser.id : null;
+      return body;
+    }
+
+    async function cloudPatchReport(id, body, expectedRev) {
+      const payload = Object.assign({}, body, { expectedRevision: expectedRev });
+      return apiFetch('/api/reports/' + encodeURIComponent(id), { method: 'PATCH', body: payload });
+    }
+
+    async function cloudPushReport(report) {
+      if (!currentUser || !report || !report.id) return;
+      const id = String(report.id);
+      try {
+        const body = cloudSnapshotForPush(report);
+        const knownRev = cloudRevisions[id];
+        if (knownRev) {
+          const r = await cloudPatchReport(id, body, knownRev);
+          if (r.res.ok && r.data && r.data.revision) {
+            cloudRevisions[id] = r.data.revision;
+            return;
+          }
+          if (r.res.status !== 409) return; // other errors: stay local-only
+          // Revision conflict — fall through to resolve by updatedAt.
+          const metaRes = await apiFetch('/api/reports/' + encodeURIComponent(id) + '?meta=1');
+          if (!metaRes.res.ok || !metaRes.data || !metaRes.data.report) return;
+          const serverMeta = metaRes.data.report;
+          cloudRevisions[id] = serverMeta.revision;
+          if (reportUpdatedMs(report) >= reportUpdatedMs(serverMeta)) {
+            const retry = await cloudPatchReport(id, body, serverMeta.revision);
+            if (retry.res.ok && retry.data && retry.data.revision) cloudRevisions[id] = retry.data.revision;
+          } else {
+            // Server copy is newer: pull it in (the login merge would do
+            // this too; doing it now keeps the open editor protected by
+            // the C-05 guard, so skip if this report is being edited).
+            if (!(typeof currentId !== 'undefined' && currentId && String(currentId) === id)) {
+              const full = await apiFetch('/api/reports/' + encodeURIComponent(id));
+              if (full.res.ok && full.data && full.data.report) {
+                await dbPut(full.data.report);
+                if (typeof renderHome === 'function') renderHome();
+              }
+            }
+          }
+          return;
+        }
+        // No known revision: create. If it already exists (409), learn its
+        // revision and continue as an update.
+        const created = await apiFetch('/api/reports', { method: 'POST', body: body });
+        if (created.res.ok && created.data && created.data.revision) {
+          cloudRevisions[id] = created.data.revision;
+          return;
+        }
+        if (created.res.status === 409) {
+          const metaRes = await apiFetch('/api/reports/' + encodeURIComponent(id) + '?meta=1');
+          if (metaRes.res.ok && metaRes.data && metaRes.data.report) {
+            cloudRevisions[id] = metaRes.data.report.revision;
+            const r = await cloudPatchReport(id, body, cloudRevisions[id]);
+            if (r.res.ok && r.data && r.data.revision) cloudRevisions[id] = r.data.revision;
+          }
+        }
+      } catch (err) {
+        console.warn('[CloudSync] push failed (local copy unaffected)', err);
+      }
+    }
+
+    async function cloudDeleteReport(id) {
+      if (!currentUser || !id) return;
+      try {
+        await apiFetch('/api/reports/' + encodeURIComponent(id), { method: 'DELETE' });
+        delete cloudRevisions[String(id)];
+      } catch (err) {
+        console.warn('[CloudSync] delete failed (local delete unaffected)', err);
+      }
+    }
+
+    async function cloudPullAndMerge() {
+      if (!currentUser) return;
+      try {
+        const listRes = await apiFetch('/api/reports?limit=100');
+        if (!listRes.res.ok || !listRes.data || !listRes.data.success) return;
+        const metas = Array.isArray(listRes.data.reports) ? listRes.data.reports : [];
+        const localMetas = await dbGetAllMetadata();
+        const localById = new Map(localMetas.map(m => [String(m.id), m]));
+        const serverIds = new Set();
+        let pulled = 0;
+
+        for (const meta of metas) {
+          const id = String(meta.id);
+          // The API lists all reports; never pull another account's report
+          // into this account's per-user database.
+          if (meta.userId != null && String(meta.userId) !== String(currentUser.id)) continue;
+          serverIds.add(id);
+          if (meta.revision) cloudRevisions[id] = meta.revision;
+          const local = localById.get(id);
+          const serverMs = reportUpdatedMs(meta);
+          if (!local || serverMs > reportUpdatedMs(local)) {
+            if (typeof currentId !== 'undefined' && currentId && String(currentId) === id) continue;
+            const full = await apiFetch('/api/reports/' + encodeURIComponent(id));
+            if (full.res.ok && full.data && full.data.report) {
+              await dbPut(full.data.report);
+              if (full.data.revision) cloudRevisions[id] = full.data.revision;
+              pulled++;
+            }
+          } else if (reportUpdatedMs(local) > serverMs) {
+            const fullLocal = await dbGet(id);
+            if (fullLocal) await cloudPushReport(fullLocal);
+          }
+        }
+
+        // Local reports the server has never seen: back them up now.
+        for (const lm of localMetas) {
+          if (!serverIds.has(String(lm.id))) {
+            const fullLocal = await dbGet(lm.id);
+            if (fullLocal) await cloudPushReport(fullLocal);
+          }
+        }
+
+        if (pulled > 0) {
+          showToast(`☁ Synced ${pulled} report(s) from cloud`);
+          if (typeof renderHome === 'function') renderHome();
+        }
+      } catch (err) {
+        console.warn('[CloudSync] pull/merge failed (local data unaffected)', err);
+      }
+    }
+
     function withTimeout(promise, ms) {
       return Promise.race([
         promise,
@@ -19468,6 +19626,8 @@
       initDB().then(async () => {
         try { await maybeOfferLegacyMigration(currentUser); } catch (err) { console.warn('Legacy migration skipped', err); }
         renderHome();
+        // A-01: merge with the cloud copy for this account (best-effort).
+        if (typeof cloudPullAndMerge === 'function') cloudPullAndMerge();
         initHomeDragAndDrop();
         fsInit().catch(() => { });
       }).catch(err => { console.error('IndexedDB initialization error:', err); showToast('IndexedDB storage error'); });
