@@ -465,3 +465,111 @@ describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropd
     assert.ok(pickBody.includes('closeWatchoutActionMenu();'), 'picking closes the dropdown');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-REC1.7 — Recap editor Overview: the redundant summary strip is hidden
+// (v4.1.5). The PDF lost its top strip in v4.1.1 because the QUALITY SUMMARY
+// block carries the information; the editor strip (#overviewSummaryStrip)
+// duplicated the same watch-out count next to #recapAutoSummary, so
+// renderOverviewSummary now hides it completely for Recap while non-Recap
+// modules keep their badges exactly as before.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('TC-REC1.7: renderOverviewSummary hides the strip for Recap only (v4.1.5)', () => {
+  const summaryBody = extractFnBody(indexHtml, 'function renderOverviewSummary()', 'renderOverviewSummary');
+
+  // Evaluate the real function against a stub element + metrics so the
+  // element's end state (content AND display) is asserted, not just source.
+  function runSummary(D, metrics, initial) {
+    const el = { innerHTML: initial.innerHTML, style: { display: initial.display } };
+    const documentStub = { getElementById: (id) => (id === 'overviewSummaryStrip' ? el : null) };
+    const factory = new Function(
+      'document', 'D', 'getReportQuickMetrics',
+      `function renderOverviewSummary() {${summaryBody}}\nreturn renderOverviewSummary;`
+    );
+    factory(documentStub, D, () => metrics)();
+    return el;
+  }
+
+  const baseMetrics = {
+    watchCount: 0, totalTests: 0, failedTests: 0, passedTests: 0, pendingTests: 0,
+    totalCriteria: 0, passCriteria: 0, pendingCriteria: 0, redDims: 0, orangeDims: 0
+  };
+
+  it('TC-REC1.7.1: the Recap branch empties + fully hides the strip and builds no badge', () => {
+    const recapIf = summaryBody.indexOf("if (D.moduleType === 'sample-review-recap')");
+    assert.ok(recapIf !== -1, 'the Recap branch must still exist');
+    const branch = summaryBody.slice(recapIf, summaryBody.indexOf('return;', recapIf));
+    assert.ok(branch.includes("el.innerHTML = '';"), 'Recap empties the strip content');
+    assert.ok(branch.includes("el.style.display = 'none';"),
+      'Recap hides the element itself — an emptied strip would still paint its background/border as an empty bar');
+    assert.ok(!branch.includes('summary-badge'), 'Recap builds no badge markup at all');
+    assert.ok(!branch.includes('watchBadge'), 'the old lone watch badge construction is gone');
+    // The badge strings now exist exactly once each in the function: the
+    // non-Recap watch badge. The Recap branch used to add a second copy.
+    assert.equal(summaryBody.split('Quality Watch-out').length - 1, 1,
+      'only the non-Recap watch badge keeps the Quality Watch-out label');
+    assert.equal(summaryBody.split('0 Watch-outs (Clean)').length - 1, 1,
+      'only the non-Recap path keeps the Clean badge');
+  });
+
+  it('TC-REC1.7.2: evaluated — a Recap report ends with an empty, display:none strip', () => {
+    const withWatch = runSummary(
+      { moduleType: 'sample-review-recap' },
+      { ...baseMetrics, watchCount: 4 },
+      { innerHTML: 'LEFTOVER BADGE', display: '' }
+    );
+    assert.equal(withWatch.innerHTML, '', 'no watch badge is rendered for Recap');
+    assert.equal(withWatch.style.display, 'none', 'the strip element is fully hidden for Recap');
+
+    const clean = runSummary(
+      { moduleType: 'sample-review-recap' },
+      { ...baseMetrics, watchCount: 0 },
+      { innerHTML: 'LEFTOVER BADGE', display: '' }
+    );
+    assert.equal(clean.innerHTML, '', 'no "Clean" badge is rendered for Recap either');
+    assert.equal(clean.style.display, 'none');
+  });
+
+  it('TC-REC1.7.3: the non-Recap path restores visibility before building its badges', () => {
+    const recapIf = summaryBody.indexOf("if (D.moduleType === 'sample-review-recap')");
+    const restoreIdx = summaryBody.indexOf("el.style.display = '';");
+    assert.ok(restoreIdx > recapIf, 'display is restored on the non-Recap path, after the Recap branch');
+    assert.ok(summaryBody.indexOf('summary-badge', restoreIdx) > restoreIdx,
+      'badges are still built after the restore');
+
+    // Start from the exact state a Recap render leaves behind (hidden +
+    // empty) in the same session, then render a Prototype report.
+    const proto = runSummary(
+      { moduleType: 'prototype' },
+      { ...baseMetrics, watchCount: 2 },
+      { innerHTML: '', display: 'none' }
+    );
+    assert.equal(proto.style.display, '', 'switching to a non-Recap report brings the strip back');
+    assert.ok(proto.innerHTML.includes('overview-summary-head'), 'the Quality Summary head is rendered');
+    assert.ok(proto.innerHTML.includes('summary-badge'), 'badges are rendered for non-Recap');
+    assert.ok(proto.innerHTML.includes('Quality Watch-out'), 'the watch badge is rendered for non-Recap');
+
+    const protoClean = runSummary(
+      { moduleType: 'pre-production' },
+      { ...baseMetrics, watchCount: 0 },
+      { innerHTML: '', display: 'none' }
+    );
+    assert.equal(protoClean.style.display, '');
+    assert.ok(protoClean.innerHTML.includes('0 Watch-outs (Clean)'),
+      'the non-Recap Clean badge is unchanged');
+  });
+
+  it('TC-REC1.7.4: the Recap QUALITY SUMMARY block and the metrics function are untouched', () => {
+    const autoSummaryBody = extractFnBody(indexHtml, 'function renderRecapAutoSummary()', 'renderRecapAutoSummary');
+    assert.ok(autoSummaryBody.includes("getElementById('recapAutoSummary')"),
+      'the QUALITY SUMMARY block still renders into #recapAutoSummary');
+    assert.ok(autoSummaryBody.includes('QUALITY SUMMARY'),
+      'the QUALITY SUMMARY block heading is intact — it stays the single Recap summary');
+    assert.ok(indexHtml.includes('id="recapAutoSummary"'), 'the summary container still exists');
+    const metricsBody = extractFnBody(indexHtml, 'function getReportQuickMetrics(data)', 'getReportQuickMetrics');
+    assert.ok(metricsBody.includes('watchCount'),
+      'getReportQuickMetrics itself is unchanged (other consumers: list cards, PDF)');
+    assert.ok(summaryBody.includes('getReportQuickMetrics(D)'),
+      'renderOverviewSummary still reads the shared metrics');
+  });
+});
