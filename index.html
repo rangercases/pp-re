@@ -18332,7 +18332,10 @@
         return ty + 4;
       };
 
-      const addImg = (src, x, iy, iw, ih) => {
+      // opts.alignTop (chỉ ảnh bìa Overview của Recap truyền vào): ảnh dính lên
+      // mép trên của khung thay vì căn giữa theo chiều dọc — bỏ dải trắng chết
+      // phía trên ảnh bè ngang. Không truyền opts thì giữ nguyên căn giữa.
+      const addImg = (src, x, iy, iw, ih, opts) => {
         if (!src) return null;
         const imgSrc = (pdfImageMap && pdfImageMap.get(src)) || src;
         // jsPDF không nhúng được WebP: phải chỉ đúng định dạng thật của chuỗi sau khi map
@@ -18351,7 +18354,7 @@
           if (imgRatio > boxRatio) {
             // Ảnh bè ngang hơn khung -> co theo chiều rộng
             renderH = iw / imgRatio;
-            offsetY = (ih - renderH) / 2;
+            offsetY = (opts && opts.alignTop) ? 0 : (ih - renderH) / 2;
           } else {
             // Ảnh cao hơn khung -> co theo chiều cao
             renderW = ih * imgRatio;
@@ -18853,6 +18856,9 @@
       const gapX = 4;
       const gapY = 4.5;
       const barH = 5.2;
+      // v4.1.4 — cân đối trang Recap: ảnh bìa dính mép trên của hàng (hết dải
+      // trắng chết do căn giữa dọc). Module khác: undefined = giữ nguyên.
+      const coverImgOpts = isRecap ? { alignTop: true } : undefined;
       const totalContentW = W - M * 2; // ~182mm
 
       if (validCovers.length > 0) {
@@ -18897,7 +18903,7 @@
               const px = (W - pw) / 2;
               const py = y;
               let barX = px, barY = py + ph, barW = pw;
-              const bounds = addImg(c0.img, px, py, pw, ph);
+              const bounds = addImg(c0.img, px, py, pw, ph, coverImgOpts);
               if (bounds) {
                 barX = bounds.x;
                 barW = bounds.w;
@@ -18926,7 +18932,7 @@
                 const px = items.length === 1 ? (W - pw) / 2 : (M + idx * (pw + gapX));
                 const py = y;
                 let barX = px, barY = py + ph, barW = pw;
-                const bounds = addImg(c.img, px, py, pw, ph);
+                const bounds = addImg(c.img, px, py, pw, ph, coverImgOpts);
                 if (bounds) {
                   barX = bounds.x;
                   barW = bounds.w;
@@ -18955,13 +18961,13 @@
           const pw = 126; // Chiều rộng cân đối (~69% trang)
           const ph = 88;  // Chiều cao cân đối, sắc nét
           const px = (W - pw) / 2; // Căn chính giữa trang bìa
-          const py = y + 10; // Hạ nhẹ xuống trọng tâm quang học (Optical Center) để trang bìa thuận mắt
+          const py = y + (isRecap ? 0 : 10); // Hạ nhẹ xuống trọng tâm quang học (Optical Center) để trang bìa thuận mắt — Recap bỏ qua: ảnh dính sát tiêu đề theo nhịp trang chung (v4.1.4)
 
           let barX = px;
           let barY = py + ph;
           let barW = pw;
 
-          const bounds = addImg(c.img, px, py, pw, ph);
+          const bounds = addImg(c.img, px, py, pw, ph, coverImgOpts);
           if (bounds) {
             barX = bounds.x;
             barW = bounds.w;
@@ -18993,7 +18999,7 @@
             let barY = py + ph;
             let barW = pw;
 
-            const bounds = addImg(c.img, px, py, pw, ph);
+            const bounds = addImg(c.img, px, py, pw, ph, coverImgOpts);
             if (bounds) {
               barX = bounds.x;
               barW = bounds.w;
@@ -19029,7 +19035,7 @@
             let barY = py + ph;
             let barW = pw;
 
-            const bounds = addImg(c.img, px, py, pw, ph);
+            const bounds = addImg(c.img, px, py, pw, ph, coverImgOpts);
             if (bounds) {
               barX = bounds.x;
               barW = bounds.w;
@@ -19055,7 +19061,7 @@
           let barY3 = py3 + ph;
           let barW3 = pw;
 
-          const bounds3 = addImg(c3.img, px3, py3, pw, ph);
+          const bounds3 = addImg(c3.img, px3, py3, pw, ph, coverImgOpts);
           if (bounds3) {
             barX3 = bounds3.x;
             barW3 = bounds3.w;
@@ -19088,7 +19094,7 @@
             let barY = py + ph;
             let barW = pw;
 
-            const bounds = addImg(c.img, px, py, pw, ph);
+            const bounds = addImg(c.img, px, py, pw, ph, coverImgOpts);
             if (bounds) {
               barX = bounds.x;
               barW = bounds.w;
