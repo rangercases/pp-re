@@ -15834,7 +15834,26 @@
       pushHistory('Set Watch Out status');
       D.watchoutPhotos[index].action = next;
       as();
-      renderWatchoutPhotos();
+      refreshWatchoutStatusChip(index);
+    }
+
+    // v4.1.6: refresh ONLY the picked slot's chip, in place. The old tail
+    // called renderWatchoutPhotos(), which empties #watchoutPhotos and
+    // rebuilds every slot; the fresh <img> elements have no laid-out height
+    // until they decode, so the document momentarily collapses and the
+    // browser clamps the scroll position — the page jumped back to the top
+    // after every status pick. Swapping just the chip bar's HTML leaves the
+    // grid (and the scroll position) untouched. If the chip bar cannot be
+    // found (slot not rendered), fall back to the full re-render.
+    function refreshWatchoutStatusChip(index) {
+      const grid = document.getElementById('watchoutPhotos');
+      const slotEl = grid ? grid.querySelector(`.watchout-slot[data-index="${index}"]`) : null;
+      const bar = slotEl ? slotEl.querySelector('.wo-action-bar') : null;
+      if (!bar || !D.watchoutPhotos || !D.watchoutPhotos[index]) {
+        renderWatchoutPhotos();
+        return;
+      }
+      bar.innerHTML = woStatusChipHtml(index, D.watchoutPhotos[index]);
     }
 
     /* ── Status picker dropdown (v4.1.3) ────────────────────────────────
