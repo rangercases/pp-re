@@ -18272,19 +18272,21 @@
         }
       }
 
+      // 2-4. Testing / Checklist / Dimension: Recap không có các module này nên
+      // chỉ hiện chip Watch-outs ở trên — mọi điều kiện dưới đây đều gác !isRecap.
       // 2. Testing BV
-      if (qm.totalTests === 0) {
+      if (!isRecap && qm.totalTests === 0) {
         pdfBadges.push({ text: "No Lab Tests", bg: [240, 237, 232], border: [140, 135, 130], textCol: [70, 65, 60], isAlert: false });
-      } else if (qm.failedTests > 0) {
+      } else if (!isRecap && qm.failedTests > 0) {
         pdfBadges.push({ text: `${qm.failedTests}/${qm.totalTests} Tests Failed`, bg: [253, 240, 240], border: [226, 75, 74], textCol: [180, 40, 40], isAlert: true });
-      } else if (qm.passedTests === qm.totalTests) {
+      } else if (!isRecap && qm.passedTests === qm.totalTests) {
         pdfBadges.push({ text: `All Tests Passed (${qm.passedTests}/${qm.totalTests})`, bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
-      } else {
+      } else if (!isRecap) {
         pdfBadges.push({ text: `${qm.passedTests}/${qm.totalTests} Passed (${qm.pendingTests || (qm.totalTests - qm.passedTests)} Pending)`, bg: [253, 247, 236], border: [232, 144, 32], textCol: [180, 83, 9], isAlert: true });
       }
 
       // 3. Checklist
-      if (qm.totalCriteria > 0) {
+      if (!isRecap && qm.totalCriteria > 0) {
         if (qm.passCriteria === qm.totalCriteria) {
           pdfBadges.push({ text: `Checklist (${qm.totalCriteria}/${qm.totalCriteria})`, bg: [237, 247, 238], border: [52, 168, 83], textCol: [30, 120, 50], isAlert: false });
         } else {
@@ -18294,7 +18296,7 @@
       }
 
       // 4. Dimension (nếu có vấn đề phát hiện)
-      if (qm.redDims > 0 || qm.orangeDims > 0) {
+      if (!isRecap && (qm.redDims > 0 || qm.orangeDims > 0)) {
         const dimTotal = qm.redDims + qm.orangeDims;
         pdfBadges.push({ text: `${dimTotal} Dim Issue${dimTotal > 1 ? 's' : ''}`, bg: [253, 247, 236], border: [232, 144, 32], textCol: [180, 83, 9], isAlert: true });
       }
