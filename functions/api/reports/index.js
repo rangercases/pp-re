@@ -1,4 +1,5 @@
 import { error, json, readJsonBody, serverError, CORS_HEADERS } from '../../_lib/http.js';
+import { requireUser } from '../../_lib/session.js';
 
 export function formatReportMeta(row) {
   if (!row) return null;
@@ -73,6 +74,9 @@ export async function onRequestGet({ request, env }) {
       return serverError(new Error('D1 database binding (env.DB) is not available'));
     }
 
+    const session = await requireUser(env, request);
+    if (session.error) return session.error;
+
     const url = new URL(request.url);
     const moduleType = url.searchParams.get('moduleType') || url.searchParams.get('module_type') || '';
     const search = url.searchParams.get('search') || url.searchParams.get('q') || '';
@@ -83,6 +87,19 @@ export async function onRequestGet({ request, env }) {
 
     const whereClauses = ['deleted_at IS NULL'];
     const bindParams = [];
+
+    // Ownership scoping: a regular user only ever lists their own reports.
+    // Admins list everything and may narrow the list with ?userId=.
+    if (session.user.role === 'admin') {
+      const userIdFilter = url.searchParams.get('userId') || url.searchParams.get('user_id');
+      if (userIdFilter) {
+        whereClauses.push('user_id = ?');
+        bindParams.push(userIdFilter);
+      }
+    } else {
+      whereClauses.push('user_id = ?');
+      bindParams.push(session.user.id);
+    }
 
     if (moduleType) {
       whereClauses.push('module_type = ?');
@@ -140,6 +157,9 @@ export async function onRequestPost({ request, env }) {
       return serverError(new Error('D1 database binding (env.DB) is not available'));
     }
 
+    const session = await requireUser(env, request);
+    if (session.error) return session.error;
+
     const parsed = await readJsonBody(request);
     if (!parsed.ok) {
       return parsed.response;
@@ -160,7 +180,10 @@ export async function onRequestPost({ request, env }) {
     }
 
     const id = body.id.trim();
-    const userId = body.userId || body.user_id || null;
+    // The owner is always the session user; body.userId / body.user_id are
+    // ignored so a client cannot file a report under someone else's account.
+    // (Refined below for the resurrect-a-soft-deleted-report path.)
+    let userId = session.user.id;
     const moduleType = (body.moduleType || body.module_type || 'prototype').trim();
     const modelNumber = (body.modelNumber || body.model_number || body.model || '').trim();
     const poNumber = (body.poNumber || body.po_number || body.po || '').trim();
@@ -175,12 +198,30 @@ export async function onRequestPost({ request, env }) {
 
     // Check if report already exists and is not soft-deleted
     const existing = await env.DB.prepare(
-      'SELECT id, revision, deleted_at FROM reports WHERE id = ?'
+      'SELECT id, user_id, revision, deleted_at FROM reports WHERE id = ?'
     ).bind(id).first();
 
     if (existing && !existing.deleted_at) {
       return error('Report with this id already exists', 409);
     }
+
+    // A soft-deleted report still belongs to its owner: someone else may not
+    // resurrect the id under their own account.
+    if (
+      existing &&
+      session.user.role !== 'admin' &&
+      existing.user_id != null &&
+      String(existing.user_id) !== String(session.user.id)
+    ) {
+      return error('Report not found', 404);
+    }
+
+    // Resurrecting a soft-deleted report keeps its original owner.
+    if (existing && existing.user_id != null) {
+      userId = existing.user_id;
+    }
+    body.userId = String(userId);
+    body.user_id = String(userId);
 
     // Split full JSON payload into 500KB chunks
     const fullPayloadStr = JSON.stringify(body);

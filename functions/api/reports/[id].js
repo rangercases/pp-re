@@ -1,5 +1,13 @@
 import { error, json, readJsonBody, serverError, CORS_HEADERS } from '../../_lib/http.js';
+import { requireUser } from '../../_lib/session.js';
 import { extractPhotoCount, extractVerdict, formatReportMeta } from './index.js';
+
+// A report owned by another account must be indistinguishable from a
+// missing one, so every by-id handler funnels through this check.
+function isOwnerOrAdmin(session, row) {
+  if (session.user.role === 'admin') return true;
+  return row.user_id != null && String(row.user_id) === String(session.user.id);
+}
 
 function extractId(params, request) {
   if (params && params.id) {
@@ -21,6 +29,9 @@ export async function onRequestGet({ request, env, params }) {
       return serverError(new Error('D1 database binding (env.DB) is not available'));
     }
 
+    const session = await requireUser(env, request);
+    if (session.error) return session.error;
+
     const id = extractId(params, request);
     if (!id) {
       return error('Report ID is required', 400);
@@ -34,7 +45,7 @@ export async function onRequestGet({ request, env, params }) {
        WHERE id = ? AND deleted_at IS NULL`
     ).bind(id).first();
 
-    if (!row) {
+    if (!row || !isOwnerOrAdmin(session, row)) {
       return error('Report not found', 404);
     }
 
@@ -90,6 +101,9 @@ export async function onRequestPatch({ request, env, params }) {
       return serverError(new Error('D1 database binding (env.DB) is not available'));
     }
 
+    const session = await requireUser(env, request);
+    if (session.error) return session.error;
+
     const id = extractId(params, request);
     if (!id) {
       return error('Report ID is required', 400);
@@ -111,7 +125,7 @@ export async function onRequestPatch({ request, env, params }) {
        WHERE id = ? AND deleted_at IS NULL`
     ).bind(id).first();
 
-    if (!existing) {
+    if (!existing || !isOwnerOrAdmin(session, existing)) {
       return error('Report not found', 404);
     }
 
@@ -158,6 +172,11 @@ export async function onRequestPatch({ request, env, params }) {
     // Prepare full report payload
     const reportPayload = (body.report && typeof body.report === 'object') ? { ...body.report } : { ...body };
     reportPayload.id = id;
+    // The stored payload's owner fields always mirror the row owner.
+    if (existing.user_id != null) {
+      reportPayload.userId = String(existing.user_id);
+      reportPayload.user_id = String(existing.user_id);
+    }
     reportPayload.revision = newRevision;
     reportPayload.updatedAt = updatedAt;
     delete reportPayload.expectedRevision;
@@ -241,16 +260,19 @@ export async function onRequestDelete({ request, env, params }) {
       return serverError(new Error('D1 database binding (env.DB) is not available'));
     }
 
+    const session = await requireUser(env, request);
+    if (session.error) return session.error;
+
     const id = extractId(params, request);
     if (!id) {
       return error('Report ID is required', 400);
     }
 
     const existing = await env.DB.prepare(
-      `SELECT id FROM reports WHERE id = ? AND deleted_at IS NULL`
+      `SELECT id, user_id FROM reports WHERE id = ? AND deleted_at IS NULL`
     ).bind(id).first();
 
-    if (!existing) {
+    if (!existing || !isOwnerOrAdmin(session, existing)) {
       return error('Report not found', 404);
     }
 
