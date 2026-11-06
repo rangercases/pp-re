@@ -17966,6 +17966,15 @@
         }
       };
 
+      // Kẻ viền quanh ảnh bìa Overview theo đúng bounds addImg trả về — cùng màu/nét
+      // với khung của renderCard. Không vẽ khi bounds null (ảnh lỗi đã có cảnh báo riêng).
+      const frameCoverImg = (b) => {
+        if (!b) return;
+        doc.setDrawColor(220, 217, 210);
+        doc.setLineWidth(0.25);
+        doc.rect(b.x, b.y, b.w, b.h, 'S');
+      };
+
       const renderCard = (p, px, py, gw, cardH) => {
         if (!p) return cardH;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
@@ -18431,6 +18440,7 @@
                 barW = bounds.w;
                 barY = bounds.y + bounds.h;
               }
+              frameCoverImg(bounds);
               if (c0.title) {
                 doc.setFillColor(245, 242, 237);
                 doc.rect(barX, barY, barW, barH, 'F');
@@ -18459,6 +18469,7 @@
                   barW = bounds.w;
                   barY = bounds.y + bounds.h;
                 }
+                frameCoverImg(bounds);
                 if (c.title) {
                   doc.setFillColor(245, 242, 237);
                   doc.rect(barX, barY, barW, barH, 'F');
@@ -18493,6 +18504,7 @@
             barW = bounds.w;
             barY = bounds.y + bounds.h;
           }
+          frameCoverImg(bounds);
 
           if (c.title) {
             doc.setFillColor(245, 242, 237);
@@ -18524,6 +18536,7 @@
               barW = bounds.w;
               barY = bounds.y + bounds.h;
             }
+            frameCoverImg(bounds);
 
             if (c.title) {
               doc.setFillColor(245, 242, 237);
@@ -18559,6 +18572,7 @@
               barW = bounds.w;
               barY = bounds.y + bounds.h;
             }
+            frameCoverImg(bounds);
 
             doc.setFillColor(245, 242, 237);
             doc.rect(barX, barY, barW, barH, 'F');
@@ -18584,6 +18598,7 @@
             barW3 = bounds3.w;
             barY3 = bounds3.y + bounds3.h;
           }
+          frameCoverImg(bounds3);
 
           doc.setFillColor(245, 242, 237);
           doc.rect(barX3, barY3, barW3, barH, 'F');
@@ -18616,6 +18631,7 @@
               barW = bounds.w;
               barY = bounds.y + bounds.h;
             }
+            frameCoverImg(bounds);
 
             doc.setFillColor(245, 242, 237);
             doc.rect(barX, barY, barW, barH, 'F');
