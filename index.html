@@ -18409,8 +18409,11 @@
         return chipW;
       };
 
-      const renderCard = (p, px, py, gw, cardH) => {
+      const renderCard = (p, px, py, gw, cardH, opts) => {
         if (!p) return cardH;
+        // opts.topAlign (chỉ lưới Recap Watch Out truyền): chuyển tiếp xuống
+        // addImg để ảnh dính mép trên khung thay vì lơ lửng giữa khung.
+        const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : undefined;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
         let itemMainW = gw;
         let itemSubW = 0;
@@ -18425,7 +18428,7 @@
         if (itemSubW > 0) {
           // Bố cục 2 ảnh (3:1 hoặc 1:1)
           if (p.img) {
-            addImg(p.img, px, py, itemMainW, cardH);
+            addImg(p.img, px, py, itemMainW, cardH, imgOpts);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px, py, itemMainW, cardH, 'F');
@@ -18435,7 +18438,7 @@
 
           // Vùng ảnh phụ (đồng bộ với ảnh chính: chỉ vẽ nền chờ khi chưa có ảnh)
           if (p.imgSub) {
-            addImg(p.imgSub, px + itemMainW, py, itemSubW, cardH);
+            addImg(p.imgSub, px + itemMainW, py, itemSubW, cardH, imgOpts);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px + itemMainW, py, itemSubW, cardH, 'F');
@@ -18453,11 +18456,15 @@
         } else {
           // Chế độ 1 ảnh (Single mode)
           if (p.img) {
-            const b = addImg(p.img, px, py, gw, cardH);
+            const b = addImg(p.img, px, py, gw, cardH, imgOpts);
             if (b) {
               doc.setDrawColor(220, 217, 210);
               doc.setLineWidth(0.25);
               doc.rect(b.x, b.y, b.w, b.h, 'S');
+              // Trả về chiều cao nội dung THẬT đã vẽ để lưới neo caption/chip
+              // sát dưới ảnh của chính slot đó; caller cũ bỏ qua giá trị này
+              // (trước đây hàm luôn trả cardH ở nhánh này).
+              return b.y + b.h - py;
             }
           } else {
             doc.setFillColor(248, 245, 240);
@@ -18491,6 +18498,26 @@
         const actionChipTop = (py, cardH, lineCount) => {
           // Baseline đầu tiên của caption nằm ở py + cardH + 3.8, mỗi dòng cộng 3.8
           return lineCount > 0 ? (py + cardH + 3.8 + (lineCount - 1) * 3.8 + 2.2) : (py + cardH + 2.2);
+        };
+
+        // Chiều cao nội dung THẬT mà renderCard vẽ cho 1 slot trong khung
+        // (boxW x boxH) khi ảnh dính mép trên — gương đúng phép contain của
+        // addImg: layout 2 ảnh và ô chờ trống luôn chiếm trọn boxH; layout
+        // 1 ảnh thì cao = boxW / tỉ lệ nếu ảnh bè ngang hơn khung, ngược lại
+        // đầy boxH. Chỉ dùng cho Recap Watch Out (showActions) để tính trước
+        // chiều cao hàng phục vụ kiểm tra ngắt trang BOTTOM_LIMIT.
+        const estContentH = (p, boxW, boxH) => {
+          if (!p || !p.img) return boxH;
+          const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
+          if (layout !== 'single') return boxH;
+          try {
+            const pr = doc.getImageProperties(p.img);
+            if (pr && pr.width && pr.height) {
+              const r = pr.width / pr.height;
+              return r > boxW / boxH ? boxW / r : boxH;
+            }
+          } catch (e) { }
+          return boxH;
         };
 
         const estimateCardH = (p, isFull = false) => {
@@ -18551,7 +18578,9 @@
             const capLines = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
             const act0 = actOf(p0);
             const captionH = slotCapBlockH(capLines.length, act0);
-            const rowTotalH = rowCardH + captionH + gapY;
+            // Recap Watch Out: hàng đo theo chiều cao ảnh thật của slot;
+            // section khác giữ rowCardH như trước.
+            const rowTotalH = (showActions ? estContentH(p0, fullW, rowCardH) : rowCardH) + captionH + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
               addHeader(headerTitle);
@@ -18560,13 +18589,14 @@
             const py = y;
             const px0 = M;
 
-            renderCard(p0, px0, py, fullW, rowCardH);
+            const drawnH0 = renderCard(p0, px0, py, fullW, rowCardH, showActions ? { topAlign: true } : undefined);
+            const anch0 = showActions ? drawnH0 : rowCardH;
 
-            const capY = py + rowCardH + 3.8;
+            const capY = py + anch0 + 3.8;
             drawCaption(capLines, px0, fullW, capY);
             if (act0) {
               const meta0 = actionChipMeta(act0);
-              drawActionChip(px0 + fullW / 2 - actionChipWidth(meta0) / 2, actionChipTop(py, rowCardH, capLines.length), meta0);
+              drawActionChip(px0 + fullW / 2 - actionChipWidth(meta0) / 2, actionChipTop(py, anch0, capLines.length), meta0);
             }
 
             y += rowTotalH;
@@ -18584,8 +18614,17 @@
             const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
             const actA = actOf(p0);
             const actB = actOf(p1);
-            const captionH = Math.max(slotCapBlockH(capLines0.length, actA), slotCapBlockH(capLines1.length, actB));
-            const rowTotalH = rowMaxCardH + captionH + gapY;
+            // Recap Watch Out (showActions): mỗi thẻ neo caption/chip theo
+            // chiều cao ảnh thật của chính nó — 2 ảnh cùng hàng chạm chung
+            // một đường trên, chiều cao hàng theo thẻ cao nhất (ảnh + caption
+            // + chip). Section khác: công thức cũ (captionH chung theo
+            // rowMaxCardH) — với showActions=false, estH* = rowMaxCardH nên
+            // rowTotalH rút gọn đúng bằng công thức cũ.
+            const estH0 = showActions ? estContentH(p0, gw, rowMaxCardH) : rowMaxCardH;
+            const estH1 = showActions && p1 ? estContentH(p1, gw, rowMaxCardH) : rowMaxCardH;
+            const blockH0 = estH0 + slotCapBlockH(capLines0.length, actA);
+            const blockH1 = p1 ? estH1 + slotCapBlockH(capLines1.length, actB) : 0;
+            const rowTotalH = Math.max(blockH0, blockH1) + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
               addHeader(headerTitle);
@@ -18595,23 +18634,22 @@
             const px0 = M;
             const px1 = M + gw + gapX;
 
-            renderCard(p0, px0, py, gw, rowMaxCardH);
-            if (p1) {
-              renderCard(p1, px1, py, gw, rowMaxCardH);
-            }
+            const drawnH0 = renderCard(p0, px0, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined);
+            const drawnH1 = p1 ? renderCard(p1, px1, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined) : rowMaxCardH;
+            const anch0 = showActions ? drawnH0 : rowMaxCardH;
+            const anch1 = showActions ? drawnH1 : rowMaxCardH;
 
-            const capY = py + rowMaxCardH + 3.8;
-            drawCaption(capLines0, px0, gw, capY);
+            drawCaption(capLines0, px0, gw, py + anch0 + 3.8);
             if (p1) {
-              drawCaption(capLines1, px1, gw, capY);
+              drawCaption(capLines1, px1, gw, py + anch1 + 3.8);
             }
             if (actA) {
               const metaA = actionChipMeta(actA);
-              drawActionChip(px0 + gw / 2 - actionChipWidth(metaA) / 2, actionChipTop(py, rowMaxCardH, capLines0.length), metaA);
+              drawActionChip(px0 + gw / 2 - actionChipWidth(metaA) / 2, actionChipTop(py, anch0, capLines0.length), metaA);
             }
             if (p1 && actB) {
               const metaB = actionChipMeta(actB);
-              drawActionChip(px1 + gw / 2 - actionChipWidth(metaB) / 2, actionChipTop(py, rowMaxCardH, capLines1.length), metaB);
+              drawActionChip(px1 + gw / 2 - actionChipWidth(metaB) / 2, actionChipTop(py, anch1, capLines1.length), metaB);
             }
 
             y += rowTotalH;
