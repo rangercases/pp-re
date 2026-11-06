@@ -16968,7 +16968,11 @@
     });
 
     window.addEventListener('beforeunload', (e) => {
-      if (currentId && D && D.id && D._fileDirty) {
+      // POP-1 (v4.0.3): block only when a save genuinely hasn't landed yet
+      // (payload still queued or a save in flight). _fileDirty only means
+      // "not exported to a JSON file" and must not trigger the browser's
+      // Leave-site prompt for reports that are already fully saved.
+      if (pendingSavePayload || saveInFlightPromise) {
         try { syncReportFieldsFromDOM(); } catch (err) { }
         e.preventDefault();
         e.returnValue = '';
