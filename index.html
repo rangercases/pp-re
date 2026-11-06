@@ -18200,6 +18200,30 @@
         doc.rect(b.x, b.y, b.w, b.h, 'S');
       };
 
+      // REC-1: chip trạng thái xử lý — cùng ngôn ngữ thị giác với các badge ở
+      // thanh QUALITY SUMMARY (nền nhạt, viền + chấm tròn + chữ đậm màu trạng thái).
+      const actionChipMeta = (action) => woActionMeta(action) || WO_ACTION_NONE;
+      const actionChipWidth = (meta) => {
+        doc.setFont(fontFam, 'bold');
+        doc.setFontSize(7.5);
+        return doc.getTextWidth(meta.en) + 8.5;
+      };
+      const drawActionChip = (chipX, topY, meta) => {
+        const chipW = actionChipWidth(meta);
+        const chipH = 4.8;
+        doc.setFillColor(...meta.bg);
+        doc.setDrawColor(...meta.rgb);
+        doc.setLineWidth(0.2);
+        doc.rect(chipX, topY, chipW, chipH, 'FD');
+        doc.setFillColor(...meta.rgb);
+        doc.circle(chipX + 3.2, topY + chipH / 2, 1.0, 'F');
+        doc.setTextColor(...meta.textRgb);
+        doc.setFont(fontFam, 'bold');
+        doc.setFontSize(7.5);
+        doc.text(meta.en, chipX + 5.8, topY + 3.45);
+        return chipW;
+      };
+
       const renderCard = (p, px, py, gw, cardH) => {
         if (!p) return cardH;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
@@ -18264,11 +18288,25 @@
         }
       };
 
-      const renderPhotoGrid = (photos, headerTitle, customCardH, customGapY) => {
+      const renderPhotoGrid = (photos, headerTitle, customCardH, customGapY, gridOpts) => {
         const gapX = 6;
         const gapY = customGapY !== undefined ? customGapY : 6.5;
         const fullW = W - M * 2; // 182mm
         const gw = (fullW - gapX) / 2; // 88mm
+
+        // REC-1: chỉ bật ở section Watch Out của Recap (gridOpts.actionChips) —
+        // các section/module khác giữ nguyên bố cục như trước.
+        const showActions = !!(gridOpts && gridOpts.actionChips);
+        const actOf = (p) => (showActions && p && woActionMeta(p.action)) ? p.action : null;
+        const slotCapBlockH = (lineCount, action) => {
+          let h = lineCount > 0 ? (lineCount * 3.8 + 3.0) : 0;
+          if (action) h += lineCount > 0 ? 6.6 : 7.0;
+          return h;
+        };
+        const actionChipTop = (py, cardH, lineCount) => {
+          // Baseline đầu tiên của caption nằm ở py + cardH + 3.8, mỗi dòng cộng 3.8
+          return lineCount > 0 ? (py + cardH + 3.8 + (lineCount - 1) * 3.8 + 2.2) : (py + cardH + 2.2);
+        };
 
         const estimateCardH = (p, isFull = false) => {
           const targetW = isFull ? fullW : gw;
@@ -18326,7 +18364,8 @@
             doc.setFont(fontFam, 'normal');
             doc.setFontSize(8.5);
             const capLines = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
-            const captionH = capLines.length > 0 ? (capLines.length * 3.8 + 3.0) : 0;
+            const act0 = actOf(p0);
+            const captionH = slotCapBlockH(capLines.length, act0);
             const rowTotalH = rowCardH + captionH + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
@@ -18340,6 +18379,10 @@
 
             const capY = py + rowCardH + 3.8;
             drawCaption(capLines, px0, fullW, capY);
+            if (act0) {
+              const meta0 = actionChipMeta(act0);
+              drawActionChip(px0 + fullW / 2 - actionChipWidth(meta0) / 2, actionChipTop(py, rowCardH, capLines.length), meta0);
+            }
 
             y += rowTotalH;
             i++;
@@ -18354,8 +18397,9 @@
 
             const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
             const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
-            const maxCapLines = Math.max(capLines0.length, capLines1.length);
-            const captionH = maxCapLines > 0 ? (maxCapLines * 3.8 + 3.0) : 0;
+            const actA = actOf(p0);
+            const actB = actOf(p1);
+            const captionH = Math.max(slotCapBlockH(capLines0.length, actA), slotCapBlockH(capLines1.length, actB));
             const rowTotalH = rowMaxCardH + captionH + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
@@ -18376,6 +18420,14 @@
             if (p1) {
               drawCaption(capLines1, px1, gw, capY);
             }
+            if (actA) {
+              const metaA = actionChipMeta(actA);
+              drawActionChip(px0 + gw / 2 - actionChipWidth(metaA) / 2, actionChipTop(py, rowMaxCardH, capLines0.length), metaA);
+            }
+            if (p1 && actB) {
+              const metaB = actionChipMeta(actB);
+              drawActionChip(px1 + gw / 2 - actionChipWidth(metaB) / 2, actionChipTop(py, rowMaxCardH, capLines1.length), metaB);
+            }
 
             y += rowTotalH;
             i += (p1 ? 2 : 1);
@@ -18383,14 +18435,14 @@
         }
       };
 
-      const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle) => {
+      const renderPhotoSection = (sectionTitle, photoArray, notesText, notesTitle, gridOpts) => {
         const validPhotos = (photoArray || []).filter(p => p && (p.img || p.imgSub || (p.caption && p.caption.trim())));
         if (validPhotos.length === 0 && (!notesText || !notesText.trim())) return;
 
         addHeader(sectionTitle);
 
         if (validPhotos.length > 0) {
-          renderPhotoGrid(validPhotos, sectionTitle);
+          renderPhotoGrid(validPhotos, sectionTitle, undefined, undefined, gridOpts);
         }
 
         if (notesText && notesText.trim()) {
@@ -18867,6 +18919,61 @@
           });
 
           y += (ph + barH) * 2 + gapY + 2;
+        }
+      }
+
+      // ================= REC-1: RECAP AUTO SUMMARY (NGAY DƯỚI ẢNH OVERVIEW) =================
+      // Tóm tắt tự động từ Watch Out: người đọc mở trang đầu là biết ngay lỗi gì,
+      // trạng thái xử lý ra sao. Nếu tràn cuối trang thì tiếp tục ở trang sau
+      // qua addHeader/BOTTOM_LIMIT như mọi section khác.
+      if (isRecap) {
+        const recapSummary = buildRecapWatchoutSummary(D);
+        if (y + 16 > BOTTOM_LIMIT) addHeader('AUTO SUMMARY');
+        doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40);
+        doc.text("AUTO SUMMARY", M, y); y += 6.5;
+
+        if (recapSummary.total === 0) {
+          doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
+          doc.text('✓ No issues recorded', M, y + 1);
+          y += 8;
+        } else {
+          doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
+          doc.text(recapSummaryTallyText(recapSummary, 'en'), M, y + 1);
+          y += 6.5;
+
+          const idxW = 10;
+          const chipZoneW = 42;
+          const capW = (W - M * 2) - idxW - chipZoneW;
+          const drawTableHead = () => {
+            doc.setFont(fontFam, 'bold'); doc.setFontSize(7); doc.setTextColor(140, 130, 122);
+            doc.text('#', M, y + 3);
+            doc.text('ISSUE', M + idxW, y + 3);
+            doc.text('ACTION', W - M - chipZoneW, y + 3);
+            doc.setDrawColor(215, 210, 202); doc.setLineWidth(0.25);
+            doc.line(M, y + 4.6, W - M, y + 4.6);
+            y += 7;
+          };
+          drawTableHead();
+          recapSummary.issues.forEach(it => {
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(8.5);
+            const capText = it.caption || 'No description yet';
+            const lines = doc.splitTextToSize(capText, capW);
+            const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;
+            if (y + rowH > BOTTOM_LIMIT) {
+              addHeader('AUTO SUMMARY');
+              drawTableHead();
+            }
+            doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(140, 130, 122);
+            doc.text('#' + it.index, M, y + 4);
+            doc.setFont(fontFam, 'normal'); doc.setTextColor(45, 40, 35);
+            lines.forEach((ln, li) => { doc.text(ln, M + idxW, y + 4 + li * 3.9); });
+            const meta = actionChipMeta(it.action);
+            drawActionChip(W - M - actionChipWidth(meta), y + 0.6, meta);
+            doc.setDrawColor(233, 229, 223); doc.setLineWidth(0.2);
+            doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
+            y += rowH;
+          });
+          y += 4;
         }
       }
 
@@ -19392,7 +19499,7 @@
         const photosData = D[photoKey] || [];
         const notesData = notesKey ? D[notesKey] : null;
 
-        renderPhotoSection(modTitle, photosData, notesData, `${modTitle} Notes`);
+        renderPhotoSection(modTitle, photosData, notesData, `${modTitle} Notes`, (isRecap && photoKey === 'watchoutPhotos') ? { actionChips: true } : null);
       });
 
       // Đánh số trang & Footer
