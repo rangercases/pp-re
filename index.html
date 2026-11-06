@@ -6389,6 +6389,37 @@
       margin-top: 12px;
     }
 
+    .admin-allowlist-add {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .admin-allowlist-add input {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 0 10px;
+    }
+
+    .admin-allowlist-add input:focus {
+      border-color: var(--module-theme);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-theme) 16%, transparent);
+      outline: none;
+    }
+
+    .admin-allowlist-note {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
     .admin-list {
       display: flex;
       flex-direction: column;
@@ -7600,6 +7631,17 @@
           <p class="auth-error" id="adminCreateError" hidden></p>
           <button class="auth-submit admin-create-btn" id="adminCreateBtn" type="submit">CREATE ACCOUNT</button>
         </form>
+        <div class="admin-create">
+          <h4>Signup Allowlist</h4>
+          <p class="admin-allowlist-note">Khi danh sách có ít nhất một email, chỉ những email này mới tự đăng ký được. Danh sách trống = đăng ký đang mở cho mọi email.</p>
+          <div class="admin-allowlist-add">
+            <input id="adminAllowlistEmail" type="email" autocomplete="off" autocapitalize="off" spellcheck="false"
+              placeholder="email@example.com" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addAdminAllowlistEmail(); }">
+            <button type="button" class="sbar-btn sec" onclick="addAdminAllowlistEmail()">ADD</button>
+          </div>
+          <p class="auth-error" id="adminAllowlistError" hidden></p>
+          <div class="admin-list" id="adminAllowlistList"></div>
+        </div>
         <div class="admin-list" id="adminUserList"></div>
       </div>
     </div>
@@ -19385,6 +19427,7 @@
         }
         case 'ACCOUNT_DISABLED': return 'This account is disabled. Contact an administrator.';
         case 'EMAIL_TAKEN': return 'An account with this email already exists. Sign in or use another email.';
+        case 'EMAIL_NOT_ALLOWED': return 'Email này chưa được quản trị viên cấp phép đăng ký.';
         case 'INVALID_CODE':
           return 'Incorrect verification code.' +
             (data.attemptsLeft !== undefined ? ` ${data.attemptsLeft} attempts left.` : '');
@@ -19938,12 +19981,14 @@
       closeAccountMenu();
       if (!currentUser || currentUser.role !== 'admin') return;
       setAuthError('adminCreateError', '');
+      setAuthError('adminAllowlistError', '');
       const modal = document.getElementById('adminUsersModal');
       if (modal) {
         modal.classList.remove('hidden');
         lockBodyScroll();
       }
       loadAdminUsers();
+      loadAdminAllowlist();
     }
 
     function closeAdminPanel() {
@@ -19971,6 +20016,67 @@
         renderAdminUsers();
       } catch (err) {
         list.innerHTML = '<div class="admin-empty">Could not load accounts list.</div>';
+      }
+    }
+
+    async function loadAdminAllowlist() {
+      const list = document.getElementById('adminAllowlistList');
+      if (!list) return;
+      try {
+        const result = await apiFetch('/api/admin/allowlist');
+        if (!result.res.ok || !result.data || !result.data.ok) {
+          list.innerHTML = '<div class="admin-empty">' + escapeHtml(authErrorMessage(result.data)) + '</div>';
+          return;
+        }
+        const entries = result.data.allowlist || [];
+        if (!entries.length) {
+          list.innerHTML = '<div class="admin-empty">Chưa có email nào — đăng ký đang mở.</div>';
+          return;
+        }
+        list.innerHTML = entries.map(e =>
+          '<div class="admin-user-row">' +
+            '<div style="min-width:0;">' +
+              '<div class="admin-user-email" style="font-size:12.5px;color:var(--ink);">' + escapeHtml(e.email) + '</div>' +
+              (e.note ? '<div class="admin-user-meta">' + escapeHtml(e.note) + '</div>' : '') +
+            '</div>' +
+            '<button type="button" class="admin-edit-btn" title="Remove" aria-label="Remove" onclick="removeAdminAllowlistEmail(\'' + escapeHtml(e.email) + '\')">✕</button>' +
+          '</div>'
+        ).join('');
+      } catch (err) {
+        list.innerHTML = '<div class="admin-empty">Could not load the allowlist.</div>';
+      }
+    }
+
+    async function addAdminAllowlistEmail() {
+      const input = document.getElementById('adminAllowlistEmail');
+      const email = input ? input.value.trim() : '';
+      setAuthError('adminAllowlistError', '');
+      if (!email) { setAuthError('adminAllowlistError', 'Enter email.'); return; }
+      try {
+        const result = await apiFetch('/api/admin/allowlist', { method: 'POST', body: { email: email } });
+        if (result.res.ok && result.data && result.data.ok) {
+          if (input) input.value = '';
+          showToast('✓ Đã thêm vào allowlist');
+          await loadAdminAllowlist();
+          return;
+        }
+        setAuthError('adminAllowlistError', authErrorMessage(result.data));
+      } catch (err) {
+        setAuthError('adminAllowlistError', 'Cannot connect to server.');
+      }
+    }
+
+    async function removeAdminAllowlistEmail(email) {
+      try {
+        const result = await apiFetch('/api/admin/allowlist/' + encodeURIComponent(email), { method: 'DELETE' });
+        if (result.res.ok && result.data && result.data.ok) {
+          showToast('✓ Đã xoá khỏi allowlist');
+          await loadAdminAllowlist();
+          return;
+        }
+        showToast(authErrorMessage(result.data));
+      } catch (err) {
+        showToast('Cannot connect to server.');
       }
     }
 
