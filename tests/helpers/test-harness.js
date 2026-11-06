@@ -137,11 +137,72 @@ export function createMockD1() {
 }
 
 /**
+ * Creates an in-memory Cloudflare R2 mock bucket backed by a Map.
+ * Mirrors the subset of the R2 API the photos endpoint uses, preserving
+ * httpMetadata.contentType across put/get/head.
+ */
+export function createMockR2() {
+  const store = new Map();
+
+  function toBytes(value) {
+    if (value instanceof ArrayBuffer) return new Uint8Array(value.slice(0));
+    if (ArrayBuffer.isView(value)) {
+      return new Uint8Array(value.buffer, value.byteOffset, value.byteLength).slice();
+    }
+    if (typeof value === 'string') return new TextEncoder().encode(value);
+    throw new Error('Unsupported R2 put value type');
+  }
+
+  return {
+    _store: store,
+
+    async put(key, value, options = {}) {
+      const bytes = toBytes(value);
+      const contentType = options.httpMetadata && options.httpMetadata.contentType;
+      store.set(key, { bytes, contentType });
+      return { key, etag: 'mock-etag', httpMetadata: { contentType } };
+    },
+
+    async get(key) {
+      const entry = store.get(key);
+      if (!entry) return null;
+      return {
+        key,
+        body: entry.bytes.slice(),
+        size: entry.bytes.byteLength,
+        httpMetadata: { contentType: entry.contentType },
+        async arrayBuffer() {
+          return entry.bytes.slice().buffer;
+        },
+        async text() {
+          return new TextDecoder().decode(entry.bytes);
+        },
+      };
+    },
+
+    async head(key) {
+      const entry = store.get(key);
+      if (!entry) return null;
+      return {
+        key,
+        size: entry.bytes.byteLength,
+        httpMetadata: { contentType: entry.contentType },
+      };
+    },
+
+    async delete(key) {
+      store.delete(key);
+    },
+  };
+}
+
+/**
  * Creates standard Cloudflare Pages Functions environment context.
  */
 export function createTestEnv(mockDb, custom = {}) {
   return {
     DB: mockDb,
+    PHOTOS: createMockR2(),
     DEV_MAIL_MODE: 'console',
     ...custom,
   };
@@ -301,6 +362,19 @@ export async function loadAdminAllowlistHandlers() {
     allowlistGet: allowlistIndex.onRequestGet,
     allowlistPost: allowlistIndex.onRequestPost,
     allowlistDelete: allowlistEmail.onRequestDelete,
+  };
+}
+
+/**
+ * Dynamically loads Photos (R2) Pages Function endpoints.
+ */
+export async function loadPhotosHandlers() {
+  const photos = await import('../../functions/api/photos/[hash].js');
+
+  return {
+    photoGet: photos.onRequestGet,
+    photoPut: photos.onRequestPut,
+    photoDelete: photos.onRequestDelete,
   };
 }
 
