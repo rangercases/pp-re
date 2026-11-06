@@ -47,3 +47,15 @@ CREATE TABLE IF NOT EXISTS signup_allowlist (
   note       TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
 );
+
+-- Sổ kế toán dung lượng R2: mỗi object ảnh đã lưu trong bucket
+-- fasrep-photos có đúng một dòng ở đây. PUT /api/photos cộng tổng
+-- size_bytes trước khi nhận upload mới và từ chối khi vượt hạn mức
+-- ngân sách (mặc định 9 GB, dưới trần miễn phí 10 GB của R2) để tài
+-- khoản không bao giờ bị tính phí R2.
+CREATE TABLE IF NOT EXISTS photo_objects (
+  object_key TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL DEFAULT '',
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL DEFAULT 0
+);
