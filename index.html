@@ -15718,7 +15718,7 @@
       return { issues: issues, counts: counts, unselected: unselected, total: issues.length };
     }
 
-    // "4 issues: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided"
+    // "4 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided"
     // lang 'vi'/'en' forces a language (the PDF is English-only); when omitted
     // the line follows the current UI language via L().
     function recapSummaryTallyText(summary, lang) {
@@ -15730,7 +15730,7 @@
         if (n > 0) parts.push(n + ' ' + pick(a.vi, a.en).toLowerCase());
       });
       if (summary.unselected > 0) parts.push(summary.unselected + ' ' + pick(WO_ACTION_NONE.vi, WO_ACTION_NONE.en).toLowerCase());
-      const head = summary.total + ' ' + pick('vấn đề', summary.total === 1 ? 'issue' : 'issues');
+      const head = summary.total + ' ' + pick('watch-out', summary.total === 1 ? 'watch-out' : 'watch-outs');
       return head + ': ' + parts.join(' · ');
     }
 
@@ -15758,7 +15758,7 @@
       el.style.display = '';
       if (s.total === 0) {
         el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
-          '<div class="ras-empty">✓ No issues recorded</div>';
+          '<div class="ras-empty">✓ No watch-outs recorded</div>';
         return;
       }
       const rows = s.issues.map(it => {
@@ -18938,7 +18938,7 @@
 
         if (recapSummary.total === 0) {
           doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
-          doc.text('✓ No issues recorded', M, y + 1);
+          doc.text('✓ No watch-outs recorded', M, y + 1);
           y += 8;
         } else {
           doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
@@ -18951,7 +18951,7 @@
           const drawTableHead = () => {
             doc.setFont(fontFam, 'bold'); doc.setFontSize(7); doc.setTextColor(140, 130, 122);
             doc.text('#', M, y + 3);
-            doc.text('ISSUE', M + idxW, y + 3);
+            doc.text('WATCH OUT', M + idxW, y + 3);
             doc.text('ACTION', W - M - chipZoneW, y + 3);
             doc.setDrawColor(215, 210, 202); doc.setLineWidth(0.25);
             doc.line(M, y + 4.6, W - M, y + 4.6);
@@ -21009,7 +21009,7 @@
       ['Đã đạt giới hạn báo cáo', 'Report limit reached'],
       ['Xuất bản sao lưu ngay', 'Export backup now'],
       ['Để sau', 'Not now'],
-      // REC-1 (v4.1.0): Watch Out dispositions + Recap auto summary. The tally
+      // REC-1 (v4.1.0): Watch Out dispositions + Recap quality summary. The tally
       // line itself is built with L() (it interpolates counts), not via pairs.
       ['Sửa ngay', 'Fix immediately'],
       ['Sửa ở mẫu sau', 'Fix next sample'],
@@ -21018,7 +21018,7 @@
       ['Chưa xử lý', 'Not decided'],
       ['Tóm tắt chất lượng', 'QUALITY SUMMARY'],
       ['Chưa có mô tả', 'No description yet'],
-      ['✓ Không có vấn đề nào được ghi nhận', '✓ No issues recorded']
+      ['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded']
     ];
 
     const I18N_MAPS = { en: new Map(), vi: new Map() };

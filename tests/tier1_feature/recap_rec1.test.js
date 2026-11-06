@@ -120,26 +120,26 @@ describe('TC-REC1.2: recapSummaryTallyText', () => {
   it('TC-REC1.2.1: English line lists only groups with count > 0, plus not-decided when unselected > 0', () => {
     assert.equal(
       apiEn.recapSummaryTallyText(summary, 'en'),
-      '5 issues: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided'
+      '5 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided'
     );
   });
 
   it('TC-REC1.2.2: Vietnamese line mirrors the English structure', () => {
     assert.equal(
       apiVi.recapSummaryTallyText(summary, 'vi'),
-      '5 vấn đề: 2 sửa ngay · 1 sửa ở mẫu sau · 1 ghi nhận · 1 chưa xử lý'
+      '5 watch-out: 2 sửa ngay · 1 sửa ở mẫu sau · 1 ghi nhận · 1 chưa xử lý'
     );
   });
 
   it('TC-REC1.2.3: without an explicit lang the line follows the UI language via L()', () => {
-    assert.match(apiEn.recapSummaryTallyText(summary), /^5 issues: /);
-    assert.match(apiVi.recapSummaryTallyText(summary), /^5 vấn đề: /);
+    assert.match(apiEn.recapSummaryTallyText(summary), /^5 watch-outs: /);
+    assert.match(apiVi.recapSummaryTallyText(summary), /^5 watch-out: /);
   });
 
-  it('TC-REC1.2.4: singular total reads "1 issue"; zero-unselected omits the not-decided part', () => {
+  it('TC-REC1.2.4: singular total reads "1 watch-out"; zero-unselected omits the not-decided part', () => {
     const one = { issues: [], counts: { 'fix-now': 1, 'fix-next': 0, 'note': 0, 'accepted': 0 }, unselected: 0, total: 1 };
-    assert.equal(apiEn.recapSummaryTallyText(one, 'en'), '1 issue: 1 fix immediately');
-    assert.equal(apiVi.recapSummaryTallyText(one, 'vi'), '1 vấn đề: 1 sửa ngay');
+    assert.equal(apiEn.recapSummaryTallyText(one, 'en'), '1 watch-out: 1 fix immediately');
+    assert.equal(apiVi.recapSummaryTallyText(one, 'vi'), '1 watch-out: 1 sửa ngay');
   });
 
   it('TC-REC1.2.5: empty summary produces an empty line', () => {
@@ -238,7 +238,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     assert.ok(autoSummaryBody.includes('if (!isRecapReport())'));
     assert.ok(autoSummaryBody.includes('buildRecapWatchoutSummary(D)'));
     assert.ok(autoSummaryBody.includes('QUALITY SUMMARY'));
-    assert.ok(autoSummaryBody.includes('✓ No issues recorded'));
+    assert.ok(autoSummaryBody.includes('✓ No watch-outs recorded'));
     assert.ok(autoSummaryBody.includes('No description yet'));
     assert.ok(autoSummaryBody.includes('recapSummaryTallyText(s)'));
     assert.ok(indexHtml.includes('id="recapAutoSummary"'), 'the summary container must exist in the Overview card');
@@ -260,7 +260,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
       "['Chưa xử lý', 'Not decided']",
       "['Tóm tắt chất lượng', 'QUALITY SUMMARY']",
       "['Chưa có mô tả', 'No description yet']",
-      "['✓ Không có vấn đề nào được ghi nhận', '✓ No issues recorded']"
+      "['✓ Không có watch-out nào được ghi nhận', '✓ No watch-outs recorded']"
     ];
     for (const pair of pairs) {
       assert.ok(indexHtml.includes(pair), `missing i18n pair ${pair}`);
@@ -277,7 +277,8 @@ describe('TC-REC1.5: PDF gating (source assertions)', () => {
     assert.ok(indexHtml.includes('const recapSummary = buildRecapWatchoutSummary(D);'));
     assert.ok(indexHtml.includes("recapSummaryTallyText(recapSummary, 'en')"), 'PDF tally must be forced to English');
     assert.ok(indexHtml.includes("if (isRecap) {\n        const recapSummary = buildRecapWatchoutSummary(D);"));
-    assert.ok(indexHtml.includes('✓ No issues recorded'));
+    assert.ok(indexHtml.includes('✓ No watch-outs recorded'));
+    assert.ok(indexHtml.includes("doc.text('WATCH OUT', M + idxW, y + 3);"), 'summary table column header must read WATCH OUT');
   });
 
   it('TC-REC1.5.2: Watch Out caption chips are enabled only for the Recap Watch Out section', () => {
