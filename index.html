@@ -21004,7 +21004,17 @@
       ['Không lưu', "Don't save"],
       ['Đã đạt giới hạn báo cáo', 'Report limit reached'],
       ['Xuất bản sao lưu ngay', 'Export backup now'],
-      ['Để sau', 'Not now']
+      ['Để sau', 'Not now'],
+      // REC-1 (v4.1.0): Watch Out dispositions + Recap auto summary. The tally
+      // line itself is built with L() (it interpolates counts), not via pairs.
+      ['Sửa ngay', 'Fix immediately'],
+      ['Sửa ở mẫu sau', 'Fix next sample'],
+      ['Ghi nhận', 'Take note'],
+      ['Chấp nhận', 'Accepted'],
+      ['Chưa xử lý', 'Not decided'],
+      ['Tóm tắt tự động', 'AUTO SUMMARY'],
+      ['Chưa có mô tả', 'No description yet'],
+      ['✓ Không có vấn đề nào được ghi nhận', '✓ No issues recorded']
     ];
 
     const I18N_MAPS = { en: new Map(), vi: new Map() };
