@@ -254,6 +254,19 @@
       cursor: default;
     }
 
+    .save-state-text {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted, #59544F);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .save-state-text:empty {
+      display: none;
+    }
+
     @keyframes dotPulse {
       from {
         opacity: 0.3;
@@ -6694,6 +6707,7 @@
     <div class="topbar-center">
       <span class="file-dirty-dot" id="fileDirtyDot" style="display:none"
         title="Unsaved changes">●</span>
+      <span class="save-state-text" id="saveStateText" aria-live="polite"></span>
     </div>
 
     <div class="topbar-actions">
@@ -6746,7 +6760,7 @@
       -->
 
       <button class="topbar-btn icon-btn" id="btnSaveFile" onclick="fileSaveShortcut()" style="display:none"
-        title="Save File (Ctrl+S)">
+        title="Export JSON (Ctrl+S)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -16767,7 +16781,7 @@
           const stored = await dbGet(payload.id);
           const storedUpdatedAt = (stored && stored.updatedAt) || 0;
           if (storedUpdatedAt > knownDbUpdatedAt) {
-            if (conflictDeclinedFor === storedUpdatedAt) return; // already declined for this DB version
+            if (conflictDeclinedFor === storedUpdatedAt) { saveStateUnsaved(); return; } // already declined for this DB version
             const whenStr = new Date(storedUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const overwrite = confirm(
               '⚠ This report was changed in another tab/window (saved at ' + whenStr + ').\n\n' +
@@ -16778,6 +16792,7 @@
             if (!overwrite) {
               conflictDeclinedFor = storedUpdatedAt;
               showToast('⚠ Save paused: this report was changed in another tab', 5000);
+              saveStateUnsaved();
               return;
             }
           }
@@ -16800,6 +16815,9 @@
           if (dataRevision === revisionAtStart) {
             isDirty = false;
             clearDraftSnapshot(payload.id, revisionAtStart);
+            saveStateSaved(payload.updatedAt);
+          } else {
+            saveStateUnsaved();
           }
         } else {
           clearDraftSnapshot(payload.id);
@@ -16815,6 +16833,7 @@
 
     function drainSaveQueue() {
       if (saveInFlightPromise) return saveInFlightPromise;
+      if (pendingSavePayload) saveStateSaving();
 
       saveInFlightPromise = (async () => {
         let lastError = null;
@@ -17195,13 +17214,39 @@
       return fileHandle;
     }
 
+    // S1: one-line persistent save state next to the file-dirty dot.
+    // Text goes through the i18n observer like other static copy
+    // ('Unsaved changes' / 'Saving…' have dictionary pairs; the
+    // 'Saved HH:MM' line is language-picked at write time via L()).
+    function setSaveStateText(text) {
+      const el = document.getElementById('saveStateText');
+      if (el) el.textContent = text;
+    }
+
+    function saveStateUnsaved() {
+      setSaveStateText('Unsaved changes');
+    }
+
+    function saveStateSaving() {
+      setSaveStateText('Saving…');
+    }
+
+    function saveStateSaved(whenMs) {
+      const t = new Date(whenMs || Date.now());
+      const hh = String(t.getHours()).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      setSaveStateText(L('Đã lưu ', 'Saved ') + hh + ':' + mm);
+    }
+
     function fileUpdateDot() {
       const dot = document.getElementById('fileDirtyDot');
       if (!dot) return;
       dot.style.display = (D && D.id && D._fileDirty) ? 'inline' : 'none';
+      if (!D || !D.id) setSaveStateText('');
     }
 
     function markFileDirty() {
+      if (currentId && D && D.id) saveStateUnsaved();
       if (!currentId || !D || !D.id || D._fileDirty) return;
       D._fileDirty = true;
       fileUpdateDot();
@@ -17243,7 +17288,7 @@
       try { syncReportFieldsFromDOM(); } catch (err) { }
       if (!FILE_SAVE_SUPPORTED) {
         downloadReportJson(D);
-        showToast('Browser does not support direct file save — JSON downloaded');
+        showToast('JSON copy downloaded');
         return;
       }
       let handle = null;
@@ -17257,7 +17302,7 @@
         if (err && err.name === 'AbortError') return;
         console.warn('[Save] picker failed', err);
         downloadReportJson(D);
-        showToast('Could not open save dialog — JSON downloaded');
+        showToast('JSON copy downloaded');
         return;
       }
       if (!handle) return;
