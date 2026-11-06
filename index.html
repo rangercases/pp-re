@@ -8413,9 +8413,11 @@
 
       const reader = new FileReader();
       reader.onload = async (e) => {
+        // C-03: parse errors and write errors are handled separately so the
+        // user is never told a good file is "corrupt" when storage ran out.
+        let reportsToRestore = [];
         try {
           const raw = JSON.parse(e.target.result);
-          let reportsToRestore = [];
           if (Array.isArray(raw)) {
             reportsToRestore = raw;
           } else if (raw && Array.isArray(raw.reports)) {
@@ -8423,7 +8425,13 @@
           } else if (raw && typeof raw === 'object' && (raw.id || raw.model || raw.desc)) {
             reportsToRestore = [raw];
           }
+        } catch (parseErr) {
+          console.error('Error parsing backup file:', parseErr);
+          alert('Cannot parse backup file. Please verify JSON format!');
+          return;
+        }
 
+        try {
           if (!reportsToRestore.length) {
             alert('Backup file does not contain valid report data!');
             return;
@@ -8439,22 +8447,52 @@
             return;
           }
 
-          const confirmMsg = `Found ${reportsToRestore.length} report(s) in backup file.\n\nClick OK to import and merge into system (matching IDs will be updated).`;
+          let confirmMsg = `Found ${reportsToRestore.length} report(s) in backup file.\n\nClick OK to import and merge into system (matching IDs will be updated).`;
+
+          // C-03: estimate storage headroom before writing anything.
+          try {
+            if (navigator.storage && navigator.storage.estimate) {
+              const est = await navigator.storage.estimate();
+              const backupBytes = (e.target.result || '').length;
+              if (typeof est.quota === 'number' && typeof est.usage === 'number' && est.usage + backupBytes > est.quota) {
+                confirmMsg += `\n\n⚠ Warning: this backup (~${Math.round(backupBytes / 1048576)} MB) may exceed the storage space left on this device (~${Math.max(0, Math.round((est.quota - est.usage) / 1048576))} MB free). The restore may stop partway; reports restored before that point are kept.`;
+              }
+            }
+          } catch (estErr) { /* estimate is best-effort only */ }
           if (!confirm(confirmMsg)) return;
 
           showToast('Restoring data...');
           let count = 0;
-          for (const rep of reportsToRestore) {
-            if (!rep.id) rep.id = 'pp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            const normalizedRep = await normalizeReportPhotos(rep);
-            await dbPut(normalizedRep);
-            count++;
+          let failedAt = -1;
+          let failReason = '';
+          for (let ri = 0; ri < reportsToRestore.length; ri++) {
+            const rep = reportsToRestore[ri];
+            try {
+              if (!rep.id) rep.id = 'pp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+              const normalizedRep = await normalizeReportPhotos(rep);
+              await dbPut(normalizedRep);
+              count++;
+            } catch (writeErr) {
+              console.error('Error writing report during restore:', writeErr);
+              failedAt = ri;
+              failReason = (writeErr && (writeErr.name === 'QuotaExceededError' || /quota/i.test(writeErr.message || '')))
+                ? 'storage is full (quota exceeded)'
+                : ('write error: ' + ((writeErr && writeErr.message) || writeErr));
+              break;
+            }
           }
           await renderHome();
-          showToast(`✓ Successfully restored ${count} report(s)!`);
+          if (failedAt === -1) {
+            showToast(`✓ Successfully restored ${count} report(s)!`);
+          } else {
+            const failedTitle = getReportTitle(reportsToRestore[failedAt] || {}).trim() || '(untitled)';
+            alert(
+              `Restore stopped partway.\n\nRestored ${count} of ${reportsToRestore.length} report(s).\nStopped at report ${failedAt + 1} ("${failedTitle}") because ${failReason}.\n\nReports restored so far have been kept. Free up space or split the backup file, then restore the remaining reports.`
+            );
+          }
         } catch (err) {
           console.error('Error restoring backup file:', err);
-          alert('Cannot parse backup file. Please verify JSON format!');
+          alert('Restore failed: ' + ((err && err.message) || err));
         }
       };
       reader.readAsText(file);
@@ -11895,14 +11933,24 @@
           normalizedData._fileDirty = false;
           normalizedData._fileSavedAt = Date.now();
         }
-        await dbPut(normalizedData);
+        try {
+          await dbPut(normalizedData);
+        } catch (writeErr) {
+          // TB-08: a full disk / IndexedDB failure is NOT a bad file.
+          console.error('Import write error:', writeErr);
+          const isQuotaErr = writeErr && (writeErr.name === 'QuotaExceededError' || /quota/i.test(writeErr.message || ''));
+          alert(isQuotaErr
+            ? 'Import failed: device storage is full.\n\nThe file itself is valid. Delete some reports or export a backup to free space, then import again.'
+            : 'Import failed: could not save the report to local storage.\n\n' + ((writeErr && writeErr.message) || writeErr));
+          return;
+        }
         if (openHandle) await filePersistHandle(normalizedData.id, openHandle);
         showToast(openHandle ? '✓ File opened' : '✓ Report imported successfully!');
         await renderHome();
         openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
-        alert('Import error: Invalid JSON file format!');
+        alert('Import error: ' + ((err && err.message) || 'Unknown error'));
       }
     }
 
@@ -12556,9 +12604,10 @@
             if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
             const targetIdx = Math.min(evt.newIndex, D.modules.length - 1);
             if (evt.oldIndex >= D.modules.length || targetIdx < 0) return;
-            const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
-            D.modules.splice(targetIdx, 0, movedMod);
+            const movedMod = D.modules[evt.oldIndex];
             pushHistory(`Reorder module "${movedMod.name}"`);
+            D.modules.splice(evt.oldIndex, 1);
+            D.modules.splice(targetIdx, 0, movedMod);
             as();
             buildUI();
             showSection(targetIdx);
@@ -12635,8 +12684,8 @@
       if (!newName || !newName.trim()) return;
       const mod = (D.modules || []).find(m => m.id === moduleId);
       if (!mod) return;
+      pushHistory(`Rename module to "${newName.trim()}"`);
       mod.name = newName.trim();
-      pushHistory(`Rename module to "${mod.name}"`);
       as();
       // Đồng bộ ngay lên tên Tab
       const tabIdx = D.modules.indexOf(mod);
@@ -12656,6 +12705,7 @@
         showToast('This module cannot be duplicated');
         return;
       }
+      pushHistory(`Duplicate module "${origMod.name}"`);
       const newId = `${origMod.type}_dup_${Date.now()}`;
       const newName = `${origMod.name} (Copy)`;
       const newMod = JSON.parse(JSON.stringify(origMod));
@@ -12686,7 +12736,6 @@
       }
 
       D.modules.splice(idx + 1, 0, newMod);
-      pushHistory(`Duplicate module "${origMod.name}"`);
       as();
       buildUI();
       showSection(idx + 1);
@@ -12703,11 +12752,11 @@
       if (!(await appConfirm(`Are you sure you want to remove module "${mod.name}" from this report?\n\n(It will not appear in the exported PDF. New reports will still include all default modules.)`, { title: 'Remove module?', confirmLabel: 'Remove' }))) return;
 
       const idx = D.modules.indexOf(mod);
+      pushHistory(`Delete module "${mod.name}"`);
       D.modules.splice(idx, 1);
       const domEl = getModuleDomBlock(mod.id);
       if (domEl) domEl.style.display = 'none';
 
-      pushHistory(`Delete module "${mod.name}"`);
       as();
       buildUI();
       showSection(Math.max(0, idx - 1));
@@ -12972,9 +13021,10 @@
             if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
             const targetIdx = Math.min(evt.newIndex, D.modules.length - 1);
             if (evt.oldIndex >= D.modules.length || targetIdx < 0) return;
-            const movedMod = D.modules.splice(evt.oldIndex, 1)[0];
-            D.modules.splice(targetIdx, 0, movedMod);
+            const movedMod = D.modules[evt.oldIndex];
             pushHistory(`Reorder module "${movedMod.name}"`);
+            D.modules.splice(evt.oldIndex, 1);
+            D.modules.splice(targetIdx, 0, movedMod);
             as();
             buildUI();
             showSection(targetIdx);
@@ -13086,6 +13136,7 @@
         }
       }
 
+      pushHistory(`Restore module "${newMod.name}"`);
       D.modules.splice(insertIdx, 0, newMod);
       const domBlock = getModuleDomBlock(newMod.id);
       if (domBlock) domBlock.style.display = 'block';
@@ -13099,7 +13150,6 @@
       if (modType === 'documents' && !D.docAttachments) D.docAttachments = [];
       if (newMod.key && !D[newMod.key]) D[newMod.key] = [];
 
-      pushHistory(`Restore module "${newMod.name}"`);
       as();
       buildUI();
       showSection(insertIdx);
@@ -13178,6 +13228,7 @@
         if (editScreen) editScreen.appendChild(clonedDom);
       }
 
+      pushHistory(`Add photo module "${name}"`);
       D[newKey] = [];
       D[newNotesKey] = '';
       if (!FREE_PHOTO_KEYS.includes(newKey)) FREE_PHOTO_KEYS.push(newKey);
@@ -13193,7 +13244,6 @@
       };
 
       D.modules.push(newMod);
-      pushHistory(`Add photo module "${name}"`);
       as();
       buildUI();
       const newIdx = D.modules.length - 1;
@@ -13322,6 +13372,8 @@
 
     async function processDocFiles(fileList) {
       if (!fileList || fileList.length === 0) return;
+      // C-02: capture pre-mutation state; history is pushed only if pages were added.
+      const preDocSnap = (typeof dehydrateReportForHistory === 'function') ? dehydrateReportForHistory(D) : null;
       if (!D.docAttachments) D.docAttachments = [];
 
       showToast('Extracting document pages...', 3000);
@@ -13408,7 +13460,8 @@
       }
 
       if (addedPages > 0) {
-        pushHistory(`Attached ${addedPages} document pages`);
+        if (preDocSnap) { markDirty(); pushHistorySnapshot(preDocSnap, `Attached ${addedPages} document pages`); }
+        else pushHistory(`Attached ${addedPages} document pages`);
         as();
         renderDocAttachments();
         showToast(`✓ Successfully imported ${addedPages} document pages`);
@@ -13526,6 +13579,9 @@
     }
 
     async function toggleCoverSlotFullWidth(key) {
+      // C-02: this function deletes a cover slot (with its photo) before changing
+      // size, so capture the pre-mutation state up front for a working Undo.
+      const preToggleSnap = (typeof dehydrateReportForHistory === 'function') ? dehydrateReportForHistory(D) : null;
       const current = isCoverSlotFull(key);
       if (!current) {
         // Đang là ảnh nhỏ muốn phóng to -> tăng 1 điểm: kiểm tra giới hạn tối đa 4 điểm
@@ -13584,7 +13640,9 @@
           D.coverPhotos[key].fullWidth = (next === 'full');
         }
       }
-      pushHistory(`Toggle Overview photo ${next === 'full' ? 'full width' : 'half width'}`);
+      const toggleDesc = `Toggle Overview photo ${next === 'full' ? 'full width' : 'half width'}`;
+      if (preToggleSnap) { markDirty(); pushHistorySnapshot(preToggleSnap, toggleDesc); }
+      else pushHistory(toggleDesc);
       as();
       renderCoverSlots();
     }
@@ -13630,10 +13688,10 @@
       const keys = getCoverSlotKeys();
       const nextNum = keys.length + 1;
       const newKey = `ANGLE_VIEW_${Date.now()}`;
+      pushHistory('Add Overview slot');
       keys.push(newKey);
       if (!D.coverTitles) D.coverTitles = {};
       D.coverTitles[newKey] = (D && D.moduleType === 'sample-review-recap') ? '' : `PHOTO VIEW #${nextNum}`;
-      pushHistory('Add Overview slot');
       as();
       renderCoverSlots();
     }
@@ -13759,8 +13817,8 @@
             let from = evt.oldIndex;
             let to = evt.newIndex;
             if (from >= ckeys.length || to >= ckeys.length) return;
-            ckeys.splice(to, 0, ckeys.splice(from, 1)[0]);
             pushHistory('Reorder Overview photos');
+            ckeys.splice(to, 0, ckeys.splice(from, 1)[0]);
             as();
             setTimeout(() => {
               cleanupOrphanedSortableFallbacks();
@@ -15225,9 +15283,10 @@
         onEnd: function (evt) {
           if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
           if (!D.bvRows || !D.bvRows.length) return;
-          const moved = D.bvRows.splice(evt.oldIndex, 1)[0];
-          D.bvRows.splice(evt.newIndex, 0, moved);
+          const moved = D.bvRows[evt.oldIndex];
           pushHistory('Reorder BV test row');
+          D.bvRows.splice(evt.oldIndex, 1);
+          D.bvRows.splice(evt.newIndex, 0, moved);
           renderBVTable();
           as();
         }
@@ -15595,9 +15654,10 @@
         onEnd: function (evt) {
           if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) return;
           if (!D.checklist || !D.checklist.length) return;
-          const moved = D.checklist.splice(evt.oldIndex, 1)[0];
-          D.checklist.splice(evt.newIndex, 0, moved);
+          const moved = D.checklist[evt.oldIndex];
           pushHistory('Reorder checklist group');
+          D.checklist.splice(evt.oldIndex, 1);
+          D.checklist.splice(evt.newIndex, 0, moved);
           renderChecklist();
           as();
         }
@@ -15619,8 +15679,8 @@
     function toggleChecklistStatus(gIdx, iIdx, targetStatus) {
       if (!D.checklist || !D.checklist[gIdx] || !D.checklist[gIdx].items || !D.checklist[gIdx].items[iIdx]) return;
       const cur = D.checklist[gIdx].items[iIdx].status;
-      D.checklist[gIdx].items[iIdx].status = (cur === targetStatus) ? null : targetStatus;
       pushHistory('Toggle checklist status');
+      D.checklist[gIdx].items[iIdx].status = (cur === targetStatus) ? null : targetStatus;
       renderChecklist();
       as();
     }
@@ -15628,12 +15688,12 @@
     function addCriterion(gIdx) {
       if (!D.checklist || !D.checklist[gIdx]) return;
       if (!D.checklist[gIdx].items) D.checklist[gIdx].items = [];
+      pushHistory('Add checklist criterion');
       D.checklist[gIdx].items.push({
         id: 'ci_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         text: '',
         status: null
       });
-      pushHistory('Add checklist criterion');
       renderChecklist();
       as();
 
@@ -15649,8 +15709,8 @@
 
     function removeCriterion(gIdx, iIdx) {
       if (!D.checklist || !D.checklist[gIdx] || !D.checklist[gIdx].items) return;
-      D.checklist[gIdx].items.splice(iIdx, 1);
       pushHistory('Delete checklist criterion');
+      D.checklist[gIdx].items.splice(iIdx, 1);
       renderChecklist();
       as();
     }
@@ -15658,6 +15718,7 @@
     function addCategoryGroup() {
       ensureChecklistData();
       const newGroupNum = D.checklist.length + 1;
+      pushHistory('Add checklist category');
       D.checklist.push({
         id: 'cg_' + Date.now(),
         title: 'New Category ' + newGroupNum,
@@ -15665,7 +15726,6 @@
           { id: 'ci_' + Date.now() + '_1', text: '', status: null }
         ]
       });
-      pushHistory('Add checklist category');
       renderChecklist();
       as();
 
@@ -15685,20 +15745,20 @@
       if (!D.checklist || !D.checklist[gIdx]) return;
       const title = D.checklist[gIdx].title || `Group ${gIdx + 1}`;
       if (!(await appConfirm(`Are you sure you want to delete group "${title}" and all its criteria?`, { title: 'Delete group?' }))) return;
-      D.checklist.splice(gIdx, 1);
       pushHistory('Delete checklist group');
+      D.checklist.splice(gIdx, 1);
       renderChecklist();
       as();
     }
 
     function setAllChecklistStatus(targetStatus) {
       ensureChecklistData();
+      pushHistory(targetStatus === 'yes' ? 'Check all Yes' : 'Clear all checklist');
       D.checklist.forEach(g => {
         (g.items || []).forEach(item => {
           item.status = targetStatus;
         });
       });
-      pushHistory(targetStatus === 'yes' ? 'Check all Yes' : 'Clear all checklist');
       renderChecklist();
       as();
     }
@@ -15861,9 +15921,9 @@
 
     function resetDefaultChecklist() {
       if (!confirm('Restore checklist to original 13 standard default groups?')) return;
+      pushHistory('Restore default checklist');
       D.checklist = JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_CONFIG));
       localStorage.removeItem(scopedStorageKey('user_custom_default_checklist'));
-      pushHistory('Restore default checklist');
       renderChecklist();
       as();
       showToast('✓ 13 default checklist groups restored');
@@ -16265,7 +16325,7 @@
       const target = { ...dbReport };
 
       const isPhotoArrayKey = (key) => key === 'dimensions' || /(Photos|Attachments)/.test(key);
-      const photoFields = ['img', 'imgSub', 'image', 'original', 'originalSub', 'data', 'src', 'master'];
+      const photoFields = ['img', 'imgSub', 'image', 'original', 'originalSub', 'data', 'src', 'master', 'markupBase', 'markupBaseSub'];
       const isPhotoRef = (v) => typeof v === 'string' && v.startsWith('__photo_ref_');
 
       Object.keys(snapData).forEach(key => {
@@ -16364,6 +16424,11 @@
     let dataRevision = 0;
     let lastSavedRevision = 0;
     let isDirty = false;
+    // C-05: multi-tab lost-update guard. knownDbUpdatedAt is the updatedAt of
+    // the DB record this tab loaded (or last wrote itself). If the DB copy is
+    // newer at save time, another tab saved first — never overwrite silently.
+    let knownDbUpdatedAt = 0;
+    let conflictDeclinedFor = 0;
 
     function reopenDb() {
       return new Promise((resolve) => {
@@ -16479,11 +16544,38 @@
       const isCurrentReport = (payload === D);
       const revisionAtStart = dataRevision;
 
+      // C-05: if another tab saved this report after we loaded it, warn
+      // instead of silently overwriting that tab's work.
+      if (isCurrentReport && knownDbUpdatedAt > 0) {
+        try {
+          const stored = await dbGet(payload.id);
+          const storedUpdatedAt = (stored && stored.updatedAt) || 0;
+          if (storedUpdatedAt > knownDbUpdatedAt) {
+            if (conflictDeclinedFor === storedUpdatedAt) return; // already declined for this DB version
+            const whenStr = new Date(storedUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const overwrite = confirm(
+              '⚠ This report was changed in another tab/window (saved at ' + whenStr + ').\n\n' +
+              'Saving now will OVERWRITE those changes with this tab\'s version.\n\n' +
+              'OK = Overwrite anyway\n' +
+              'Cancel = Do not save (your edits stay in this tab and in the local draft snapshot)'
+            );
+            if (!overwrite) {
+              conflictDeclinedFor = storedUpdatedAt;
+              showToast('⚠ Save paused: this report was changed in another tab', 5000);
+              return;
+            }
+          }
+        } catch (guardErr) {
+          console.warn('[MultiTab] conflict check failed, saving anyway', guardErr);
+        }
+      }
+
       try {
         payload.updatedAt = Date.now();
         // dbPut structured-clones synchronously, so passing D directly never needs
         // an explicit full-size JSON deep clone (which would duplicate every photo).
         await dbPut(payload);
+        if (isCurrentReport) knownDbUpdatedAt = payload.updatedAt;
 
         if (isCurrentReport) {
           lastSavedRevision = Math.max(lastSavedRevision, revisionAtStart);
@@ -16663,6 +16755,9 @@
         D = (typeof checkAndPromptDraftRestore === 'function')
           ? await checkAndPromptDraftRestore(id, repData)
           : repData;
+        // C-05: baseline for the multi-tab overwrite guard.
+        knownDbUpdatedAt = (D && D.updatedAt) || 0;
+        conflictDeclinedFor = 0;
         reports = []; // Release report list array from memory while editing
 
         if (D && !D.moduleType) {
@@ -17261,18 +17356,37 @@
       delete payload.archiveFolder;
       delete payload._fileDirty;
       delete payload._fileSavedAt;
+      // C-04: track every archive file that could not be read, and NEVER let a
+      // {f: 'file'} reference object survive into the payload that gets saved
+      // to IndexedDB — missing photos become null and are reported to the user.
+      const missingFiles = [];
+      const noteMissing = (ref) => {
+        if (ref && ref.f && !missingFiles.includes(ref.f)) missingFiles.push(ref.f);
+      };
+      const scrubRefs = (slot) => {
+        slot.names.forEach(name => {
+          const v = slot.rec[name];
+          if (v && typeof v === 'object' && typeof v.f === 'string') {
+            noteMissing(v);
+            slot.rec[name] = null;
+          }
+        });
+      };
       for (const slot of fsCollectSlots(payload)) {
         const info = files[slot.key];
         if (info) {
           for (const name of slot.names) {
             const ref = info[name];
-            if (!ref || !ref.f || !photosDir) continue;
+            if (!ref || !ref.f) continue;
+            if (!photosDir) { noteMissing(ref); continue; }
             try {
               const data = await fsReadFileAsDataUrl(photosDir, ref.f);
               if (data) slot.rec[name] = data;
-            } catch (err) { console.warn('[Archive] missing photo file', ref.f, err); }
+              else noteMissing(ref);
+            } catch (err) { console.warn('[Archive] missing photo file', ref.f, err); noteMissing(ref); }
           }
         }
+        scrubRefs(slot);
         if (!slot.rec.img && slot.rec.original) {
           try { slot.rec.img = await resizeImage(slot.rec.original, 1280, 0.85); } catch (err) { }
         }
@@ -17282,16 +17396,22 @@
       }
       for (const slot of fsCollectDocRecords(payload)) {
         const info = files[slot.key];
-        if (!info || !photosDir) continue;
-        for (const name of slot.names) {
-          const ref = info[name];
-          if (!ref || !ref.f) continue;
-          try {
-            const data = await fsReadFileAsDataUrl(photosDir, ref.f);
-            if (data) slot.rec[name] = data;
-          } catch (err) { console.warn('[Archive] missing doc file', ref.f, err); }
+        if (info && photosDir) {
+          for (const name of slot.names) {
+            const ref = info[name];
+            if (!ref || !ref.f) continue;
+            try {
+              const data = await fsReadFileAsDataUrl(photosDir, ref.f);
+              if (data) slot.rec[name] = data;
+              else noteMissing(ref);
+            } catch (err) { console.warn('[Archive] missing doc file', ref.f, err); noteMissing(ref); }
+          }
+        } else if (info) {
+          Object.values(info).forEach(noteMissing);
         }
+        scrubRefs(slot);
       }
+      payload.__missingArchiveFiles = missingFiles;
       return payload;
     }
 
@@ -17327,6 +17447,16 @@
         }
         if ((!existing || !keepFolder) && !(await ensureLocalReportCapacity())) return;
         const payload = await fsHydratePayload(meta, folderName, photosDir);
+        // C-04: warn about missing archive photo files BEFORE anything is saved.
+        const missingFiles = payload.__missingArchiveFiles || [];
+        delete payload.__missingArchiveFiles;
+        if (missingFiles.length) {
+          const shown = missingFiles.slice(0, 8).join('\n• ');
+          const proceedMissing = confirm(
+            `⚠ ${missingFiles.length} photo file(s) are missing from the archive folder:\n\n• ${shown}${missingFiles.length > 8 ? '\n• …' : ''}\n\nThose photos will be EMPTY in the restored report.\n\nOK = Restore anyway\nCancel = Cancel restore`
+          );
+          if (!proceedMissing) { showToast('Restore cancelled — missing photo files'); return; }
+        }
         if (copyId) payload.id = copyId;
         payload.thumbSmall = null;
         try { await refreshReportThumbnail(payload, true); } catch (err) { }
