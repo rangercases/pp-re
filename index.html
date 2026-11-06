@@ -6813,7 +6813,6 @@
         <div class="craft-module-card" id="cardModulePreProd" onclick="openModule('pre-production')">
           <div class="craft-card-strip">
             <div class="craft-card-num-box" style="background-color: var(--module-theme, #0A7E5C);">01</div>
-            <span class="hud-label" style="color:var(--module-theme, #0A7E5C); font-weight:700;">[V3.10.0]</span>
           </div>
           <div class="craft-card-body">
             <div class="craft-card-header-row">
@@ -8418,7 +8417,7 @@
       });
     }
 
-    const APP_VERSION = 'v3.10.0';
+    const APP_VERSION = 'v4.0.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -20670,6 +20669,7 @@
     initI18n();
     bootAuth();
   </script>
+  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:8px;z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.8);">[V4.0.0]</div>
 </body>
 
 </html>
