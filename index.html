@@ -267,6 +267,13 @@
       display: none;
     }
 
+    /* S1: the corner version mark must not paint over the editor or any
+       open modal/overlay (it sits at z-index 900, above both). */
+    body.in-editor #appVersionMark,
+    body:has(.modal-overlay:not(.hidden)) #appVersionMark {
+      display: none;
+    }
+
     @keyframes dotPulse {
       from {
         opacity: 0.3;
@@ -4553,12 +4560,6 @@
         padding-left: max(4px, env(safe-area-inset-left));
         padding-right: max(6px, env(safe-area-inset-right));
         gap: 6px;
-      }
-
-      body.in-editor #btnUndo,
-      body.in-editor #btnRedo,
-      body.in-editor #topbarDivider {
-        display: none !important;
       }
 
       body.in-editor .topbar {
