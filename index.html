@@ -6209,34 +6209,6 @@
       text-transform: uppercase;
     }
 
-    .lang-toggle {
-      display: inline-grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .lang-toggle:hover {
-      color: var(--ink);
-      border-color: var(--line-strong);
-    }
-
-    .lang-toggle svg {
-      width: 15px;
-      height: 15px;
-    }
-
-    .auth-brand .lang-toggle {
-      margin-left: auto;
-    }
-
     .auth-loading {
       display: flex;
       flex-direction: column;
@@ -6781,9 +6753,6 @@
       <div class="auth-brand">
         <img src="FASREP_Black.png" alt="FASREP">
         <span class="auth-brand-sub">Sofacompany</span>
-        <button type="button" class="lang-toggle" data-lang-toggle onclick="toggleAppLang()" title="Language">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </button>
       </div>
 
       <div class="auth-loading" id="authLoading">
@@ -6980,11 +6949,6 @@
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
         <span class="btn-lbl">PDF</span>
-      </button>
-
-      <button type="button" class="lang-toggle" data-lang-toggle onclick="toggleAppLang()" title="Language"
-        style="margin-right:2px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       </button>
 
       <div class="account-menu-wrap" id="accountMenuWrap" style="display:none">
@@ -20290,7 +20254,7 @@
         }
         case 'ACCOUNT_DISABLED': return 'This account is disabled. Contact an administrator.';
         case 'EMAIL_TAKEN': return 'An account with this email already exists. Sign in or use another email.';
-        case 'EMAIL_NOT_ALLOWED': return 'Email này chưa được quản trị viên cấp phép đăng ký.';
+        case 'EMAIL_NOT_ALLOWED': return 'This email has not been approved for signup by an administrator.';
         case 'INVALID_CODE':
           return 'Incorrect verification code.' +
             (data.attemptsLeft !== undefined ? ` ${data.attemptsLeft} attempts left.` : '');
@@ -21401,46 +21365,27 @@
       }).observe(document.body, { childList: true, subtree: true, characterData: true });
     }
 
-    function updateLangToggles() {
-      const label = 'Language';
-      document.querySelectorAll('[data-lang-toggle]').forEach(btn => {
-        btn.setAttribute('aria-label', label);
-        btn.title = label;
-      });
-    }
-
-    function setAppLang(lang) {
-      I18N_LANG = lang === 'vi' ? 'vi' : 'en';
-      try { localStorage.setItem(I18N_STORAGE_KEY, I18N_LANG); } catch (err) { }
-      refreshI18n();
-      updateLangToggles();
-      try { if (document.getElementById('adminUserList') && authAdminUsers.length) renderAdminUsers(); } catch (err) { }
-      showToast(I18N_LANG === 'vi' ? 'Language: Vietnamese' : 'Language: English');
-    }
-
-    function toggleAppLang() {
-      setAppLang(I18N_LANG === 'en' ? 'vi' : 'en');
-    }
-
     const nativeAlertBeforeI18n = window.alert.bind(window);
     const nativeConfirmBeforeI18n = window.confirm.bind(window);
     window.alert = message => nativeAlertBeforeI18n(translateI18nText(String(message)));
     window.confirm = message => nativeConfirmBeforeI18n(translateI18nText(String(message)));
 
     function initI18n() {
-      try {
-        const saved = localStorage.getItem(I18N_STORAGE_KEY);
-        if (saved === 'vi' || saved === 'en') I18N_LANG = saved;
-      } catch (err) { }
+      // English only (v4.1.7): the EN/VI switch was removed at the owner's
+      // request. The translation engine stays (DOM source strings are
+      // Vietnamese and are rendered to English), but the language is now
+      // locked to English and any previously saved choice is cleared, so
+      // users who had picked Vietnamese get English like everyone else.
+      I18N_LANG = 'en';
+      try { localStorage.removeItem(I18N_STORAGE_KEY); } catch (err) { }
       translateI18nTree(document.body);
       startI18nObserver();
-      updateLangToggles();
     }
 
     initI18n();
     bootAuth();
   </script>
-  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:8px;z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.8);">[V4.1.6]</div>
+  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.85);background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 7px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">[V4.1.6]</div>
 </body>
 
 </html>
