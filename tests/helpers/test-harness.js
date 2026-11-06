@@ -366,6 +366,17 @@ export async function loadAdminAllowlistHandlers() {
 }
 
 /**
+ * Dynamically loads the Admin Photos Usage Pages Function endpoint.
+ */
+export async function loadAdminPhotosUsageHandlers() {
+  const photosUsage = await import('../../functions/api/admin/photos-usage.js');
+
+  return {
+    photosUsageGet: photosUsage.onRequestGet,
+  };
+}
+
+/**
  * Dynamically loads Photos (R2) Pages Function endpoints.
  */
 export async function loadPhotosHandlers() {
