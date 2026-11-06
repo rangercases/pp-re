@@ -2647,6 +2647,124 @@
       padding: 2px 4px;
     }
 
+    /* REC-1 (v4.1.0): Watch Out disposition chips (Recap only) + Overview auto summary.
+       Status colors are carried by CSS vars so the editor chips and the summary
+       chips always match the PDF palette. */
+    [data-wo-action="fix-now"] { --wo-c: #e24b4b; --wo-bg: #fdf0f0; --wo-tx: #b42828; }
+    [data-wo-action="fix-next"] { --wo-c: #e89020; --wo-bg: #fdf7ec; --wo-tx: #b45309; }
+    [data-wo-action="note"] { --wo-c: #3788dd; --wo-bg: #eef5fd; --wo-tx: #1e5ab4; }
+    [data-wo-action="accepted"] { --wo-c: #34a853; --wo-bg: #edf7ee; --wo-tx: #1e7832; }
+
+    .wo-action-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 2px 9px 9px;
+      background: #ffffff;
+    }
+
+    .wo-act-chip {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      padding: 5px 11px;
+      min-height: 30px;
+      border-radius: var(--r-pill, 9999px);
+      background: var(--sunken, #f7f6f4);
+      border: 1px solid var(--line, #e6e3df);
+      color: var(--muted, #8a8378);
+      transition: all 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    .wo-act-chip:active { transform: scale(0.96); }
+
+    .wo-act-chip.on {
+      background: var(--wo-bg);
+      border-color: var(--wo-c);
+      color: var(--wo-tx);
+    }
+
+    .recap-auto-summary {
+      border-top: 1px solid var(--line);
+      padding: 12px 16px 14px;
+      background: #ffffff;
+    }
+
+    .ras-head {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-strong);
+      margin-bottom: 6px;
+    }
+
+    .ras-tally {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink-strong);
+      margin-bottom: 4px;
+    }
+
+    .ras-empty {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1e7832;
+    }
+
+    .ras-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 6px 0;
+      border-top: 1px dashed var(--line, #e6e3df);
+    }
+
+    .ras-idx {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 28px;
+      padding-top: 1px;
+    }
+
+    .ras-cap {
+      flex: 1;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-top: 1px;
+    }
+
+    .ras-cap.is-empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .ras-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--r-pill, 9999px);
+      background: var(--wo-bg, #f4f2ef);
+      border: 1px solid var(--wo-c, #b9b2a8);
+      color: var(--wo-tx, #8a8378);
+      white-space: nowrap;
+    }
+
     .free-caption textarea:focus {
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.3);
@@ -7093,6 +7211,8 @@
       <div class="sec-card" id="cardOverviewPhotos">
         <div class="sec-head" id="headOverviewPhotos">OVERVIEW</div>
         <div class="photo-grid-2" id="coverPhotos"></div>
+        <!-- REC-1: Recap-only auto summary, filled by renderRecapAutoSummary() -->
+        <div class="recap-auto-summary" id="recapAutoSummary" style="display:none"></div>
       </div>
     </div>
 
