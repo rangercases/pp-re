@@ -7640,6 +7640,7 @@
           </div>
           <p class="auth-error" id="adminAllowlistError" hidden></p>
           <div class="admin-list" id="adminAllowlistList"></div>
+          <p class="admin-allowlist-note" id="adminPhotosUsage" style="margin-top:10px;" hidden></p>
         </div>
         <div class="admin-list" id="adminUserList"></div>
       </div>
@@ -19284,6 +19285,13 @@
     // inline in the payload exactly as before.
     const R2_MARKER_PREFIX = 'fasrep-r2://';
     const cloudUploadedPhotoHashes = new Set(); // hashes already in R2 this session
+    let r2BudgetToastShown = false; // budget-exceeded toast fires once per page session
+
+    function notifyR2BudgetExceededOnce() {
+      if (r2BudgetToastShown) return;
+      r2BudgetToastShown = true;
+      showToast('Kho ảnh cloud đã chạm hạn mức miễn phí — ảnh vẫn được lưu trên máy này. Vui lòng báo quản trị viên.', 6000);
+    }
 
     function dataUrlToBytes(dataUrl) {
       const comma = dataUrl.indexOf(',');
@@ -19335,7 +19343,15 @@
             headers: { 'Content-Type': decoded.mime },
             body: decoded.bytes,
           });
-          if (!res.ok) return null; // includes 503 PHOTOS_NOT_CONFIGURED
+          if (!res.ok) {
+            // Budget guard tripped (507): the photo stays inline/local,
+            // but the user should know the free cloud quota is full.
+            if (res.status === 507) {
+              const errData = await res.json().catch(() => null);
+              if (errData && errData.error === 'R2_STORAGE_BUDGET_EXCEEDED') notifyR2BudgetExceededOnce();
+            }
+            return null; // includes 503 PHOTOS_NOT_CONFIGURED
+          }
           cloudUploadedPhotoHashes.add(hash);
         }
         return R2_MARKER_PREFIX + hash;
@@ -20140,6 +20156,7 @@
       }
       loadAdminUsers();
       loadAdminAllowlist();
+      loadAdminPhotosUsage();
     }
 
     function closeAdminPanel() {
@@ -20195,6 +20212,28 @@
         ).join('');
       } catch (err) {
         list.innerHTML = '<div class="admin-empty">Could not load the allowlist.</div>';
+      }
+    }
+
+    function formatGbShort(bytes) {
+      const text = (Number(bytes || 0) / 1e9).toFixed(2);
+      return text.endsWith('.00') ? text.slice(0, -3) : text;
+    }
+
+    async function loadAdminPhotosUsage() {
+      const el = document.getElementById('adminPhotosUsage');
+      if (!el) return;
+      try {
+        const result = await apiFetch('/api/admin/photos-usage');
+        if (!result.res.ok || !result.data || !result.data.ok) return; // stay hidden
+        const count = Number(result.data.objects || 0).toLocaleString('en-US');
+        el.textContent =
+          'Ảnh cloud (R2): ' + (Number(result.data.bytesUsed || 0) / 1e9).toFixed(2) +
+          ' GB / ' + formatGbShort(result.data.budgetBytes) +
+          ' GB (' + Math.round(Number(result.data.percentUsed || 0)) + '%) — ' + count + ' ảnh';
+        el.hidden = false;
+      } catch (err) {
+        // Informational only: stay hidden on any failure.
       }
     }
 
