@@ -16792,11 +16792,12 @@
           if (storedUpdatedAt > knownDbUpdatedAt) {
             if (conflictDeclinedFor === storedUpdatedAt) { saveStateUnsaved(); return; } // already declined for this DB version
             const whenStr = new Date(storedUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const overwrite = confirm(
-              '⚠ This report was changed in another tab/window (saved at ' + whenStr + ').\n\n' +
-              'Saving now will OVERWRITE those changes with this tab\'s version.\n\n' +
-              'OK = Overwrite anyway\n' +
-              'Cancel = Do not save (your edits stay in this tab and in the local draft snapshot)'
+            const overwrite = await appConfirm(
+              L(
+                'Một tab/cửa sổ khác đã lưu báo cáo này lúc ' + whenStr + '.\n\nLưu bây giờ sẽ GHI ĐÈ các thay đổi đó bằng phiên bản của tab này.',
+                'Another tab/window saved this report at ' + whenStr + '.\n\nSaving now will OVERWRITE those changes with this tab\'s version.'
+              ),
+              { title: 'Report changed in another tab', confirmLabel: 'Overwrite anyway', cancelLabel: "Don't save" }
             );
             if (!overwrite) {
               conflictDeclinedFor = storedUpdatedAt;
