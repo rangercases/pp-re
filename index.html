@@ -16638,28 +16638,23 @@
         return dbRecord;
       }
 
+      // POP-1 (v4.0.3): no blocking question — a newer draft is always
+      // restored silently (NT-01 is fixed: restore touches text fields and
+      // the photo-mismatch guard keeps existing photos). Toast is the only
+      // feedback.
       const snapTimeStr = new Date(snap.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const wantsRestore = confirm(
-        'Found an unsaved draft (at ' + snapTimeStr + ') newer than the saved data.\n\n' +
-        'Restore the text content from it?\n\n' +
-        '• OK to restore the draft\n' +
-        '• Cancel to skip and use the saved data'
-      );
-
-      if (wantsRestore) {
-        const { report: restored, hadMismatches } = restoreSnapshotIntoReport(dbRecord, snap.data);
-        if (hadMismatches) {
-          showToast('⚠️ Text content restored. Some photo lists changed in length, so existing photos were kept.');
-        } else {
-          showToast('✓ Draft restored successfully');
-        }
-        restored.updatedAt = Date.now();
-        await saveReportSafe(restored);
-        return restored;
+      const { report: restored, hadMismatches } = restoreSnapshotIntoReport(dbRecord, snap.data);
+      if (hadMismatches) {
+        showToast('⚠️ Text content restored. Some photo lists changed in length, so existing photos were kept.');
       } else {
-        clearDraftSnapshot(id);
-        return dbRecord;
+        showToast(L(
+          '✓ Đã khôi phục bản nháp lúc ' + snapTimeStr,
+          '✓ Draft from ' + snapTimeStr + ' restored'
+        ));
       }
+      restored.updatedAt = Date.now();
+      await saveReportSafe(restored);
+      return restored;
     }
 
     // ── AUTOSAVE & STORAGE SCHEDULER (DUAL-LAYER & SINGLE IN-FLIGHT) ──
