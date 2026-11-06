@@ -8202,6 +8202,12 @@
 
     function dbGetAll() {
       return new Promise((res, rej) => {
+        // GĐ5: same !db self-init guard as dbGet/dbGetAllMetadata — calling
+        // this before initDB() finished used to throw a bare TypeError.
+        if (!db) {
+          initDB().then(() => dbGetAll()).then(res).catch(rej);
+          return;
+        }
         const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
         req.onsuccess = () => res(req.result || []);
         req.onerror = () => rej(req.error);
@@ -8383,14 +8389,22 @@
         }
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10);
-        const backupPackage = {
+        // TB-03: build the backup as Blob parts (header + one stringify per
+        // report + footer) instead of ONE pretty-printed mega-string, which
+        // doubled the whole database in RAM. Format stays identical JSON.
+        const header = JSON.stringify({
           app: 'PPSampleReview',
           version: APP_VERSION,
           backupAt: now.toISOString(),
-          totalReports: allReports.length,
-          reports: allReports
-        };
-        const blob = new Blob([JSON.stringify(backupPackage, null, 2)], { type: 'application/json' });
+          totalReports: allReports.length
+        }).slice(0, -1) + ',"reports":[';
+        const parts = [header];
+        allReports.forEach((rep, i) => {
+          if (i > 0) parts.push(',');
+          parts.push(JSON.stringify(rep));
+        });
+        parts.push(']}');
+        const blob = new Blob(parts, { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `PP_Review_Backup_FullDB_${dateStr}.json`;
@@ -9037,7 +9051,14 @@
         }
         libheifModulePromise = window.libheif();
       }
-      return await libheifModulePromise;
+      try {
+        return await libheifModulePromise;
+      } catch (err) {
+        // T-01: never cache a rejected promise — a transient CDN failure
+        // used to break HEIC decoding until the page was reloaded.
+        libheifModulePromise = null;
+        throw err;
+      }
     }
 
     // HEIC decode needs a full-resolution ImageData + canvas; running two at once
@@ -9717,6 +9738,23 @@
       }
     }
 
+    function queuePlanTargetOccupied(t) {
+      if (!t) return false;
+      if (t.type === 'slot') return coverSlotHasPhoto(t.key);
+      if (t.type === 'dim') {
+        const row = (D.dimensions || [])[t.index];
+        return !!row && dimRoleFilled(row, t.subType === 'sub' ? 'sub' : 'main');
+      }
+      if (t.type === 'free') {
+        if (!Number.isInteger(t.index) || t.index < 0) return false;
+        const row = (D[t.key] || [])[t.index];
+        if (!row) return false;
+        const special = SPECIAL_FREE_KEYS.includes(t.key);
+        return freeRoleFilled(t.key, row, special && t.subType === 'sub' ? 'sub' : 'main');
+      }
+      return false;
+    }
+
     async function applyPhotoQueue() {
       if (!photoQueue || photoQueue.busy) return;
       const q = photoQueue;
@@ -9724,6 +9762,12 @@
       if (!plan.length) {
         showToast('This section is full');
         return;
+      }
+      // T-03: the plan always starts at the slot the user picked — if that
+      // slot already has a photo, the first queued photo replaces it. Ask
+      // first instead of overwriting silently.
+      if (queuePlanTargetOccupied(plan[0])) {
+        if (!(await appConfirm('The selected slot already has a photo. The first new photo will REPLACE it.\n\nContinue?', { title: 'Replace existing photo?', confirmLabel: 'Replace' }))) return;
       }
       const total = Math.min(plan.length, q.items.length);
       const target = q.target;
@@ -10301,13 +10345,30 @@
     // ═══════════════ LIGHTWEIGHT HISTORY MANAGER (PHOTO VAULT & UNDO/REDO) ═══════════════
     const photoVault = new Map();
 
+    // TB-07: strong photo fingerprint. The old formula sampled only ~90
+    // chars at 3 fixed points, so two very similar consecutive shots could
+    // collide and silently swap photos on undo / draft restore. This FNV-1a
+    // dual-lane hash samples the WHOLE payload (strided for very long
+    // strings) plus the tail.
+    function photoStrongHash(value) {
+      const len = value.length;
+      const step = len > 50000 ? Math.ceil(len / 50000) : 1;
+      let h1 = 0x811c9dc5, h2 = 0x9e3779b1;
+      for (let i = 0; i < len; i += step) {
+        const c = value.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+        h2 = Math.imul(h2 ^ (c + i), 0x85ebca6b) >>> 0;
+      }
+      for (let i = Math.max(0, len - 32); i < len; i++) {
+        const c = value.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+        h2 = Math.imul(h2 ^ (c + i), 0x85ebca6b) >>> 0;
+      }
+      return len + '_' + h1.toString(36) + h2.toString(36);
+    }
+
     function getVaultKey(base64Str) {
-      const len = base64Str.length;
-      const p1 = base64Str.slice(30, 60);
-      const p2 = base64Str.slice(Math.floor(len / 2), Math.floor(len / 2) + 30);
-      const p3 = base64Str.slice(-30);
-      const fp = (p1 + p2 + p3).replace(/[^a-zA-Z0-9]/g, '');
-      return `__vault_img_${len}_${fp}`;
+      return `__vault_img_${photoStrongHash(base64Str)}`;
     }
 
     const snapshotPhotoRefs = new Map();
@@ -11476,6 +11537,12 @@
         };
       } else {
         const croppedCanvas = cropper.getCroppedCanvas({ maxWidth: 1280, maxHeight: 1280, fillColor: '#ffffff', imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+        // T-02: getCroppedCanvas() can return null (empty/oversized source);
+        // calling toDataURL on null used to fail silently with the modal open.
+        if (!croppedCanvas) {
+          showToast('⚠ Could not read the cropped photo — please try again', 4000);
+          return;
+        }
         finalDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.75);
         croppedCanvas.width = 0; croppedCanvas.height = 0;
       }
@@ -11640,10 +11707,24 @@
       }
       if (!(await appConfirm(`Delete ${selectedReportIds.size} selected report(s)?`, { title: 'Delete reports?' }))) return;
 
+      // TB-05: one failing delete must not strand the UI mid-batch with no
+      // summary of what actually happened.
+      let deletedCount = 0;
+      let failedCount = 0;
       for (const id of selectedReportIds) {
-        await dbDelete(id);
+        try {
+          await dbDelete(id);
+          deletedCount++;
+        } catch (err) {
+          failedCount++;
+          console.error('Failed to delete report', id, err);
+        }
       }
-      showToast(`✓ Deleted ${selectedReportIds.size} report(s)`);
+      if (failedCount === 0) {
+        showToast(`✓ Deleted ${deletedCount} report(s)`);
+      } else {
+        showToast(`⚠ Deleted ${deletedCount} report(s); ${failedCount} could not be deleted`, 5000);
+      }
       toggleSelectMode();
       renderHome();
     }
@@ -12532,8 +12613,13 @@
               e.stopPropagation();
               const title = getReportTitle(r) || 'this report';
               if (!(await appConfirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`, { title: 'Delete report?' }))) return;
-              await dbDelete(r.id);
-              showToast('✓ Report deleted');
+              try {
+                await dbDelete(r.id);
+                showToast('✓ Report deleted');
+              } catch (delErr) {
+                console.error('Failed to delete report', r.id, delErr);
+                showToast('⚠ Could not delete this report — please try again', 5000);
+              }
               renderHome();
             };
           }
@@ -16315,6 +16401,12 @@
       return `__photo_ref_${len}_${(p1 + p2 + p3).replace(/[^a-zA-Z0-9]/g, '')}`;
     }
 
+    function photoRefForValueStrong(value) {
+      if (typeof value !== 'string' || value.length <= 200) return null;
+      if (!value.startsWith('data:image') && !value.startsWith('data:application')) return null;
+      return `__photo_ref_v2_${photoStrongHash(value)}`;
+    }
+
     function stripPhotosForSnapshot(report) {
       if (!report) return null;
       try {
@@ -16327,7 +16419,9 @@
             Object.keys(value).forEach(k => { stripped[k] = null; });
             return stripped;
           }
-          const ref = photoRefForValue(value);
+          // TB-07: new snapshots carry the strong v2 fingerprint. The
+          // legacy formula stays for reading older snapshots (see restore).
+          const ref = photoRefForValueStrong(value) || photoRefForValue(value);
           return ref || value;
         }));
       } catch (e) {
@@ -16406,8 +16500,13 @@
           dbArr.forEach(item => {
             if (!item || typeof item !== 'object') return;
             photoFields.forEach(f => {
+              // TB-07: index under both formulas so snapshots written by
+              // older versions (legacy refs) and new ones (v2 refs) both
+              // re-attach to the right photo.
               const ref = photoRefForValue(item[f]);
               if (ref && !dbPhotoByRef.has(ref)) dbPhotoByRef.set(ref, item[f]);
+              const ref2 = photoRefForValueStrong(item[f]);
+              if (ref2 && !dbPhotoByRef.has(ref2)) dbPhotoByRef.set(ref2, item[f]);
             });
           });
 
