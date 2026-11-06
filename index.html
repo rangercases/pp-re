@@ -13878,6 +13878,13 @@
         renderCoverSlots();
       } else {
         // Không có ảnh: xóa slot ngay lập tức không cần popup (kế thừa chuẩn như bên photo)
+        // S1: ...unless the slot's only content is a user-typed angle title —
+        // that asks first. The auto-generated 'PHOTO VIEW #n' placeholder
+        // title does not count as content.
+        const slotTitleText = ((D.coverTitles && D.coverTitles[key]) || '').trim();
+        if (slotTitleText && !/^PHOTO VIEW #\d+$/.test(slotTitleText)) {
+          if (!(await appConfirm('Delete this photo slot and its contents?', { title: 'Delete photo slot?' }))) return;
+        }
         pushHistory('Delete Overview slot');
         const keys = getCoverSlotKeys();
         const idx = keys.indexOf(key);
@@ -15450,7 +15457,18 @@
       as();
       savePhotoChangeNow();
     }
-    function delFreeSlot(key, i) { pushHistory('Delete photo slot'); D[key].splice(i, 1); renderFreePhotos(key); as(); savePhotoChangeNow(); }
+    // S1: a slot counts as having content under the same predicate the PDF
+    // export uses — a main/detail photo or a non-empty caption.
+    function freeSlotHasContent(slot) {
+      return !!(slot && (slot.img || slot.imgSub || (slot.caption && slot.caption.trim())));
+    }
+
+    async function delFreeSlot(key, i) {
+      if (freeSlotHasContent(D[key] && D[key][i])) {
+        if (!(await appConfirm('Delete this photo slot and its contents?', { title: 'Delete photo slot?' }))) return;
+      }
+      pushHistory('Delete photo slot'); D[key].splice(i, 1); renderFreePhotos(key); as(); savePhotoChangeNow();
+    }
 
     function renderBVTable() {
       const tbody = document.getElementById('bvBody'); if (!tbody) return; tbody.innerHTML = '';
