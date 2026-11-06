@@ -14084,6 +14084,7 @@
         attachDropZone(addBtn, { type: 'slot', key: `ANGLE_VIEW_${Date.now()}`, containerId: 'coverPhotos', section: 'cover' }, true);
         el.appendChild(addBtn);
       }
+      renderRecapAutoSummary();
     }
 
     function buildSlotGrid(containerId, slots, type, section) {
@@ -14841,6 +14842,7 @@
     function renderWatchoutPhotos() {
       const el = document.getElementById('watchoutPhotos'); if (!el) return; el.innerHTML = '';
       const arr = D.watchoutPhotos || [];
+      const isRecap = isRecapReport();
 
       arr.forEach((p, i) => {
         const size = getPhotoSize(p);
@@ -14938,7 +14940,12 @@
         <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
         <div class="watchout-caption-box ignore-drag">
           <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Quality Watch Out notes, inspection remarks..." oninput="updateCaption('watchoutPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
-        </div>`;
+        </div>
+        ${isRecap ? `
+        <!-- REC-1: HÀNG CHIP TRẠNG THÁI XỬ LÝ (CHỈ HIỆN Ở RECAP) -->
+        <div class="wo-action-chips ignore-drag">
+          ${WO_ACTIONS.map(a => `<button type="button" class="wo-act-chip${p && p.action === a.id ? ' on' : ''}" data-wo-action="${a.id}" onclick="setWatchoutAction(${i}, '${a.id}');event.stopPropagation()">${a.en}</button>`).join('')}
+        </div>` : ''}`;
 
         const mainPhotoEl = div.querySelector('.dim-main-photo');
         const subPhotoEl = div.querySelector('.dim-sub-photo');
@@ -15665,6 +15672,108 @@
       D.bvRows[i].result = isSame ? '' : val;
       renderBVTable();
       as();
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════════
+       REC-1 (v4.1.0) — RECAP WATCH OUT DISPOSITIONS + AUTO SUMMARY
+       One shared builder feeds the editor Overview block and the PDF block so
+       both always agree. Only Recap reads/writes the slot `action` field.
+       ════════════════════════════════════════════════════════════════════════════ */
+    const WO_ACTIONS = [
+      { id: 'fix-now', vi: 'Sửa ngay', en: 'Fix immediately', rgb: [226, 75, 74], bg: [253, 240, 240], textRgb: [180, 40, 40] },
+      { id: 'fix-next', vi: 'Sửa ở mẫu sau', en: 'Fix next sample', rgb: [232, 144, 32], bg: [253, 247, 236], textRgb: [180, 83, 9] },
+      { id: 'note', vi: 'Ghi nhận', en: 'Take note', rgb: [55, 138, 221], bg: [238, 245, 253], textRgb: [30, 90, 180] },
+      { id: 'accepted', vi: 'Chấp nhận', en: 'Accepted', rgb: [52, 168, 83], bg: [237, 247, 238], textRgb: [30, 120, 50] }
+    ];
+    const WO_ACTION_MAP = {};
+    WO_ACTIONS.forEach(a => { WO_ACTION_MAP[a.id] = a; });
+    // Palette for an issue whose disposition has not been picked yet.
+    const WO_ACTION_NONE = { id: null, vi: 'Chưa xử lý', en: 'Not decided', rgb: [170, 164, 156], bg: [244, 242, 239], textRgb: [120, 114, 106] };
+
+    function isRecapReport(report) {
+      const r = report || D;
+      return !!(r && r.moduleType === 'sample-review-recap');
+    }
+
+    function woActionMeta(action) {
+      return (action && WO_ACTION_MAP[action]) ? WO_ACTION_MAP[action] : null;
+    }
+
+    // An "issue" is a Watch Out slot that carries content (a photo or a
+    // caption) — the same rule getReportQuickMetrics and the PDF photo
+    // sections use, so summary numbering matches the Watch Out pages 1:1.
+    function buildRecapWatchoutSummary(report) {
+      const slots = (report && Array.isArray(report.watchoutPhotos)) ? report.watchoutPhotos : [];
+      const issues = [];
+      const counts = { 'fix-now': 0, 'fix-next': 0, 'note': 0, 'accepted': 0 };
+      let unselected = 0;
+      slots.forEach(p => {
+        if (!p) return;
+        const caption = (p.caption && String(p.caption).trim()) ? String(p.caption).trim() : null;
+        if (!p.img && !p.imgSub && !caption) return;
+        const action = woActionMeta(p.action) ? p.action : null;
+        if (action) counts[action]++; else unselected++;
+        issues.push({ index: issues.length + 1, caption: caption, action: action });
+      });
+      return { issues: issues, counts: counts, unselected: unselected, total: issues.length };
+    }
+
+    // "4 issues: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided"
+    // lang 'vi'/'en' forces a language (the PDF is English-only); when omitted
+    // the line follows the current UI language via L().
+    function recapSummaryTallyText(summary, lang) {
+      if (!summary || !summary.total) return '';
+      const pick = (vi, en) => lang === 'vi' ? vi : (lang === 'en' ? en : L(vi, en));
+      const parts = [];
+      WO_ACTIONS.forEach(a => {
+        const n = summary.counts[a.id] || 0;
+        if (n > 0) parts.push(n + ' ' + pick(a.vi, a.en).toLowerCase());
+      });
+      if (summary.unselected > 0) parts.push(summary.unselected + ' ' + pick(WO_ACTION_NONE.vi, WO_ACTION_NONE.en).toLowerCase());
+      const head = summary.total + ' ' + pick('vấn đề', summary.total === 1 ? 'issue' : 'issues');
+      return head + ': ' + parts.join(' · ');
+    }
+
+    function setWatchoutAction(index, actionId) {
+      if (!D.watchoutPhotos || !D.watchoutPhotos[index]) return;
+      pushHistory('Set Watch Out status');
+      const cur = D.watchoutPhotos[index].action || null;
+      D.watchoutPhotos[index].action = (cur === actionId) ? null : actionId;
+      as();
+      renderWatchoutPhotos();
+    }
+
+    // Read-only auto summary rendered under the Recap Overview photo grid.
+    // Refreshed from renderCoverSlots() (load + cover mutations) and from
+    // showSection() (returning to the Overview tab) — no timers/observers.
+    function renderRecapAutoSummary() {
+      const el = document.getElementById('recapAutoSummary');
+      if (!el) return;
+      if (!isRecapReport()) {
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+      }
+      const s = buildRecapWatchoutSummary(D);
+      el.style.display = '';
+      if (s.total === 0) {
+        el.innerHTML = '<div class="ras-head">AUTO SUMMARY</div>' +
+          '<div class="ras-empty">✓ No issues recorded</div>';
+        return;
+      }
+      const rows = s.issues.map(it => {
+        const meta = woActionMeta(it.action);
+        const chip = meta
+          ? `<span class="ras-chip" data-wo-action="${meta.id}">${meta.en}</span>`
+          : `<span class="ras-chip">${WO_ACTION_NONE.en}</span>`;
+        const cap = it.caption
+          ? `<span class="ras-cap">${escapeHtml(it.caption)}</span>`
+          : `<span class="ras-cap is-empty">No description yet</span>`;
+        return `<div class="ras-row"><span class="ras-idx">#${it.index}</span>${cap}${chip}</div>`;
+      }).join('');
+      el.innerHTML = '<div class="ras-head">AUTO SUMMARY</div>' +
+        `<div class="ras-tally">${escapeHtml(recapSummaryTallyText(s))}</div>` +
+        `<div class="ras-list">${rows}</div>`;
     }
 
     /* ════════════════════════════════════════════════════════════════════════════
@@ -16405,6 +16514,7 @@
       if (pFill) pFill.style.width = Math.round(((curSec + 1) / D.modules.length) * 100) + '%';
       updateDragModeUI();
       updateSaveBarState();
+      renderRecapAutoSummary();
       window.scrollTo(0, 0);
 
       // Auto-scroll the active tab into center view so headers never get lost
