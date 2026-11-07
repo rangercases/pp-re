@@ -8900,10 +8900,11 @@
       { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true }
     ];
 
-    // ═══════════════ DEFAULT 2 MODULES (SAMPLE REVIEW RECAP) ═══════════════
+    // ═══════════════ DEFAULT 3 MODULES (SAMPLE REVIEW RECAP) ═══════════════
     const DEFAULT_MODULES_RECAP = [
       { id: 'sec_overall', type: 'overall', name: 'OVERVIEW', canDelete: false, canDuplicate: false },
-      { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: false, canDuplicate: true }
+      { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: false, canDuplicate: true },
+      { id: 'sec_checklist', type: 'checklist', name: 'Check List', canDelete: true, canDuplicate: false }
     ];
 
     const DEFAULT_MODULES = DEFAULT_MODULES_PREPROD;
@@ -12885,6 +12886,26 @@
             m.canDuplicate = false;
           }
         });
+        // REC-2 (v4.2.0): báo cáo Recap tạo trước v4.2.0 chưa có section
+        // Check List trong danh sách module đã lưu — chèn bổ sung ngay sau
+        // Watch Out, đúng MỘT lần. Cờ recapChecklistBackfilled được đóng dấu
+        // ngay khi báo cáo đã có section (kể cả báo cáo mới), nên nếu người
+        // dùng chủ động xoá Check List thì section không tự mọc lại ở lần mở
+        // sau. Chỉ áp dụng cho Recap; module 01/02 giữ nguyên cơ chế
+        // xoá/khôi phục thủ công như cũ.
+        if (modKey === 'sample-review-recap') {
+          const chkIdx = D.modules.findIndex(m => m && (m.id === 'sec_checklist' || m.type === 'checklist'));
+          if (chkIdx !== -1) {
+            D.recapChecklistBackfilled = true;
+          } else if (!D.recapChecklistBackfilled) {
+            const defChk = defMods.find(m => m && m.id === 'sec_checklist');
+            if (defChk) {
+              const woIdx = D.modules.findIndex(m => m && m.id === 'sec_watchout');
+              D.modules.splice(woIdx >= 0 ? woIdx + 1 : D.modules.length, 0, JSON.parse(JSON.stringify(defChk)));
+              D.recapChecklistBackfilled = true;
+            }
+          }
+        }
       }
     }
 
@@ -15770,6 +15791,40 @@
       return head + ': ' + parts.join(' · ');
     }
 
+    // REC-2 (v4.2.0): checklist tally for the Recap QUALITY SUMMARY — one
+    // shared builder feeds the editor block and the PDF block, exactly like
+    // the watch-out summary above. Counts use the checklist UI's own
+    // semantics (renderChecklist): 'yes' = passed, 'no' = failed, anything
+    // else = pending, so the three numbers always add up to the total.
+    // (getReportQuickMetrics.pendingCriteria lumps failed into pending for
+    // the badge strip; it is deliberately NOT reused here.)
+    function buildRecapChecklistSummary(report) {
+      const groups = (report && Array.isArray(report.checklist)) ? report.checklist : [];
+      let total = 0, passed = 0, failed = 0;
+      groups.forEach(g => {
+        const items = (g && Array.isArray(g.items)) ? g.items : [];
+        items.forEach(it => {
+          if (!it) return;
+          total++;
+          if (it.status === 'yes') passed++;
+          else if (it.status === 'no') failed++;
+        });
+      });
+      return { total: total, passed: passed, failed: failed, pending: total - passed - failed };
+    }
+
+    // "Checklist: 30/34 passed · 2 failed · 2 pending" — zero-count parts are
+    // omitted, mirroring recapSummaryTallyText. Empty when the report has no
+    // checklist data at all (callers then skip the line entirely).
+    function recapChecklistTallyText(summary, lang) {
+      if (!summary || !summary.total) return '';
+      const pick = (vi, en) => lang === 'vi' ? vi : (lang === 'en' ? en : L(vi, en));
+      const parts = [summary.passed + '/' + summary.total + ' ' + pick('đạt', 'passed')];
+      if (summary.failed > 0) parts.push(summary.failed + ' ' + pick('không đạt', 'failed'));
+      if (summary.pending > 0) parts.push(summary.pending + ' ' + pick('chưa kiểm tra', 'pending'));
+      return 'Checklist: ' + parts.join(' · ');
+    }
+
     // REC-1 (v4.1.2, Style B): the slot shows a SINGLE chip — its current
     // status in color, or a muted "+ Not decided" when unset. The label stays
     // its own text node so the i18n observer can translate it; the "+" and
@@ -15916,10 +15971,17 @@
         return;
       }
       const s = buildRecapWatchoutSummary(D);
+      // REC-2 (v4.2.0): the checklist tally rides in the same block, right
+      // under the watch-out tally — no separate badge strip (v4.1.5).
+      const chk = buildRecapChecklistSummary(D);
+      const chkLine = chk.total > 0
+        ? `<div class="ras-tally">${escapeHtml(recapChecklistTallyText(chk))}</div>`
+        : '';
       el.style.display = '';
       if (s.total === 0) {
         el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
-          '<div class="ras-empty">✓ No watch-outs recorded</div>';
+          '<div class="ras-empty">✓ No watch-outs recorded</div>' +
+          chkLine;
         return;
       }
       const rows = s.issues.map(it => {
@@ -15934,6 +15996,7 @@
       }).join('');
       el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
         `<div class="ras-tally">${escapeHtml(recapSummaryTallyText(s))}</div>` +
+        chkLine +
         `<div class="ras-list">${rows}</div>`;
     }
 
@@ -19193,6 +19256,18 @@
             doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
             y += rowH;
           });
+          y += 6.5;
+        }
+
+        // REC-2 (v4.2.0): dòng tổng kết checklist ngay dưới phần watch-out,
+        // cùng nhịp 6.5mm của trang Recap — khớp với khối QUALITY SUMMARY
+        // trong editor. Chỉ hiện khi báo cáo có dữ liệu checklist (mọi báo
+        // cáo Recap mở trong editor đều được seed 13 nhóm / 34 tiêu chí).
+        const recapChecklist = buildRecapChecklistSummary(D);
+        if (recapChecklist.total > 0) {
+          if (y + 8 > BOTTOM_LIMIT) addHeader('QUALITY SUMMARY');
+          doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
+          doc.text(recapChecklistTallyText(recapChecklist, 'en'), M, y + 1);
           y += 6.5;
         }
       }
