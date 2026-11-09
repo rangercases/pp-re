@@ -23,7 +23,9 @@ function cardBlock(fromMarker, toMarker) {
 
 const preProdBlock = cardBlock('<!-- MODULE 01', '<!-- MODULE 02');
 const prototypeBlock = cardBlock('<!-- MODULE 02', '<!-- MODULE 03');
-const recapBlock = cardBlock('<!-- MODULE 03', '<!-- MODULE 04');
+// Recap is the last hub card since v4.2.1 (module 04 placeholder removed),
+// so its block runs to the LEVEL 2 workspace comment that follows the hub grid.
+const recapBlock = cardBlock('<!-- MODULE 03', '<!-- LEVEL 2');
 
 function decodeIcon(block, label) {
   const match = block.match(/<img src="data:image\/png;base64,([A-Za-z0-9+/=]+)" alt="([^"]*)">/);
