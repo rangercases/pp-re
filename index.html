@@ -9029,6 +9029,33 @@
       return parts.length ? parts.join(' ') : 'Untitled Report';
     }
 
+    // DSK-1 §15 (v4.4.0): reportTitle của báo cáo mới luôn là tiêu đề mặc định
+    // của module (modCfg.pdfTitle), nên dùng thẳng nó sẽ khiến mọi hàng trong
+    // danh sách và mọi file xuất đều lặp lại tên module. Hai hàm dưới đây tách
+    // "tên hiển thị" khỏi getReportTitle() (vẫn giữ nguyên cho kiểm tra trùng
+    // lặp / import / footer PDF): tên riêng do người dùng đặt được tôn trọng,
+    // còn tiêu đề mặc định của module thì bị bỏ qua để dùng Model · Description.
+    // Tập tiêu đề mặc định được suy ra tại runtime từ MODULE_THEMES (cả hai
+    // trường title và pdfTitle của từng module), so khớp trim + không phân
+    // biệt hoa thường.
+    function isModuleDefaultTitle(title) {
+      const t = (title || '').trim().toLowerCase();
+      if (!t) return false;
+      if (typeof MODULE_THEMES === 'undefined' || !MODULE_THEMES) return false;
+      return Object.values(MODULE_THEMES).some(cfg => !!cfg &&
+        [cfg.pdfTitle, cfg.title].some(v => (v || '').trim().toLowerCase() === t));
+    }
+
+    function getReportDisplayName(r) {
+      const rep = r || {};
+      const title = (rep.reportTitle || '').trim();
+      if (title && !isModuleDefaultTitle(title)) return title;
+      const parts = [rep.model, rep.desc].map(s => (s || '').trim()).filter(Boolean);
+      if (parts.length) return parts.join(' · ');
+      if (rep.date && String(rep.date).trim()) return rep.date;
+      return 'Untitled report';
+    }
+
     // WebP chỉ dùng cho ảnh mới để giảm dung lượng; luồng xuất PDF luôn ra JPEG
     // vì jsPDF không nhúng được WebP. Nếu canvas không encode được WebP thì giữ JPEG.
     const supportsWebpEncoding = (() => {
@@ -12833,7 +12860,7 @@
           if (isSelectMode) d.classList.add('selecting');
           if (selectedReportIds.has(String(r.id))) d.classList.add('selected');
 
-          const reportTitle = getReportTitle(r);
+          const reportTitle = getReportDisplayName(r);
           const safeTitle = escapeHtml(reportTitle);
           const safeDate = escapeHtml(r.date || '');
           const safeFactory = escapeHtml(r.factory || '');
@@ -17992,7 +18019,10 @@
       const repTitle = (r.reportTitle && r.reportTitle.trim()) ||
         (typeof pdfConfig !== 'undefined' && pdfConfig && pdfConfig.reportTitle) ||
         'PRE-PRODUCTION SAMPLE REVIEW REPORT';
-      const parts = [repTitle, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
+      // DSK-1 §15 (v4.4.0): tiêu đề mặc định của module không vào tên file —
+      // file bắt đầu bằng Model; tên riêng do người dùng đặt vẫn giữ nguyên.
+      const titlePart = isModuleDefaultTitle(repTitle) ? '' : repTitle;
+      const parts = [titlePart, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
       const raw = parts.join('_') || 'report';
       const safe = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
       return safe.slice(0, 120) || 'report';
