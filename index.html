@@ -268,8 +268,11 @@
     }
 
     /* S1: the corner version mark must not paint over the editor or any
-       open modal/overlay (it sits at z-index 900, above both). */
+       open modal/overlay (it sits at z-index 900, above both).
+       S3 (v4.3.0): same treatment while the batch bar is up — select
+       mode flags itself as body.select-mode (toggleSelectMode). */
     body.in-editor #appVersionMark,
+    body.select-mode #appVersionMark,
     body:has(.modal-overlay:not(.hidden)) #appVersionMark {
       display: none;
     }
@@ -1228,7 +1231,10 @@
     /* BATCH ACTION BAR (ELEVENLABS FLOATING PILL DOCK) */
     .batch-bar {
       position: fixed;
-      bottom: 24px;
+      /* S3 (v4.3.0): one anchoring law in every display mode — clear of
+         the home indicator, and never wider than the viewport. */
+      bottom: max(16px, env(safe-area-inset-bottom));
+      max-width: calc(100vw - 24px);
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.92);
@@ -1724,6 +1730,9 @@
     .fcell textarea,
     .fcell select {
       width: 100%;
+      /* S3 (v4.3.0): long values must not force the cell wider than its
+         grid track (grid items default to min-width: auto). */
+      min-width: 0;
       border: none;
       background: transparent;
       font-family: var(--font-body);
@@ -4730,10 +4739,9 @@
 
     @media (display-mode: standalone),
     (display-mode: fullscreen) {
-      .batch-bar {
-        bottom: max(24px, env(safe-area-inset-bottom));
-      }
-
+      /* S3 (v4.3.0): .batch-bar no longer overrides here — its base rule
+         already anchors with max(16px, env(safe-area-inset-bottom)) in
+         every display mode. */
       .save-bar {
         bottom: max(20px, env(safe-area-inset-bottom));
       }
@@ -4755,10 +4763,14 @@
         padding-left: max(4px, env(safe-area-inset-left));
         padding-right: max(6px, env(safe-area-inset-right));
         gap: 6px;
+        /* S3 (v4.3.0): brand and actions take their natural width and the
+           centre cell flexes (min-width: 0 below), instead of the equal
+           1fr tracks that let the action cluster spill over the centre. */
+        grid-template-columns: auto 1fr auto;
       }
 
       body.in-editor .topbar {
-        grid-template-columns: 1fr auto 1fr !important;
+        grid-template-columns: auto 1fr auto !important;
       }
 
       .topbar-center {
@@ -4803,23 +4815,44 @@
         padding: 5px 8px;
         font-size: 11px;
         border-radius: var(--r-pill, 9999px);
-        min-width: 32px;
-        height: 32px;
+        min-width: 40px;
+        height: 40px;
         gap: 3px;
       }
 
-      .topbar-btn.icon-btn {
-        padding: 5px 6px;
+      /* S3 (v4.3.0): on phones every topbar command is one 40x40 icon
+         button. Labels are hidden by the .btn-lbl rule below, so the two
+         labelled commands (Preview / PDF) collapse to the same 40px box
+         as the .icon-btn set; the PDF action keeps the black round look
+         it has as a pill on desktop. SELECT/DONE intentionally keeps its
+         text (mode toggle) and simply grows to 40px tall. */
+      .topbar-btn.icon-btn,
+      #btnPreview,
+      #btnExport {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+      }
+
+      #btnExport {
+        border-radius: 50%;
       }
 
       .topbar-btn.pri {
-        padding: 5px 9px;
         font-size: 11px;
         font-weight: 700;
       }
 
       .topbar-btn .btn-lbl {
         display: none !important;
+      }
+
+      /* S3: final safety net — the save-state line ellipsises inside its
+         flexing centre cell instead of crushing the buttons. */
+      .save-state-text {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .screen {
@@ -4858,6 +4891,22 @@
         grid-column: span 1 !important;
       }
 
+      /* S3 (v4.3.0) ROOT-CAUSE FIX — Recap rendered 2 columns on phones:
+         a grid item with `grid-column: span 2` forces an implicit second
+         track even when the grid is explicitly 1 column, and auto-flow
+         then deals the remaining cells across both tracks. The attribute
+         rule above only neutralised INLINE spans (title / sample-count
+         cells); `body.recap-mode #fcellReviewer { grid-column: span 2 }`
+         comes from the stylesheet, so in Recap the reviewer cell kept
+         its span and recreated the second column (Pre-Production, with
+         no surviving span, correctly stayed 1 column). Neutralise every
+         cell span on phones so the grid is exactly one column in all
+         modules; desktop keeps its spans. */
+      .form-grid > .fcell {
+        grid-column: span 1 !important;
+        min-width: 0;
+      }
+
       .fcell:last-child {
         border-bottom: none !important;
       }
@@ -4870,12 +4919,15 @@
 
       .tabs-wrap {
         top: calc(46px + env(safe-area-inset-top));
-        padding: 0 10px;
+        padding: 0 12px;
+        /* S3 (v4.3.0): fade the right edge to hint the tab row scrolls. */
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
       }
 
       .tab {
-        height: 32px;
-        padding: 6px 12px;
+        height: 36px;
+        padding: 8px 14px;
         font-size: 10.5px;
       }
 
@@ -4913,6 +4965,45 @@
 
       .apple-criterion-row .criterion-del-btn {
         margin-left: auto;
+      }
+
+      /* ── S3 (v4.3.0): shared phone frame — bottom bars & menus ── */
+
+      /* Workspace menu stays inside the viewport, clear of the
+         rounded screen corner. */
+      .workspace-dropdown-menu {
+        right: max(12px, env(safe-area-inset-right));
+      }
+
+      /* Batch bar: icon-only 40px buttons; the count collapses to the
+         bare number inside its pill. */
+      .batch-bar {
+        padding: 6px 8px;
+        gap: 4px;
+      }
+
+      .batch-btn {
+        height: 40px;
+        padding: 0 10px;
+      }
+
+      .batch-btn > span {
+        display: none;
+      }
+
+      .batch-pill-count .batch-count-word {
+        display: none;
+      }
+
+      /* Save bar: BACK / NEXT become arrow-only at a 44px touch height;
+         the NEXT pill keeps its module-theme fill. */
+      .sbar-btn {
+        height: 44px;
+        min-height: 44px;
+      }
+
+      .sbar-btn .sbar-lbl {
+        display: none;
       }
     }
 
@@ -7122,7 +7213,7 @@
   <div class="batch-bar" id="batchBar">
     <div class="batch-pill-count">
       <span class="count-dot"></span>
-      <span id="selectedCountText">0 selected</span>
+      <span id="selectedCountText">0</span> <span class="batch-count-word">selected</span>
     </div>
     <button class="batch-btn pri" onclick="selectAllReports()" title="Toggle Select All">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
@@ -7408,8 +7499,8 @@
 
   <!-- SAVE BAR -->
   <div class="save-bar" id="saveBar" style="display:none">
-    <button class="sbar-btn sec" id="btnPrevSection" onclick="prevSection()">← Back</button>
-    <button class="sbar-btn pri" id="btnNextSection" onclick="nextSection()">Next →</button>
+    <button class="sbar-btn sec" id="btnPrevSection" onclick="prevSection()" title="Previous section" aria-label="Previous section">← <span class="sbar-lbl">Back</span></button>
+    <button class="sbar-btn pri" id="btnNextSection" onclick="nextSection()" title="Next section" aria-label="Next section"><span class="sbar-lbl">Next</span> →</button>
   </div>
 
   <!-- CROPPER MODAL -->
@@ -11854,6 +11945,10 @@
     // ═══════════════ BATCH SELECT CHO REPORT ═══════════════
     function toggleSelectMode() {
       isSelectMode = !isSelectMode;
+      // S3 (v4.3.0): body state drives the version-mark hide rule, the
+      // same mechanism as body.in-editor — otherwise the z-900 mark
+      // paints over the batch bar while it is up.
+      document.body.classList.toggle('select-mode', isSelectMode);
       const btn = document.getElementById('btnSelectMode');
       const batchBar = document.getElementById('batchBar');
       const btnNew = document.getElementById('btnNewReport');
@@ -11882,7 +11977,10 @@
     function updateBatchUI() {
       const countEl = document.getElementById('selectedCountText');
       if (countEl) {
-        countEl.textContent = `${selectedReportIds.size} selected`;
+        // S3 (v4.3.0): the number lives in its own span; the word
+        // "selected" is static markup (.batch-count-word) so phones can
+        // collapse the pill to the bare number via CSS.
+        countEl.textContent = String(selectedReportIds.size);
       }
       document.querySelectorAll('.report-card').forEach(card => {
         const id = card.dataset.id;
@@ -17663,9 +17761,32 @@
     // Text goes through the i18n observer like other static copy
     // ('Unsaved changes' / 'Saving…' have dictionary pairs; the
     // 'Saved HH:MM' line is language-picked at write time via L()).
-    function setSaveStateText(text) {
+    // S3 (v4.3.0): the topbar centre is narrow on phones, so there the
+    // saved line drops its clock time ("✓ Saved"); the full text is
+    // kept and re-rendered whenever the viewport crosses 640px.
+    let saveStateFullText = '';
+    const saveStatePhoneQuery = window.matchMedia
+      ? window.matchMedia('(max-width: 640px)')
+      : { matches: false };
+    function renderSaveStateText() {
       const el = document.getElementById('saveStateText');
-      if (el) el.textContent = text;
+      if (!el) return;
+      let text = saveStateFullText;
+      if (text && saveStatePhoneQuery.matches && /^(Saved |Đã lưu )/.test(text)) {
+        text = L('✓ Đã lưu', '✓ Saved');
+      }
+      el.textContent = text;
+    }
+
+    function setSaveStateText(text) {
+      saveStateFullText = text;
+      renderSaveStateText();
+    }
+
+    if (typeof saveStatePhoneQuery.addEventListener === 'function') {
+      saveStatePhoneQuery.addEventListener('change', renderSaveStateText);
+    } else if (typeof saveStatePhoneQuery.addListener === 'function') {
+      saveStatePhoneQuery.addListener(renderSaveStateText);
     }
 
     function saveStateUnsaved() {
