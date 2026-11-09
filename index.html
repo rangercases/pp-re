@@ -9056,6 +9056,28 @@
       return 'Untitled report';
     }
 
+    // v4.4.1: tiền tố module ngắn đứng đầu tên file xuất (PDF / JSON / bản lưu
+    // trữ) để phân biệt file của 3 module ngay trong thư mục, thay cho việc
+    // lặp lại nguyên tên module dài ở v4.3.x trở về trước. moduleType là khóa
+    // ổn định của MODULE_THEMES nên ánh xạ để cứng tại đây; báo cáo cũ thiếu
+    // moduleType thì suy ra từ reportTitle, không đoán được thì để trống —
+    // thà thiếu tiền tố còn hơn gắn sai module.
+    const REPORT_FILE_PREFIXES = {
+      'pre-production': 'PPSR',
+      'prototype': 'PSR',
+      'sample-review-recap': 'SRR'
+    };
+
+    function getReportFilePrefix(rep) {
+      const r = rep || {};
+      if (r.moduleType && REPORT_FILE_PREFIXES[r.moduleType]) return REPORT_FILE_PREFIXES[r.moduleType];
+      const t = (r.reportTitle || '').toUpperCase();
+      if (t.includes('RECAP')) return 'SRR';
+      if (t.includes('PROTOTYPE')) return 'PSR';
+      if (t.includes('PRE-PRODUCTION')) return 'PPSR';
+      return '';
+    }
+
     // WebP chỉ dùng cho ảnh mới để giảm dung lượng; luồng xuất PDF luôn ra JPEG
     // vì jsPDF không nhúng được WebP. Nếu canvas không encode được WebP thì giữ JPEG.
     const supportsWebpEncoding = (() => {
@@ -12279,13 +12301,17 @@
     }
 
     function downloadReportJson(rep) {
-      const fileName = [rep.model, rep.desc].filter(Boolean).join('_') || 'report';
+      // v4.4.1: tên file nối bằng khoảng trắng, không dấu '_' — tiền tố module
+      // (PPSR / PSR / SRR) đứng đầu khi xác định được; không rõ module thì
+      // không gắn token nào (bỏ hẳn tiền tố PP hai ký tự của bản trước).
+      const fileName = [rep.model, rep.desc].filter(Boolean).join(' ').replace(/_/g, ' ').replace(/\s+/g, ' ').trim() || 'report';
       const data = JSON.stringify(rep, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `PP_${fileName}_${rep.date || 'draft'}.json`;
+      const prefix = getReportFilePrefix(rep);
+      a.download = `${prefix ? prefix + ' ' : ''}${fileName} ${rep.date || 'draft'}.json`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
@@ -17846,8 +17872,14 @@
     }
 
     function fileSuggestedName(rep) {
-      const base = [rep.model, rep.desc].filter(Boolean).join('_') || getReportFileBaseName(rep);
-      const safe = String(base).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 100) || 'report';
+      // v4.4.1: tên file lưu trữ cũng mở đầu bằng tiền tố module (PPSR / PSR /
+      // SRR) khi có, mọi phần nối bằng khoảng trắng, không dấu '_'; thiếu
+      // Model/Description thì fallback getReportFileBaseName vốn đã mang
+      // tiền tố.
+      const modelDesc = [rep.model, rep.desc].filter(Boolean).join(' ');
+      const prefix = getReportFilePrefix(rep);
+      const base = (modelDesc && prefix) ? `${prefix} ${modelDesc}` : (modelDesc || getReportFileBaseName(rep));
+      const safe = String(base).replace(/[\\/:*?"<>|]+/g, '-').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100) || 'report';
       return safe + '.json';
     }
 
@@ -18021,10 +18053,14 @@
         'PRE-PRODUCTION SAMPLE REVIEW REPORT';
       // DSK-1 §15 (v4.4.0): tiêu đề mặc định của module không vào tên file —
       // file bắt đầu bằng Model; tên riêng do người dùng đặt vẫn giữ nguyên.
+      // v4.4.1: thay vào đó, tên file mở đầu bằng tiền tố module ngắn
+      // (PPSR / PSR / SRR) khi xác định được module, và mọi phần của tên file
+      // nối bằng đúng một khoảng trắng — không còn dấu '_' (kể cả khi một
+      // trường dữ liệu tự nó chứa '_', nó cũng bị đổi thành khoảng trắng).
       const titlePart = isModuleDefaultTitle(repTitle) ? '' : repTitle;
-      const parts = [titlePart, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
-      const raw = parts.join('_') || 'report';
-      const safe = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+      const parts = [getReportFilePrefix(r), titlePart, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
+      const raw = parts.join(' ') || 'report';
+      const safe = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
       return safe.slice(0, 120) || 'report';
     }
 

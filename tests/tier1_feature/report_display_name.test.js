@@ -39,10 +39,17 @@ function makeNameApi() {
   const isDefaultBody = extractFnBody(indexHtml, 'function isModuleDefaultTitle(title)', 'isModuleDefaultTitle');
   const displayBody = extractFnBody(indexHtml, 'function getReportDisplayName(r)', 'getReportDisplayName');
   const baseBody = extractFnBody(indexHtml, 'function getReportFileBaseName(rep)', 'getReportFileBaseName');
+  // v4.4.1: getReportFileBaseName now resolves the module prefix via
+  // getReportFilePrefix — inject it (and its map) so the evaluated body has
+  // the same neighbours it has in the app.
+  const prefixMapInner = extract(indexHtml, /const REPORT_FILE_PREFIXES = \{([\s\S]*?)\n    \};/, 'REPORT_FILE_PREFIXES');
+  const prefixBody = extractFnBody(indexHtml, 'function getReportFilePrefix(rep)', 'getReportFilePrefix');
   const factory = new Function(
     'MODULE_THEMES', 'pdfConfig',
-    `function isModuleDefaultTitle(title) {${isDefaultBody}}
+    `const REPORT_FILE_PREFIXES = {${prefixMapInner}};
+     function isModuleDefaultTitle(title) {${isDefaultBody}}
      function getReportDisplayName(r) {${displayBody}}
+     function getReportFilePrefix(rep) {${prefixBody}}
      function getReportFileBaseName(rep) {${baseBody}}
      return { isModuleDefaultTitle, getReportDisplayName, getReportFileBaseName };`
   );
@@ -146,21 +153,22 @@ describe('TC-NAME2: getReportDisplayName — model · description, never the mod
 // TC-NAME3 — getReportFileBaseName: export files drop the module name too
 // ─────────────────────────────────────────────────────────────────────────────
 describe('TC-NAME3: getReportFileBaseName — module default omitted, custom title kept (v4.4.0)', () => {
-  it('TC-NAME3.1: module-default title + model + desc + date → base starts with the model', () => {
+  it('TC-NAME3.1: module-default title + model + desc + date → module name dropped (v4.4.1: inferred SRR prefix leads, space-joined)', () => {
     const base = api.getReportFileBaseName({
       reportTitle: RECAP_DEFAULT,
       model: 'MD 2741',
       desc: 'Swivel Chair (Skylar)',
       date: '06-Nov-26',
     });
-    assert.equal(base, 'MD 2741_Swivel Chair (Skylar)_06-Nov-26');
+    assert.equal(base, 'SRR MD 2741 Swivel Chair (Skylar) 06-Nov-26');
     assert.ok(!base.startsWith(RECAP_DEFAULT), 'file base must not start with the module name');
+    assert.ok(!base.includes(RECAP_DEFAULT), 'the full module name must not appear in the file base');
     assert.ok(base.includes('MD 2741') && base.includes('06-Nov-26'), 'file base keeps model and date');
   });
 
   it('TC-NAME3.2: no reportTitle at all → the literal fallback default is omitted too', () => {
     const base = api.getReportFileBaseName({ model: 'MD 9', date: '02-Feb-26' });
-    assert.equal(base, 'MD 9_02-Feb-26');
+    assert.equal(base, 'MD 9 02-Feb-26');
     assert.ok(!base.includes('PRE-PRODUCTION'), 'the fallback default title must not leak into file names');
   });
 
@@ -170,7 +178,7 @@ describe('TC-NAME3: getReportFileBaseName — module default omitted, custom tit
       model: 'MD 1',
       date: '01-Jan-26',
     });
-    assert.equal(base, 'Quarterly Audit_MD 1_01-Jan-26');
+    assert.equal(base, 'Quarterly Audit MD 1 01-Jan-26');
     assert.ok(base.startsWith('Quarterly Audit'));
   });
 
