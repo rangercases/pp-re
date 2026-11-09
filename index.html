@@ -2192,6 +2192,75 @@
       -webkit-user-drag: none;
     }
 
+    /* SEL-1 (v4.5.0): multi-select — glide scroll-lock + selected photo state */
+    .free-photos.glide-active,
+    .free-photos.glide-active .free-photo-item,
+    #reportsList.glide-active,
+    #reportsList.glide-active .report-card {
+      touch-action: none;
+    }
+
+    .free-photos.glide-active .pactions {
+      display: none;
+    }
+
+    .free-photo-item.sel-on {
+      border-color: var(--module-theme);
+      box-shadow: 0 0 0 2px var(--module-theme), var(--ring-card);
+    }
+
+    .free-photo-item.sel-on::after {
+      content: '✓';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--module-theme);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    .photo-sel-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 10px 0;
+    }
+
+    .photo-sel-btn {
+      min-height: 36px;
+      padding: 0 16px;
+      border-radius: var(--r-pill, 9999px);
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-soft);
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .photo-sel-btn.active {
+      background: var(--module-theme);
+      border-color: var(--module-theme);
+      color: #fff;
+    }
+
+    @media (pointer: coarse) {
+      .photo-sel-btn {
+        min-height: 44px;
+      }
+    }
+
     /* FULL-WIDTH PHOTO CELL */
     .free-photo-item.is-fullwidth,
     .photo-slot.is-fullwidth,
@@ -7234,6 +7303,26 @@
     </button>
   </div>
 
+  <!-- SEL-1: PHOTO MULTI-SELECT BATCH BAR -->
+  <div class="batch-bar" id="photoBatchBar" style="display:none">
+    <div class="batch-pill-count">
+      <span class="count-dot"></span>
+      <span id="photoSelCount">0</span> <span class="batch-count-word">selected</span>
+    </div>
+    <button class="batch-btn pri" onclick="selPhotosSelectAll()" title="Select all photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span>Select All</span>
+    </button>
+    <div class="batch-divider"></div>
+    <button class="batch-btn danger" onclick="selPhotosDelete()" title="Delete selected photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+      <span>Delete</span>
+    </button>
+    <button class="batch-btn" onclick="exitPhotoSelectMode()" title="Done selecting photos">
+      <span>Done</span>
+    </button>
+  </div>
+
   <!-- EDIT SCREEN -->
   <div class="screen" id="editScreen">
 
@@ -12031,6 +12120,10 @@
         // collapse the pill to the bare number via CSS.
         countEl.textContent = String(selectedReportIds.size);
       }
+      // SEL-1: glide-active locks touch scrolling on the list while
+      // report select mode is on, so a drag selects instead of scrolling.
+      const listEl = document.getElementById('reportsList');
+      if (listEl) listEl.classList.toggle('glide-active', isSelectMode);
       document.querySelectorAll('.report-card').forEach(card => {
         const id = card.dataset.id;
         card.classList.toggle('selecting', isSelectMode);
@@ -12156,6 +12249,463 @@
       buildDimGrid();
       showToast(`✓ Deleted dimension ${dName}`);
     }
+
+    // ═══════════════ SEL-1 (v4.5.0): MULTI-SELECT — PHOTO GRIDS + REPORT LIST ═══════════════
+    // One shared glide engine (createGlideSelect) drives both surfaces:
+    // press and drag across items to select/deselect a whole run (iOS
+    // Photos style), plus Shift+click ranges and Ctrl/⌘+A. Outside select
+    // mode every listener below is inert, so reorder, click-to-edit and
+    // open-report behave exactly as before.
+    const GLIDE_EXCLUDE_SEL = 'input, textarea, select, button, .pact, .free-caption, .ignore-drag, a';
+
+    function selRangeList(a, b) {
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      const out = [];
+      for (let i = lo; i <= hi; i++) out.push(i);
+      return out;
+    }
+
+    function applyStrokeToSet(set, values, mode) {
+      values.forEach(v => { if (mode) set.add(v); else set.delete(v); });
+      return set;
+    }
+
+    // Glide controller: pointerdown on a selectable item starts a stroke
+    // whose mode is fixed by that first item (select if it was unselected,
+    // deselect if it was selected). Each item is applied at most once per
+    // stroke, even if the pointer re-enters it. A stroke that changed
+    // anything suppresses the trailing click via a capture-phase listener.
+    // Shift+pointerdown never starts a stroke — Shift+click range selection
+    // is handled by the surfaces' own click paths.
+    function createGlideSelect(opts) {
+      const container = opts.container;
+      const excludeSel = opts.excludeSelector || GLIDE_EXCLUDE_SEL;
+      let stroke = null;
+      let glideSuppressClickUntil = 0;
+
+      function itemFromPoint(x, y) {
+        const hit = document.elementFromPoint(x, y);
+        if (!hit || !hit.closest) return null;
+        const item = hit.closest(opts.itemSelector);
+        return (item && container.contains(item)) ? item : null;
+      }
+      function applyTo(item) {
+        if (!item || !stroke || stroke.visited.has(item)) return;
+        const v = opts.getValue(item);
+        if (v === null || v === undefined) return;
+        stroke.visited.add(item);
+        opts.apply([v], stroke.mode);
+        stroke.count++;
+      }
+      function endStroke() {
+        if (!stroke) return;
+        const changed = stroke.count;
+        stroke = null;
+        if (changed > 0) {
+          glideSuppressClickUntil = Date.now() + 400;
+          if (opts.onStrokeEnd) opts.onStrokeEnd(changed);
+        }
+      }
+      container.addEventListener('pointerdown', (e) => {
+        if (opts.isEnabled && !opts.isEnabled()) return;
+        if (e.button !== undefined && e.button !== 0) return;
+        if (e.shiftKey) return;
+        if (e.target.closest && e.target.closest(excludeSel)) return;
+        const item = e.target.closest ? e.target.closest(opts.itemSelector) : null;
+        if (!item || !container.contains(item)) return;
+        const v = opts.getValue(item);
+        if (v === null || v === undefined) return;
+        stroke = { mode: !opts.isSelected(v), visited: new Set(), count: 0 };
+        applyTo(item);
+      });
+      container.addEventListener('pointermove', (e) => {
+        if (stroke) applyTo(itemFromPoint(e.clientX, e.clientY));
+      });
+      container.addEventListener('pointerup', endStroke);
+      container.addEventListener('pointercancel', endStroke);
+      window.addEventListener('pointerup', endStroke);
+      container.addEventListener('click', (e) => {
+        if (Date.now() < glideSuppressClickUntil) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      }, true);
+      return {
+        suppressClick() { glideSuppressClickUntil = Date.now() + 400; }
+      };
+    }
+
+    // ── SEL-1: free-photo grids ──
+    let photoSel = null; // { key, set: Set<number>, lastIndex: number|null }
+
+    function photoSlotHasImg(key, i) {
+      const p = (D[key] || [])[i];
+      return !!(p && p.img);
+    }
+
+    function photoItemIndex(container, item) {
+      return Array.prototype.indexOf.call(container.querySelectorAll('.free-photo-item'), item);
+    }
+
+    function enterPhotoSelectMode(key, initialIndex) {
+      if (photoSel && photoSel.key !== key) {
+        const oldKey = photoSel.key;
+        photoSel = null; // clear first so the old grid's toolbar re-syncs as inactive
+        teardownPhotoSelUI(oldKey);
+      }
+      photoSel = { key: key, set: new Set(), lastIndex: null };
+      if (initialIndex !== null && initialIndex !== undefined && photoSlotHasImg(key, initialIndex)) {
+        photoSel.set.add(initialIndex);
+        photoSel.lastIndex = initialIndex;
+      }
+      syncPhotoSelUI(key);
+    }
+
+    function exitPhotoSelectMode() {
+      if (!photoSel) return;
+      const key = photoSel.key;
+      photoSel = null;
+      teardownPhotoSelUI(key);
+      hidePhotoBatchBar();
+    }
+
+    function teardownPhotoSelUI(key) {
+      const el = document.getElementById(key);
+      if (el) {
+        el.classList.remove('glide-active');
+        if (el._sortable) el._sortable.option('disabled', false);
+        el.querySelectorAll('.free-photo-item.sel-on').forEach(it => it.classList.remove('sel-on'));
+      }
+      syncPhotoSelToolbar(key);
+    }
+
+    function syncPhotoSelToolbar(key) {
+      const el = document.getElementById(key);
+      if (!el || !el.parentNode) return;
+      if (el._selToolbar) {
+        el._selToolbar.remove();
+        el._selToolbar = null;
+      }
+      const arr = D[key] || [];
+      if (!arr.some(p => p && p.img)) return;
+      const active = !!(photoSel && photoSel.key === key);
+      const bar = document.createElement('div');
+      bar.className = 'photo-sel-toolbar';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'photo-sel-btn' + (active ? ' active' : '');
+      btn.textContent = active ? 'Done' : 'Select';
+      btn.onclick = () => {
+        if (photoSel && photoSel.key === key) exitPhotoSelectMode();
+        else enterPhotoSelectMode(key);
+      };
+      bar.appendChild(btn);
+      el.parentNode.insertBefore(bar, el);
+      el._selToolbar = bar;
+    }
+
+    function paintPhotoSel() {
+      if (!photoSel) return;
+      const el = document.getElementById(photoSel.key);
+      if (el) {
+        el.querySelectorAll('.free-photo-item').forEach((it, idx) => {
+          it.classList.toggle('sel-on', photoSel.set.has(idx));
+        });
+      }
+      const countEl = document.getElementById('photoSelCount');
+      if (countEl) countEl.textContent = String(photoSel.set.size);
+    }
+
+    function showPhotoBatchBar() {
+      const bar = document.getElementById('photoBatchBar');
+      if (!bar) return;
+      // Sit directly above the editor save bar: measure it at show time
+      // (its rect already includes its own bottom offset + safe area).
+      const sb = document.getElementById('saveBar');
+      const r = sb ? sb.getBoundingClientRect() : null;
+      bar.style.bottom = (r && r.height > 0) ? (window.innerHeight - r.top + 8) + 'px' : '';
+      bar.style.display = 'flex';
+    }
+
+    function hidePhotoBatchBar() {
+      const bar = document.getElementById('photoBatchBar');
+      if (bar) bar.style.display = 'none';
+    }
+
+    // Called at the end of renderFreePhotos: the grid DOM (and its
+    // Sortable) were just rebuilt, so re-apply toolbar + selection state.
+    function syncPhotoSelUI(key) {
+      syncPhotoSelToolbar(key);
+      if (!photoSel || photoSel.key !== key) return;
+      const el = document.getElementById(key);
+      if (!el) return;
+      el.classList.add('glide-active');
+      if (el._sortable) el._sortable.option('disabled', true);
+      paintPhotoSel();
+      showPhotoBatchBar();
+    }
+
+    function togglePhotoIndex(idx, ev) {
+      if (!photoSel) return;
+      const key = photoSel.key;
+      if (!photoSlotHasImg(key, idx)) return;
+      if (ev && ev.shiftKey && photoSel.lastIndex !== null) {
+        const mode = !photoSel.set.has(idx);
+        const range = selRangeList(photoSel.lastIndex, idx).filter(i => photoSlotHasImg(key, i));
+        applyStrokeToSet(photoSel.set, range, mode);
+      } else if (photoSel.set.has(idx)) {
+        photoSel.set.delete(idx);
+      } else {
+        photoSel.set.add(idx);
+      }
+      photoSel.lastIndex = idx;
+      paintPhotoSel();
+    }
+
+    function selPhotosSelectAll() {
+      if (!photoSel) return;
+      const arr = D[photoSel.key] || [];
+      arr.forEach((p, i) => { if (p && p.img) photoSel.set.add(i); });
+      paintPhotoSel();
+    }
+
+    async function selPhotosDelete() {
+      if (!photoSel) return;
+      const key = photoSel.key;
+      const n = photoSel.set.size;
+      if (n === 0) {
+        showToast('No photos selected');
+        return;
+      }
+      if (!(await appConfirm(`Delete ${n} selected photo(s)?`, { title: 'Delete photos?' }))) return;
+      pushHistory('Delete photos');
+      Array.from(photoSel.set).forEach(i => {
+        if (D[key] && D[key][i]) {
+          const size = getPhotoSize(D[key][i]);
+          D[key][i] = { photoSize: size, fullWidth: (size === 'full'), caption: '' };
+        }
+      });
+      exitPhotoSelectMode();
+      renderFreePhotos(key);
+      as();
+      savePhotoChangeNow();
+    }
+
+    // Delegated wiring for one free-photo container. The container element
+    // itself survives re-renders (only its children are rebuilt), so the
+    // listeners are attached exactly once per container.
+    function selWirePhotoGrid(el, key) {
+      if (!el || el._selWired) return;
+      el._selWired = true;
+      const ctrl = createGlideSelect({
+        container: el,
+        itemSelector: '.free-photo-item',
+        isEnabled: () => !!(photoSel && photoSel.key === key),
+        getValue: (item) => {
+          const idx = photoItemIndex(el, item);
+          return photoSlotHasImg(key, idx) ? idx : null;
+        },
+        isSelected: (idx) => !!(photoSel && photoSel.set.has(idx)),
+        apply: (values, mode) => {
+          if (!photoSel) return;
+          applyStrokeToSet(photoSel.set, values, mode);
+          photoSel.lastIndex = values[values.length - 1];
+          paintPhotoSel();
+        }
+      });
+      el._glideCtrl = ctrl;
+
+      // Long-press (≥450ms, stationary) enters select mode with that
+      // photo. The mode entry happens on the timer; the click that trails
+      // the eventual pointerup is swallowed via the glide suppressor.
+      let lpTimer = null;
+      let lpFired = false;
+      let lpX = 0;
+      let lpY = 0;
+      const clearLP = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
+      el.addEventListener('pointerdown', (e) => {
+        if (photoSel && photoSel.key === key) return;
+        if (e.target.closest && e.target.closest(GLIDE_EXCLUDE_SEL)) return;
+        const item = e.target.closest ? e.target.closest('.free-photo-item') : null;
+        if (!item || !el.contains(item)) return;
+        const idx = photoItemIndex(el, item);
+        if (!photoSlotHasImg(key, idx)) return;
+        lpX = e.clientX;
+        lpY = e.clientY;
+        clearLP();
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          lpFired = true;
+          enterPhotoSelectMode(key, idx);
+          if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+        }, 450);
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (lpTimer && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) clearLP();
+      });
+      el.addEventListener('pointerup', () => {
+        clearLP();
+        if (lpFired) {
+          lpFired = false;
+          ctrl.suppressClick();
+        }
+      });
+      el.addEventListener('pointercancel', () => {
+        clearLP();
+        lpFired = false;
+      });
+
+      // Clicks (capture): Ctrl/⌘+click enters select mode; while selecting,
+      // plain clicks on a photo toggle it (the glide stroke normally does
+      // this on pointerdown — this path covers Shift+click ranges and any
+      // click the stroke did not claim). Excluded targets (caption field,
+      // per-photo action buttons) keep their default behaviour.
+      el.addEventListener('click', (e) => {
+        const item = e.target.closest ? e.target.closest('.free-photo-item') : null;
+        if (!item || !el.contains(item)) return;
+        const idx = photoItemIndex(el, item);
+        if (!photoSlotHasImg(key, idx)) return;
+        const selecting = !!(photoSel && photoSel.key === key);
+        if (selecting && e.target.closest && e.target.closest(GLIDE_EXCLUDE_SEL)) return;
+        if (e.ctrlKey || e.metaKey) {
+          e.stopPropagation();
+          e.preventDefault();
+          if (selecting) togglePhotoIndex(idx, e);
+          else enterPhotoSelectMode(key, idx);
+          return;
+        }
+        if (selecting) {
+          e.stopPropagation();
+          e.preventDefault();
+          togglePhotoIndex(idx, e);
+        }
+      }, true);
+    }
+
+    // ── SEL-1: report list ──
+    let lastReportIndex = null;
+
+    function enterReportSelectWith(list, ctrl, id, card) {
+      toggleSelectMode();
+      if (id !== null && id !== undefined && id !== '') selectedReportIds.add(String(id));
+      if (card) lastReportIndex = Array.prototype.indexOf.call(list.querySelectorAll('.report-card'), card);
+      updateBatchUI();
+      if (ctrl) ctrl.suppressClick();
+    }
+
+    function selWireReportList(list) {
+      if (!list || list._selWired) return;
+      list._selWired = true;
+      const ctrl = createGlideSelect({
+        container: list,
+        itemSelector: '.report-card',
+        excludeSelector: 'input, textarea, select, button, .rc-action-btn, a',
+        isEnabled: () => isSelectMode,
+        getValue: (item) => (item.dataset.id ? item.dataset.id : null),
+        isSelected: (id) => selectedReportIds.has(id),
+        apply: (values, mode) => {
+          applyStrokeToSet(selectedReportIds, values, mode);
+          const cards = list.querySelectorAll('.report-card');
+          values.forEach(v => {
+            for (let i = 0; i < cards.length; i++) {
+              if (cards[i].dataset.id === v) {
+                lastReportIndex = i;
+                break;
+              }
+            }
+          });
+          updateBatchUI();
+        }
+      });
+      list._glideCtrl = ctrl;
+
+      // Long-press enters select mode with that report (topbar SELECT
+      // stays the primary path). Suppression is armed on pointerup so the
+      // trailing click cannot open the report.
+      let lpTimer = null;
+      let lpFired = false;
+      let lpX = 0;
+      let lpY = 0;
+      let lpCard = null;
+      const clearLP = () => {
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+        lpCard = null;
+      };
+      list.addEventListener('pointerdown', (e) => {
+        if (isSelectMode) return;
+        if (e.target.closest && e.target.closest('button, .rc-action-btn, a, input, textarea, select')) return;
+        const card = e.target.closest ? e.target.closest('.report-card') : null;
+        if (!card || !list.contains(card)) return;
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+        lpCard = card;
+        lpX = e.clientX;
+        lpY = e.clientY;
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          const c = lpCard;
+          lpCard = null;
+          if (c) {
+            lpFired = true;
+            enterReportSelectWith(list, null, c.dataset.id, c);
+          }
+        }, 450);
+      });
+      list.addEventListener('pointermove', (e) => {
+        if (lpTimer && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) clearLP();
+      });
+      list.addEventListener('pointerup', () => {
+        clearLP();
+        if (lpFired) {
+          lpFired = false;
+          ctrl.suppressClick();
+        }
+      });
+      list.addEventListener('pointercancel', () => {
+        clearLP();
+        lpFired = false;
+      });
+
+      // Ctrl/⌘+click enters select mode with that report.
+      list.addEventListener('click', (e) => {
+        if (isSelectMode) return;
+        if (!(e.ctrlKey || e.metaKey)) return;
+        const card = e.target.closest ? e.target.closest('.report-card') : null;
+        if (!card || !list.contains(card)) return;
+        e.stopPropagation();
+        e.preventDefault();
+        enterReportSelectWith(list, null, card.dataset.id, card);
+      }, true);
+    }
+
+    // SEL-1 keyboard: Ctrl/⌘+A = select all on the active surface (photo
+    // grid first, else the report list's rendered cards — i.e. after the
+    // search filter); Esc exits select mode. Editable targets are never
+    // hijacked, so Ctrl+A inside a caption/search field keeps selecting
+    // text.
+    document.addEventListener('keydown', (e) => {
+      const t = e.target;
+      const editable = !!(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable));
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'a' || e.key === 'A')) {
+        if (editable) return;
+        if (photoSel) {
+          e.preventDefault();
+          selPhotosSelectAll();
+        } else if (isSelectMode) {
+          e.preventDefault();
+          document.querySelectorAll('#reportsList .report-card').forEach(c => {
+            if (c.dataset.id) selectedReportIds.add(c.dataset.id);
+          });
+          updateBatchUI();
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (editable) return;
+        if (photoSel) exitPhotoSelectMode();
+        else if (isSelectMode) toggleSelectMode();
+      }
+    });
 
     // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
     let pendingImportData = null;
@@ -12834,6 +13384,10 @@
         if (elStatWip) elStatWip.textContent = wipCount;
 
         const list = document.getElementById('reportsList');
+        // SEL-1: photo selection is editor-only state — never let it (or
+        // its batch bar) leak onto the home screen; wire the list once.
+        if (photoSel) exitPhotoSelectMode();
+        selWireReportList(list);
         const empty = document.getElementById('emptyState');
         list.innerHTML = '';
         if (!activeModuleReports.length) {
@@ -12974,8 +13528,22 @@
           d.onclick = (e) => {
             if (isSelectMode) {
               const id = String(r.id);
-              if (selectedReportIds.has(id)) selectedReportIds.delete(id);
+              const cards = list.querySelectorAll('.report-card');
+              const domIdx = Array.prototype.indexOf.call(cards, d);
+              if (e.shiftKey && lastReportIndex !== null && domIdx !== -1 && lastReportIndex < cards.length) {
+                // SEL-1: Shift+click applies the clicked card's resulting
+                // state to the whole DOM range since the last toggle.
+                const mode = !selectedReportIds.has(id);
+                selRangeList(lastReportIndex, domIdx).forEach(ci => {
+                  const cid = cards[ci] ? cards[ci].dataset.id : null;
+                  if (cid) {
+                    if (mode) selectedReportIds.add(cid);
+                    else selectedReportIds.delete(cid);
+                  }
+                });
+              } else if (selectedReportIds.has(id)) selectedReportIds.delete(id);
               else selectedReportIds.add(id);
+              if (domIdx !== -1) lastReportIndex = domIdx;
               updateBatchUI();
             } else {
               openReport(r.id);
@@ -15022,6 +15590,8 @@
           }
         });
       }
+      selWirePhotoGrid(el, key);
+      syncPhotoSelUI(key);
     }
 
     function renderWatchoutPhotos() {
