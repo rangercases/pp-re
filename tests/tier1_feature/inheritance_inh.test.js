@@ -143,3 +143,144 @@ describe('TC-INH2-F6: hub cards are generated from MODULE_THEMES.hub by one rend
     assert.ok(after.includes('\n    renderHubCards();'), 'the renderer must be invoked at startup');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-INH1 (F1 + F2): ONE dual-slot renderer for Watch Out / Testing /
+// Assembly, parameterized by DUAL_SLOT_CONFIGS, with SEL-1 wired in.
+// Rendered-output equivalence with the three deleted implementations was
+// verified during development with a fake-DOM harness (old vs new slot HTML
+// identical modulo handler names); these tests pin the structure and the
+// per-section adapters so the unification cannot silently fork again.
+// ─────────────────────────────────────────────────────────────────────────────
+function loadDualConfigs(stubs = {}) {
+  const marker = 'const DUAL_SLOT_CONFIGS = ';
+  const start = indexHtml.indexOf(marker);
+  assert.ok(start !== -1, 'DUAL_SLOT_CONFIGS must exist');
+  const end = indexHtml.indexOf('\n    };', start);
+  assert.ok(end !== -1, 'DUAL_SLOT_CONFIGS literal must terminate');
+  const lit = indexHtml.slice(start + marker.length, end + '\n    }'.length);
+  const escBody = extractFnBody(indexHtml, 'function escapeHtml(str)', 'escapeHtml');
+  const factory = new Function('D', 'isRecapReport', 'woStatusChipHtml',
+    `function escapeHtml(str) {${escBody}}\nconst DUAL_SLOT_CONFIGS = (${lit});\nreturn DUAL_SLOT_CONFIGS;`);
+  return factory(stubs.D || { bvRows: [] }, stubs.isRecapReport || (() => false), stubs.woStatusChipHtml || (() => ''));
+}
+
+describe('TC-INH1: unified dual-slot renderer (v4.6.0)', () => {
+  it('TC-INH1.1: one renderer, three thin wrappers, old implementations deleted', () => {
+    assert.equal(countOccurrences(indexHtml, 'function renderDualSlotPhotos(cfg)'), 1);
+    assert.ok(indexHtml.includes('function renderWatchoutPhotos() {\n      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.watchoutPhotos);'));
+    assert.ok(indexHtml.includes('function renderTestingPhotos() {\n      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.testingPhotos);'));
+    assert.ok(indexHtml.includes('function renderAssemblyPhotos() {\n      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.assemblyPhotos);'));
+    for (const gone of ['setWatchoutPhotoLayout', 'editWatchoutPhoto', 'delWatchoutPhoto',
+      'setTestingPhotoLayout', 'editTestingPhoto', 'delTestingPhoto',
+      'setAssemblyPhotoLayout', 'editAssemblyPhoto', 'delAssemblyPhoto', 'removeWatchoutSubPhoto', 'removeTestingSubPhoto', 'removeAssemblySubPhoto']) {
+      assert.ok(!indexHtml.includes(gone), `${gone} must be gone (unified into the dual-slot helpers)`);
+    }
+    for (const unified of ['function setDualPhotoLayout(key, index, layout)', 'function removeDualSubPhoto(key, index)', "function editDualPhoto(key, index, subType = 'main')", "async function delDualPhoto(key, index, subType = 'main')"]) {
+      assert.equal(countOccurrences(indexHtml, unified), 1, `${unified} must exist exactly once`);
+    }
+  });
+
+  it('TC-INH1.2: per-section configs keep the three grids structurally distinct', () => {
+    const cfgs = loadDualConfigs();
+    assert.equal(cfgs.watchoutPhotos.slotClass, 'watchout-slot');
+    assert.equal(cfgs.watchoutPhotos.idPrefix, 'wph');
+    assert.equal(cfgs.watchoutPhotos.subEmptyVariant, 'adaptive');
+    assert.equal(cfgs.testingPhotos.slotClass, 'testing-slot watchout-slot');
+    assert.equal(cfgs.testingPhotos.idPrefix, 'tph');
+    assert.equal(cfgs.testingPhotos.subEmptyVariant, 'column');
+    assert.equal(cfgs.assemblyPhotos.slotClass, 'assembly-slot watchout-slot');
+    assert.equal(cfgs.assemblyPhotos.idPrefix, 'asph');
+    assert.equal(cfgs.assemblyPhotos.subEmptyVariant, 'adaptive');
+    assert.ok(cfgs.assemblyPhotos.sortableFilter.includes('.assembly-caption-box'), 'assembly Sortable filter keeps its caption exclusions');
+    assert.ok(!cfgs.watchoutPhotos.sortableFilter.includes('.assembly-caption-box'));
+    assert.equal(typeof cfgs.watchoutPhotos.newItem, 'function');
+    assert.deepEqual(cfgs.watchoutPhotos.newItem(0), { img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
+  });
+
+  it('TC-INH1.3: caption adapters — testing syncs from D.bvRows, others read the stored caption', () => {
+    const cfgs = loadDualConfigs({ D: { bvRows: [{ test: '  Drop test 500mm  ' }] } });
+    assert.equal(cfgs.testingPhotos.readCaption(0, { caption: '' }), 'Drop test 500mm');
+    assert.equal(cfgs.testingPhotos.readCaption(0, { caption: ' explicit ' }), ' explicit ');
+    // Pre-existing quirk, preserved on purpose: the original checked
+    // caption !== '' (no trim), so a whitespace-only caption wins over the
+    // bvRows fallback and renders verbatim.
+    assert.equal(cfgs.testingPhotos.readCaption(0, { caption: '   ' }), '   ');
+    assert.equal(cfgs.testingPhotos.readCaption(9, null), '');
+    assert.equal(cfgs.watchoutPhotos.readCaption(0, { caption: 'note' }), 'note');
+    assert.equal(cfgs.watchoutPhotos.readCaption(0, null), '');
+    assert.equal(cfgs.assemblyPhotos.readCaption(0, { caption: 'step' }), 'step');
+    const tHtml = cfgs.testingPhotos.captionHtml(cfgs.testingPhotos, 0, { caption: '' });
+    assert.ok(tHtml.includes('syncTestingPhotoCaption(0)'), 'testing caption box must keep the Sync button');
+    assert.ok(tHtml.includes('Default: Drop test 500mm'), 'testing placeholder must show the bvRows default');
+    assert.ok(tHtml.includes('oninput="updateCaption(\'testingPhotos\', 0, this.value, this)"'));
+    const wHtml = cfgs.watchoutPhotos.captionHtml(cfgs.watchoutPhotos, 2, { caption: 'edge chip' });
+    assert.ok(wHtml.includes('Quality Watch Out notes'), 'watchout placeholder preserved');
+    assert.ok(wHtml.includes('>edge chip</textarea>'));
+    const aHtml = cfgs.assemblyPhotos.captionHtml(cfgs.assemblyPhotos, 1, { caption: '' });
+    assert.ok(aHtml.includes('assembly-caption-box watchout-caption-box'), 'assembly caption box classes preserved');
+    assert.ok(aHtml.includes('Assembly instructions'), 'assembly placeholder preserved');
+  });
+
+  it('TC-INH1.4: delete-button + assembly legacy-string adapters', () => {
+    const delBtnBody = extractFnBody(indexHtml, 'function dualSlotDelBtnHtml(cfg, i)', 'dualSlotDelBtnHtml');
+    const delBtn = new Function('cfg', 'i', `function dualSlotDelBtnHtml(cfg, i) {${delBtnBody}}\nreturn dualSlotDelBtnHtml;`)();
+    const cfgs = loadDualConfigs();
+    assert.ok(delBtn(cfgs.watchoutPhotos, 1).includes('dim-del-slot-btn'));
+    assert.ok(delBtn(cfgs.watchoutPhotos, 1).includes("delFreeSlot('watchoutPhotos', 1)"));
+    assert.ok(delBtn(cfgs.testingPhotos, 1).includes('pact del'), 'testing keeps its styled .pact del button');
+    assert.ok(delBtn(cfgs.testingPhotos, 1).includes("delFreeSlot('testingPhotos', 1)"));
+    assert.ok(delBtn(cfgs.assemblyPhotos, 1).includes('dim-del-slot-btn'));
+    assert.ok(delBtn(cfgs.assemblyPhotos, 1).includes("delFreeSlot('assemblyPhotos', 1)"));
+    assert.equal(cfgs.assemblyPhotos.mainImg('data:LEGACY'), 'data:LEGACY');
+    assert.equal(cfgs.assemblyPhotos.mainImg({ img: 'data:X' }), 'data:X');
+    assert.equal(cfgs.assemblyPhotos.mainImg(null), null);
+    assert.equal(cfgs.watchoutPhotos.mainImg({ img: 'data:Y' }), 'data:Y');
+  });
+
+  it('TC-INH1.5: the Recap status-chip hook exists ONLY in the Watch Out config', () => {
+    const recap = loadDualConfigs({ isRecapReport: () => true, woStatusChipHtml: (i) => `CHIP${i}` });
+    const other = loadDualConfigs({ isRecapReport: () => false, woStatusChipHtml: (i) => `CHIP${i}` });
+    const hook = recap.watchoutPhotos.extraSlotHtml(3, {});
+    assert.ok(hook.includes('wo-action-bar') && hook.includes('CHIP3'), 'Recap watchout slots get the chip bar');
+    assert.equal(other.watchoutPhotos.extraSlotHtml(3, {}), '', 'non-Recap watchout slots get no chip bar');
+    assert.equal(recap.testingPhotos.extraSlotHtml(3, {}), '', 'testing has no chip hook');
+    assert.equal(recap.assemblyPhotos.extraSlotHtml(3, {}), '', 'assembly has no chip hook');
+    assert.equal(typeof recap.watchoutPhotos.beforeRender, 'function', 'watchout keeps its menu-close hook');
+    assert.equal(recap.testingPhotos.beforeRender, null);
+    assert.equal(recap.assemblyPhotos.beforeRender, null);
+  });
+});
+
+describe('TC-INH1/F2: SEL-1 wired into the dual-slot grids (v4.6.0)', () => {
+  it('TC-INH1.6: the unified renderer wires selection like the free grids', () => {
+    const body = extractFnBody(indexHtml, 'function renderDualSlotPhotos(cfg)', 'renderDualSlotPhotos');
+    assert.ok(body.includes('selWirePhotoGrid(el, key);'), 'dual grids must be SEL-1 wired');
+    assert.ok(body.includes('syncPhotoSelUI(key);'), 'dual grids must restore selection UI after render');
+    assert.ok(indexHtml.includes('.watchout-slot.sel-on'), 'dual slots need the selected ring style');
+  });
+
+  it('TC-INH1.7: item selectors + selectable predicate are per-grid', () => {
+    assert.ok(indexHtml.includes("PHOTO_SEL_ITEM_SELECTORS = { watchoutPhotos: '.watchout-slot', testingPhotos: '.testing-slot', assemblyPhotos: '.assembly-slot' }"));
+    const selBody = extractFnBody(indexHtml, 'function photoSelItemSelector(key)', 'photoSelItemSelector');
+    const mapBody = indexHtml.match(/const PHOTO_SEL_ITEM_SELECTORS = \{[^}]*\};/);
+    assert.ok(mapBody, 'selector map must be a plain literal');
+    const selectorFor = new Function(`${mapBody[0]}\nfunction photoSelItemSelector(key) {${selBody}}\nreturn photoSelItemSelector;`)();
+    assert.equal(selectorFor('watchoutPhotos'), '.watchout-slot');
+    assert.equal(selectorFor('testingPhotos'), '.testing-slot');
+    assert.equal(selectorFor('assemblyPhotos'), '.assembly-slot');
+    assert.equal(selectorFor('prodPhotos'), '.free-photo-item', 'free grids keep their selector');
+    const wireBody = extractFnBody(indexHtml, 'function selWirePhotoGrid(el, key)', 'selWirePhotoGrid');
+    assert.ok(wireBody.includes('const itemSel = photoSelItemSelector(key);'));
+    assert.ok(wireBody.includes('itemSelector: itemSel'), 'the glide engine must target the grid item class');
+  });
+
+  it('TC-INH1.8: bulk delete follows each grid\u2019s own delete semantics', () => {
+    const body = extractFnBody(indexHtml, 'async function selPhotosDelete()', 'selPhotosDelete');
+    assert.ok(body.includes('DUAL_SLOT_CONFIGS[key]'), 'dual grids must take their own delete branch');
+    assert.ok(body.includes('D[key].splice(i, 1)'), 'dual slots are REMOVED from the array');
+    assert.ok(body.includes('renderDualSlotPhotos(DUAL_SLOT_CONFIGS[key])'), 'dual grids re-render via the unified renderer');
+    assert.ok(body.includes("D[key][i] = { photoSize: size, fullWidth: (size === 'full'), caption: '' }"), 'free grids keep clear-in-place');
+    assert.ok(body.includes('renderFreePhotos(key);'), 'free grids re-render via renderFreePhotos');
+  });
+});

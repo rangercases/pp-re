@@ -2209,6 +2209,34 @@
       box-shadow: 0 0 0 2px var(--module-theme), var(--ring-card);
     }
 
+    /* INH-1/F2: the same selected state on dual-slot cards (all three dual
+       grids share .watchout-slot). */
+    .watchout-slot.sel-on {
+      border-color: var(--module-theme);
+      box-shadow: 0 0 0 2px var(--module-theme), var(--ring-card);
+    }
+
+    .watchout-slot.sel-on::after {
+      content: '✓';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--module-theme);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
     .free-photo-item.sel-on::after {
       content: '✓';
       position: absolute;
@@ -12273,8 +12301,23 @@
       return !!(p && p.img);
     }
 
+    // INH-1/F2 (v4.6.0): SEL-1 also drives the three dual-slot grids. Their
+    // item element differs from the free grids' .free-photo-item, and a dual
+    // slot counts as selectable when it holds a main OR a detail photo.
+    const PHOTO_SEL_ITEM_SELECTORS = { watchoutPhotos: '.watchout-slot', testingPhotos: '.testing-slot', assemblyPhotos: '.assembly-slot' };
+
+    function photoSelItemSelector(key) {
+      return PHOTO_SEL_ITEM_SELECTORS[key] || '.free-photo-item';
+    }
+
+    function photoSlotSelectable(key, i) {
+      const p = (D[key] || [])[i];
+      if (PHOTO_SEL_ITEM_SELECTORS[key]) return !!(p && (p.img || p.imgSub));
+      return photoSlotHasImg(key, i);
+    }
+
     function photoItemIndex(container, item) {
-      return Array.prototype.indexOf.call(container.querySelectorAll('.free-photo-item'), item);
+      return Array.prototype.indexOf.call(container.querySelectorAll(photoSelItemSelector(container.id)), item);
     }
 
     function enterPhotoSelectMode(key, initialIndex) {
@@ -12284,7 +12327,7 @@
         teardownPhotoSelUI(oldKey);
       }
       photoSel = { key: key, set: new Set(), lastIndex: null };
-      if (initialIndex !== null && initialIndex !== undefined && photoSlotHasImg(key, initialIndex)) {
+      if (initialIndex !== null && initialIndex !== undefined && photoSlotSelectable(key, initialIndex)) {
         photoSel.set.add(initialIndex);
         photoSel.lastIndex = initialIndex;
       }
@@ -12304,7 +12347,7 @@
       if (el) {
         el.classList.remove('glide-active');
         if (el._sortable) el._sortable.option('disabled', false);
-        el.querySelectorAll('.free-photo-item.sel-on').forEach(it => it.classList.remove('sel-on'));
+        el.querySelectorAll(photoSelItemSelector(key) + '.sel-on').forEach(it => it.classList.remove('sel-on'));
       }
       syncPhotoSelToolbar(key);
     }
@@ -12317,7 +12360,7 @@
         el._selToolbar = null;
       }
       const arr = D[key] || [];
-      if (!arr.some(p => p && p.img)) return;
+      if (!arr.some((p, i) => photoSlotSelectable(key, i))) return;
       const active = !!(photoSel && photoSel.key === key);
       const bar = document.createElement('div');
       bar.className = 'photo-sel-toolbar';
@@ -12338,7 +12381,7 @@
       if (!photoSel) return;
       const el = document.getElementById(photoSel.key);
       if (el) {
-        el.querySelectorAll('.free-photo-item').forEach((it, idx) => {
+        el.querySelectorAll(photoSelItemSelector(photoSel.key)).forEach((it, idx) => {
           it.classList.toggle('sel-on', photoSel.set.has(idx));
         });
       }
@@ -12362,8 +12405,9 @@
       if (bar) bar.style.display = 'none';
     }
 
-    // Called at the end of renderFreePhotos: the grid DOM (and its
-    // Sortable) were just rebuilt, so re-apply toolbar + selection state.
+    // Called at the end of renderFreePhotos and renderDualSlotPhotos: the
+    // grid DOM (and its Sortable) were just rebuilt, so re-apply toolbar +
+    // selection state.
     function syncPhotoSelUI(key) {
       syncPhotoSelToolbar(key);
       if (!photoSel || photoSel.key !== key) return;
@@ -12378,10 +12422,10 @@
     function togglePhotoIndex(idx, ev) {
       if (!photoSel) return;
       const key = photoSel.key;
-      if (!photoSlotHasImg(key, idx)) return;
+      if (!photoSlotSelectable(key, idx)) return;
       if (ev && ev.shiftKey && photoSel.lastIndex !== null) {
         const mode = !photoSel.set.has(idx);
-        const range = selRangeList(photoSel.lastIndex, idx).filter(i => photoSlotHasImg(key, i));
+        const range = selRangeList(photoSel.lastIndex, idx).filter(i => photoSlotSelectable(key, i));
         applyStrokeToSet(photoSel.set, range, mode);
       } else if (photoSel.set.has(idx)) {
         photoSel.set.delete(idx);
@@ -12395,7 +12439,7 @@
     function selPhotosSelectAll() {
       if (!photoSel) return;
       const arr = D[photoSel.key] || [];
-      arr.forEach((p, i) => { if (p && p.img) photoSel.set.add(i); });
+      arr.forEach((p, i) => { if (photoSlotSelectable(photoSel.key, i)) photoSel.set.add(i); });
       paintPhotoSel();
     }
 
@@ -12409,31 +12453,44 @@
       }
       if (!(await appConfirm(`Delete ${n} selected photo(s)?`, { title: 'Delete photos?' }))) return;
       pushHistory('Delete photos');
-      Array.from(photoSel.set).forEach(i => {
-        if (D[key] && D[key][i]) {
-          const size = getPhotoSize(D[key][i]);
-          D[key][i] = { photoSize: size, fullWidth: (size === 'full'), caption: '' };
-        }
-      });
-      exitPhotoSelectMode();
-      renderFreePhotos(key);
+      if (typeof DUAL_SLOT_CONFIGS !== 'undefined' && DUAL_SLOT_CONFIGS[key]) {
+        // Dual-slot grids delete by REMOVING the selected slots from the
+        // array (their own semantics — free grids clear in place instead).
+        // Descending order keeps the not-yet-processed indexes valid.
+        Array.from(photoSel.set).sort((a, b) => b - a).forEach(i => {
+          if (D[key]) D[key].splice(i, 1);
+        });
+        exitPhotoSelectMode();
+        renderDualSlotPhotos(DUAL_SLOT_CONFIGS[key]);
+      } else {
+        Array.from(photoSel.set).forEach(i => {
+          if (D[key] && D[key][i]) {
+            const size = getPhotoSize(D[key][i]);
+            D[key][i] = { photoSize: size, fullWidth: (size === 'full'), caption: '' };
+          }
+        });
+        exitPhotoSelectMode();
+        renderFreePhotos(key);
+      }
       as();
       savePhotoChangeNow();
     }
 
-    // Delegated wiring for one free-photo container. The container element
-    // itself survives re-renders (only its children are rebuilt), so the
-    // listeners are attached exactly once per container.
+    // Delegated wiring for one photo container (free grids AND the three
+    // dual-slot grids — INH-1/F2). The container element itself survives
+    // re-renders (only its children are rebuilt), so the listeners are
+    // attached exactly once per container.
     function selWirePhotoGrid(el, key) {
       if (!el || el._selWired) return;
       el._selWired = true;
+      const itemSel = photoSelItemSelector(key);
       const ctrl = createGlideSelect({
         container: el,
-        itemSelector: '.free-photo-item',
+        itemSelector: itemSel,
         isEnabled: () => !!(photoSel && photoSel.key === key),
         getValue: (item) => {
           const idx = photoItemIndex(el, item);
-          return photoSlotHasImg(key, idx) ? idx : null;
+          return photoSlotSelectable(key, idx) ? idx : null;
         },
         isSelected: (idx) => !!(photoSel && photoSel.set.has(idx)),
         apply: (values, mode) => {
@@ -12456,10 +12513,10 @@
       el.addEventListener('pointerdown', (e) => {
         if (photoSel && photoSel.key === key) return;
         if (e.target.closest && e.target.closest(GLIDE_EXCLUDE_SEL)) return;
-        const item = e.target.closest ? e.target.closest('.free-photo-item') : null;
+        const item = e.target.closest ? e.target.closest(itemSel) : null;
         if (!item || !el.contains(item)) return;
         const idx = photoItemIndex(el, item);
-        if (!photoSlotHasImg(key, idx)) return;
+        if (!photoSlotSelectable(key, idx)) return;
         lpX = e.clientX;
         lpY = e.clientY;
         clearLP();
@@ -12491,10 +12548,10 @@
       // click the stroke did not claim). Excluded targets (caption field,
       // per-photo action buttons) keep their default behaviour.
       el.addEventListener('click', (e) => {
-        const item = e.target.closest ? e.target.closest('.free-photo-item') : null;
+        const item = e.target.closest ? e.target.closest(itemSel) : null;
         if (!item || !el.contains(item)) return;
         const idx = photoItemIndex(el, item);
-        if (!photoSlotHasImg(key, idx)) return;
+        if (!photoSlotSelectable(key, idx)) return;
         const selecting = !!(photoSel && photoSel.key === key);
         if (selecting && e.target.closest && e.target.closest(GLIDE_EXCLUDE_SEL)) return;
         if (e.ctrlKey || e.metaKey) {
@@ -15595,339 +15652,129 @@
       syncPhotoSelUI(key);
     }
 
-    function renderWatchoutPhotos() {
-      closeWatchoutActionMenu(); // a re-render replaces the chips — no dropdown may outlive its anchor chip
-      const el = document.getElementById('watchoutPhotos'); if (!el) return; el.innerHTML = '';
-      const arr = D.watchoutPhotos || [];
-      const isRecap = isRecapReport();
-
-      arr.forEach((p, i) => {
-        const size = getPhotoSize(p);
-        const isFull = (size === 'full');
-        const div = document.createElement('div');
-        div.className = 'watchout-slot' + (isFull ? ' is-fullwidth' : '');
-        div.dataset.index = String(i);
-
-        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
-        const targetMain = `{type:'free',key:'watchoutPhotos',index:${i},subType:'main'}`;
-        const targetSub = `{type:'free',key:'watchoutPhotos',index:${i},subType:'sub'}`;
-
-        const displayImg = p && p.img ? p.img : null;
-        const displayImgSub = p && p.imgSub ? p.imgSub : null;
-
-        div.innerHTML = `
-        <!-- TOPBAR WITH DRAG HANDLE & PHOTO LAYOUT SELECTOR -->
-        <div class="dim-slot-topbar" title="Drag to reorder">
-          <span class="dim-drag-handle">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
-            #${i + 1}
-          </span>
-          <div style="display:inline-flex; align-items:center; gap:6px;">
-            <div class="dim-layout-pills ignore-drag">
-              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Layout 3:1 (Main 75% + Detail 25%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
-                3:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Layout 1:1 (Equal split 50% / 50%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
-                1:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setWatchoutPhotoLayout(${i}, 'single');event.stopPropagation()" title="Single layout (100% full width)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>Single</button>
-              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
-              ${getPhotoSizePillHtml('watchoutPhotos', i, size)}
-            </div>
-            <button type="button" class="dim-del-slot-btn ignore-drag" title="Delete slot" onclick="delFreeSlot('watchoutPhotos', ${i});event.stopPropagation()">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
-        <div class="dim-photo-container" data-layout="${layout}">
-          <!-- ẢNH CHÍNH -->
-          <div class="dim-main-photo" id="wph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editWatchoutPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              ${getPhotoSizeActionBtnHtml('watchoutPhotos', i, size)}
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete photo" onclick="delWatchoutPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
+    // ═══════════════ INH-1 (v4.6.0): ONE dual-photo-slot renderer ═══════════════
+    // Watch Out, Testing and Assembly used to carry three near-verbatim
+    // ~250-line renderers for the same component (main + detail photo slot,
+    // layout pills, captions, drag-sort) — every behaviour fix had to be
+    // made three times, and SEL-1 multi-select only ever reached the free
+    // grids (audit F1/F2). renderDualSlotPhotos(cfg) is now the single
+    // implementation; DUAL_SLOT_CONFIGS carries ONLY the real per-section
+    // differences (ids, caption source, delete-slot button, labels). The
+    // public renderXPhotos() names stay as one-line wrappers because the
+    // rest of the app (renderFreePhotos dispatch, chip refresh, section
+    // reloads) calls them.
+    function dualSlotMainEmptyHtml(targetObj) {
+      return `
             <div class="dual-tap-box">
-              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 <span>Camera</span>
               </div>
-              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
+              <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span>Library</span>
               </div>
-              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetObj})">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
                 <span>Paste</span>
               </div>
-            </div>`}
-          </div>
-
-          <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
-          ${layout !== 'single' ? `
-          <div class="dim-sub-photo" id="wph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editWatchoutPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete detail photo" onclick="delWatchoutPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
-            <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
-              <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Take photo from camera" onclick="triggerNativeCamera(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Camera</span>' : ''}
-              </div>
-              <div class="tap-option" title="Choose from photo library" onclick="triggerPickLibrary(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Library</span>' : ''}
-              </div>
-              <div class="tap-option" title="Paste from clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Paste</span>' : ''}
-              </div>
-            </div>`}
-          </div>` : ''}
-        </div>
-
-        <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
-        <div class="watchout-caption-box ignore-drag">
-          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Quality Watch Out notes, inspection remarks..." oninput="updateCaption('watchoutPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
-        </div>
-        ${isRecap ? `
-        <!-- REC-1: MỘT CHIP TRẠNG THÁI — chạm mở menu dropdown chọn (CHỈ HIỆN Ở RECAP) -->
-        <div class="wo-action-bar ignore-drag">${woStatusChipHtml(i, p)}</div>` : ''}`;
-
-        const mainPhotoEl = div.querySelector('.dim-main-photo');
-        const subPhotoEl = div.querySelector('.dim-sub-photo');
-        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'watchoutPhotos', index: i, subType: 'main' });
-        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'watchoutPhotos', index: i, subType: 'sub' });
-
-        el.appendChild(div);
-
-        const wta = div.querySelector('textarea.watchout-caption-input');
-        if (wta && p && p.caption) autoGrowTextarea(wta);
-      });
-
-      const addBtn = document.createElement('div');
-      addBtn.className = 'add-photo-btn ignore-drag';
-      addBtn.title = 'Click to add Quality Watch Out, drop or press Ctrl+V to paste';
-      addBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span><span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>`;
-      addBtn.onclick = () => {
-        pushHistory('Add Quality Watch Out');
-        if (!D.watchoutPhotos) D.watchoutPhotos = [];
-        D.watchoutPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
-        as();
-        renderWatchoutPhotos();
-      };
-      attachDropZone(addBtn, { type: 'free', key: 'watchoutPhotos' }, true);
-      el.appendChild(addBtn);
-
-      if (typeof Sortable !== 'undefined') {
-        if (el._sortable) el._sortable.destroy();
-        el._sortable = new Sortable(el, {
-          animation: 280,
-          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-          forceFallback: true,
-          fallbackClass: 'sortable-fallback',
-          fallbackOnBody: true,
-          fallbackTolerance: 4,
-          delay: 0,
-          touchStartThreshold: 5,
-          draggable: '.watchout-slot',
-          handle: '.watchout-slot, .dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
-          preventOnFilter: false,
-          swap: false,
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
-          dragClass: 'sortable-drag',
-          onStart: function () {
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-              navigator.vibrate(30);
-            }
-          },
-          onEnd: function (evt) {
-            cleanupOrphanedSortableFallbacks();
-            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
-            if (evt.oldIndex === evt.newIndex) return;
-            if (!D.watchoutPhotos || !D.watchoutPhotos.length) return;
-            const total = D.watchoutPhotos.length;
-            let from = evt.oldIndex;
-            let to = evt.newIndex;
-            if (from >= total) from = total - 1;
-            if (to >= total) to = total - 1;
-            if (from === to) {
-              setTimeout(() => {
-                cleanupOrphanedSortableFallbacks();
-                renderWatchoutPhotos();
-              }, 0);
-              return;
-            }
-            pushHistory('Reorder Quality Watch Out');
-            const moved = D.watchoutPhotos.splice(from, 1)[0];
-            D.watchoutPhotos.splice(to, 0, moved);
-            as();
-            setTimeout(() => {
-              cleanupOrphanedSortableFallbacks();
-              renderWatchoutPhotos();
-            }, 0);
-          }
-        });
-      }
+            </div>`;
     }
 
-    function setWatchoutPhotoLayout(index, layout) {
-      if (!D.watchoutPhotos) D.watchoutPhotos = [];
-      if (!D.watchoutPhotos[index]) D.watchoutPhotos[index] = { caption: '' };
-      pushHistory('Change Watch Out layout');
-      D.watchoutPhotos[index].photoLayout = layout;
-      as();
-      renderWatchoutPhotos();
-    }
-
-    function removeWatchoutSubPhoto(index) {
-      if (!D.watchoutPhotos || !D.watchoutPhotos[index]) return;
-      if (D.watchoutPhotos[index].imgSub) {
-        if (!confirm('Switch to single photo layout? (Detail photo will be hidden)')) return;
-      }
-      setWatchoutPhotoLayout(index, 'single');
-    }
-
-    function editWatchoutPhoto(index, subType = 'main') {
-      const p = D.watchoutPhotos && D.watchoutPhotos[index];
-      if (!p) return;
-      const origKey = subType === 'sub' ? 'originalSub' : 'original';
-      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
-      const orig = p[origKey] || p[imgKey];
-      const fallback = p[imgKey] || null;
-      if (!orig && !fallback) return;
-      openPhotoEditor({ type: 'free', key: 'watchoutPhotos', index, subType }, orig || fallback, fallback !== orig ? fallback : null);
-    }
-
-    async function delWatchoutPhoto(index, subType = 'main') {
-      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
-      pushHistory(subType === 'sub' ? 'Delete detail Watch Out photo' : 'Delete main Watch Out photo');
-      if (D.watchoutPhotos && D.watchoutPhotos[index]) {
-        if (subType === 'sub') {
-          D.watchoutPhotos[index].imgSub = null;
-          D.watchoutPhotos[index].originalSub = null;
-        } else {
-          D.watchoutPhotos[index].img = null;
-          D.watchoutPhotos[index].original = null;
-        }
-      }
-      as();
-      savePhotoChangeNow();
-      renderWatchoutPhotos();
-    }
-
-    function renderTestingPhotos() {
-      const el = document.getElementById('testingPhotos'); if (!el) return; el.innerHTML = '';
-      const arr = D.testingPhotos || [];
-
-      arr.forEach((p, i) => {
-        const size = getPhotoSize(p);
-        const isFull = (size === 'full');
-        const div = document.createElement('div');
-        div.className = 'testing-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
-        div.dataset.index = String(i);
-
-        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
-        const targetMain = `{type:'free',key:'testingPhotos',index:${i},subType:'main'}`;
-        const targetSub = `{type:'free',key:'testingPhotos',index:${i},subType:'sub'}`;
-
-        const displayImg = p && p.img ? p.img : null;
-        const displayImgSub = p && p.imgSub ? p.imgSub : null;
-
-        const defaultCaption = (D.bvRows && D.bvRows[i] && D.bvRows[i].test) ? D.bvRows[i].test.trim() : '';
-        const actualCaption = (p && p.caption !== undefined && p.caption !== null && p.caption !== '')
-          ? p.caption
-          : defaultCaption;
-
-        div.innerHTML = `
-        <!-- TOPBAR WITH DRAG HANDLE & PHOTO LAYOUT SELECTOR -->
-        <div class="dim-slot-topbar" title="Drag to reorder">
-          <span class="dim-drag-handle">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
-            #${i + 1}
-          </span>
-          <div style="display:inline-flex; align-items:center; gap:6px;">
-            <div class="dim-layout-pills ignore-drag">
-              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Layout 3:1 (Main 75% + Detail 25%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
-                3:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Layout 1:1 (Equal split 50% / 50%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
-                1:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setTestingPhotoLayout(${i}, 'single');event.stopPropagation()" title="Single layout (100% full width)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>Single</button>
-              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
-              ${getPhotoSizePillHtml('testingPhotos', i, size)}
-            </div>
-            <button type="button" class="pact del ignore-drag" style="position:static; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;" title="Delete slot" onclick="delFreeSlot('testingPhotos', ${i});event.stopPropagation()">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
-        <div class="dim-photo-container" data-layout="${layout}">
-          <!-- ẢNH CHÍNH -->
-          <div class="dim-main-photo" id="tph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editTestingPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              ${getPhotoSizeActionBtnHtml('testingPhotos', i, size)}
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete photo" onclick="delTestingPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
-            <div class="dual-tap-box">
-              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Camera</span>
-              </div>
-              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Library</span>
-              </div>
-              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
-                <span>Paste</span>
-              </div>
-            </div>`}
-          </div>
-
-          <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
-          ${layout !== 'single' ? `
-          <div class="dim-sub-photo" id="tph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editTestingPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete detail photo" onclick="delTestingPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
+    // Empty detail-photo picker. Two historical variants: 'adaptive'
+    // (Watch Out + Assembly: column layout at 3:1, labels only at 1:1) and
+    // 'column' (Testing: always stacked, always labelled).
+    function dualSlotSubEmptyHtml(variant, layout, targetObj) {
+      if (variant === 'column') {
+        return `
             <div class="dual-tap-box" style="flex-direction: column;">
-              <div class="tap-option" onclick="triggerNativeCamera(${targetSub})">
+              <div class="tap-option" onclick="triggerNativeCamera(${targetObj})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 <span>Camera</span>
               </div>
-              <div class="tap-option" onclick="triggerPickLibrary(${targetSub})">
+              <div class="tap-option" onclick="triggerPickLibrary(${targetObj})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span>Library</span>
               </div>
-              <div class="tap-option" onclick="triggerPasteToTarget(${targetSub})">
+              <div class="tap-option" onclick="triggerPasteToTarget(${targetObj})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
                 <span>Paste</span>
               </div>
-            </div>`}
-          </div>` : ''}
-        </div>
+            </div>`;
+      }
+      return `
+            <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
+              <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Take photo from camera" onclick="triggerNativeCamera(${targetObj})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Camera</span>' : ''}
+              </div>
+              <div class="tap-option" title="Choose from photo library" onclick="triggerPickLibrary(${targetObj})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Library</span>' : ''}
+              </div>
+              <div class="tap-option" title="Paste from clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetObj})">
+                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Paste</span>' : ''}
+              </div>
+            </div>`;
+    }
 
+    const DUAL_SLOT_CONFIGS = {
+      watchoutPhotos: {
+        key: 'watchoutPhotos',
+        idPrefix: 'wph',
+        slotClass: 'watchout-slot',
+        slotSelector: '.watchout-slot',
+        topbarTitle: 'Drag to reorder',
+        pillTitle11: 'Layout 1:1 (Equal split 50% / 50%)',
+        pillTitleSingle: 'Single layout (100% full width)',
+        subEmptyVariant: 'adaptive',
+        sortableFilter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+        mainImg: (p) => (p && p.img) ? p.img : null,
+        readCaption: (i, p) => (p && p.caption) ? p.caption : '',
+        captionSelector: 'textarea.watchout-caption-input',
+        captionHtml: (cfg, i, p) => `
+        <!-- PHẦN CHÚ THÍCH (CAPTION) BÊN DƯỚI -->
+        <div class="watchout-caption-box ignore-drag">
+          <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="Quality Watch Out notes, inspection remarks..." oninput="updateCaption('watchoutPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
+        </div>`,
+        // REC-1: the status chip bar exists only on the Watch Out grid and
+        // only for Recap reports — a hook, not a fork of the renderer.
+        extraSlotHtml: (i, p) => isRecapReport() ? `
+        <!-- REC-1: MỘT CHIP TRẠNG THÁI — chạm mở menu dropdown chọn (CHỈ HIỆN Ở RECAP) -->
+        <div class="wo-action-bar ignore-drag">${woStatusChipHtml(i, p)}</div>` : '',
+        beforeRender: () => { closeWatchoutActionMenu(); }, // a re-render replaces the chips — no dropdown may outlive its anchor chip
+        addTitle: 'Click to add Quality Watch Out, drop or press Ctrl+V to paste',
+        addHistory: 'Add Quality Watch Out',
+        newItem: () => ({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' }),
+        historyLayout: 'Change Watch Out layout',
+        historyReorder: 'Reorder Quality Watch Out',
+        historyDelMain: 'Delete main Watch Out photo',
+        historyDelDetail: 'Delete detail Watch Out photo'
+      },
+      testingPhotos: {
+        key: 'testingPhotos',
+        idPrefix: 'tph',
+        slotClass: 'testing-slot watchout-slot',
+        slotSelector: '.testing-slot',
+        topbarTitle: 'Drag to reorder',
+        pillTitle11: 'Layout 1:1 (Equal split 50% / 50%)',
+        pillTitleSingle: 'Single layout (100% full width)',
+        subEmptyVariant: 'column',
+        sortableFilter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+        mainImg: (p) => (p && p.img) ? p.img : null,
+        // Testing captions fall back to the linked BV test row (D.bvRows):
+        // the caption READ adapter is the one place that data flow lives.
+        captionDefault: (i) => (D.bvRows && D.bvRows[i] && D.bvRows[i].test) ? D.bvRows[i].test.trim() : '',
+        // Mirrors the original renderTestingPhotos actualCaption exactly:
+        // only a truly empty stored caption falls back to the bvRows text
+        // (a whitespace-only caption is kept verbatim — pre-existing quirk).
+        readCaption: (i, p) => (p && p.caption !== undefined && p.caption !== null && p.caption !== '') ? p.caption : DUAL_SLOT_CONFIGS.testingPhotos.captionDefault(i),
+        captionSelector: 'textarea.watchout-caption-input',
+        captionHtml: (cfg, i, p) => {
+          const defaultCaption = cfg.captionDefault(i);
+          const actualCaption = cfg.readCaption(i, p);
+          return `
         <!-- CAPTION INPUT -->
         <div class="watchout-caption-box ignore-drag">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
@@ -15939,32 +15786,155 @@
           </div>
           <textarea class="watchout-caption-input ignore-drag" rows="2" placeholder="${escapeHtml(defaultCaption ? ('Default: ' + defaultCaption) : 'Enter test caption...')}" oninput="updateCaption('testingPhotos', ${i}, this.value, this)">${escapeHtml(actualCaption)}</textarea>
         </div>`;
+        },
+        extraSlotHtml: () => '',
+        beforeRender: null,
+        addTitle: 'Click to add Testing Photo, drop or press Ctrl+V to paste',
+        addHistory: 'Add Testing Photo',
+        newItem: (newIdx) => ({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: DUAL_SLOT_CONFIGS.testingPhotos.captionDefault(newIdx) }),
+        historyLayout: 'Change Testing photo layout',
+        historyReorder: 'Reorder Testing Photo',
+        historyDelMain: 'Delete main Testing photo',
+        historyDelDetail: 'Delete detail Testing photo'
+      },
+      assemblyPhotos: {
+        key: 'assemblyPhotos',
+        idPrefix: 'asph',
+        slotClass: 'assembly-slot watchout-slot',
+        slotSelector: '.assembly-slot',
+        topbarTitle: 'Drag bar to swap slot position',
+        pillTitle11: 'Layout 1:1 (Equal 50% - 50%)',
+        pillTitleSingle: 'Single photo layout (100% - hide detail photo)',
+        subEmptyVariant: 'adaptive',
+        sortableFilter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
+        // Assembly accepts legacy string items (a bare data-URL in place of
+        // the slot object) — preserved exactly.
+        mainImg: (p) => p ? (typeof p === 'string' ? p : (p.img || null)) : null,
+        readCaption: (i, p) => (p && p.caption) ? p.caption : '',
+        captionSelector: 'textarea.assembly-caption-input',
+        captionHtml: (cfg, i, p) => `
+        <!-- CAPTION SECTION BELOW -->
+        <div class="assembly-caption-box watchout-caption-box ignore-drag">
+          <textarea class="assembly-caption-input watchout-caption-input ignore-drag" rows="2" placeholder="Assembly instructions, steps, hardware notes..." oninput="updateCaption('assemblyPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
+        </div>`,
+        extraSlotHtml: () => '',
+        beforeRender: null,
+        addTitle: 'Add assembly slot, drag & drop, or press Ctrl+V to paste',
+        addHistory: 'Add assembly photo slot',
+        newItem: () => ({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' }),
+        historyLayout: 'Change assembly photo layout',
+        historyReorder: 'Reorder assembly photo position',
+        historyDelMain: 'Delete assembly main photo',
+        historyDelDetail: 'Delete assembly detail photo'
+      }
+    };
+
+    // The delete-slot button differs per section (its own historical look);
+    // both variants call the same shared delFreeSlot().
+    function dualSlotDelBtnHtml(cfg, i) {
+      if (cfg.key === 'testingPhotos') {
+        return `<button type="button" class="pact del ignore-drag" style="position:static; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;" title="Delete slot" onclick="delFreeSlot('${cfg.key}', ${i});event.stopPropagation()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>`;
+      }
+      return `<button type="button" class="dim-del-slot-btn ignore-drag" title="Delete slot" onclick="delFreeSlot('${cfg.key}', ${i});event.stopPropagation()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>`;
+    }
+
+    function renderDualSlotPhotos(cfg) {
+      if (cfg.beforeRender) cfg.beforeRender();
+      const key = cfg.key;
+      const el = document.getElementById(key); if (!el) return; el.innerHTML = '';
+      const arr = D[key] || [];
+
+      arr.forEach((p, i) => {
+        const size = getPhotoSize(p);
+        const isFull = (size === 'full');
+        const div = document.createElement('div');
+        div.className = cfg.slotClass + (isFull ? ' is-fullwidth' : '');
+        div.dataset.index = String(i);
+
+        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
+        const targetMain = `{type:'free',key:'${key}',index:${i},subType:'main'}`;
+        const targetSub = `{type:'free',key:'${key}',index:${i},subType:'sub'}`;
+
+        const displayImg = cfg.mainImg(p);
+        const displayImgSub = p && p.imgSub ? p.imgSub : null;
+
+        div.innerHTML = `
+        <!-- TOPBAR WITH DRAG HANDLE & PHOTO LAYOUT SELECTOR -->
+        <div class="dim-slot-topbar" title="${cfg.topbarTitle}">
+          <span class="dim-drag-handle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            #${i + 1}
+          </span>
+          <div style="display:inline-flex; align-items:center; gap:6px;">
+            <div class="dim-layout-pills ignore-drag">
+              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setDualPhotoLayout('${key}', ${i}, '3:1');event.stopPropagation()" title="Layout 3:1 (Main 75% + Detail 25%)">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
+                3:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setDualPhotoLayout('${key}', ${i}, '1:1');event.stopPropagation()" title="${cfg.pillTitle11}">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
+                1:1
+              </button>
+              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setDualPhotoLayout('${key}', ${i}, 'single');event.stopPropagation()" title="${cfg.pillTitleSingle}">
+                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>Single</button>
+              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
+              ${getPhotoSizePillHtml(key, i, size)}
+            </div>
+            ${dualSlotDelBtnHtml(cfg, i)}
+          </div>
+        </div>
+
+        <!-- CỤM ẢNH: 3:1, 1:1 HOẶC SINGLE (16:9 FIXED HEIGHT) -->
+        <div class="dim-photo-container" data-layout="${layout}">
+          <!-- ẢNH CHÍNH -->
+          <div class="dim-main-photo" id="${cfg.idPrefix}_main_${i}" title="Drop photo or press Ctrl+V to paste">
+            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editDualPhoto('${key}', ${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            <div class="pactions">
+              ${getPhotoSizeActionBtnHtml(key, i, size)}
+              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+              <button class="pact del" title="Delete photo" onclick="delDualPhoto('${key}', ${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : dualSlotMainEmptyHtml(targetMain)}
+          </div>
+
+          <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
+          ${layout !== 'single' ? `
+          <div class="dim-sub-photo" id="${cfg.idPrefix}_sub_${i}" title="Drop photo or press Ctrl+V to paste">
+            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editDualPhoto('${key}', ${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
+            <div class="pactions">
+              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+              <button class="pact del" title="Delete detail photo" onclick="delDualPhoto('${key}', ${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+            </div>` : dualSlotSubEmptyHtml(cfg.subEmptyVariant, layout, targetSub)}
+          </div>` : ''}
+        </div>
+        ${cfg.captionHtml(cfg, i, p)}${cfg.extraSlotHtml(i, p)}`;
+
+        const mainPhotoEl = div.querySelector('.dim-main-photo');
+        const subPhotoEl = div.querySelector('.dim-sub-photo');
+        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: key, index: i, subType: 'main' });
+        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: key, index: i, subType: 'sub' });
 
         el.appendChild(div);
 
-        const tta = div.querySelector('textarea.watchout-caption-input');
-        if (tta && actualCaption) autoGrowTextarea(tta);
-
-        const mainPhotoEl = div.querySelector(`#tph_main_${i}`);
-        const subPhotoEl = div.querySelector(`#tph_sub_${i}`);
-        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'testingPhotos', index: i, subType: 'main' });
-        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'testingPhotos', index: i, subType: 'sub' });
+        const cta = div.querySelector(cfg.captionSelector);
+        if (cta && cfg.readCaption(i, p)) autoGrowTextarea(cta);
       });
 
       const addBtn = document.createElement('div');
       addBtn.className = 'add-photo-btn ignore-drag';
-      addBtn.title = 'Click to add Testing Photo, drop or press Ctrl+V to paste';
+      addBtn.title = cfg.addTitle;
       addBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span><span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>`;
       addBtn.onclick = () => {
-        pushHistory('Add Testing Photo');
-        if (!D.testingPhotos) D.testingPhotos = [];
-        const newIdx = D.testingPhotos.length;
-        const defaultCaption = (D.bvRows && D.bvRows[newIdx] && D.bvRows[newIdx].test) ? D.bvRows[newIdx].test.trim() : '';
-        D.testingPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: defaultCaption });
+        pushHistory(cfg.addHistory);
+        if (!D[key]) D[key] = [];
+        D[key].push(cfg.newItem(D[key].length));
         as();
-        renderTestingPhotos();
+        renderDualSlotPhotos(cfg);
       };
-      attachDropZone(addBtn, { type: 'free', key: 'testingPhotos' }, true);
+      attachDropZone(addBtn, { type: 'free', key: key }, true);
       el.appendChild(addBtn);
 
       if (typeof Sortable !== 'undefined') {
@@ -15978,9 +15948,9 @@
           fallbackTolerance: 4,
           delay: 0,
           touchStartThreshold: 5,
-          draggable: '.testing-slot',
-          handle: '.testing-slot, .dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input',
+          draggable: cfg.slotSelector,
+          handle: `${cfg.slotSelector}, .dim-slot-topbar, .dim-drag-handle`,
+          filter: cfg.sortableFilter,
           preventOnFilter: false,
           swap: false,
           ghostClass: 'sortable-ghost',
@@ -15995,8 +15965,8 @@
             cleanupOrphanedSortableFallbacks();
             if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
             if (evt.oldIndex === evt.newIndex) return;
-            if (!D.testingPhotos || !D.testingPhotos.length) return;
-            const total = D.testingPhotos.length;
+            if (!D[key] || !D[key].length) return;
+            const total = D[key].length;
             let from = evt.oldIndex;
             let to = evt.newIndex;
             if (from >= total) from = total - 1;
@@ -16004,21 +15974,84 @@
             if (from === to) {
               setTimeout(() => {
                 cleanupOrphanedSortableFallbacks();
-                renderTestingPhotos();
+                renderDualSlotPhotos(cfg);
               }, 0);
               return;
             }
-            pushHistory('Reorder Testing Photo');
-            const moved = D.testingPhotos.splice(from, 1)[0];
-            D.testingPhotos.splice(to, 0, moved);
+            pushHistory(cfg.historyReorder);
+            const moved = D[key].splice(from, 1)[0];
+            D[key].splice(to, 0, moved);
             as();
             setTimeout(() => {
               cleanupOrphanedSortableFallbacks();
-              renderTestingPhotos();
+              renderDualSlotPhotos(cfg);
             }, 0);
           }
         });
       }
+      selWirePhotoGrid(el, key);
+      syncPhotoSelUI(key);
+    }
+
+    function renderWatchoutPhotos() {
+      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.watchoutPhotos);
+    }
+
+    function renderTestingPhotos() {
+      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.testingPhotos);
+    }
+
+    function renderAssemblyPhotos() {
+      renderDualSlotPhotos(DUAL_SLOT_CONFIGS.assemblyPhotos);
+    }
+
+    function setDualPhotoLayout(key, index, layout) {
+      const cfg = DUAL_SLOT_CONFIGS[key];
+      if (!cfg) return;
+      if (!D[key]) D[key] = [];
+      if (!D[key][index]) D[key][index] = { caption: '' };
+      pushHistory(cfg.historyLayout);
+      D[key][index].photoLayout = layout;
+      as();
+      renderDualSlotPhotos(cfg);
+    }
+
+    function removeDualSubPhoto(key, index) {
+      if (!D[key] || !D[key][index]) return;
+      if (D[key][index].imgSub) {
+        if (!confirm('Switch to single photo layout? (Detail photo will be hidden)')) return;
+      }
+      setDualPhotoLayout(key, index, 'single');
+    }
+
+    function editDualPhoto(key, index, subType = 'main') {
+      const p = D[key] && D[key][index];
+      if (!p) return;
+      const origKey = subType === 'sub' ? 'originalSub' : 'original';
+      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
+      const orig = p[origKey] || p[imgKey];
+      const fallback = p[imgKey] || null;
+      if (!orig && !fallback) return;
+      openPhotoEditor({ type: 'free', key: key, index, subType }, orig || fallback, fallback !== orig ? fallback : null);
+    }
+
+    async function delDualPhoto(key, index, subType = 'main') {
+      const cfg = DUAL_SLOT_CONFIGS[key];
+      if (!cfg) return;
+      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
+      pushHistory(subType === 'sub' ? cfg.historyDelDetail : cfg.historyDelMain);
+      if (D[key] && D[key][index]) {
+        if (subType === 'sub') {
+          D[key][index].imgSub = null;
+          D[key][index].originalSub = null;
+        } else {
+          D[key][index].img = null;
+          D[key][index].original = null;
+        }
+      }
+      as();
+      savePhotoChangeNow();
+      renderDualSlotPhotos(cfg);
     }
 
     function syncTestingPhotoCaption(index) {
@@ -16033,275 +16066,6 @@
       D.testingPhotos[index].caption = targetTest;
       as();
       renderTestingPhotos();
-    }
-
-    function setTestingPhotoLayout(index, layout) {
-      if (!D.testingPhotos) D.testingPhotos = [];
-      if (!D.testingPhotos[index]) D.testingPhotos[index] = { caption: '' };
-      pushHistory('Change Testing photo layout');
-      D.testingPhotos[index].photoLayout = layout;
-      as();
-      renderTestingPhotos();
-    }
-
-    function removeTestingSubPhoto(index) {
-      if (!D.testingPhotos || !D.testingPhotos[index]) return;
-      if (D.testingPhotos[index].imgSub) {
-        if (!confirm('Switch to single photo layout? (Detail photo will be hidden)')) return;
-      }
-      setTestingPhotoLayout(index, 'single');
-    }
-
-    function editTestingPhoto(index, subType = 'main') {
-      const p = D.testingPhotos && D.testingPhotos[index];
-      if (!p) return;
-      const origKey = subType === 'sub' ? 'originalSub' : 'original';
-      const imgKey = subType === 'sub' ? 'imgSub' : 'img';
-      const orig = p[origKey] || p[imgKey];
-      const fallback = p[imgKey] || null;
-      if (!orig && !fallback) return;
-      openPhotoEditor({ type: 'free', key: 'testingPhotos', index, subType }, orig || fallback, fallback !== orig ? fallback : null);
-    }
-
-    async function delTestingPhoto(index, subType = 'main') {
-      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
-      pushHistory(subType === 'sub' ? 'Delete detail Testing photo' : 'Delete main Testing photo');
-      if (D.testingPhotos && D.testingPhotos[index]) {
-        if (subType === 'sub') {
-          D.testingPhotos[index].imgSub = null;
-          D.testingPhotos[index].originalSub = null;
-        } else {
-          D.testingPhotos[index].img = null;
-          D.testingPhotos[index].original = null;
-        }
-      }
-      as();
-      savePhotoChangeNow();
-      renderTestingPhotos();
-    }
-
-    function renderAssemblyPhotos() {
-      const el = document.getElementById('assemblyPhotos'); if (!el) return; el.innerHTML = '';
-      const arr = D.assemblyPhotos || [];
-
-      arr.forEach((p, i) => {
-        const size = getPhotoSize(p);
-        const isFull = (size === 'full');
-        const div = document.createElement('div');
-        div.className = 'assembly-slot watchout-slot' + (isFull ? ' is-fullwidth' : '');
-        div.dataset.index = String(i);
-
-        const layout = (p && p.photoLayout) || (p && p.imgSub ? '3:1' : 'single');
-        const targetMain = `{type:'free',key:'assemblyPhotos',index:${i},subType:'main'}`;
-        const targetSub = `{type:'free',key:'assemblyPhotos',index:${i},subType:'sub'}`;
-
-        const displayImg = p ? (typeof p === 'string' ? p : (p.img || null)) : null;
-        const displayImgSub = p && p.imgSub ? p.imgSub : null;
-
-        div.innerHTML = `
-        <!-- TOPBAR WITH DRAG-HANDLE AND LAYOUT PILLS (3:1, 1:1, SINGLE) -->
-        <div class="dim-slot-topbar" title="Drag bar to swap slot position">
-          <span class="dim-drag-handle">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
-            #${i + 1}
-          </span>
-          <div style="display:inline-flex; align-items:center; gap:6px;">
-            <div class="dim-layout-pills ignore-drag">
-              <button type="button" class="dim-pill-btn ${layout === '3:1' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, '3:1');event.stopPropagation()" title="Layout 3:1 (Main 75% + Detail 25%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="8.5" height="9" rx="1"/><rect x="10" y="0.5" width="3.5" height="9" rx="1"/></svg>
-                3:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === '1:1' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, '1:1');event.stopPropagation()" title="Layout 1:1 (Equal 50% - 50%)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="6" height="9" rx="1"/><rect x="7.5" y="0.5" width="6" height="9" rx="1"/></svg>
-                1:1
-              </button>
-              <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setAssemblyPhotoLayout(${i}, 'single');event.stopPropagation()" title="Single photo layout (100% - hide detail photo)">
-                <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>Single</button>
-              <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
-              ${getPhotoSizePillHtml('assemblyPhotos', i, size)}
-            </div>
-            <button type="button" class="dim-del-slot-btn ignore-drag" title="Delete slot" onclick="delFreeSlot('assemblyPhotos', ${i});event.stopPropagation()">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- PHOTO CONTAINER: 3:1, 1:1 OR SINGLE (16:9 FIXED HEIGHT) -->
-        <div class="dim-photo-container" data-layout="${layout}">
-          <!-- MAIN PHOTO -->
-          <div class="dim-main-photo" id="asph_main_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImg ? `<img loading="lazy" decoding="async" src="${displayImg}" onclick="editAssemblyPhoto(${i}, 'main');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              ${getPhotoSizeActionBtnHtml('assemblyPhotos', i, size)}
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetMain});event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete photo" onclick="delAssemblyPhoto(${i}, 'main');event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
-            <div class="dual-tap-box">
-              <div class="tap-option" onclick="triggerNativeCamera(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Camera</span>
-              </div>
-              <div class="tap-option" onclick="triggerPickLibrary(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Library</span>
-              </div>
-              <div class="tap-option" onclick="triggerPasteToTarget(${targetMain})">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
-                <span>Paste</span>
-              </div>
-            </div>`}
-          </div>
-
-          <!-- DETAIL SUB-PHOTO (HIDDEN IN SINGLE MODE) -->
-          ${layout !== 'single' ? `
-          <div class="dim-sub-photo" id="asph_sub_${i}" title="Drop photo or press Ctrl+V to paste">
-            ${displayImgSub ? `<img loading="lazy" decoding="async" src="${displayImgSub}" onclick="editAssemblyPhoto(${i}, 'sub');event.stopPropagation()" style="cursor:pointer;" title="Click to edit or crop photo">
-            <div class="pactions">
-              <button class="pact copy" title="Copy original photo (Ctrl+C)" onclick="copyPhotoFromTarget(${targetSub});event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="pact del" title="Delete detail photo" onclick="delAssemblyPhoto(${i}, 'sub');event.stopPropagation()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-            </div>` : `
-            <div class="dual-tap-box" ${layout === '3:1' ? 'style="flex-direction:column;"' : ''}>
-              <div class="tap-option" ${layout === '3:1' ? 'style="border-right:none; border-bottom:1px dashed var(--border-light);"' : ''} title="Take photo from camera" onclick="triggerNativeCamera(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="var(--brand-theme)" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Camera</span>' : ''}
-              </div>
-              <div class="tap-option" title="Choose from photo library" onclick="triggerPickLibrary(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#1a3a6a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Library</span>' : ''}
-              </div>
-              <div class="tap-option" title="Paste from clipboard (Ctrl+V)" onclick="triggerPasteToTarget(${targetSub})">
-                <svg width="${layout === '1:1' ? '16' : '14'}" height="${layout === '1:1' ? '16' : '14'}" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
-                ${layout === '1:1' ? '<span style="font-size:10px; margin-left:2px;">Paste</span>' : ''}
-              </div>
-            </div>`}
-          </div>` : ''}
-        </div>
-
-        <!-- CAPTION SECTION BELOW -->
-        <div class="assembly-caption-box watchout-caption-box ignore-drag">
-          <textarea class="assembly-caption-input watchout-caption-input ignore-drag" rows="2" placeholder="Assembly instructions, steps, hardware notes..." oninput="updateCaption('assemblyPhotos', ${i}, this.value, this)">${escapeHtml(p ? (p.caption || '') : '')}</textarea>
-        </div>`;
-
-        const mainPhotoEl = div.querySelector('.dim-main-photo');
-        const subPhotoEl = div.querySelector('.dim-sub-photo');
-        if (mainPhotoEl) attachDropZone(mainPhotoEl, { type: 'free', key: 'assemblyPhotos', index: i, subType: 'main' });
-        if (subPhotoEl && layout !== 'single') attachDropZone(subPhotoEl, { type: 'free', key: 'assemblyPhotos', index: i, subType: 'sub' });
-
-        el.appendChild(div);
-
-        const ata = div.querySelector('textarea.assembly-caption-input');
-        if (ata && p && p.caption) autoGrowTextarea(ata);
-      });
-
-      const addBtn = document.createElement('div');
-      addBtn.className = 'add-photo-btn ignore-drag';
-      addBtn.title = 'Add assembly slot, drag & drop, or press Ctrl+V to paste';
-      addBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span style="font-weight:600; margin-top:2px; font-family:var(--font-body); font-size:12px; letter-spacing:0.01em;">Add Photo</span><span style="font-size:10px; opacity:0.65; font-family:var(--font-body);">Drop or Ctrl+V</span>`;
-      addBtn.onclick = () => {
-        pushHistory('Add assembly photo slot');
-        if (!D.assemblyPhotos) D.assemblyPhotos = [];
-        D.assemblyPhotos.push({ img: null, original: null, imgSub: null, originalSub: null, photoLayout: 'single', caption: '' });
-        as();
-        renderAssemblyPhotos();
-      };
-      attachDropZone(addBtn, { type: 'free', key: 'assemblyPhotos' }, true);
-      el.appendChild(addBtn);
-
-      if (typeof Sortable !== 'undefined') {
-        if (el._sortable) el._sortable.destroy();
-        el._sortable = new Sortable(el, {
-          animation: 280,
-          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-          forceFallback: true,
-          fallbackClass: 'sortable-fallback',
-          fallbackOnBody: true,
-          fallbackTolerance: 4,
-          delay: 0,
-          touchStartThreshold: 5,
-          draggable: '.assembly-slot',
-          handle: '.assembly-slot, .dim-slot-topbar, .dim-drag-handle',
-          filter: 'input, textarea, select, button, .dim-layout-pills, .dim-pill-btn, .dim-close-sub-btn, .tap-option, .pactions, .pact, .ignore-drag, .watchout-caption-box, .watchout-caption-input, .assembly-caption-box, .assembly-caption-input',
-          preventOnFilter: false,
-          swap: false,
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
-          dragClass: 'sortable-drag',
-          onStart: function () {
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-              navigator.vibrate(30);
-            }
-          },
-          onEnd: function (evt) {
-            cleanupOrphanedSortableFallbacks();
-            if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
-            if (evt.oldIndex === evt.newIndex) return;
-            if (!D.assemblyPhotos || !D.assemblyPhotos.length) return;
-            const total = D.assemblyPhotos.length;
-            let from = evt.oldIndex;
-            let to = evt.newIndex;
-            if (from >= total) from = total - 1;
-            if (to >= total) to = total - 1;
-            if (from === to) {
-              setTimeout(() => {
-                cleanupOrphanedSortableFallbacks();
-                renderAssemblyPhotos();
-              }, 0);
-              return;
-            }
-            pushHistory('Reorder assembly photo position');
-            const moved = D.assemblyPhotos.splice(from, 1)[0];
-            D.assemblyPhotos.splice(to, 0, moved);
-            as();
-            setTimeout(() => {
-              cleanupOrphanedSortableFallbacks();
-              renderAssemblyPhotos();
-            }, 0);
-          }
-        });
-      }
-    }
-
-    function setAssemblyPhotoLayout(index, layout) {
-      if (!D.assemblyPhotos) D.assemblyPhotos = [];
-      if (!D.assemblyPhotos[index]) D.assemblyPhotos[index] = { caption: '' };
-      pushHistory('Change assembly photo layout');
-      D.assemblyPhotos[index].photoLayout = layout;
-      as();
-      renderAssemblyPhotos();
-    }
-
-    function removeAssemblySubPhoto(index) {
-      if (!D.assemblyPhotos || !D.assemblyPhotos[index]) return;
-      if (D.assemblyPhotos[index].imgSub) {
-        if (!confirm('Switch to single photo layout? (Detail photo will be hidden)')) return;
-      }
-      setAssemblyPhotoLayout(index, 'single');
-    }
-
-    function editAssemblyPhoto(index, subType = 'main') {
-      const p = D.assemblyPhotos && D.assemblyPhotos[index];
-      if (!p) return;
-      const imgSrc = subType === 'sub' ? (p.originalSub || p.imgSub) : (p.original || p.img);
-      if (!imgSrc) return;
-      const imgFallback = subType === 'sub' ? (p.imgSub || null) : (p.img || null);
-      openPhotoEditor({ type: 'free', key: 'assemblyPhotos', index, subType }, imgSrc, imgFallback !== imgSrc ? imgFallback : null);
-    }
-
-    async function delAssemblyPhoto(index, subType = 'main') {
-      if (!(await appConfirm('Delete this photo?', { title: 'Delete photo?' }))) return;
-      pushHistory(subType === 'sub' ? 'Delete assembly detail photo' : 'Delete assembly main photo');
-      if (D.assemblyPhotos && D.assemblyPhotos[index]) {
-        if (subType === 'sub') {
-          D.assemblyPhotos[index].imgSub = null;
-          D.assemblyPhotos[index].originalSub = null;
-        } else {
-          D.assemblyPhotos[index].img = null;
-          D.assemblyPhotos[index].original = null;
-        }
-      }
-      as();
-      savePhotoChangeNow();
-      renderAssemblyPhotos();
     }
 
 

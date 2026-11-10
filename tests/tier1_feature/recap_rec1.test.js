@@ -210,12 +210,22 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
   const autoSummaryBody = extractFnBody(indexHtml, 'function renderRecapAutoSummary()', 'renderRecapAutoSummary');
 
   it('TC-REC1.4.1: the Watch Out status chip renders only for Recap reports (Style B: one chip per slot)', () => {
-    assert.ok(renderWatchoutBody.includes('const isRecap = isRecapReport();'));
-    assert.ok(renderWatchoutBody.includes('${isRecap ? `'), 'status chip must be conditional on isRecap');
-    assert.ok(renderWatchoutBody.includes('wo-action-bar'));
-    assert.ok(renderWatchoutBody.includes('woStatusChipHtml(i, p)'), 'the slot delegates to the single-chip builder');
-    assert.ok(!renderWatchoutBody.includes('wo-act-chip'), 'the old 4-chip row markup must be gone');
-    assert.ok(!renderWatchoutBody.includes('wo-action-chips'), 'the old chip-row container must be gone');
+    // INH-1 (v4.6.0): renderWatchoutPhotos() delegates to the unified
+    // renderDualSlotPhotos(); the chip bar is the Watch Out config's
+    // extraSlotHtml hook, still gated on isRecapReport().
+    const dualBody = extractFnBody(indexHtml, 'function renderDualSlotPhotos(cfg)', 'renderDualSlotPhotos');
+    assert.ok(renderWatchoutBody.includes('renderDualSlotPhotos(DUAL_SLOT_CONFIGS.watchoutPhotos)'),
+      'renderWatchoutPhotos must delegate to the unified renderer');
+    assert.ok(dualBody.includes('cfg.extraSlotHtml(i, p)'), 'the renderer must append the section hook HTML per slot');
+    const cfgStart = indexHtml.indexOf('watchoutPhotos: {');
+    const cfgEnd = indexHtml.indexOf('testingPhotos: {', cfgStart);
+    assert.ok(cfgStart !== -1 && cfgEnd !== -1, 'the Watch Out dual-slot config must exist');
+    const woCfg = indexHtml.slice(cfgStart, cfgEnd);
+    assert.ok(woCfg.includes('isRecapReport() ?'), 'status chip must be conditional on isRecapReport');
+    assert.ok(woCfg.includes('wo-action-bar'));
+    assert.ok(woCfg.includes('woStatusChipHtml(i, p)'), 'the slot delegates to the single-chip builder');
+    assert.ok(!dualBody.includes('wo-act-chip') && !woCfg.includes('wo-act-chip'), 'the old 4-chip row markup must be gone');
+    assert.ok(!dualBody.includes('wo-action-chips') && !woCfg.includes('wo-action-chips'), 'the old chip-row container must be gone');
   });
 
   it('TC-REC1.4.2: isRecapReport keys off moduleType sample-review-recap', () => {
@@ -505,10 +515,16 @@ describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropd
     assert.ok(closeBody.includes("window.removeEventListener('resize', closeWatchoutActionMenu)"));
 
     // A re-render replaces the chips, so it must not leave a stale menu
-    // floating over a chip that no longer exists.
-    const rwIdx = indexHtml.indexOf('function renderWatchoutPhotos()');
-    assert.ok(rwIdx !== -1 && indexHtml.slice(rwIdx, rwIdx + 220).includes('closeWatchoutActionMenu();'),
-      'renderWatchoutPhotos closes the dropdown before replacing the chips');
+    // floating over a chip that no longer exists. INH-1 (v4.6.0): with the
+    // unified renderer this lives in the Watch Out config's beforeRender
+    // hook, which renderDualSlotPhotos runs before rebuilding the grid.
+    const dualBody = extractFnBody(indexHtml, 'function renderDualSlotPhotos(cfg)', 'renderDualSlotPhotos');
+    assert.ok(dualBody.includes('if (cfg.beforeRender) cfg.beforeRender();'),
+      'the unified renderer must run the section hook');
+    assert.ok(dualBody.indexOf('cfg.beforeRender()') < dualBody.indexOf('document.getElementById(key)'),
+      'the hook runs before the grid is rebuilt');
+    assert.ok(indexHtml.includes('beforeRender: () => { closeWatchoutActionMenu(); }'),
+      'the Watch Out config closes the dropdown before the chips are replaced');
 
     assert.ok(pickBody.includes('setWatchoutAction(index, actionId)'),
       'dropdown picks route through the shared setWatchoutAction mutation path');

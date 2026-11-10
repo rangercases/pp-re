@@ -165,9 +165,25 @@ describe('TC-SEL4: photo grids — select mode lifecycle (v4.5.0)', () => {
 
   it('TC-SEL4.5: select-all only takes slots that actually hold a photo', () => {
     const body = extractFnBody(indexHtml, 'function selPhotosSelectAll()', 'selPhotosSelectAll');
-    assert.ok(body.includes('if (p && p.img)'), 'empty slots must not be selectable');
+    assert.ok(body.includes('photoSlotSelectable(photoSel.key, i)'), 'select-all must go through the selectable predicate');
     const hasImg = extractFnBody(indexHtml, 'function photoSlotHasImg(key, i)', 'photoSlotHasImg');
-    assert.ok(hasImg.includes('!!(p && p.img)'), 'selectability predicate must be img-based');
+    assert.ok(hasImg.includes('!!(p && p.img)'), 'free-grid selectability predicate must be img-based');
+    // INH-1/F2 (v4.6.0): the predicate is evaluated for real — free grids
+    // still need a main photo; dual-slot grids accept main OR detail photo.
+    const selBody = extractFnBody(indexHtml, 'function photoSlotSelectable(key, i)', 'photoSlotSelectable');
+    const fakeD = {
+      prodPhotos: [{ img: 'x' }, { imgSub: 'y' }, {}],
+      watchoutPhotos: [{ imgSub: 'y' }, { caption: 'c' }, { img: 'x' }]
+    };
+    const selectable = new Function('D', 'PHOTO_SEL_ITEM_SELECTORS',
+      `function photoSlotHasImg(key, i) {${hasImg}}\nfunction photoSlotSelectable(key, i) {${selBody}}\nreturn photoSlotSelectable;`
+    )(fakeD, { watchoutPhotos: '.watchout-slot', testingPhotos: '.testing-slot', assemblyPhotos: '.assembly-slot' });
+    assert.equal(selectable('prodPhotos', 0), true, 'free slot with a photo is selectable');
+    assert.equal(selectable('prodPhotos', 1), false, 'free slot with only a sub photo is NOT selectable (unchanged)');
+    assert.equal(selectable('prodPhotos', 2), false, 'empty free slot is not selectable');
+    assert.equal(selectable('watchoutPhotos', 0), true, 'dual slot with only a detail photo IS selectable');
+    assert.equal(selectable('watchoutPhotos', 1), false, 'dual slot with only a caption is not selectable');
+    assert.equal(selectable('watchoutPhotos', 2), true, 'dual slot with a main photo is selectable');
   });
 
   it('TC-SEL4.6: the Select/Done toolbar is a sibling before the grid, never a Sortable child', () => {
