@@ -101,23 +101,27 @@ describe('TC-BAL2: Recap Overview covers top-align (Recap-scoped)', () => {
     }
   });
 
-  it('TC-BAL2.2: coverImgOpts is Recap-gated so non-Recap covers render byte-identically', () => {
-    assert.ok(indexHtml.includes('const coverImgOpts = isRecap ? { alignTop: true } : undefined;'));
+  it('TC-BAL2.2: coverImgOpts is config-gated so non-Recap covers render byte-identically', () => {
+    // INH-3/F5: the gate is pdfLayout.coverAlignTop (Recap true, others false).
+    assert.ok(indexHtml.includes('const coverImgOpts = pdfLayout.coverAlignTop ? { alignTop: true } : undefined;'));
   });
 
   it('TC-BAL2.3: the single-cover optical +10mm drop is skipped for Recap', () => {
-    assert.ok(indexHtml.includes('const py = y + (isRecap ? 0 : 10);'));
+    // INH-3/F5: the drop is pdfLayout.singleCoverDrop (Recap 0, others 10).
+    assert.ok(indexHtml.includes('const py = y + pdfLayout.singleCoverDrop;'));
   });
 });
 
 // ─── TC-BAL3: one 6.5mm spacing rhythm on the Recap flow, gated on isRecap ───
 describe('TC-BAL3: Recap spacing rhythm (6.5mm), non-Recap untouched', () => {
   it('TC-BAL3.1: info grid trailing gap is 6.5 for Recap, 4 otherwise', () => {
-    assert.ok(indexHtml.includes('} y += isRecap ? 6.5 : 4;'));
+    // INH-3/F5: the gap is pdfLayout.afterInfoGap (Recap 6.5, others 4).
+    assert.ok(indexHtml.includes('} y += pdfLayout.afterInfoGap;'));
   });
 
   it('TC-BAL3.2: cover block trailing gap goes through coverTrailGap (6.5 Recap / 6 else)', () => {
-    assert.ok(indexHtml.includes('const coverTrailGap = isRecap ? 6.5 : 6;'));
+    // INH-3/F5: coverTrailGap comes straight from pdfLayout (6.5 / 6).
+    assert.ok(indexHtml.includes('const coverTrailGap = pdfLayout.coverTrailGap;'));
     assert.ok(indexHtml.includes('y = barY + barH + coverTrailGap;'), '1-photo titled ending');
     assert.ok(indexHtml.includes('y = barY + coverTrailGap;'), '1-photo untitled ending');
     assert.ok(indexHtml.includes('y = maxY + coverTrailGap;'), '2-photo ending');
@@ -136,9 +140,10 @@ describe('TC-BAL3: Recap spacing rhythm (6.5mm), non-Recap untouched', () => {
     assert.ok(indexHtml.includes('doc.text("OVERVIEW", M, y); y += 6.5;'), 'OVERVIEW heading advance stays 6.5');
   });
 
-  it('TC-BAL3.4: notes blocks use the rhythm for Recap only (addSafeTextBlock gates)', () => {
-    assert.ok(indexHtml.includes('ty += isRecap ? 6.5 : 5.2;'), 'title->body advance gated');
-    assert.ok(indexHtml.includes('return ty + (isRecap ? 6.5 : 4);'), 'trailing advance gated');
+  it('TC-BAL3.4: notes blocks use the rhythm for Recap only (addSafeTextBlock, pdfLayout)', () => {
+    // INH-3/F5: both advances come from pdfLayout (Recap 6.5/6.5, others 5.2/4).
+    assert.ok(indexHtml.includes('ty += pdfLayout.textTitleGap;'), 'title->body advance from config');
+    assert.ok(indexHtml.includes('return ty + pdfLayout.textEndGap;'), 'trailing advance from config');
   });
 
   it('TC-BAL3.5: the non-Recap summary strip advance (8.5) is NOT pulled into the rhythm', () => {

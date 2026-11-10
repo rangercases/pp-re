@@ -1665,37 +1665,42 @@
       grid-template-columns: 1fr 1fr;
     }
 
-    /* SAMPLE REVIEW RECAP - MINIMAL OVERVIEW DISPLAY */
-    body.recap-mode #fcellDim,
-    body.recap-mode #fcellNumSample,
-    body.recap-mode #row_stage,
-    body.recap-mode #row_sample,
-    body.recap-mode #row_comfort,
-    body.recap-mode #row_rating {
+    /* INH-3/F4: per-module form layout is CONFIGURATION now
+       (MODULE_THEMES[x].form, applied by applyModuleFormConfig). These are
+       the shared rules the config drives — they replace the old
+       body.recap-mode block, formerly the app's only module-scoped CSS.
+       Which fields hide/span is data, not a module stylesheet. */
+    .form-hidden {
       display: none !important;
     }
-    body.recap-mode #fcellReviewer {
+
+    .form-grid > .fcell.fcell-span2 {
       grid-column: span 2;
     }
-    body.recap-mode #sec_overall {
+
+    #sec_overall.overall-stacked {
       display: flex;
       flex-direction: column;
     }
-    body.recap-mode #cardProductInfo {
+
+    #sec_overall.overall-stacked #cardProductInfo {
       order: 1;
       margin-bottom: 12px;
     }
-    body.recap-mode #cardOverviewPhotos {
+
+    #sec_overall.overall-stacked #cardOverviewPhotos {
       order: 2;
       margin-bottom: 12px;
     }
-    body.recap-mode #overviewSummaryStrip {
+
+    #sec_overall.overall-stacked #overviewSummaryStrip {
       order: 3;
       margin-top: 4px;
       margin-bottom: 16px;
     }
-    /* RECAP OVERVIEW: PURE IMAGE WITHOUT TITLE INPUT BAR */
-    body.recap-mode #cardOverviewPhotos .pbar {
+
+    /* Overview photos without the per-slot title input bar (config). */
+    #cardOverviewPhotos.hide-slot-titlebar .pbar {
       display: none !important;
     }
 
@@ -4993,8 +4998,9 @@
          track even when the grid is explicitly 1 column, and auto-flow
          then deals the remaining cells across both tracks. The attribute
          rule above only neutralised INLINE spans (title / sample-count
-         cells); `body.recap-mode #fcellReviewer { grid-column: span 2 }`
-         comes from the stylesheet, so in Recap the reviewer cell kept
+         cells); the reviewer cell's span 2 (Recap form config, applied as
+         the shared .fcell-span2 class since INH-3/F4) comes from the
+         stylesheet, so in Recap the reviewer cell kept
          its span and recreated the second column (Pre-Production, with
          no surviving span, correctly stayed 1 column). Neutralise every
          cell span on phones so the grid is exactly one column in all
@@ -13068,7 +13074,7 @@
     }
 
     async function goHome(opts) {
-      document.body.classList.remove('recap-mode');
+      applyModuleFormConfig(null);
       // POP-1 (v4.0.3): no "not saved to file yet" confirm — the in-app copy
       // is always kept, and flushReport() below still guards real save
       // failures (stay in editor + toast).
@@ -13147,6 +13153,9 @@
         title: 'PRE-PRODUCTION',
         pdfTitle: 'PRE-PRODUCTION SAMPLE REVIEW REPORT',
         defaultModules: DEFAULT_MODULES_PREPROD,
+        form: { hiddenIds: [], span2Ids: [], overallStacked: false, hideOverviewTitleBar: false },
+        pdfLayout: { textTitleGap: 5.2, textEndGap: 4, afterInfoGap: 4, infoFields: ['model', 'desc', 'dim', 'date', 'factory', 'reviewer'], coverAlignTop: false, coverTrailGap: 6, singleCoverDrop: 10, coverTitlesBlank: false },
+        cover: { maxSlots: 4, defaultSlotKeys: null, defaultLabels: null, labelFallback: 'key', capacityModel: 'points', capAtRead: false, pdfCap: null },
         hub: {
           cardId: 'cardModulePreProd',
           num: '01',
@@ -13164,6 +13173,9 @@
         title: 'PROTOTYPE',
         pdfTitle: 'PROTOTYPE SAMPLE REVIEW REPORT',
         defaultModules: DEFAULT_MODULES_PROTOTYPE,
+        form: { hiddenIds: [], span2Ids: [], overallStacked: false, hideOverviewTitleBar: false },
+        pdfLayout: { textTitleGap: 5.2, textEndGap: 4, afterInfoGap: 4, infoFields: ['model', 'desc', 'dim', 'date', 'factory', 'reviewer'], coverAlignTop: false, coverTrailGap: 6, singleCoverDrop: 10, coverTitlesBlank: false },
+        cover: { maxSlots: 4, defaultSlotKeys: null, defaultLabels: null, labelFallback: 'key', capacityModel: 'points', capAtRead: false, pdfCap: null },
         hub: {
           cardId: 'cardModulePrototype',
           num: '02',
@@ -13181,6 +13193,9 @@
         title: 'SAMPLE REVIEW RECAP',
         pdfTitle: 'SAMPLE REVIEW RECAP',
         defaultModules: DEFAULT_MODULES_RECAP,
+        form: { hiddenIds: ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating'], span2Ids: ['fcellReviewer'], overallStacked: true, hideOverviewTitleBar: true },
+        pdfLayout: { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true },
+        cover: { maxSlots: 2, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 2 },
         hub: {
           cardId: 'cardModuleRecap',
           num: '03',
@@ -13237,6 +13252,33 @@
       }).join('');
     }
     renderHubCards();
+
+    // PDF page-1 info-grid labels by field key (INH-3/F5: the per-module
+    // field LIST lives in MODULE_THEMES[x].pdfLayout.infoFields).
+    const PDF_INFO_FIELD_LABELS = { model: 'Model No.', desc: 'Description', dim: 'Dimension', date: 'Date', factory: 'Factory', reviewer: 'Reviewed by' };
+
+    // INH-3/F4: apply the active module's editor-form configuration
+    // (MODULE_THEMES[x].form) through SHARED utility classes. This replaces
+    // the retired body.recap-mode CSS block — formerly the app's only
+    // module-scoped stylesheet rules. Pass null at the hub to reset.
+    function applyModuleFormConfig(modKey) {
+      const form = (modKey && MODULE_THEMES[modKey] && MODULE_THEMES[modKey].form) || null;
+      const allIds = new Set();
+      Object.values(MODULE_THEMES).forEach(t => {
+        ((t.form && t.form.hiddenIds) || []).forEach(id => allIds.add(id));
+        ((t.form && t.form.span2Ids) || []).forEach(id => allIds.add(id));
+      });
+      allIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('form-hidden', !!(form && form.hiddenIds.includes(id)));
+        el.classList.toggle('fcell-span2', !!(form && form.span2Ids.includes(id)));
+      });
+      const sec = document.getElementById('sec_overall');
+      if (sec) sec.classList.toggle('overall-stacked', !!(form && form.overallStacked));
+      const card = document.getElementById('cardOverviewPhotos');
+      if (card) card.classList.toggle('hide-slot-titlebar', !!(form && form.hideOverviewTitleBar));
+    }
 
     let currentActiveModule = null;
 
@@ -13314,7 +13356,7 @@
     function backToLauncherHub() {
       currentActiveModule = null;
       document.body.classList.remove('in-editor');
-      document.body.classList.remove('recap-mode');
+      applyModuleFormConfig(null);
       document.documentElement.style.removeProperty('--module-theme');
       document.documentElement.style.removeProperty('--module-theme-light');
 
@@ -14682,13 +14724,22 @@
       label.onclick = () => toggleCheck(group, opt); return label;
     }
 
+    // INH-3/F8: cover capacity / slot defaults / labels are module
+    // configuration (MODULE_THEMES[x].cover) consumed by the shared cover
+    // code — no module checks left in the cover functions themselves.
+    function getCoverConfig() {
+      const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
+      return MODULE_THEMES[modKey].cover;
+    }
+
     function getMaxCoverCapacity() {
-      return (D && D.moduleType === 'sample-review-recap') ? 2 : 4;
+      return getCoverConfig().maxSlots;
     }
 
     function getCoverSlotKeys() {
-      const defaultSlots = (D && D.moduleType === 'sample-review-recap')
-        ? ['FRONT_VIEW', 'DETAIL_VIEW']
+      const cc = getCoverConfig();
+      const defaultSlots = cc.defaultSlotKeys
+        ? cc.defaultSlotKeys.slice()
         : COVER_SLOTS.map(s => s.replace(/ /g, '_'));
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
         D.coverSlots = defaultSlots.slice();
@@ -14696,9 +14747,10 @@
       // R-01: Recap is hard-capped at 2 cover slots at READ time as well, so
       // legacy/imported data with extra slots can never render or export
       // more than 2 overview photos. Extra photos stay in D.coverPhotos.
-      if (D && D.moduleType === 'sample-review-recap' && D.coverSlots.length > 2) {
-        console.warn('[Recap] coverSlots had ' + D.coverSlots.length + ' entries; capped to 2');
-        D.coverSlots = D.coverSlots.slice(0, 2);
+      // (INH-3/F8: the cap is config now — modules with capAtRead.)
+      if (cc.capAtRead && D.coverSlots.length > cc.maxSlots) {
+        console.warn('[cover] coverSlots had ' + D.coverSlots.length + ' entries; capped to ' + cc.maxSlots);
+        D.coverSlots = D.coverSlots.slice(0, cc.maxSlots);
       }
       return D.coverSlots;
     }
@@ -14713,11 +14765,12 @@
     function getCoverCapacityUsage() {
       const keys = getCoverSlotKeys();
       // R-05: Recap capacity is counted by NUMBER of photos (max 2), a
-      // full-width photo still counts as 1. Prototype keeps the points model.
-      const isRecap = D && D.moduleType === 'sample-review-recap';
+      // full-width photo still counts as 1. The 'points' model counts a
+      // full-width photo as 2. (INH-3/F8: cover.capacityModel decides.)
+      const cc = getCoverConfig();
       let usage = 0;
       keys.forEach(k => {
-        usage += (!isRecap && isCoverSlotFull(k)) ? 2 : 1;
+        usage += (cc.capacityModel === 'points' && isCoverSlotFull(k)) ? 2 : 1;
       });
       return usage;
     }
@@ -14869,10 +14922,10 @@
       const el = document.getElementById(containerId);
       if (!el) return;
       const keys = getCoverSlotKeys();
-      const isRecap = D && D.moduleType === 'sample-review-recap';
-      const defaultLabels = isRecap ? ['', ''] : COVER_SLOTS;
+      const cc = getCoverConfig();
+      const defaultLabels = cc.defaultLabels || COVER_SLOTS;
       const slots = keys.map((k, i) => {
-        const defaultLabel = defaultLabels[i] || (isRecap ? '' : k.replace(/_/g, ' '));
+        const defaultLabel = defaultLabels[i] || (cc.labelFallback === 'blank' ? '' : k.replace(/_/g, ' '));
         return { key: k, label: defaultLabel };
       });
       buildSlotGrid(containerId, slots, 'slot', 'cover');
@@ -17120,7 +17173,7 @@
             el.value = D[keys[i]] || '';
           }
         });
-        document.body.classList.toggle('recap-mode', D && D.moduleType === 'sample-review-recap');
+        applyModuleFormConfig(D && D.moduleType);
         updateTodayBtnState(D.date || '');
         const fNativeEl = document.getElementById('fDateNative');
         if (fNativeEl) fNativeEl.value = parseSofaDateToYMD(D.date || '');
@@ -17939,7 +17992,7 @@
         const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
         document.documentElement.style.setProperty('--module-theme', modConfig.themeColor);
         document.documentElement.style.setProperty('--module-theme-light', modConfig.lightColor);
-        document.body.classList.toggle('recap-mode', modKey === 'sample-review-recap');
+        applyModuleFormConfig(modKey);
         navPush(navDepth + 1, { reportId: id });
 
         curSec = 0;
@@ -18795,6 +18848,7 @@
       const isProto = (D && D.moduleType === 'prototype') || ((!D || !D.moduleType) && ((((D.reportTitle || '') + ' ' + (D.desc || '') + ' ' + (D.model || '')).toUpperCase().includes('PROTOTYPE'))));
       const modKey = isRecap ? 'sample-review-recap' : (isProto ? 'prototype' : 'pre-production');
       const modConfig = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
+      const pdfLayout = modConfig.pdfLayout || {}; // INH-3/F5: per-module page-1 layout (rhythm, info fields, cover behavior)
       const defaultThemeColor = modConfig.themeColor;
       const defaultPdfTitle = modConfig.pdfTitle;
 
@@ -18852,7 +18906,7 @@
           doc.setFontSize(9.5);
           doc.setTextColor(40, 40, 40);
           doc.text(title, M, ty);
-          ty += isRecap ? 6.5 : 5.2; // Recap: nhịp tiêu đề -> nội dung 6.5mm chung (v4.1.4)
+          ty += pdfLayout.textTitleGap; // nhịp tiêu đề -> nội dung theo module (pdfLayout — INH-3/F5)
         }
         doc.setFont(fontFam, 'normal');
         doc.setFontSize(9);
@@ -18869,7 +18923,7 @@
           doc.text(lines[i], M, ty);
           ty += 4.5;
         }
-        return ty + (isRecap ? 6.5 : 4); // Recap: khoảng kết thúc block theo nhịp 6.5mm (v4.1.4)
+        return ty + pdfLayout.textEndGap; // khoảng kết thúc block theo module (pdfLayout — INH-3/F5)
       };
 
       // opts.alignTop (chỉ ảnh bìa Overview của Recap truyền vào): ảnh dính lên
@@ -19241,21 +19295,13 @@
       doc.text(titleToPrint, W / 2, cfg.titleY || 16, { align: 'center', baseline: 'middle' });
       y = bannerH + 6;
 
-      const infoRows = isRecap
-        ? [
-            ['Model No.', D.model], ['Description', D.desc],
-            ['Date', D.date], ['Factory', D.factory],
-            ['Reviewed by', D.reviewer], ['', '']
-          ]
-        : [
-            ['Model No.', D.model], ['Description', D.desc],
-            ['Dimension', D.dim], ['Date', D.date],
-            ['Factory', D.factory], ['Reviewed by', D.reviewer]
-          ];
+      // INH-3/F5: the field list is the module's pdfLayout.infoFields
+      // (Recap: no Dimension row — the same fields its form hides, F4).
+      const infoRows = (pdfLayout.infoFields || []).map(f => [PDF_INFO_FIELD_LABELS[f], D[f]]);
 
-      // Bỏ qua mọi trường có nhãn trống (áp dụng cho mọi module, ví dụ ô đệm cuối
-      // của Recap) để PDF không hiện ô vô nghĩa chỉ có dấu ":" — trường có nhãn
-      // nhưng trống giá trị vẫn hiện "—" như trước.
+      // Bỏ qua mọi trường có nhãn trống (lưới an toàn cho mọi module) để PDF
+      // không hiện ô vô nghĩa chỉ có dấu ":" — trường có nhãn nhưng trống
+      // giá trị vẫn hiện "—" như trước.
       const visibleInfoRows = infoRows.filter(row => row && row[0] && String(row[0]).trim());
       const hw = (W - M * 2) / 2 - 2;
       for (let i = 0; i < visibleInfoRows.length; i += 2) {
@@ -19271,7 +19317,7 @@
           doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v2 || '—'), M + hw + 26, y + 5.9);
         }
         y += 10;
-      } y += isRecap ? 6.5 : 4; // Recap: khoảng trước tiêu đề OVERVIEW theo nhịp 6.5mm chung (v4.1.4)
+      } y += pdfLayout.afterInfoGap; // khoảng trước tiêu đề OVERVIEW theo module (pdfLayout — INH-3/F5)
 
       const chkLine = (label, group) => {
         doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(80, 75, 70); doc.text(label + ':', M, y + 3.5); let cx = M + 18;
@@ -19295,10 +19341,13 @@
           doc.setFont(fontFam, 'normal'); doc.setFontSize(8); doc.setTextColor(40, 40, 40); doc.text(k, cx + 4.5, y + 3.8); cx += doc.getTextWidth(k) + 11;
         }); y += 6.5;
       };
-      if (!isRecap) {
-        ['stage', 'sample', 'comfort', 'rating'].forEach((g, i) => { chkLine(['Stage', 'Sample', 'Comfort', 'Rating'][i], g); });
-        y += 2.5;
-      }
+      // INH-3/F5+F4: the Stage/Sample/Comfort/Rating lines follow the SAME
+      // form config that hides those check-rows in the editor
+      // (form.hiddenIds) — Recap hides all four, so it draws none.
+      const chkGroups = [['Stage', 'stage'], ['Sample', 'sample'], ['Comfort', 'comfort'], ['Rating', 'rating']]
+        .filter(([, g]) => !(modConfig.form.hiddenIds || []).includes('row_' + g));
+      chkGroups.forEach(([label, g]) => { chkLine(label, g); });
+      if (chkGroups.length > 0) y += 2.5;
 
       // ================= EXECUTIVE QUALITY SUMMARY STRIP (DYNAMIC WRAP & AUTO-HEIGHT) =================
       // Recap: KHÔNG vẽ thanh này ở đầu trang — khối QUALITY SUMMARY (REC-1)
@@ -19405,7 +19454,7 @@
       const ckeysRaw = (D.coverSlots && Array.isArray(D.coverSlots) && D.coverSlots.length > 0)
         ? D.coverSlots
         : COVER_SLOTS.map(s => s.replace(/ /g, '_'));
-      const ckeys = isRecap ? ckeysRaw.slice(0, 2) : ckeysRaw; // R-01
+      const ckeys = modConfig.cover.pdfCap ? ckeysRaw.slice(0, modConfig.cover.pdfCap) : ckeysRaw; // R-01 (cap = cover config — INH-3/F8)
 
       // Tự động lọc các ảnh thực tế có trong Overview (Không có ảnh -> Tuyệt đối không hiện ô và không hiện chữ)
       const validCovers = [];
@@ -19413,9 +19462,10 @@
         const dataObj = cp[key];
         const img = dataObj ? (typeof dataObj === 'string' ? dataObj : dataObj.img) : null;
         if (img) {
-          // R-04 (option A): Recap PDFs NEVER draw the photo title bar,
-          // even for older reports that still have coverTitles saved.
-          const slotTitle = isRecap
+          // R-04 (option A): modules with coverTitlesBlank (Recap) NEVER
+          // draw the photo title bar, even for older reports that still
+          // have coverTitles saved.
+          const slotTitle = pdfLayout.coverTitlesBlank
             ? ''
             : ((D.coverTitles && D.coverTitles[key] && D.coverTitles[key].trim())
                 ? D.coverTitles[key].trim()
@@ -19430,10 +19480,9 @@
       const barH = 5.2;
       // v4.1.4 — cân đối trang Recap: ảnh bìa dính mép trên của hàng (hết dải
       // trắng chết do căn giữa dọc). Module khác: undefined = giữ nguyên.
-      const coverImgOpts = isRecap ? { alignTop: true } : undefined;
-      // Nhịp khoảng cách chung 6.5mm cho trang Recap: khối ảnh bìa kết thúc
-      // cũng dùng 6.5 (module khác giữ 6mm như trước).
-      const coverTrailGap = isRecap ? 6.5 : 6;
+      const coverImgOpts = pdfLayout.coverAlignTop ? { alignTop: true } : undefined;
+      // Nhịp khoảng cách kết thúc khối ảnh bìa theo module (pdfLayout).
+      const coverTrailGap = pdfLayout.coverTrailGap;
       const totalContentW = W - M * 2; // ~182mm
 
       if (validCovers.length > 0) {
@@ -19536,7 +19585,7 @@
           const pw = 126; // Chiều rộng cân đối (~69% trang)
           const ph = 88;  // Chiều cao cân đối, sắc nét
           const px = (W - pw) / 2; // Căn chính giữa trang bìa
-          const py = y + (isRecap ? 0 : 10); // Hạ nhẹ xuống trọng tâm quang học (Optical Center) để trang bìa thuận mắt — Recap bỏ qua: ảnh dính sát tiêu đề theo nhịp trang chung (v4.1.4)
+          const py = y + pdfLayout.singleCoverDrop; // Hạ nhẹ xuống trọng tâm quang học (Optical Center) để trang bìa thuận mắt — Recap (drop 0): ảnh dính sát tiêu đề theo nhịp trang chung (pdfLayout — INH-3/F5)
 
           let barX = px;
           let barY = py + ph;

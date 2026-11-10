@@ -183,7 +183,7 @@ function makeGoHome({ flushReport }) {
   const trackedFlush = async () => { calls.flush++; return flushReport(); };
   const fn = new Function(
     'document', 'flushReport', 'D', 'currentId', 'curSec', 'fileUpdateDot', 'MODULE_THEMES',
-    'currentActiveModule', 'resetHistory', 'renderHome', 'showToast', 'confirm',
+    'currentActiveModule', 'resetHistory', 'renderHome', 'showToast', 'confirm', 'applyModuleFormConfig',
     `return (async function goHome(opts) {${goHomeBody}\n  })`
   )(
     documentStub,
@@ -197,7 +197,8 @@ function makeGoHome({ flushReport }) {
     () => {},
     async () => {},
     (msg) => { calls.toast.push(msg); },
-    () => { calls.confirm++; return false; }
+    () => { calls.confirm++; return false; },
+    () => {} // INH-3/F4: goHome resets the module form config on the way out
   );
   return { fn, calls };
 }

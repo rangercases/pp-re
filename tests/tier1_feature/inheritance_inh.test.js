@@ -284,3 +284,134 @@ describe('TC-INH1/F2: SEL-1 wired into the dual-slot grids (v4.6.0)', () => {
     assert.ok(body.includes('renderFreePhotos(key);'), 'free grids re-render via renderFreePhotos');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-INH3 (F4 + F5 + F8): module differences are CONFIGURATION consumed by
+// shared code — the form (was body.recap-mode CSS), the PDF page-1 layout
+// (was isRecap ternaries), and cover capacity/labels (was hardcoded caps).
+// ─────────────────────────────────────────────────────────────────────────────
+describe('TC-INH3-F4: form config replaces the module-scoped CSS (v4.6.0)', () => {
+  it('TC-INH3-F4.1: the Recap hidden-field set equals the set the old CSS hid', () => {
+    const themes = loadModuleThemes();
+    assert.deepEqual(themes['sample-review-recap'].form.hiddenIds,
+      ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating'],
+      'must equal the old body.recap-mode display:none set');
+    assert.deepEqual(themes['sample-review-recap'].form.span2Ids, ['fcellReviewer']);
+    assert.equal(themes['sample-review-recap'].form.overallStacked, true);
+    assert.equal(themes['sample-review-recap'].form.hideOverviewTitleBar, true);
+    for (const k of ['pre-production', 'prototype']) {
+      assert.deepEqual(themes[k].form, { hiddenIds: [], span2Ids: [], overallStacked: false, hideOverviewTitleBar: false },
+        `${k} form must stay the full default form`);
+    }
+  });
+
+  it('TC-INH3-F4.2: no body.recap-mode rules remain; the shared utility rules exist', () => {
+    assert.ok(!/body\.recap-mode\s+#/.test(indexHtml), 'no module-scoped form selectors may remain');
+    assert.ok(!indexHtml.includes("classList.toggle('recap-mode'"), 'the JS class toggle must be retired');
+    assert.ok(!indexHtml.includes("classList.remove('recap-mode')"), 'the JS class removal must be retired');
+    assert.ok(/\.form-hidden\s*\{\s*display: none !important;/.test(indexHtml), 'shared .form-hidden rule');
+    assert.ok(indexHtml.includes('.form-grid > .fcell.fcell-span2'), 'shared span-2 rule');
+    assert.ok(indexHtml.includes('#sec_overall.overall-stacked'), 'shared stacked-overview rule');
+    assert.ok(indexHtml.includes('#cardOverviewPhotos.hide-slot-titlebar .pbar'), 'shared title-bar rule');
+  });
+
+  it('TC-INH3-F4.3: applyModuleFormConfig is wired at every former recap-mode site', () => {
+    assert.ok(indexHtml.includes('applyModuleFormConfig(D && D.moduleType);'), 'loadData applies the loaded report module');
+    assert.ok(indexHtml.includes('applyModuleFormConfig(modKey);'), 'openReport applies the opened module');
+    assert.equal(countOccurrences(indexHtml, 'applyModuleFormConfig(null);'), 2, 'goHome + backToLauncherHub reset the form');
+  });
+
+  it('TC-INH3-F4.4: evaluated — Recap hides/spans exactly its config; other modules reset', () => {
+    const body = extractFnBody(indexHtml, 'function applyModuleFormConfig(modKey)', 'applyModuleFormConfig');
+    const els = {};
+    const mkEl = () => {
+      const classes = new Set();
+      return { classes, classList: { toggle: (c, on) => { if (on) classes.add(c); else classes.delete(c); } } };
+    };
+    ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating', 'fcellReviewer', 'sec_overall', 'cardOverviewPhotos']
+      .forEach(id => { els[id] = mkEl(); });
+    const apply = new Function('document', 'MODULE_THEMES',
+      `function applyModuleFormConfig(modKey) {${body}}\nreturn applyModuleFormConfig;`
+    )({ getElementById: (id) => els[id] || null }, loadModuleThemes());
+    apply('sample-review-recap');
+    for (const id of ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating']) {
+      assert.ok(els[id].classes.has('form-hidden'), `${id} must hide for Recap`);
+    }
+    assert.ok(els.fcellReviewer.classes.has('fcell-span2'), 'reviewer spans 2 for Recap');
+    assert.ok(els.sec_overall.classes.has('overall-stacked'));
+    assert.ok(els.cardOverviewPhotos.classes.has('hide-slot-titlebar'));
+    apply('pre-production');
+    for (const id of Object.keys(els)) {
+      assert.equal(els[id].classes.size, 0, `${id} must be fully reset for Pre-Production`);
+    }
+    apply(null);
+    for (const id of Object.keys(els)) assert.equal(els[id].classes.size, 0, `${id} must stay reset at the hub`);
+  });
+});
+
+describe('TC-INH3-F5/F8: PDF + cover config reproduce today\u2019s constants (v4.6.0)', () => {
+  it('TC-INH3-F5.1: pdfLayout values equal the constants the isRecap ternaries used', () => {
+    const themes = loadModuleThemes();
+    const std = { textTitleGap: 5.2, textEndGap: 4, afterInfoGap: 4, infoFields: ['model', 'desc', 'dim', 'date', 'factory', 'reviewer'], coverAlignTop: false, coverTrailGap: 6, singleCoverDrop: 10, coverTitlesBlank: false };
+    assert.deepEqual(themes['pre-production'].pdfLayout, std);
+    assert.deepEqual(themes['prototype'].pdfLayout, std);
+    assert.deepEqual(themes['sample-review-recap'].pdfLayout,
+      { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true });
+  });
+
+  it('TC-INH3-F5.1b: the PDF info-field labels reproduce the old hardcoded row labels', () => {
+    const m = indexHtml.match(/const PDF_INFO_FIELD_LABELS = (\{[^}]*\});/);
+    assert.ok(m, 'PDF_INFO_FIELD_LABELS must be a plain literal');
+    const labels = new Function(`return (${m[1]});`)();
+    assert.deepEqual(labels, { model: 'Model No.', desc: 'Description', dim: 'Dimension', date: 'Date', factory: 'Factory', reviewer: 'Reviewed by' });
+  });
+
+  it('TC-INH3-F5.2: the exporter consumes the config — no layout ternaries at the old sites', () => {
+    assert.ok(indexHtml.includes('const pdfLayout = modConfig.pdfLayout || {};'));
+    assert.ok(indexHtml.includes('const infoRows = (pdfLayout.infoFields || []).map(f => [PDF_INFO_FIELD_LABELS[f], D[f]]);'));
+    assert.ok(indexHtml.includes('ty += pdfLayout.textTitleGap;'));
+    assert.ok(indexHtml.includes('return ty + pdfLayout.textEndGap;'));
+    assert.ok(indexHtml.includes('} y += pdfLayout.afterInfoGap;'));
+    assert.ok(indexHtml.includes('const coverImgOpts = pdfLayout.coverAlignTop ? { alignTop: true } : undefined;'));
+    assert.ok(indexHtml.includes('const coverTrailGap = pdfLayout.coverTrailGap;'));
+    assert.ok(indexHtml.includes('const py = y + pdfLayout.singleCoverDrop;'));
+    assert.ok(indexHtml.includes('pdfLayout.coverTitlesBlank'));
+    assert.ok(!indexHtml.includes('ty += isRecap ? 6.5 : 5.2'), 'old text-rhythm ternary must be gone');
+    assert.ok(!indexHtml.includes('} y += isRecap ? 6.5 : 4;'), 'old info-gap ternary must be gone');
+    assert.ok(!indexHtml.includes('const ckeys = isRecap ? ckeysRaw.slice(0, 2) : ckeysRaw;'), 'old R-01 ternary must be gone');
+    // The Stage/Sample/Comfort/Rating PDF lines fall out of the F4 form config.
+    assert.ok(indexHtml.includes(".filter(([, g]) => !(modConfig.form.hiddenIds || []).includes('row_' + g))"),
+      'chkLine suppression must be driven by form.hiddenIds');
+  });
+
+  it('TC-INH3-F8.1: cover config values equal today\u2019s hardcoded behavior', () => {
+    const themes = loadModuleThemes();
+    const std = { maxSlots: 4, defaultSlotKeys: null, defaultLabels: null, labelFallback: 'key', capacityModel: 'points', capAtRead: false, pdfCap: null };
+    assert.deepEqual(themes['pre-production'].cover, std);
+    assert.deepEqual(themes['prototype'].cover, std);
+    assert.deepEqual(themes['sample-review-recap'].cover,
+      { maxSlots: 2, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 2 });
+    const capBody = extractFnBody(indexHtml, 'function getMaxCoverCapacity()', 'getMaxCoverCapacity');
+    assert.ok(capBody.includes('getCoverConfig().maxSlots'), 'capacity must come from config');
+    assert.ok(indexHtml.includes('const ckeys = modConfig.cover.pdfCap ? ckeysRaw.slice(0, modConfig.cover.pdfCap) : ckeysRaw;'),
+      'the PDF cover cap must come from config');
+  });
+
+  it('TC-INH3-F8.2: evaluated — getCoverSlotKeys defaults + read-time cap per module', () => {
+    const cfgBody = extractFnBody(indexHtml, 'function getCoverConfig()', 'getCoverConfig');
+    const keysBody = extractFnBody(indexHtml, 'function getCoverSlotKeys()', 'getCoverSlotKeys');
+    const COVER_SLOTS = ['FRONT VIEW', 'SIDE VIEW', 'ANGLE VIEW', 'BOTTOM VIEW'];
+    const make = (D) => new Function('D', 'MODULE_THEMES', 'COVER_SLOTS', 'console',
+      `function getCoverConfig() {${cfgBody}}\nfunction getCoverSlotKeys() {${keysBody}}\nreturn getCoverSlotKeys;`
+    )(D, loadModuleThemes(), COVER_SLOTS, { warn: () => {} });
+    const recapFresh = { moduleType: 'sample-review-recap', coverSlots: null };
+    assert.deepEqual(make(recapFresh)(), ['FRONT_VIEW', 'DETAIL_VIEW'], 'Recap defaults to its 2 slots');
+    const recapLegacy = { moduleType: 'sample-review-recap', coverSlots: ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW'] };
+    assert.deepEqual(make(recapLegacy)(), ['FRONT_VIEW', 'DETAIL_VIEW'], 'legacy Recap data is still capped to 2 at read time (R-01)');
+    assert.equal(recapLegacy.coverSlots.length, 2, 'the stored array is capped, D.coverPhotos untouched');
+    const protoFresh = { moduleType: 'prototype', coverSlots: null };
+    assert.deepEqual(make(protoFresh)(), ['FRONT_VIEW', 'SIDE_VIEW', 'ANGLE_VIEW', 'BOTTOM_VIEW'], 'standard modules default to COVER_SLOTS');
+    const protoMany = { moduleType: 'prototype', coverSlots: ['A', 'B', 'C', 'D', 'E'] };
+    assert.deepEqual(make(protoMany)(), ['A', 'B', 'C', 'D', 'E'], 'no read-time cap for standard modules');
+  });
+});

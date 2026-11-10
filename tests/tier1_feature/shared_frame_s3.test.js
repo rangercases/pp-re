@@ -123,9 +123,15 @@ describe('TC-S3: shared phone layout frame (v4.3.0)', () => {
     assert.ok(cell.includes('grid-column: span 1 !important'),
       'all form cells must be span 1 on phones (kills the implicit 2nd track)');
     // Desktop keeps the Recap reviewer span (2-col layout unchanged >640px).
-    const reviewer = firstRuleMatching(/body\.recap-mode #fcellReviewer\s*\{/);
+    // INH-3/F4: the span is configuration now — the SHARED .fcell-span2 rule,
+    // switched by the Recap form config (span2Ids); no module-scoped CSS.
+    const reviewer = firstRuleMatching(/\.form-grid > \.fcell\.fcell-span2\s*\{/);
     assert.ok(reviewer.includes('grid-column: span 2'),
-      'desktop Recap reviewer span must be preserved');
+      'desktop span-2 rule must be preserved (shared, config-driven)');
+    assert.ok(indexHtml.includes("span2Ids: ['fcellReviewer']"),
+      'the Recap form config must carry the reviewer span');
+    assert.ok(!/body\.recap-mode\s+#/.test(indexHtml),
+      'no module-scoped form CSS rules may remain');
     // Long values cannot force a cell wider than its track.
     const inputs = firstRuleMatching(/\.fcell input,\s*\.fcell textarea,\s*\.fcell select\s*\{/);
     assert.ok(inputs.includes('min-width: 0'), '.fcell inputs must have min-width: 0');
