@@ -105,7 +105,7 @@ describe('TC-REC1.1: buildRecapWatchoutSummary — issue list + tallies', () => 
 
   it('TC-REC1.1.6: the four statuses are exactly the approved set, in order', () => {
     assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.id), ['fix-now', 'fix-next', 'note', 'accepted']);
-    assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.en), ['Fix immediately', 'Fix next sample', 'Take note', 'Accepted']);
+    assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.en), ['Fix immediately', 'Fix next sample', 'Take note for mass production', 'Accepted']);
     assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.vi), ['Sửa ngay', 'Sửa ở mẫu sau', 'Ghi nhận', 'Chấp nhận']);
     assert.equal(apiEn.WO_ACTION_NONE.en, 'Not decided');
   });
@@ -120,7 +120,7 @@ describe('TC-REC1.2: recapSummaryTallyText', () => {
   it('TC-REC1.2.1: English line lists only groups with count > 0, plus not-decided when unselected > 0', () => {
     assert.equal(
       apiEn.recapSummaryTallyText(summary, 'en'),
-      '5 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided'
+      '5 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production · 1 not decided'
     );
   });
 
@@ -270,7 +270,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     const pairs = [
       "['Sửa ngay', 'Fix immediately']",
       "['Sửa ở mẫu sau', 'Fix next sample']",
-      "['Ghi nhận', 'Take note']",
+      "['Ghi nhận', 'Take note for mass production']",
       "['Chấp nhận', 'Accepted']",
       "['Chưa xử lý', 'Not decided']",
       "['Tóm tắt chất lượng', 'QUALITY SUMMARY']",
@@ -395,7 +395,7 @@ describe('TC-REC1.6: Style B single chip + anchored dropdown (chip v4.1.2, dropd
     assert.ok(html.includes('wo-status-chip'));
     assert.ok(!html.includes('wo-status-chip none'), 'selected chip is not the muted variant');
     assert.ok(html.includes('data-wo-action="note"'), 'chip carries the status color hook (CSS vars)');
-    assert.ok(html.includes('Take note'), 'chip shows the selected status label');
+    assert.ok(html.includes('Take note for mass production'), 'chip shows the selected status label');
     assert.ok(html.includes('wo-chev'), 'chip shows the tappable affordance');
     assert.ok(html.includes('toggleWatchoutActionMenu(0, this)'), 'chip toggles the anchored dropdown for its slot');
   });

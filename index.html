@@ -16265,7 +16265,7 @@
     const WO_ACTIONS = [
       { id: 'fix-now', vi: 'Sửa ngay', en: 'Fix immediately', rgb: [226, 75, 74], bg: [253, 240, 240], textRgb: [180, 40, 40] },
       { id: 'fix-next', vi: 'Sửa ở mẫu sau', en: 'Fix next sample', rgb: [232, 144, 32], bg: [253, 247, 236], textRgb: [180, 83, 9] },
-      { id: 'note', vi: 'Ghi nhận', en: 'Take note', rgb: [55, 138, 221], bg: [238, 245, 253], textRgb: [30, 90, 180] },
+      { id: 'note', vi: 'Ghi nhận', en: 'Take note for mass production', rgb: [55, 138, 221], bg: [238, 245, 253], textRgb: [30, 90, 180] },
       { id: 'accepted', vi: 'Chấp nhận', en: 'Accepted', rgb: [52, 168, 83], bg: [237, 247, 238], textRgb: [30, 120, 50] }
     ];
     const WO_ACTION_MAP = {};
@@ -16301,7 +16301,7 @@
       return { issues: issues, counts: counts, unselected: unselected, total: issues.length };
     }
 
-    // "4 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note · 1 not decided"
+    // "4 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production · 1 not decided"
     // lang 'vi'/'en' forces a language (the PDF is English-only); when omitted
     // the line follows the current UI language via L().
     function recapSummaryTallyText(summary, lang) {
@@ -21856,7 +21856,7 @@
       // line itself is built with L() (it interpolates counts), not via pairs.
       ['Sửa ngay', 'Fix immediately'],
       ['Sửa ở mẫu sau', 'Fix next sample'],
-      ['Ghi nhận', 'Take note'],
+      ['Ghi nhận', 'Take note for mass production'],
       ['Chấp nhận', 'Accepted'],
       ['Chưa xử lý', 'Not decided'],
       ['Tóm tắt chất lượng', 'QUALITY SUMMARY'],
