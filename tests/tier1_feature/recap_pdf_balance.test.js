@@ -22,8 +22,8 @@ function extract(source, pattern, label) {
 //  2. Recap Overview covers top-align at all 7 cover call sites.
 //  3. One 6.5mm spacing rhythm on the Recap flow, gated on isRecap.
 //  4. Recap Watch Out grid: rows top-align, captions/chips hug each image.
-//  5. QUALITY SUMMARY on page 1: since v4.6.4 a single main-watch-outs
-//     line (TC-BAL6) — the per-item table was removed at Hung's request.
+//  5. QUALITY SUMMARY rows: bulleted main watch-outs, equal padding
+//     (TC-BAL6; no table header / numbering since v4.6.4).
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── TC-BAL1: addImg contain math — centered by default, top-aligned on opt-in
@@ -229,21 +229,50 @@ describe('TC-BAL5: Watch Out grid top-alignment is gated on showActions', () => 
   });
 });
 
-// ─── TC-BAL6: QUALITY SUMMARY — one main-watch-outs line, no table ───
-// Hung (2026-11-13): page 1 keeps only the "N main watch-outs" tally line;
-// the per-item table (and its row-centering math) is gone — the Watch Out
-// section pages carry the item list.
-describe('TC-BAL6: QUALITY SUMMARY is a single main-watch-outs line (v4.6.4)', () => {
-  it('TC-BAL6.1: the PDF prints the main tally line in English and advances 6.5', () => {
+// ─── TC-BAL6: QUALITY SUMMARY rows — bulleted main watch-outs ───
+// Hung (2026-11-13): page 1 shows the "N main watch-outs:" headline plus a
+// bulleted list (no numbering, no column header); row padding math is the
+// v4.1.4 centering, unchanged.
+const rowMath = extract(
+  indexHtml,
+  /(const rowZoneH = rowH - 0\.6;\s+const capBlockH = \(lines\.length - 1\) \* 3\.9 \+ 3\.7;\s+const rowBaseY = y \+ \(rowZoneH - capBlockH\) \/ 2 \+ 3\.0;)/,
+  'QS row centering math'
+);
+const computeRow = new Function(
+  'y', 'rowH', 'lines',
+  `${rowMath}\nreturn { rowZoneH, capBlockH, rowBaseY };`
+);
+const rowHFor = (n) => Math.max(n * 3.9, 6.4) + 2.4;
+
+describe('TC-BAL6: QUALITY SUMMARY bulleted rows have equal top/bottom padding', () => {
+  it('TC-BAL6.1: row height formula, right-aligned chip column, bullet on the caption baseline, no table head', () => {
+    assert.ok(indexHtml.includes('const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;'));
+    assert.ok(indexHtml.includes('drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);'),
+      'chip stays right-aligned at W - M and is vertically centered in the row zone');
+    assert.ok(indexHtml.includes("doc.text('\u2022', M, rowBaseY);"), 'bullet shares the caption baseline');
+    assert.ok(!indexHtml.includes('drawTableHead'), 'no QS table header since v4.6.4');
+    assert.ok(!indexHtml.includes("doc.text('WATCH OUT', M + idxW, y + 3);"), 'no QS column headers since v4.6.4');
     assert.ok(indexHtml.includes("const mainText = recapMainTallyText(recapSummary, 'en');"),
-      'PDF QS must build the main-watch-outs line from the shared builder');
-    assert.ok(indexHtml.includes('doc.text(mainText, M, y + 1);'), 'main line is drawn on page 1');
+      'PDF QS builds the main-watch-outs headline from the shared builder');
   });
 
-  it('TC-BAL6.2: no per-item QS table remains (no table head, no row math, no QS chips)', () => {
-    for (const token of ['drawTableHead', 'rowZoneH', 'capBlockH', 'rowBaseY',
-      "doc.text('WATCH OUT', M + idxW, y + 3);", "doc.text('#' + it.index, M, rowBaseY);"]) {
-      assert.ok(!indexHtml.includes(token), `removed QS table remnant still present: ${token}`);
+  it('TC-BAL6.2: top padding equals bottom padding for 1..4 caption lines', () => {
+    for (const n of [1, 2, 3, 4]) {
+      const rowH = rowHFor(n);
+      const lines = Array.from({ length: n }, () => 'x');
+      const { rowZoneH, capBlockH, rowBaseY } = computeRow(100, rowH, lines);
+      const topPad = (rowBaseY - 100) - 3.0;
+      const bottomPad = rowZoneH - ((rowBaseY - 100) - 3.0 + capBlockH);
+      assert.ok(Math.abs(topPad - bottomPad) < 1e-9, `n=${n}: top ${topPad} vs bottom ${bottomPad}`);
     }
+  });
+
+  it('TC-BAL6.3: multi-line rows keep the exact pre-v4.1.4 baseline (y + 4)', () => {
+    for (const n of [2, 3, 4]) {
+      const { rowBaseY } = computeRow(100, rowHFor(n), Array.from({ length: n }, () => 'x'));
+      assert.ok(Math.abs(rowBaseY - 104) < 1e-9, `n=${n}: baseline ${rowBaseY}`);
+    }
+    const one = computeRow(100, rowHFor(1), ['x']);
+    assert.ok(Math.abs(one.rowBaseY - 105.25) < 1e-9, 'the 1-line row is the one that moves (down 1.25 to center it)');
   });
 });

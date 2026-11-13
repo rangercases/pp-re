@@ -137,12 +137,23 @@ describe('TC-REC1.1: buildRecapWatchoutSummary — issue list + tallies', () => 
     assert.equal(s.total, 3);
     assert.deepEqual(s.listed, []);
   });
+
+  it('TC-REC1.1.10: listed is ordered by action priority, highest first, stable within an action', () => {
+    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { img: 'data:image/a', caption: 'OK one', action: 'accepted' },
+      { img: 'data:image/b', caption: 'Urgent one', action: 'fix-now' },
+      { img: 'data:image/c', caption: 'Also urgent', action: 'fix-now' },
+      { img: 'data:image/d', caption: 'Note it', action: 'note' }
+    ] });
+    assert.deepEqual(s.listed.map(i => i.index), [2, 3, 4, 1]);
+    assert.deepEqual(s.listed.map(i => i.action), ['fix-now', 'fix-now', 'note', 'accepted']);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-REC1.2 — tally line composition, both languages
 // ─────────────────────────────────────────────────────────────────────────────
-describe('TC-REC1.2: recapMainTallyText — the one-line page-1 summary (Hung, 2026-11-13)', () => {
+describe('TC-REC1.2: recapMainTallyText — the page-1 main-watch-outs headline (Hung, 2026-11-13)', () => {
   // 6 watch-outs, 4 of them main (decided AND described): 2 fix-now,
   // 1 fix-next, 1 note. The other two — a bare photo and an undecided
   // remark — are not main and never appear on page 1.
@@ -156,35 +167,25 @@ describe('TC-REC1.2: recapMainTallyText — the one-line page-1 summary (Hung, 2
   ] };
   const summary = apiEn.buildRecapWatchoutSummary(report);
 
-  it('TC-REC1.2.1: English line counts only the main watch-outs, dot-separated, no not-decided part', () => {
-    assert.equal(
-      apiEn.recapMainTallyText(summary, 'en'),
-      '4 main watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production'
-    );
+  it('TC-REC1.2.1: English headline counts only the main watch-outs and ends with a colon (the list follows)', () => {
+    assert.equal(apiEn.recapMainTallyText(summary, 'en'), '4 main watch-outs:');
   });
 
-  it('TC-REC1.2.2: Vietnamese line mirrors the English structure', () => {
-    assert.equal(
-      apiVi.recapMainTallyText(summary, 'vi'),
-      '4 watch-out chính: 2 sửa ngay · 1 sửa ở mẫu sau · 1 ghi nhận'
-    );
+  it('TC-REC1.2.2: Vietnamese headline mirrors the English structure', () => {
+    assert.equal(apiVi.recapMainTallyText(summary, 'vi'), '4 watch-out chính:');
   });
 
   it('TC-REC1.2.3: without an explicit lang the line follows the UI language via L()', () => {
-    assert.match(apiEn.recapMainTallyText(summary), /^4 main watch-outs: /);
-    assert.match(apiVi.recapMainTallyText(summary), /^4 watch-out chính: /);
+    assert.equal(apiEn.recapMainTallyText(summary), '4 main watch-outs:');
+    assert.equal(apiVi.recapMainTallyText(summary), '4 watch-out chính:');
   });
 
-  it('TC-REC1.2.4: order is action priority (highest first), not slot order; singular reads "1 main watch-out"', () => {
-    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
-      { img: 'data:image/a', caption: 'OK one', action: 'accepted' },
-      { img: 'data:image/b', caption: 'Urgent one', action: 'fix-now' }
-    ] });
-    assert.equal(apiEn.recapMainTallyText(s, 'en'), '2 main watch-outs: 1 fix immediately · 1 accepted');
+  it('TC-REC1.2.4: singular reads "1 main watch-out:"', () => {
     const one = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
       { img: 'data:image/a', caption: 'Only one', action: 'accepted' }
     ] });
-    assert.equal(apiEn.recapMainTallyText(one, 'en'), '1 main watch-out: 1 accepted');
+    assert.equal(apiEn.recapMainTallyText(one, 'en'), '1 main watch-out:');
+    assert.equal(apiVi.recapMainTallyText(one, 'vi'), '1 watch-out chính:');
   });
 
   it('TC-REC1.2.5: decided-but-undescribed is not main; nothing main produces an empty line', () => {
@@ -304,7 +305,9 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     assert.ok(autoSummaryBody.includes('QUALITY SUMMARY'));
     assert.ok(autoSummaryBody.includes('✓ No watch-outs recorded'));
     assert.ok(autoSummaryBody.includes('recapMainTallyText(s)'));
-    assert.ok(!autoSummaryBody.includes('ras-list'), 'editor summary must not repeat the per-item list');
+    assert.ok(autoSummaryBody.includes('ras-list'), 'editor summary lists the main watch-outs below the headline');
+    assert.ok(autoSummaryBody.includes('s.listed.map'), 'editor rows come from the main-watch-outs subset');
+    assert.ok(autoSummaryBody.includes('ras-bullet'), 'editor rows are bulleted, not numbered');
     assert.ok(indexHtml.includes('id="recapAutoSummary"'), 'the summary container must exist in the Overview card');
   });
 

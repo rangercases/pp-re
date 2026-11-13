@@ -2919,6 +2919,46 @@
       color: #1e7832;
     }
 
+    .ras-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 6px 0;
+      border-top: 1px dashed var(--line, #e6e3df);
+    }
+
+    .ras-bullet {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 10px;
+      padding-top: 1px;
+    }
+
+    .ras-cap {
+      flex: 1;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-top: 1px;
+    }
+
+    .ras-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--r-pill, 9999px);
+      background: var(--wo-bg, #f4f2ef);
+      border: 1px solid var(--wo-c, #b9b2a8);
+      color: var(--wo-tx, #8a8378);
+      white-space: nowrap;
+    }
+
     .free-caption textarea:focus {
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.3);
@@ -16210,30 +16250,28 @@
       // `listedCounts` its per-action tallies; counts / total still cover
       // every recorded watch-out (other consumers use them).
       const listed = issues.filter(it => it.caption && it.action);
+      // Display order for the summary list: action priority, highest first
+      // (WO_ACTIONS order); items sharing an action keep slot order.
+      const actionRank = {};
+      WO_ACTIONS.forEach((a, i) => { actionRank[a.id] = i; });
+      listed.sort((x, y) => actionRank[x.action] - actionRank[y.action]);
       const listedCounts = { 'fix-now': 0, 'fix-next': 0, 'note': 0, 'accepted': 0 };
       listed.forEach(it => { listedCounts[it.action]++; });
       return { issues: issues, listed: listed, listedCounts: listedCounts, counts: counts, unselected: unselected, total: issues.length };
     }
 
-    // "4 main watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production"
-    // Hung (2026-11-13): the page-1 QUALITY SUMMARY stays minimal — ONE line
-    // naming only the main watch-outs (decided AND described; see `listed`
-    // in buildRecapWatchoutSummary), counts ordered by action priority,
-    // highest first (WO_ACTIONS order), joined with ' \u00b7 ', no numbering
-    // and no per-item list — the Watch Out section already lists them all.
+    // "4 main watch-outs:" — the bulleted list of those items follows it
+    // (editor block + PDF page 1). Hung (2026-11-13): the page-1 QUALITY
+    // SUMMARY names only the main watch-outs (decided AND described; see
+    // `listed` in buildRecapWatchoutSummary). No per-action breakdown in
+    // this line — every listed row carries its own decision chip.
     // lang 'vi'/'en' forces a language (the PDF is English-only); when
     // omitted the line follows the current UI language via L().
     // Empty string when no watch-out qualifies as main.
     function recapMainTallyText(summary, lang) {
       if (!summary || !summary.listed || !summary.listed.length) return '';
       const pick = (vi, en) => lang === 'vi' ? vi : (lang === 'en' ? en : L(vi, en));
-      const parts = [];
-      WO_ACTIONS.forEach(a => {
-        const n = (summary.listedCounts && summary.listedCounts[a.id]) || 0;
-        if (n > 0) parts.push(n + ' ' + pick(a.vi, a.en).toLowerCase());
-      });
-      const head = summary.listed.length + ' ' + pick('watch-out ch\u00ednh', summary.listed.length === 1 ? 'main watch-out' : 'main watch-outs');
-      return head + ': ' + parts.join(' \u00b7 ');
+      return summary.listed.length + ' ' + pick('watch-out ch\u00ednh', summary.listed.length === 1 ? 'main watch-out' : 'main watch-outs') + ':';
     }
 
     // REC-2 (v4.2.0): checklist tally for the Recap QUALITY SUMMARY — one
@@ -16417,7 +16455,7 @@
       }
       const s = buildRecapWatchoutSummary(D);
       // REC-2 (v4.2.0): the checklist tally rides in the same block, right
-      // under the watch-out tally — no separate badge strip (v4.1.5).
+      // under the watch-out list — no separate badge strip (v4.1.5).
       const chk = buildRecapChecklistSummary(D);
       const chkLine = chk.total > 0
         ? `<div class="ras-tally">${escapeHtml(recapChecklistTallyText(chk))}</div>`
@@ -16430,8 +16468,17 @@
         return;
       }
       const mainLine = recapMainTallyText(s);
+      // Main watch-outs only (the builder's `listed`, action-priority
+      // order), bulleted — no numbering. Every listed item has a caption
+      // and a decision by construction, so no empty fallbacks are needed.
+      const rows = s.listed.map(it => {
+        const meta = woActionMeta(it.action);
+        const chip = `<span class="ras-chip" data-wo-action="${meta.id}">${meta.en}</span>`;
+        return `<div class="ras-row"><span class="ras-bullet">\u2022</span><span class="ras-cap">${escapeHtml(it.caption)}</span>${chip}</div>`;
+      }).join('');
       el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
         (mainLine ? `<div class="ras-tally">${escapeHtml(mainLine)}</div>` : '') +
+        (rows ? `<div class="ras-list">${rows}</div>` : '') +
         chkLine;
     }
 
@@ -19676,6 +19723,35 @@
           if (mainText) {
             doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
             doc.text(mainText, M, y + 1);
+            y += 6.5;
+
+            // The main watch-outs as a bulleted list (Hung, 2026-11-13):
+            // no numbering, no column header — bullet, description and
+            // decision chip, in the builder's action-priority order.
+            // Row padding math unchanged from v4.1.4.
+            const idxW = 10;
+            const chipZoneW = 42;
+            const capW = (W - M * 2) - idxW - chipZoneW;
+            recapSummary.listed.forEach(it => {
+              doc.setFont(fontFam, 'normal'); doc.setFontSize(8.5);
+              const lines = doc.splitTextToSize(it.caption, capW);
+              const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;
+              if (y + rowH > BOTTOM_LIMIT) {
+                addHeader('QUALITY SUMMARY');
+              }
+              const rowZoneH = rowH - 0.6;
+              const capBlockH = (lines.length - 1) * 3.9 + 3.7;
+              const rowBaseY = y + (rowZoneH - capBlockH) / 2 + 3.0;
+              doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(140, 130, 122);
+              doc.text('•', M, rowBaseY);
+              doc.setFont(fontFam, 'normal'); doc.setTextColor(45, 40, 35);
+              lines.forEach((ln, li) => { doc.text(ln, M + idxW, rowBaseY + li * 3.9); });
+              const meta = actionChipMeta(it.action);
+              drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);
+              doc.setDrawColor(233, 229, 223); doc.setLineWidth(0.2);
+              doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
+              y += rowH;
+            });
             y += 6.5;
           }
         }
