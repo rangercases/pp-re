@@ -1925,6 +1925,7 @@
       border-radius: var(--rs, 12px);
       overflow: hidden;
       aspect-ratio: 4/3;
+      min-width: 0;
       position: relative;
       transition: border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
       touch-action: pan-y;
@@ -2162,16 +2163,22 @@
       z-index: 10 !important;
     }
 
-    /* FREE PHOTOS */
+    /* FREE PHOTOS — tracks are minmax(0, 1fr), NOT a bare 1fr: a bare 1fr is
+       minmax(auto, 1fr), and aspect-ratio items (the Add Photo tile is 4/3)
+       inflate one track's automatic minimum, so the two columns render
+       unequal (measured 263px vs 441px) and the slot topbar pills clip.
+       Same family as the S3 form-grid fix: cap the track minimum at 0 and
+       give the grid items min-width: 0 (see the item rules below). */
     .free-photos {
       padding: 10px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
     }
 
     .free-photo-item {
       aspect-ratio: 4/3;
+      min-width: 0;
       position: relative;
       border-radius: var(--rs, 12px);
       overflow: hidden;
@@ -2455,6 +2462,7 @@
 
     .add-photo-btn {
       aspect-ratio: 4/3;
+      min-width: 0;
       border: 1px dashed var(--line);
       border-radius: var(--rs, 12px);
       display: flex;
@@ -2478,11 +2486,12 @@
       transform: scale(0.98);
     }
 
-    /* DYNAMIC DIMENSIONS */
+    /* DYNAMIC DIMENSIONS — same minmax(0, 1fr) track fix as .free-photos:
+       a bare 1fr lets aspect-ratio content inflate one column. */
     .dim-grid {
       padding: 10px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 12px;
     }
 
@@ -2492,6 +2501,7 @@
       overflow: hidden;
       box-shadow: var(--ring-card);
       border: 1px solid var(--line);
+      min-width: 0;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -2648,6 +2658,7 @@
       box-shadow: var(--ring-card);
       border-radius: var(--rs, 12px);
       overflow: hidden;
+      min-width: 0;
       position: relative;
       transition: border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
       display: flex;
@@ -5344,7 +5355,7 @@
       }
 
       .dim-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 14px;
       }
 
