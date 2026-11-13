@@ -31,7 +31,7 @@ function makeRec1Api(L, D) {
   const isRecapBody = extractFnBody(indexHtml, 'function isRecapReport(report)', 'isRecapReport');
   const woMetaBody = extractFnBody(indexHtml, 'function woActionMeta(action)', 'woActionMeta');
   const builderBody = extractFnBody(indexHtml, 'function buildRecapWatchoutSummary(report)', 'buildRecapWatchoutSummary');
-  const tallyBody = extractFnBody(indexHtml, 'function recapSummaryTallyText(summary, lang)', 'recapSummaryTallyText');
+  const tallyBody = extractFnBody(indexHtml, 'function recapMainTallyText(summary, lang)', 'recapMainTallyText');
   const factory = new Function(
     'L', 'D',
     `const WO_ACTIONS = [${woActionsBody}];
@@ -40,8 +40,8 @@ function makeRec1Api(L, D) {
      function isRecapReport(report) {${isRecapBody}}
      function woActionMeta(action) {${woMetaBody}}
      function buildRecapWatchoutSummary(report) {${builderBody}}
-     function recapSummaryTallyText(summary, lang) {${tallyBody}}
-     return { WO_ACTIONS, WO_ACTION_NONE, isRecapReport, woActionMeta, buildRecapWatchoutSummary, recapSummaryTallyText };`
+     function recapMainTallyText(summary, lang) {${tallyBody}}
+     return { WO_ACTIONS, WO_ACTION_NONE, isRecapReport, woActionMeta, buildRecapWatchoutSummary, recapMainTallyText };`
   );
   return factory(L, D);
 }
@@ -142,37 +142,58 @@ describe('TC-REC1.1: buildRecapWatchoutSummary — issue list + tallies', () => 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-REC1.2 — tally line composition, both languages
 // ─────────────────────────────────────────────────────────────────────────────
-describe('TC-REC1.2: recapSummaryTallyText', () => {
-  const summary = { issues: [], counts: { 'fix-now': 2, 'fix-next': 1, 'note': 1, 'accepted': 0 }, unselected: 1, total: 5 };
+describe('TC-REC1.2: recapMainTallyText — the one-line page-1 summary (Hung, 2026-11-13)', () => {
+  // 6 watch-outs, 4 of them main (decided AND described): 2 fix-now,
+  // 1 fix-next, 1 note. The other two — a bare photo and an undecided
+  // remark — are not main and never appear on page 1.
+  const report = { watchoutPhotos: [
+    { img: 'data:image/a', caption: 'Crack on frame', action: 'fix-now' },
+    { img: 'data:image/b', caption: 'Stain on edge', action: 'fix-now' },
+    { img: 'data:image/c', caption: 'Loose screw', action: 'fix-next' },
+    { img: 'data:image/d', caption: 'Minor scratch', action: 'note' },
+    { img: 'data:image/e' },
+    { img: 'data:image/f', caption: 'Undecided remark' }
+  ] };
+  const summary = apiEn.buildRecapWatchoutSummary(report);
 
-  it('TC-REC1.2.1: English line lists only groups with count > 0, plus not-decided when unselected > 0', () => {
+  it('TC-REC1.2.1: English line counts only the main watch-outs, dot-separated, no not-decided part', () => {
     assert.equal(
-      apiEn.recapSummaryTallyText(summary, 'en'),
-      '5 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production · 1 not decided'
+      apiEn.recapMainTallyText(summary, 'en'),
+      '4 main watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production'
     );
   });
 
   it('TC-REC1.2.2: Vietnamese line mirrors the English structure', () => {
     assert.equal(
-      apiVi.recapSummaryTallyText(summary, 'vi'),
-      '5 watch-out: 2 sửa ngay · 1 sửa ở mẫu sau · 1 ghi nhận · 1 chưa xử lý'
+      apiVi.recapMainTallyText(summary, 'vi'),
+      '4 watch-out chính: 2 sửa ngay · 1 sửa ở mẫu sau · 1 ghi nhận'
     );
   });
 
   it('TC-REC1.2.3: without an explicit lang the line follows the UI language via L()', () => {
-    assert.match(apiEn.recapSummaryTallyText(summary), /^5 watch-outs: /);
-    assert.match(apiVi.recapSummaryTallyText(summary), /^5 watch-out: /);
+    assert.match(apiEn.recapMainTallyText(summary), /^4 main watch-outs: /);
+    assert.match(apiVi.recapMainTallyText(summary), /^4 watch-out chính: /);
   });
 
-  it('TC-REC1.2.4: singular total reads "1 watch-out"; zero-unselected omits the not-decided part', () => {
-    const one = { issues: [], counts: { 'fix-now': 1, 'fix-next': 0, 'note': 0, 'accepted': 0 }, unselected: 0, total: 1 };
-    assert.equal(apiEn.recapSummaryTallyText(one, 'en'), '1 watch-out: 1 fix immediately');
-    assert.equal(apiVi.recapSummaryTallyText(one, 'vi'), '1 watch-out: 1 sửa ngay');
+  it('TC-REC1.2.4: order is action priority (highest first), not slot order; singular reads "1 main watch-out"', () => {
+    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { img: 'data:image/a', caption: 'OK one', action: 'accepted' },
+      { img: 'data:image/b', caption: 'Urgent one', action: 'fix-now' }
+    ] });
+    assert.equal(apiEn.recapMainTallyText(s, 'en'), '2 main watch-outs: 1 fix immediately · 1 accepted');
+    const one = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { img: 'data:image/a', caption: 'Only one', action: 'accepted' }
+    ] });
+    assert.equal(apiEn.recapMainTallyText(one, 'en'), '1 main watch-out: 1 accepted');
   });
 
-  it('TC-REC1.2.5: empty summary produces an empty line', () => {
-    assert.equal(apiEn.recapSummaryTallyText({ issues: [], counts: { 'fix-now': 0, 'fix-next': 0, 'note': 0, 'accepted': 0 }, unselected: 0, total: 0 }, 'en'), '');
-    assert.equal(apiEn.recapSummaryTallyText(null, 'en'), '');
+  it('TC-REC1.2.5: decided-but-undescribed is not main; nothing main produces an empty line', () => {
+    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { img: 'data:image/a', action: 'accepted' },
+      { img: 'data:image/b' }
+    ] });
+    assert.equal(apiEn.recapMainTallyText(s, 'en'), '');
+    assert.equal(apiEn.recapMainTallyText(null, 'en'), '');
   });
 });
 
@@ -282,8 +303,8 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
     assert.ok(autoSummaryBody.includes('buildRecapWatchoutSummary(D)'));
     assert.ok(autoSummaryBody.includes('QUALITY SUMMARY'));
     assert.ok(autoSummaryBody.includes('✓ No watch-outs recorded'));
-    assert.ok(autoSummaryBody.includes('No description yet'));
-    assert.ok(autoSummaryBody.includes('recapSummaryTallyText(s)'));
+    assert.ok(autoSummaryBody.includes('recapMainTallyText(s)'));
+    assert.ok(!autoSummaryBody.includes('ras-list'), 'editor summary must not repeat the per-item list');
     assert.ok(indexHtml.includes('id="recapAutoSummary"'), 'the summary container must exist in the Overview card');
   });
 
@@ -319,10 +340,10 @@ describe('TC-REC1.5: PDF gating (source assertions)', () => {
   it('TC-REC1.5.1: the page-1 QUALITY SUMMARY block is Recap-gated and uses the shared builder in English', () => {
     assert.ok(indexHtml.includes('REC-1: RECAP QUALITY SUMMARY'));
     assert.ok(indexHtml.includes('const recapSummary = buildRecapWatchoutSummary(D);'));
-    assert.ok(indexHtml.includes("recapSummaryTallyText(recapSummary, 'en')"), 'PDF tally must be forced to English');
+    assert.ok(indexHtml.includes("recapMainTallyText(recapSummary, 'en')"), 'PDF tally must be forced to English');
     assert.ok(indexHtml.includes("if (isRecap) {\n        const recapSummary = buildRecapWatchoutSummary(D);"));
     assert.ok(indexHtml.includes('✓ No watch-outs recorded'));
-    assert.ok(indexHtml.includes("doc.text('WATCH OUT', M + idxW, y + 3);"), 'summary table column header must read WATCH OUT');
+    assert.ok(!indexHtml.includes("doc.text('WATCH OUT', M + idxW, y + 3);"), 'page-1 summary no longer draws the per-item table');
   });
 
   it('TC-REC1.5.2: Watch Out caption chips are enabled only for the Recap Watch Out section', () => {

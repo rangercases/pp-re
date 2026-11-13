@@ -2919,51 +2919,6 @@
       color: #1e7832;
     }
 
-    .ras-row {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 6px 0;
-      border-top: 1px dashed var(--line, #e6e3df);
-    }
-
-    .ras-idx {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      min-width: 28px;
-      padding-top: 1px;
-    }
-
-    .ras-cap {
-      flex: 1;
-      font-size: 12.5px;
-      line-height: 1.45;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-      padding-top: 1px;
-    }
-
-    .ras-cap.is-empty {
-      color: var(--muted);
-      font-style: italic;
-    }
-
-    .ras-chip {
-      flex-shrink: 0;
-      display: inline-flex;
-      align-items: center;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: var(--r-pill, 9999px);
-      background: var(--wo-bg, #f4f2ef);
-      border: 1px solid var(--wo-c, #b9b2a8);
-      color: var(--wo-tx, #8a8378);
-      white-space: nowrap;
-    }
-
     .free-caption textarea:focus {
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.3);
@@ -16249,29 +16204,36 @@
         if (action) counts[action]++; else unselected++;
         issues.push({ index: issues.length + 1, caption: caption, action: action });
       });
-      // Hung's rule (2026-11-13): the page-1 QUALITY SUMMARY lists a
-      // watch-out only when it has BOTH a description and a decision.
-      // `listed` is that display subset (original # numbers kept);
-      // counts / total / the tally line always cover every recorded
-      // watch-out, decided or not.
+      // Hung's rule (2026-11-13): a watch-out counts as a "main
+      // watch-out" for the page-1 QUALITY SUMMARY only when it has BOTH a
+      // description and a decision. `listed` is that subset and
+      // `listedCounts` its per-action tallies; counts / total still cover
+      // every recorded watch-out (other consumers use them).
       const listed = issues.filter(it => it.caption && it.action);
-      return { issues: issues, listed: listed, counts: counts, unselected: unselected, total: issues.length };
+      const listedCounts = { 'fix-now': 0, 'fix-next': 0, 'note': 0, 'accepted': 0 };
+      listed.forEach(it => { listedCounts[it.action]++; });
+      return { issues: issues, listed: listed, listedCounts: listedCounts, counts: counts, unselected: unselected, total: issues.length };
     }
 
-    // "4 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production · 1 not decided"
-    // lang 'vi'/'en' forces a language (the PDF is English-only); when omitted
-    // the line follows the current UI language via L().
-    function recapSummaryTallyText(summary, lang) {
-      if (!summary || !summary.total) return '';
+    // "4 main watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production"
+    // Hung (2026-11-13): the page-1 QUALITY SUMMARY stays minimal — ONE line
+    // naming only the main watch-outs (decided AND described; see `listed`
+    // in buildRecapWatchoutSummary), counts ordered by action priority,
+    // highest first (WO_ACTIONS order), joined with ' \u00b7 ', no numbering
+    // and no per-item list — the Watch Out section already lists them all.
+    // lang 'vi'/'en' forces a language (the PDF is English-only); when
+    // omitted the line follows the current UI language via L().
+    // Empty string when no watch-out qualifies as main.
+    function recapMainTallyText(summary, lang) {
+      if (!summary || !summary.listed || !summary.listed.length) return '';
       const pick = (vi, en) => lang === 'vi' ? vi : (lang === 'en' ? en : L(vi, en));
       const parts = [];
       WO_ACTIONS.forEach(a => {
-        const n = summary.counts[a.id] || 0;
+        const n = (summary.listedCounts && summary.listedCounts[a.id]) || 0;
         if (n > 0) parts.push(n + ' ' + pick(a.vi, a.en).toLowerCase());
       });
-      if (summary.unselected > 0) parts.push(summary.unselected + ' ' + pick(WO_ACTION_NONE.vi, WO_ACTION_NONE.en).toLowerCase());
-      const head = summary.total + ' ' + pick('watch-out', summary.total === 1 ? 'watch-out' : 'watch-outs');
-      return head + ': ' + parts.join(' · ');
+      const head = summary.listed.length + ' ' + pick('watch-out ch\u00ednh', summary.listed.length === 1 ? 'main watch-out' : 'main watch-outs');
+      return head + ': ' + parts.join(' \u00b7 ');
     }
 
     // REC-2 (v4.2.0): checklist tally for the Recap QUALITY SUMMARY — one
@@ -16297,7 +16259,7 @@
     }
 
     // "Checklist: 30/34 passed · 2 failed · 2 pending" — zero-count parts are
-    // omitted, mirroring recapSummaryTallyText. Empty when the report has no
+    // omitted, mirroring recapMainTallyText. Empty when the report has no
     // checklist data at all (callers then skip the line entirely).
     function recapChecklistTallyText(summary, lang) {
       if (!summary || !summary.total) return '';
@@ -16467,20 +16429,10 @@
           chkLine;
         return;
       }
-      const rows = s.listed.map(it => {
-        const meta = woActionMeta(it.action);
-        const chip = meta
-          ? `<span class="ras-chip" data-wo-action="${meta.id}">${meta.en}</span>`
-          : `<span class="ras-chip">${WO_ACTION_NONE.en}</span>`;
-        const cap = it.caption
-          ? `<span class="ras-cap">${escapeHtml(it.caption)}</span>`
-          : `<span class="ras-cap is-empty">No description yet</span>`;
-        return `<div class="ras-row"><span class="ras-idx">#${it.index}</span>${cap}${chip}</div>`;
-      }).join('');
+      const mainLine = recapMainTallyText(s);
       el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
-        `<div class="ras-tally">${escapeHtml(recapSummaryTallyText(s))}</div>` +
-        chkLine +
-        (rows ? `<div class="ras-list">${rows}</div>` : '');
+        (mainLine ? `<div class="ras-tally">${escapeHtml(mainLine)}</div>` : '') +
+        chkLine;
     }
 
     /* ════════════════════════════════════════════════════════════════════════════
@@ -19720,51 +19672,12 @@
           doc.text('✓ No watch-outs recorded', M, y + 1);
           y += 6.5;
         } else {
-          doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
-          doc.text(recapSummaryTallyText(recapSummary, 'en'), M, y + 1);
-          y += 6.5;
-
-          const idxW = 10;
-          const chipZoneW = 42;
-          const capW = (W - M * 2) - idxW - chipZoneW;
-          const drawTableHead = () => {
-            doc.setFont(fontFam, 'bold'); doc.setFontSize(7); doc.setTextColor(140, 130, 122);
-            doc.text('#', M, y + 3);
-            doc.text('WATCH OUT', M + idxW, y + 3);
-            doc.text('ACTION', W - M - chipZoneW, y + 3);
-            doc.setDrawColor(215, 210, 202); doc.setLineWidth(0.25);
-            doc.line(M, y + 4.6, W - M, y + 4.6);
-            y += 7;
-          };
-          if (recapSummary.listed.length) drawTableHead();
-          recapSummary.listed.forEach(it => {
-            doc.setFont(fontFam, 'normal'); doc.setFontSize(8.5);
-            const capText = it.caption || 'No description yet';
-            const lines = doc.splitTextToSize(capText, capW);
-            const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;
-            if (y + rowH > BOTTOM_LIMIT) {
-              addHeader('QUALITY SUMMARY');
-              drawTableHead();
-            }
-            // Đệm trên/dưới bằng nhau ở mọi hàng (v4.1.4): khối chữ (cap-top
-            // -> chân descender = (n-1)*3.9 + 3.7) và chip được căn giữa vùng
-            // nội dung phía trên đường kẻ chân hàng (rowH - 0.6). Hàng 2+
-            // dòng cho đúng baseline cũ y + 4; hàng 1 dòng hết thừa đệm dưới.
-            // Chip vẫn bám cột phải W - M thẳng hàng như trước.
-            const rowZoneH = rowH - 0.6;
-            const capBlockH = (lines.length - 1) * 3.9 + 3.7;
-            const rowBaseY = y + (rowZoneH - capBlockH) / 2 + 3.0;
-            doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(140, 130, 122);
-            doc.text('#' + it.index, M, rowBaseY);
-            doc.setFont(fontFam, 'normal'); doc.setTextColor(45, 40, 35);
-            lines.forEach((ln, li) => { doc.text(ln, M + idxW, rowBaseY + li * 3.9); });
-            const meta = actionChipMeta(it.action);
-            drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);
-            doc.setDrawColor(233, 229, 223); doc.setLineWidth(0.2);
-            doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
-            y += rowH;
-          });
-          y += 6.5;
+          const mainText = recapMainTallyText(recapSummary, 'en');
+          if (mainText) {
+            doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
+            doc.text(mainText, M, y + 1);
+            y += 6.5;
+          }
         }
 
         // REC-2 (v4.2.0): dòng tổng kết checklist ngay dưới phần watch-out,

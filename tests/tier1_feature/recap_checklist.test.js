@@ -388,7 +388,7 @@ describe('TC-REC2.5: QUALITY SUMMARY gains a checklist tally line', () => {
     assert.ok(body.includes('buildRecapChecklistSummary(D)'), 'editor block reads the shared checklist builder');
     assert.ok(body.includes('recapChecklistTallyText(chk)'), 'editor block renders the shared tally text');
     assert.ok(body.includes('buildRecapWatchoutSummary(D)'), 'the REC-1 watch-out summary is still there');
-    assert.ok(body.includes('recapSummaryTallyText(s)'), 'the REC-1 watch-out tally is still there');
+    assert.ok(body.includes('recapMainTallyText(s)'), 'the REC-1 watch-out tally is still there');
     assert.ok(!body.includes('overviewSummaryStrip'), 'the v4.1.5-removed badge strip is NOT resurrected');
   });
 

@@ -22,7 +22,8 @@ function extract(source, pattern, label) {
 //  2. Recap Overview covers top-align at all 7 cover call sites.
 //  3. One 6.5mm spacing rhythm on the Recap flow, gated on isRecap.
 //  4. Recap Watch Out grid: rows top-align, captions/chips hug each image.
-//  5. QUALITY SUMMARY table: equal top/bottom padding in every row.
+//  5. QUALITY SUMMARY on page 1: since v4.6.4 a single main-watch-outs
+//     line (TC-BAL6) — the per-item table was removed at Hung's request.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── TC-BAL1: addImg contain math — centered by default, top-aligned on opt-in
@@ -133,8 +134,8 @@ describe('TC-BAL3: Recap spacing rhythm (6.5mm), non-Recap untouched', () => {
       'empty-state advance 8 -> 6.5'
     );
     assert.ok(
-      indexHtml.includes('y += rowH;\n          });\n          y += 6.5;'),
-      'after-table trailing advance 4 -> 6.5'
+      indexHtml.includes('doc.text(mainText, M, y + 1);\n            y += 6.5;'),
+      'main-watch-outs line advance is on the 6.5 rhythm (v4.6.4: no table follows it)'
     );
     assert.ok(indexHtml.includes('doc.text("QUALITY SUMMARY", M, y); y += 6.5;'), 'QS heading advance stays 6.5');
     assert.ok(indexHtml.includes('doc.text("OVERVIEW", M, y); y += 6.5;'), 'OVERVIEW heading advance stays 6.5');
@@ -228,44 +229,21 @@ describe('TC-BAL5: Watch Out grid top-alignment is gated on showActions', () => 
   });
 });
 
-// ─── TC-BAL6: QUALITY SUMMARY table — equal padding, any line count ───
-const rowMath = extract(
-  indexHtml,
-  /(const rowZoneH = rowH - 0\.6;\s+const capBlockH = \(lines\.length - 1\) \* 3\.9 \+ 3\.7;\s+const rowBaseY = y \+ \(rowZoneH - capBlockH\) \/ 2 \+ 3\.0;)/,
-  'QS table row centering math'
-);
-const computeRow = new Function(
-  'y', 'rowH', 'lines',
-  `${rowMath}\nreturn { rowZoneH, capBlockH, rowBaseY };`
-);
-// The row height formula itself is unchanged (asserted in TC-BAL6.1).
-const rowHFor = (n) => Math.max(n * 3.9, 6.4) + 2.4;
-
-describe('TC-BAL6: QUALITY SUMMARY rows have equal top/bottom padding', () => {
-  it('TC-BAL6.1: row height formula and right-aligned chip column are unchanged', () => {
-    assert.ok(indexHtml.includes('const rowH = Math.max(lines.length * 3.9, 6.4) + 2.4;'));
-    assert.ok(indexHtml.includes('drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);'),
-      'chip stays right-aligned at W - M and is vertically centered in the row zone');
-    assert.ok(indexHtml.includes("doc.text('#' + it.index, M, rowBaseY);"), 'index shares the caption baseline');
+// ─── TC-BAL6: QUALITY SUMMARY — one main-watch-outs line, no table ───
+// Hung (2026-11-13): page 1 keeps only the "N main watch-outs" tally line;
+// the per-item table (and its row-centering math) is gone — the Watch Out
+// section pages carry the item list.
+describe('TC-BAL6: QUALITY SUMMARY is a single main-watch-outs line (v4.6.4)', () => {
+  it('TC-BAL6.1: the PDF prints the main tally line in English and advances 6.5', () => {
+    assert.ok(indexHtml.includes("const mainText = recapMainTallyText(recapSummary, 'en');"),
+      'PDF QS must build the main-watch-outs line from the shared builder');
+    assert.ok(indexHtml.includes('doc.text(mainText, M, y + 1);'), 'main line is drawn on page 1');
   });
 
-  it('TC-BAL6.2: top padding equals bottom padding for 1..4 caption lines', () => {
-    for (const n of [1, 2, 3, 4]) {
-      const rowH = rowHFor(n);
-      const lines = Array.from({ length: n }, () => 'x');
-      const { rowZoneH, capBlockH, rowBaseY } = computeRow(100, rowH, lines);
-      const topPad = (rowBaseY - 100) - 3.0;                    // baseline -> cap top
-      const bottomPad = rowZoneH - ((rowBaseY - 100) - 3.0 + capBlockH);
-      assert.ok(Math.abs(topPad - bottomPad) < 1e-9, `n=${n}: top ${topPad} vs bottom ${bottomPad}`);
+  it('TC-BAL6.2: no per-item QS table remains (no table head, no row math, no QS chips)', () => {
+    for (const token of ['drawTableHead', 'rowZoneH', 'capBlockH', 'rowBaseY',
+      "doc.text('WATCH OUT', M + idxW, y + 3);", "doc.text('#' + it.index, M, rowBaseY);"]) {
+      assert.ok(!indexHtml.includes(token), `removed QS table remnant still present: ${token}`);
     }
-  });
-
-  it('TC-BAL6.3: multi-line rows keep the exact pre-v4.1.4 baseline (y + 4)', () => {
-    for (const n of [2, 3, 4]) {
-      const { rowBaseY } = computeRow(100, rowHFor(n), Array.from({ length: n }, () => 'x'));
-      assert.ok(Math.abs(rowBaseY - 104) < 1e-9, `n=${n}: baseline ${rowBaseY}`);
-    }
-    const one = computeRow(100, rowHFor(1), ['x']);
-    assert.ok(Math.abs(one.rowBaseY - 105.25) < 1e-9, 'the 1-line row is the one that moves (down 1.25 to center it)');
   });
 });
