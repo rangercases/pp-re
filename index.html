@@ -16249,7 +16249,13 @@
         if (action) counts[action]++; else unselected++;
         issues.push({ index: issues.length + 1, caption: caption, action: action });
       });
-      return { issues: issues, counts: counts, unselected: unselected, total: issues.length };
+      // Hung's rule (2026-11-13): the page-1 QUALITY SUMMARY lists a
+      // watch-out only when it has BOTH a description and a decision.
+      // `listed` is that display subset (original # numbers kept);
+      // counts / total / the tally line always cover every recorded
+      // watch-out, decided or not.
+      const listed = issues.filter(it => it.caption && it.action);
+      return { issues: issues, listed: listed, counts: counts, unselected: unselected, total: issues.length };
     }
 
     // "4 watch-outs: 2 fix immediately · 1 fix next sample · 1 take note for mass production · 1 not decided"
@@ -16461,7 +16467,7 @@
           chkLine;
         return;
       }
-      const rows = s.issues.map(it => {
+      const rows = s.listed.map(it => {
         const meta = woActionMeta(it.action);
         const chip = meta
           ? `<span class="ras-chip" data-wo-action="${meta.id}">${meta.en}</span>`
@@ -16474,7 +16480,7 @@
       el.innerHTML = '<div class="ras-head">QUALITY SUMMARY</div>' +
         `<div class="ras-tally">${escapeHtml(recapSummaryTallyText(s))}</div>` +
         chkLine +
-        `<div class="ras-list">${rows}</div>`;
+        (rows ? `<div class="ras-list">${rows}</div>` : '');
     }
 
     /* ════════════════════════════════════════════════════════════════════════════
@@ -19730,8 +19736,8 @@
             doc.line(M, y + 4.6, W - M, y + 4.6);
             y += 7;
           };
-          drawTableHead();
-          recapSummary.issues.forEach(it => {
+          if (recapSummary.listed.length) drawTableHead();
+          recapSummary.listed.forEach(it => {
             doc.setFont(fontFam, 'normal'); doc.setFontSize(8.5);
             const capText = it.caption || 'No description yet';
             const lines = doc.splitTextToSize(capText, capW);

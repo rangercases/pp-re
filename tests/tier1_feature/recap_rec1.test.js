@@ -109,6 +109,34 @@ describe('TC-REC1.1: buildRecapWatchoutSummary — issue list + tallies', () => 
     assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.vi), ['Sửa ngay', 'Sửa ở mẫu sau', 'Ghi nhận', 'Chấp nhận']);
     assert.equal(apiEn.WO_ACTION_NONE.en, 'Not decided');
   });
+
+  it('TC-REC1.1.7: listed = only watch-outs with BOTH a description and a decision (Hung, 2026-11-13)', () => {
+    const s = apiEn.buildRecapWatchoutSummary(mixed);
+    // #1 caption + fix-now -> listed. #2 decided but no caption -> out.
+    // #3 caption but undecided -> out. #4 neither -> out.
+    assert.deepEqual(s.listed.map(i => i.index), [1]);
+    assert.equal(s.listed[0].caption, 'Crack on seat frame');
+    assert.equal(s.listed[0].action, 'fix-now');
+    // Tallies still cover every recorded watch-out, listed or not.
+    assert.equal(s.total, 4);
+    assert.equal(s.unselected, 2);
+  });
+
+  it('TC-REC1.1.8: listed keeps the original # numbers when earlier watch-outs are filtered out', () => {
+    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { caption: 'Remark without decision' },
+      { img: 'data:image/x', caption: 'Decided remark', action: 'note' }
+    ] });
+    assert.deepEqual(s.listed.map(i => i.index), [2]);
+  });
+
+  it('TC-REC1.1.9: a report full of undecided watch-outs lists none of them', () => {
+    const s = apiEn.buildRecapWatchoutSummary({ watchoutPhotos: [
+      { img: 'data:image/a' }, { img: 'data:image/b' }, { img: 'data:image/c' }
+    ] });
+    assert.equal(s.total, 3);
+    assert.deepEqual(s.listed, []);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
