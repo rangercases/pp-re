@@ -4934,13 +4934,13 @@
       }
 
       /* S3 (v4.3.0): on phones every topbar command is one 40x40 icon
-         button. Labels are hidden by the .btn-lbl rule below, so the two
-         labelled commands (Preview / PDF) collapse to the same 40px box
+         button. Labels are hidden by the .btn-lbl rule below, so the
+         labelled PDF command collapses to the same 40px box (the PREVIEW
+         command was removed entirely in v4.6.3)
          as the .icon-btn set; the PDF action keeps the black round look
          it has as a pill on desktop. SELECT/DONE intentionally keeps its
          text (mode toggle) and simply grows to 40px tall. */
       .topbar-btn.icon-btn,
-      #btnPreview,
       #btnExport {
         width: 40px;
         height: 40px;
@@ -7138,14 +7138,6 @@
           <polyline points="7 3 7 8 15 8" />
         </svg>
       </button>
-      <button class="topbar-btn" id="btnPreview" onclick="previewPDF()" style="display:none"
-        title="Preview PDF (A4 Realistic View)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <span class="btn-lbl">PREVIEW</span>
-      </button>
       <button class="topbar-btn pri" id="btnExport" onclick="exportPDF()" style="display:none"
         title="Export PDF Document">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
@@ -7843,41 +7835,6 @@
 
       <div class="add-module-body" id="addModuleBody">
         <!-- Rendered dynamically by renderTabManagerModal() -->
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: PDF REALISTIC PREVIEW (A4) -->
-  <div class="modal-overlay hidden" id="pdfLivePreviewModal" style="z-index: 130;">
-    <div class="modal-box"
-      style="width: 95vw; max-width: 1100px; height: 92vh; max-height: 92vh; display: flex; flex-direction: column; border-radius: var(--r, 16px); box-shadow: var(--sh-xl); border: 1px solid var(--line); overflow: hidden; padding: 0;">
-      <div class="modal-head"
-        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--surface, #ffffff); border-bottom: 1px solid var(--line);">
-        <h3 id="pdfPreviewTitle"
-          style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin: 0; text-transform: uppercase;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          <span>PDF PREVIEW (A4 REALISTIC)</span>
-        </h3>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button class="topbar-btn pri" id="btnPreviewDownload" onclick="downloadPdfFromPreview()"
-            style="height: 32px; padding: 0 14px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span class="btn-lbl">DOWNLOAD PDF</span>
-          </button>
-          <button class="modal-close" onclick="closePdfPreviewModal()"
-            style="border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">✕</button>
-        </div>
-      </div>
-      <div class="modal-body" style="flex: 1; padding: 0; background: #525659; overflow: hidden; position: relative;">
-        <iframe id="pdfPreviewFrame" src="" style="width: 100%; height: 100%; border: none; display: block;"
-          title="PDF Preview Frame"></iframe>
       </div>
     </div>
   </div>
@@ -11006,12 +10963,6 @@
         }
       }
       if (e.key === 'Escape') {
-        const previewModal = document.getElementById('pdfLivePreviewModal');
-        if (previewModal && !previewModal.classList.contains('hidden')) {
-          e.preventDefault();
-          closePdfPreviewModal();
-          return;
-        }
         const camModal = document.getElementById('camModal');
         if (camModal && !camModal.classList.contains('hidden')) {
           e.preventDefault();
@@ -13104,7 +13055,7 @@
       document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
-      ['tabsWrap', 'saveBar', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
+      ['tabsWrap', 'saveBar', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
         const el = document.getElementById(elemId);
         if (el) el.style.display = 'none';
       });
@@ -18022,7 +17973,7 @@
         }
         document.body.classList.add('in-editor');
         document.getElementById('homeScreen').classList.remove('active'); document.getElementById('editScreen').classList.add('active');
-        ['tabsWrap', 'btnPreview', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
+        ['tabsWrap', 'btnExport', 'btnSaveFile', 'btnUndo', 'btnRedo', 'topbarDivider'].forEach(elemId => {
           const el = document.getElementById(elemId);
           if (el) el.style.display = elemId === 'tabsWrap' ? 'block' : 'inline-flex';
         });
@@ -18825,8 +18776,7 @@
     }
 
     async function exportPdfCore(options = {}) {
-      const isPreview = !!(options && options.preview);
-      as(); showToast(isPreview ? 'Preparing realistic PDF preview...' : 'Initializing PDF generation...'); await new Promise(r => setTimeout(r, 150));
+      as(); showToast('Initializing PDF generation...'); await new Promise(r => setTimeout(r, 150));
       if (!window.jspdf || !window.jspdf.jsPDF) {
         showToast('Error: PDF library not ready (please check network connection).');
         return;
@@ -20368,16 +20318,9 @@
 
       const safeFileName = getReportFileBaseName(D);
 
-      if (isPreview) {
-        const blob = doc.output('blob');
-        const blobUrl = URL.createObjectURL(blob);
-        openPdfPreviewModal(blobUrl, safeFileName);
-        showToast('✓ PDF preview ready!');
-      } else {
-        const blob = doc.output('blob');
-        fsSavePdfBlob(blob, safeFileName);
-        showToast('✓ PDF download complete!');
-      }
+      const blob = doc.output('blob');
+      fsSavePdfBlob(blob, safeFileName);
+      showToast('✓ PDF download complete!');
       if (pdfFailedImages.length) {
         showToast(`⚠️ ${pdfFailedImages.length} photo(s) could not be inserted into the PDF — please check the exported file`, 6000);
       }
@@ -20385,56 +20328,6 @@
         delete window._lastGeneratedDoc;
       }
       return doc;
-    }
-
-    async function previewPDF() {
-      return exportPDF({ preview: true });
-    }
-
-    let currentPreviewBlobUrl = null;
-    let currentPreviewFileName = 'report.pdf';
-
-    function openPdfPreviewModal(blobUrl, fileName) {
-      if (currentPreviewBlobUrl) {
-        try { URL.revokeObjectURL(currentPreviewBlobUrl); } catch (e) { }
-      }
-      currentPreviewBlobUrl = blobUrl;
-      currentPreviewFileName = (fileName ? fileName.replace(/\.pdf$/i, '') : 'report') + '.pdf';
-      const modal = document.getElementById('pdfLivePreviewModal');
-      const frame = document.getElementById('pdfPreviewFrame');
-      const title = document.getElementById('pdfPreviewTitle');
-      if (frame) frame.src = blobUrl;
-      if (title) title.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>PDF PREVIEW (A4) — ${escapeHtml(currentPreviewFileName)}</span>`;
-      if (modal) {
-        modal.classList.remove('hidden');
-        lockBodyScroll();
-      }
-    }
-
-    function closePdfPreviewModal() {
-      const modal = document.getElementById('pdfLivePreviewModal');
-      const frame = document.getElementById('pdfPreviewFrame');
-      if (modal) modal.classList.add('hidden');
-      if (frame) frame.src = '';
-      if (currentPreviewBlobUrl) {
-        try { URL.revokeObjectURL(currentPreviewBlobUrl); } catch (e) { }
-        currentPreviewBlobUrl = null;
-      }
-      unlockBodyScroll();
-    }
-
-    function downloadPdfFromPreview() {
-      if (!currentPreviewBlobUrl) {
-        exportPDF();
-        return;
-      }
-      const a = document.createElement('a');
-      a.href = currentPreviewBlobUrl;
-      a.download = currentPreviewFileName || 'report.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast('✓ PDF download started!');
     }
 
     // ═══════════════ PWA SERVICE WORKER REGISTRATION ═══════════════

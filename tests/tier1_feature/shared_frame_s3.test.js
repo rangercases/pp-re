@@ -72,12 +72,14 @@ describe('TC-S3: shared phone layout frame (v4.3.0)', () => {
     assert.ok(topbar.includes('grid-template-columns: auto 1fr auto'),
       'phone topbar must size brand/actions naturally and flex the centre');
 
-    // Labelled commands collapse to the same 40px box as .icon-btn.
-    const m = /#btnPreview,\s*#btnExport\s*\{/.exec(css640);
-    assert.ok(m, 'a grouped #btnPreview/#btnExport rule must exist in the <=640 block');
+    // The labelled PDF command collapses to the same 40px box as .icon-btn.
+    // (PREVIEW was removed entirely in v4.6.3 — its selector must be gone.)
+    const m = /#btnExport\s*\{/.exec(css640);
+    assert.ok(m, 'a grouped #btnExport rule must exist in the <=640 block');
+    assert.ok(!css640.includes('#btnPreview'), 'no #btnPreview selector may remain in the <=640 block');
     const grouped = balancedBody(css640, m.index);
     assert.ok(grouped.includes('width: 40px') && grouped.includes('height: 40px'),
-      'Preview/PDF must be 40x40 icon buttons on phones');
+      'PDF must be a 40x40 icon button on phones');
     const exportBtn = ruleIn(css640, '#btnExport');
     assert.ok(exportBtn.includes('border-radius: 50%'),
       'PDF keeps its black round look on phones');
