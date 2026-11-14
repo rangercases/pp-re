@@ -1,0 +1,17 @@
+# Dependabot — keep the SHA-pinned GitHub Actions in deploy.yml current.
+# Scope is deliberately narrow (github-actions only, weekly): it opens a
+# small PR whenever actions/checkout or actions/setup-node move, instead of
+# the pins silently going stale. Added 2026-11-14 with the wfx-loot
+# hardening batch; npm updates are intentionally NOT enabled here.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Ho_Chi_Minh"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
