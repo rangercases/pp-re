@@ -7378,6 +7378,7 @@
         <div class="sec-head">
           <span>Product Dimension & Details</span>
           <div style="display:flex; align-items:center; gap:6px;">
+            <button class="dim-head-btn" id="btnDimExcel" onclick="exportDimensionsExcel()" title="Export dimensions to Excel" aria-label="Export dimensions to Excel" style="display:none; padding:0 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path><path d="M9 3v18"></path><path d="M15 3v18"></path></svg></button>
             <button class="dim-head-btn" id="btnDimSelectMode" onclick="toggleDimSelectMode()">SELECT</button>
           </div>
         </div>
@@ -12815,6 +12816,159 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
+    // ── DIMENSIONS → EXCEL (.xlsx), Pre-Production only (Hung, 2026-11-17) ──
+    // Icon button in the Dimensions section head. 4 columns: Name / Drawing /
+    // Actual / Unit. Rows without a name, or with no value at all, are
+    // skipped; no photos are embedded. The .xlsx is assembled by hand
+    // (stored-zip of XML parts) so no library is bundled into the PWA.
+    function collectDimensionExcelRows(dimensions) {
+      const rows = [];
+      (dimensions || []).forEach(d => {
+        const name = String((d && d.name) || '').trim();
+        const drawing = String((d && d.drawing) || '').trim();
+        const actual = String((d && d.actual) || '').trim();
+        if (!name || (!drawing && !actual)) return;
+        const drawingUnit = String((d && d.drawingUnit) || 'mm').trim() || 'mm';
+        const actualUnit = String((d && d.actualUnit) || 'mm').trim() || 'mm';
+        rows.push({
+          name: name,
+          drawing: drawing,
+          actual: actual,
+          unit: drawingUnit === actualUnit ? drawingUnit : drawingUnit + '/' + actualUnit
+        });
+      });
+      return rows;
+    }
+
+    function dimXlsxEscapeXml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function dimXlsxCell(ref, value, isHeader) {
+      const style = isHeader ? ' s="1"' : '';
+      const v = String(value == null ? '' : value).trim();
+      if (/^[-+]?(\d+(\.\d*)?|\.\d+)$/.test(v)) {
+        return '<c r="' + ref + '"' + style + '><v>' + Number(v) + '</v></c>';
+      }
+      return '<c r="' + ref + '"' + style + ' t="inlineStr"><is><t xml:space="preserve">' + dimXlsxEscapeXml(v) + '</t></is></c>';
+    }
+
+    function dimXlsxCrc32(bytes) {
+      if (!dimXlsxCrc32.table) {
+        const table = new Int32Array(256);
+        for (let n = 0; n < 256; n++) {
+          let c = n;
+          for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+          table[n] = c;
+        }
+        dimXlsxCrc32.table = table;
+      }
+      let crc = -1;
+      for (let i = 0; i < bytes.length; i++) {
+        crc = (crc >>> 8) ^ dimXlsxCrc32.table[(crc ^ bytes[i]) & 0xff];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function dimXlsxZipStored(files) {
+      const encoder = new TextEncoder();
+      const chunks = [];
+      const central = [];
+      let offset = 0;
+      const now = new Date();
+      const dosTime = ((now.getHours() & 31) << 11) | ((now.getMinutes() & 63) << 5) | ((now.getSeconds() >> 1) & 31);
+      const dosDate = (((Math.max(1980, now.getFullYear()) - 1980) & 127) << 9) | (((now.getMonth() + 1) & 15) << 5) | (now.getDate() & 31);
+      files.forEach(entry => {
+        const nameBytes = encoder.encode(entry[0]);
+        const data = encoder.encode(entry[1]);
+        const crc = dimXlsxCrc32(data);
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(6, 0x0800, true);
+        local.setUint16(8, 0, true);
+        local.setUint16(10, dosTime, true);
+        local.setUint16(12, dosDate, true);
+        local.setUint32(14, crc, true);
+        local.setUint32(18, data.length, true);
+        local.setUint32(22, data.length, true);
+        local.setUint16(26, nameBytes.length, true);
+        local.setUint16(28, 0, true);
+        chunks.push(new Uint8Array(local.buffer), nameBytes, data);
+        const cen = new DataView(new ArrayBuffer(46));
+        cen.setUint32(0, 0x02014b50, true);
+        cen.setUint16(4, 20, true);
+        cen.setUint16(6, 20, true);
+        cen.setUint16(8, 0x0800, true);
+        cen.setUint16(10, 0, true);
+        cen.setUint16(12, dosTime, true);
+        cen.setUint16(14, dosDate, true);
+        cen.setUint32(16, crc, true);
+        cen.setUint32(20, data.length, true);
+        cen.setUint32(24, data.length, true);
+        cen.setUint16(28, nameBytes.length, true);
+        cen.setUint32(42, offset, true);
+        central.push(new Uint8Array(cen.buffer), nameBytes);
+        offset += 30 + nameBytes.length + data.length;
+      });
+      const centralSize = central.reduce((sum, c) => sum + c.length, 0);
+      const end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, files.length, true);
+      end.setUint16(10, files.length, true);
+      end.setUint32(12, centralSize, true);
+      end.setUint32(16, offset, true);
+      const out = new Uint8Array(offset + centralSize + 22);
+      let pos = 0;
+      chunks.concat(central, [new Uint8Array(end.buffer)]).forEach(c => { out.set(c, pos); pos += c.length; });
+      return out;
+    }
+
+    function buildDimensionsXlsxBytes(rows) {
+      let sheetRows = '<row r="1">' + ['Name', 'Drawing', 'Actual', 'Unit'].map((h, i) => dimXlsxCell('ABCD'[i] + '1', h, true)).join('') + '</row>';
+      rows.forEach((r, idx) => {
+        const n = idx + 2;
+        sheetRows += '<row r="' + n + '">'
+          + dimXlsxCell('A' + n, r.name, false)
+          + dimXlsxCell('B' + n, r.drawing, false)
+          + dimXlsxCell('C' + n, r.actual, false)
+          + dimXlsxCell('D' + n, r.unit, false)
+          + '</row>';
+      });
+      const sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<cols><col min="1" max="1" width="36" customWidth="1"/><col min="2" max="2" width="14" customWidth="1"/><col min="3" max="3" width="14" customWidth="1"/><col min="4" max="4" width="10" customWidth="1"/></cols>'
+        + '<sheetData>' + sheetRows + '</sheetData></worksheet>';
+      const files = [
+        ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+        ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+        ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Dimensions" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+        ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+        ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>'],
+        ['xl/worksheets/sheet1.xml', sheet]
+      ];
+      return dimXlsxZipStored(files);
+    }
+
+    function exportDimensionsExcel() {
+      const rows = collectDimensionExcelRows(D.dimensions);
+      if (!rows.length) {
+        showToast('No dimension data to export');
+        return;
+      }
+      const bytes = buildDimensionsXlsxBytes(rows);
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const prefix = getReportFilePrefix(D);
+      const base = [D.model, D.desc].filter(Boolean).join(' ').replace(/_/g, ' ').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
+      a.href = url;
+      a.download = (prefix ? prefix + ' ' : '') + (base ? base + ' ' : '') + 'Dimensions.xlsx';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Dimensions exported to Excel');
+    }
+
     async function shareReportById(id) {
       try {
         if (typeof flushReport === 'function' && currentId && String(currentId) === String(id)) {
@@ -17215,6 +17369,8 @@
       }
 
       document.querySelectorAll('.tab:not(.add-module-tab-btn)').forEach((t, idx) => t.classList.toggle('active', idx === curSec));
+      const btnDimExcel = document.getElementById('btnDimExcel');
+      if (btnDimExcel) btnDimExcel.style.display = ((D.moduleType || 'pre-production') === 'pre-production') ? 'inline-flex' : 'none';
       const tab = document.getElementById(`tab${curSec}`);
       const pFill = document.getElementById('progressFill');
       if (pFill) pFill.style.width = Math.round(((curSec + 1) / D.modules.length) * 100) + '%';
