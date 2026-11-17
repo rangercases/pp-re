@@ -93,6 +93,12 @@ describe('TC-DIMX: dimensions Excel export', () => {
     assert.ok(text.includes('PK\x05\x06'), 'zip end record present');
   });
 
+  it('TC-DIMX.6: renderAllModuleHeaders re-emits the button when it rebuilds section heads', () => {
+    const body = extractFnBody(indexHtml, 'function renderAllModuleHeaders()', 'renderAllModuleHeaders');
+    assert.ok(body.includes('id="btnDimExcel"'), 'rebuilt dimensions head keeps #btnDimExcel');
+    assert.ok(body.includes('onclick="exportDimensionsExcel()"'), 'rebuilt button stays wired to the export');
+  });
+
   it('TC-DIMX.5: export refuses to download when there is no data', () => {
     const body = extractFnBody(indexHtml, 'function exportDimensionsExcel()', 'exportDimensionsExcel');
     assert.ok(body.includes('collectDimensionExcelRows(D.dimensions)'), 'reads the open report dimensions');
