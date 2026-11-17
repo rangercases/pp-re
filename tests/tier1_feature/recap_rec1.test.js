@@ -105,7 +105,7 @@ describe('TC-REC1.1: buildRecapWatchoutSummary — issue list + tallies', () => 
 
   it('TC-REC1.1.6: the four statuses are exactly the approved set, in order', () => {
     assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.id), ['fix-now', 'fix-next', 'note', 'accepted']);
-    assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.en), ['Fix immediately', 'Fix next sample', 'Take note for mass production', 'Accepted']);
+    assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.en), ['Fix immediately', 'Improve next sample', 'Take note for mass production', 'Accepted']);
     assert.deepEqual(apiEn.WO_ACTIONS.map(a => a.vi), ['Sửa ngay', 'Sửa ở mẫu sau', 'Ghi nhận', 'Chấp nhận']);
     assert.equal(apiEn.WO_ACTION_NONE.en, 'Not decided');
   });
@@ -321,7 +321,7 @@ describe('TC-REC1.4: editor gating and mutation discipline', () => {
   it('TC-REC1.4.6: all new user-facing strings have [VI, EN] pairs', () => {
     const pairs = [
       "['Sửa ngay', 'Fix immediately']",
-      "['Sửa ở mẫu sau', 'Fix next sample']",
+      "['Sửa ở mẫu sau', 'Improve next sample']",
       "['Ghi nhận', 'Take note for mass production']",
       "['Chấp nhận', 'Accepted']",
       "['Chưa xử lý', 'Not decided']",
