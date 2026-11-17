@@ -121,9 +121,9 @@ describe('TC-INH2-F6: hub cards are generated from MODULE_THEMES.hub by one rend
     assert.deepEqual(opens, ['pre-production', 'prototype', 'sample-review-recap'], 'OPEN buttons keep openModule wiring');
   });
 
-  it('TC-INH2-F6.3: [NEW] strips and badges come from config, colours stay per-module', () => {
+  it('TC-INH2-F6.3: badges come from config, colours stay per-module; [NEW] strips removed (Hung, 2026-11-17)', () => {
     const hub = generatedHubHtml();
-    assert.equal(countOccurrences(hub, '[NEW]'), 2, 'only modules 02/03 carry the [NEW] strip');
+    assert.equal(countOccurrences(hub, '[NEW]'), 0, 'no module carries a [NEW] strip anymore');
     assert.ok(!hub.split('cardModulePrototype')[0].includes('[NEW]'), 'module 01 has no [NEW] strip');
     // Badge styles: 02/03 byte-identical to the old hand-written inline styles;
     // 01 now spells out the same colours its class defaults resolved to.
