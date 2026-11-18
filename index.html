@@ -4829,6 +4829,83 @@
       pointer-events: none;
     }
 
+    .import-progress {
+      position: fixed;
+      bottom: calc(150px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(400px, calc(100vw - 32px));
+      background: rgba(18, 18, 20, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #ffffff;
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      z-index: 210;
+      font-family: var(--font-body);
+    }
+
+    .ip-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .ip-file {
+      font-size: 12.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ip-cancel {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .ip-track {
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.18);
+      margin: 10px 0 8px;
+      overflow: hidden;
+    }
+
+    .ip-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 9999px;
+      background: #ffffff;
+      transition: width 0.18s ease;
+    }
+
+    .ip-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .ip-meta #ipPct {
+      font-weight: 700;
+      color: #fff;
+    }
+
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -7967,6 +8044,14 @@
     style="display:none" onchange="handleFile(event)">
 
   <div class="toast" id="toast"></div>
+  <div class="import-progress" id="importProgress" style="display:none">
+    <div class="ip-top">
+      <div class="ip-file" id="ipFileName"></div>
+      <button class="ip-cancel" onclick="ipRequestCancel()" title="Cancel" aria-label="Cancel import"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+    <div class="ip-track"><div class="ip-fill" id="ipFill"></div></div>
+    <div class="ip-meta"><span id="ipStage"></span><span id="ipPct">0%</span></div>
+  </div>
 
   <script>
     // ═══════════════ EMBEDDED BRAND LOGO ═══════════════
@@ -8682,7 +8767,7 @@
       });
     }
 
-    const APP_VERSION = 'v4.7.1';
+    const APP_VERSION = 'v4.8.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -8731,7 +8816,17 @@
       if (!file) return;
       event.target.value = '';
 
+      const ipToken = { cancelled: false };
+      ipShow(file.name, ipToken);
       const reader = new FileReader();
+      ipToken.reader = reader;
+      reader.onprogress = (ev) => {
+        if (ev.lengthComputable) ipUpdate('Reading file…', (ev.loaded / ev.total) * 10);
+      };
+      reader.onabort = () => {
+        ipHide();
+        showToast('Restore cancelled');
+      };
       reader.onload = async (e) => {
         // C-03: parse errors and write errors are handled separately so the
         // user is never told a good file is "corrupt" when storage ran out.
@@ -8747,12 +8842,14 @@
           }
         } catch (parseErr) {
           console.error('Error parsing backup file:', parseErr);
+          ipHide();
           alert('Cannot parse backup file. Please verify JSON format!');
           return;
         }
 
         try {
           if (!reportsToRestore.length) {
+            ipHide();
             alert('Backup file does not contain valid report data!');
             return;
           }
@@ -8761,6 +8858,7 @@
           const existingIds = new Set(existingMetas.map(r => String(r.id)));
           const newCount = reportsToRestore.filter(r => !r.id || !existingIds.has(String(r.id))).length;
           if (existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
+            ipHide();
             alert(
               `App limit is ${MAX_LOCAL_REPORTS} reports.\n\nThis backup would bring the app to ${existingMetas.length + newCount} reports.\nDelete some reports in the app or use a smaller backup and try again.`
             );
@@ -8779,17 +8877,25 @@
               }
             }
           } catch (estErr) { /* estimate is best-effort only */ }
-          if (!confirm(confirmMsg)) return;
+          if (!confirm(confirmMsg)) { ipHide(); return; }
 
           showToast('Restoring data...');
           let count = 0;
           let failedAt = -1;
+          let restoreCancelled = false;
           let failReason = '';
           for (let ri = 0; ri < reportsToRestore.length; ri++) {
             const rep = reportsToRestore[ri];
             try {
               if (!rep.id) rep.id = 'pp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-              const normalizedRep = await normalizeReportPhotos(rep);
+              const repTitle = getReportTitle(rep).trim() || 'Untitled report';
+              const ipBase = 10 + (ri / reportsToRestore.length) * 85;
+              ipUpdate(`Report ${ri + 1}/${reportsToRestore.length} — ${repTitle}…`, ipBase);
+              const normalizedRep = await normalizeReportPhotos(rep, {
+                token: ipToken,
+                onProgress: (done, total) => ipUpdate(`Report ${ri + 1}/${reportsToRestore.length} — photos ${done}/${total}…`, ipBase + (total ? (done / total) * (85 / reportsToRestore.length) : 0))
+              });
+              if (ipToken.cancelled) { restoreCancelled = true; break; }
               await dbPut(normalizedRep);
               count++;
             } catch (writeErr) {
@@ -8802,15 +8908,22 @@
             }
           }
           await renderHome();
-          if (failedAt === -1) {
+          if (restoreCancelled) {
+            ipHide();
+            showToast(count ? `Restore cancelled — ${count} report(s) kept` : 'Restore cancelled');
+          } else if (failedAt === -1) {
+            ipUpdate('Saving…', 100);
+            ipHide();
             showToast(`✓ Successfully restored ${count} report(s)!`);
           } else {
+            ipHide();
             const failedTitle = getReportTitle(reportsToRestore[failedAt] || {}).trim() || '(untitled)';
             alert(
               `Restore stopped partway.\n\nRestored ${count} of ${reportsToRestore.length} report(s).\nStopped at report ${failedAt + 1} ("${failedTitle}") because ${failReason}.\n\nReports restored so far have been kept. Free up space or split the backup file, then restore the remaining reports.`
             );
           }
         } catch (err) {
+          ipHide();
           console.error('Error restoring backup file:', err);
           alert('Restore failed: ' + ((err && err.message) || err));
         }
@@ -9159,7 +9272,53 @@
     }
 
     // Chuẩn hóa toàn bộ ảnh trong một báo cáo (khi nhập JSON / khôi phục) để tránh vượt quá hạn mức quota lưu trữ
-    async function normalizeReportPhotos(rep) {
+    // ── IMPORT / RESTORE PROGRESS (v4.8.0) ──
+    // One floating card for every JSON import/restore, in the style of the
+    // big apps: file name, current stage, percent. Phases: reading the
+    // file (FileReader progress), processing photos (normalizeReportPhotos
+    // callbacks), saving. The ✕ button flags the active token; readers
+    // abort and processing loops stop between items — a cancelled single
+    // import saves nothing, a cancelled restore keeps restored reports.
+    let activeIpToken = null;
+
+    function ipShow(fileName, token) {
+      activeIpToken = token || null;
+      const card = document.getElementById('importProgress');
+      if (!card) return;
+      const nameEl = document.getElementById('ipFileName');
+      if (nameEl) nameEl.textContent = fileName || '';
+      card.style.display = 'block';
+      ipUpdate('Reading file…', 0);
+    }
+
+    function ipUpdate(stage, pct) {
+      const card = document.getElementById('importProgress');
+      if (!card || card.style.display === 'none') return;
+      const p = Math.max(0, Math.min(100, Math.round(pct || 0)));
+      const fill = document.getElementById('ipFill');
+      if (fill) fill.style.width = p + '%';
+      const stageEl = document.getElementById('ipStage');
+      if (stageEl && stage) stageEl.textContent = stage;
+      const pctEl = document.getElementById('ipPct');
+      if (pctEl) pctEl.textContent = p + '%';
+    }
+
+    function ipHide() {
+      const card = document.getElementById('importProgress');
+      if (card) card.style.display = 'none';
+      activeIpToken = null;
+    }
+
+    function ipRequestCancel() {
+      if (!activeIpToken) return;
+      activeIpToken.cancelled = true;
+      if (activeIpToken.reader) {
+        try { activeIpToken.reader.abort(); } catch (e) { /* already done */ }
+      }
+      ipUpdate('Cancelling…');
+    }
+
+    async function normalizeReportPhotos(rep, opts) {
       if (!rep || typeof rep !== 'object') return rep;
       try {
         // TB-01: normalize one photo record's image fields (all of them, not
@@ -9189,9 +9348,12 @@
           }
         };
 
+        // Collect every photo record first (same traversal as before) so
+        // importers can report progress and cancel between items (v4.8.0).
+        const ipItems = [];
         if (rep.coverPhotos && typeof rep.coverPhotos === 'object') {
           for (const k of Object.keys(rep.coverPhotos)) {
-            await normItem(rep.coverPhotos[k]);
+            ipItems.push(rep.coverPhotos[k]);
           }
         }
 
@@ -9208,9 +9370,18 @@
         for (const arrKey of arrayKeys) {
           if (Array.isArray(rep[arrKey])) {
             for (const p of rep[arrKey]) {
-              await normItem(p);
+              ipItems.push(p);
             }
           }
+        }
+        const ipOnProgress = opts && opts.onProgress;
+        const ipToken = opts && opts.token;
+        let ipDone = 0;
+        for (const p of ipItems) {
+          if (ipToken && ipToken.cancelled) break;
+          await normItem(p);
+          ipDone++;
+          if (ipOnProgress) ipOnProgress(ipDone, ipItems.length);
         }
       } catch (err) {
         console.warn('Image normalization error:', err);
@@ -12659,6 +12830,8 @@
 
     // ═══════════════ APP LOGIC & IMPORT JSON ═══════════════
     let pendingImportData = null;
+    let pendingIpToken = null;
+    let pendingIpFileName = '';
     let pendingExistingReport = null;
     let pendingCopySuffix = '(1)';
 
@@ -12679,7 +12852,20 @@
       try {
         const willGrow = !(isReplace && pendingExistingReport);
         if (willGrow && !(await ensureLocalReportCapacity())) return;
-        const normalizedData = await normalizeReportPhotos(data);
+        const ipToken = pendingIpToken || { cancelled: false };
+        ipShow(pendingIpFileName || 'JSON report', ipToken);
+        ipUpdate('Processing…', 20);
+        const normalizedData = await normalizeReportPhotos(data, {
+          token: ipToken,
+          onProgress: (done, total) => ipUpdate(total > 1 ? `Processing photos ${done}/${total}…` : 'Processing…', 20 + (total ? (done / total) * 75 : 75))
+        });
+        if (ipToken.cancelled) {
+          pendingIpToken = null;
+          ipHide();
+          closeImportConflictModal();
+          showToast('Import cancelled');
+          return;
+        }
         if (isReplace && pendingExistingReport) {
           normalizedData.id = pendingExistingReport.id;
           await dbPut(normalizedData);
@@ -12703,11 +12889,15 @@
           }
           await dbPut(normalizedData);
         }
+        pendingIpToken = null;
+        ipUpdate('Saving…', 100);
+        ipHide();
         closeImportConflictModal();
         await renderHome();
         openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
+        ipHide();
         alert('Error saving report: ' + err.message);
       }
     }
@@ -13015,6 +13205,12 @@
     async function processJsonData(data, opts) {
       try {
         const openHandle = (opts && opts.fileHandle) || null;
+        // Import progress (v4.8.0): file readers pass a token + file name;
+        // paste / drag-drop callers get a card of their own, so a big
+        // import never looks like a frozen app.
+        const ipToken = (opts && opts.ipToken) || { cancelled: false };
+        if (!(opts && opts.ipToken)) ipShow((opts && opts.ipFileName) || 'JSON report', ipToken);
+        ipUpdate('Processing…', 20);
         const existingReports = await dbGetAllMetadata();
 
         if (openHandle) {
@@ -13026,7 +13222,7 @@
             );
             if (!proceed) return;
           }
-          if (!local && !(await ensureLocalReportCapacity())) return;
+          if (!local && !(await ensureLocalReportCapacity())) { ipHide(); return; }
         } else {
           const targetTitle = getReportTitle(data).trim();
           const isNamed = targetTitle && targetTitle.toLowerCase() !== 'untitled report';
@@ -13050,6 +13246,9 @@
             if (newNameEl) newNameEl.textContent = `copy ${pendingCopySuffix}`;
             if (btnCopy) btnCopy.textContent = `Create Copy ${pendingCopySuffix}`;
 
+            pendingIpToken = ipToken;
+            pendingIpFileName = (opts && opts.ipFileName) || 'JSON report';
+            ipHide();
             const m = document.getElementById('importConflictModal');
             if (m) m.classList.remove('hidden');
             return;
@@ -13060,13 +13259,21 @@
           if (!data.id || isIdConflict) {
             data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
           }
-          if (!(await ensureLocalReportCapacity())) return;
+          if (!(await ensureLocalReportCapacity())) { ipHide(); return; }
         }
 
         delete data.archiveFolder;
         delete data._fileDirty;
         delete data._fileSavedAt;
-        const normalizedData = await normalizeReportPhotos(data);
+        const normalizedData = await normalizeReportPhotos(data, {
+          token: ipToken,
+          onProgress: (done, total) => ipUpdate(total > 1 ? `Processing photos ${done}/${total}…` : 'Processing…', 20 + (total ? (done / total) * 75 : 75))
+        });
+        if (ipToken.cancelled) {
+          ipHide();
+          showToast('Import cancelled');
+          return;
+        }
         if (openHandle) {
           normalizedData._fileDirty = false;
           normalizedData._fileSavedAt = Date.now();
@@ -13083,11 +13290,14 @@
           return;
         }
         if (openHandle) await filePersistHandle(normalizedData.id, openHandle);
+        ipUpdate('Saving…', 100);
+        ipHide();
         showToast(openHandle ? '✓ File opened' : '✓ Report imported successfully!');
         await renderHome();
         openReport(normalizedData.id);
       } catch (err) {
         console.error(err);
+        ipHide();
         alert('Import error: ' + ((err && err.message) || 'Unknown error'));
       }
     }
@@ -13170,12 +13380,24 @@
     function importReport(e) {
       const file = e.target.files[0];
       if (!file) return;
+      const ipToken = { cancelled: false };
+      ipShow(file.name, ipToken);
       const reader = new FileReader();
+      ipToken.reader = reader;
+      reader.onprogress = (ev) => {
+        if (ev.lengthComputable) ipUpdate('Reading file…', (ev.loaded / ev.total) * 20);
+      };
+      reader.onabort = () => {
+        ipHide();
+        showToast('Import cancelled');
+      };
       reader.onload = async (ev) => {
         try {
           const data = JSON.parse(ev.target.result);
-          await processJsonData(data);
+          ipUpdate('Processing…', 20);
+          await processJsonData(data, { ipToken: ipToken, ipFileName: file.name });
         } catch (err) {
+          ipHide();
           console.error(err);
           alert('Import error: Invalid JSON file format!');
         }
@@ -18519,7 +18741,7 @@
       try {
         const file = await handle.getFile();
         const data = JSON.parse(await file.text());
-        await processJsonData(data, { fileHandle: handle });
+        await processJsonData(data, { fileHandle: handle, ipFileName: handle.name || 'JSON report' });
       } catch (err) {
         console.error(err);
         alert('Open error: invalid or unreadable JSON.');
@@ -22053,7 +22275,7 @@
     initI18n();
     bootAuth();
   </script>
-  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.85);background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 7px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">[V4.7.1]</div>
+  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.85);background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 7px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">[V4.8.0]</div>
 </body>
 
 </html>
