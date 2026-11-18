@@ -7364,6 +7364,15 @@
     <div id="moduleWorkspaceView" style="display:none;">
       <!-- Main Workspace Content Container (Balanced & Centered) -->
       <div class="workspace-body">
+        <!-- DISK K1 (v4.9.0): folder connect for non-admin disk mode (read-from-disk) -->
+        <div id="diskConnectPanel" style="display:none; margin-bottom:16px; padding:20px 16px; border:1px dashed var(--line-strong); border-radius:14px; text-align:center;">
+          <button type="button" class="new-btn primary-cta compact" id="btnDiskChooseFolder" onclick="diskChooseFolder()" style="margin:0 auto 10px;">CHOOSE FOLDER</button>
+          <div style="font-size:12px; color:var(--ink-soft);">Tip: create a dedicated folder, e.g. Documents\FASREP</div>
+        </div>
+        <div id="diskReconnectStrip" style="display:none; margin-bottom:12px; padding:8px 8px 8px 14px; border:1px solid var(--line); border-radius:10px; background:var(--card); align-items:center; gap:10px;">
+          <span style="flex:1; font-size:12px;">Folder needs reconnecting</span>
+          <button type="button" class="new-btn sub-action-btn compact" onclick="diskReconnectFolder()">CONNECT</button>
+        </div>
         <!-- Action Buttons (2 buttons on 1 row) -->
         <div class="workspace-actions-row" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:stretch;">
           <button class="new-btn primary-cta compact" id="btnNewReport" onclick="newReport()">
@@ -13894,14 +13903,38 @@
 
     async function renderHome() {
       try {
-        reports = await dbGetAllMetadata();
+        // DISK K1 (v4.9.0): a non-admin user on a File-System-capable browser
+        // reads the report list from the connected disk folder instead of
+        // IndexedDB. Admins (and unsupported browsers) keep the IDB path.
+        const diskActive = diskK1Active();
+        let diskConnected = false;
+        if (diskActive) {
+          await fsInit();
+          if (fsDirHandle) diskConnected = await fsEnsurePermission(fsDirHandle, false);
+          if (diskConnected) {
+            reports = await diskListMetas();
+            diskCacheMetas(reports);
+          } else {
+            // No folder yet, or permission pending: show the last cached
+            // disk list read-only (rows ask for a reconnect on click).
+            reports = diskReadCachedMetas();
+          }
+        } else {
+          reports = await dbGetAllMetadata();
+        }
+        renderDiskFolderUi(diskConnected);
 
         const limitEl = document.getElementById('localReportLimitText');
         if (limitEl) {
           const total = reports.length;
-          const over = total >= MAX_LOCAL_REPORTS;
-          limitEl.textContent = L(`${total}/${MAX_LOCAL_REPORTS} trên máy này`, `${total}/${MAX_LOCAL_REPORTS} on this device`) + (over ? ' — limit reached, back up and delete some' : '');
-          limitEl.style.color = over ? 'var(--warn)' : 'var(--ink-soft)';
+          if (diskActive) {
+            limitEl.textContent = L(`${total} trên đĩa`, `${total} on disk`);
+            limitEl.style.color = 'var(--ink-soft)';
+          } else {
+            const over = total >= MAX_LOCAL_REPORTS;
+            limitEl.textContent = L(`${total}/${MAX_LOCAL_REPORTS} trên máy này`, `${total}/${MAX_LOCAL_REPORTS} on this device`) + (over ? ' — limit reached, back up and delete some' : '');
+            limitEl.style.color = over ? 'var(--warn)' : 'var(--ink-soft)';
+          }
         }
 
         const getReportModKey = r => {
@@ -14127,6 +14160,9 @@
               else selectedReportIds.add(id);
               if (domIdx !== -1) lastReportIndex = domIdx;
               updateBatchUI();
+            } else if (r._diskFolder) {
+              if (diskConnected) openDiskReport(r);
+              else showToast(L('Kết nối lại thư mục để mở báo cáo', 'Reconnect the folder to open reports'), 3500);
             } else {
               openReport(r.id);
             }
@@ -19127,7 +19163,7 @@
       await fsRenderArchiveList();
     }
 
-    async function fsHydratePayload(meta, folderName, photosDir) {
+    async function fsHydratePayload(meta, folderName, photosDir, onProgress) {
       const files = (meta._archive && meta._archive.files) || {};
       const payload = Object.assign({}, meta);
       delete payload._archive;
@@ -19138,6 +19174,11 @@
       // {f: 'file'} reference object survive into the payload that gets saved
       // to IndexedDB — missing photos become null and are reported to the user.
       const missingFiles = [];
+      const noteProgress = () => {
+        if (typeof onProgress === 'function') {
+          try { onProgress(); } catch (err) { }
+        }
+      };
       const noteMissing = (ref) => {
         if (ref && ref.f && !missingFiles.includes(ref.f)) missingFiles.push(ref.f);
       };
@@ -19156,12 +19197,13 @@
           for (const name of slot.names) {
             const ref = info[name];
             if (!ref || !ref.f) continue;
-            if (!photosDir) { noteMissing(ref); continue; }
+            if (!photosDir) { noteMissing(ref); noteProgress(); continue; }
             try {
               const data = await fsReadFileAsDataUrl(photosDir, ref.f);
               if (data) slot.rec[name] = data;
               else noteMissing(ref);
             } catch (err) { console.warn('[Archive] missing photo file', ref.f, err); noteMissing(ref); }
+            noteProgress();
           }
         }
         scrubRefs(slot);
@@ -19183,6 +19225,7 @@
               if (data) slot.rec[name] = data;
               else noteMissing(ref);
             } catch (err) { console.warn('[Archive] missing doc file', ref.f, err); noteMissing(ref); }
+            noteProgress();
           }
         } else if (info) {
           Object.values(info).forEach(noteMissing);
@@ -19246,6 +19289,164 @@
       } catch (err) {
         console.warn('[Archive] restore failed', err);
         showToast('Restore error: ' + (err.message || err), 4000);
+      }
+    }
+
+    /* ============ DISK K1 (v4.9.0): READ REPORTS FROM THE USER'S DISK FOLDER ============ */
+    // Non-admin users on Chrome/Edge: the home list comes from the folder
+    // they connected (the same on-disk format as the legacy archive — one
+    // folder per report, report.json + photos/), and opening a report
+    // hydrates it into IndexedDB as a working copy stamped with its disk
+    // origin. Saving in K1 still uses the old IDB path; write-back to disk
+    // is K2. Admins never enter this code path (diskK1Active gate).
+
+    function diskK1Active() {
+      return !!(currentUser && currentUser.role !== 'admin' && fsSupported);
+    }
+
+    function diskMetaFromArchiveItem(item) {
+      const m = (item && item.meta) || {};
+      const files = (m._archive && m._archive.files) || null;
+      let photoCount = 0;
+      if (files) {
+        Object.keys(files).forEach(k => {
+          const info = files[k];
+          if (info && Object.keys(info).some(n => !!(info[n] && info[n].f))) photoCount++;
+        });
+      } else {
+        fsCollectSlots(m).forEach(slot => {
+          const filled = slot.names.some(n => {
+            const v = slot.rec[n];
+            return (typeof v === 'string' && v.length > 0) || !!(v && typeof v === 'object' && typeof v.f === 'string');
+          });
+          if (filled) photoCount++;
+        });
+      }
+      const isLegacyProto = !m.moduleType && ((((m.reportTitle || '') + ' ' + (m.model || '') + ' ' + (m.desc || '')).toUpperCase().includes('PROTOTYPE')));
+      return {
+        id: m.id,
+        moduleType: m.moduleType || (isLegacyProto ? 'prototype' : 'pre-production'),
+        reportTitle: m.reportTitle || '',
+        model: m.model || '',
+        desc: m.desc || '',
+        date: m.date || '',
+        factory: m.factory || '',
+        reviewer: m.reviewer || '',
+        updatedAt: m.updatedAt || (m._archive && m._archive.savedAt) || m.date || '',
+        _fileDirty: false,
+        photoCount: photoCount,
+        thumbSrc: '',
+        coverPhotos: {},
+        _diskFolder: item ? item.name : ''
+      };
+    }
+
+    async function diskListMetas() {
+      const items = await fsListArchiveReports();
+      return items.map(diskMetaFromArchiveItem);
+    }
+
+    function diskMetasCacheKey() {
+      return 'fasrep.diskMetas.' + ((currentUser && currentUser.id != null) ? currentUser.id : 'anon');
+    }
+
+    function diskCacheMetas(metas) {
+      try { localStorage.setItem(diskMetasCacheKey(), JSON.stringify(metas || [])); } catch (err) { }
+    }
+
+    function diskReadCachedMetas() {
+      try {
+        const raw = localStorage.getItem(diskMetasCacheKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (err) { return []; }
+    }
+
+    function renderDiskFolderUi(connected) {
+      const panel = document.getElementById('diskConnectPanel');
+      const strip = document.getElementById('diskReconnectStrip');
+      if (!panel || !strip) return;
+      if (!diskK1Active()) {
+        panel.style.display = 'none';
+        strip.style.display = 'none';
+        return;
+      }
+      if (!fsDirHandle) {
+        panel.style.display = 'block';
+        strip.style.display = 'none';
+      } else if (!connected) {
+        panel.style.display = 'none';
+        strip.style.display = 'flex';
+      } else {
+        panel.style.display = 'none';
+        strip.style.display = 'none';
+      }
+    }
+
+    async function diskChooseFolder() {
+      const hadFolder = !!fsDirHandle;
+      const ok = await fsPickFolder();
+      if (!ok) return;
+      if (!hadFolder) {
+        showToast('Your reports will live in this folder, on this computer only.', 6000);
+      }
+      renderHome();
+    }
+
+    async function diskReconnectFolder() {
+      if (!fsDirHandle) return;
+      const ok = await fsEnsurePermission(fsDirHandle, true);
+      if (ok) renderHome();
+      else showToast(L('Chưa được cấp quyền truy cập thư mục', 'Folder access was not granted'), 4000);
+    }
+
+    async function openDiskReport(meta) {
+      if (!meta || !meta._diskFolder || !fsDirHandle) return;
+      const granted = await fsEnsurePermission(fsDirHandle, true);
+      if (!granted) {
+        showToast(L('Không có quyền truy cập thư mục', 'No permission to access the folder'), 4000);
+        return;
+      }
+      let rawMeta = null;
+      let photosDir = null;
+      try {
+        const folder = await fsDirHandle.getDirectoryHandle(meta._diskFolder, { create: false });
+        rawMeta = await fsReadReportJson(folder);
+        if (!rawMeta || !rawMeta.id) throw new Error('Invalid report.json');
+        try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); } catch (err) { }
+      } catch (err) {
+        showToast(L('Không đọc được báo cáo từ đĩa', 'Could not read the report from disk'), 4000);
+        return;
+      }
+      const token = {};
+      ipShow(meta._diskFolder, token);
+      try {
+        const files = (rawMeta._archive && rawMeta._archive.files) || {};
+        let totalRefs = 0;
+        Object.keys(files).forEach(k => {
+          const info = files[k];
+          if (info) Object.keys(info).forEach(n => { if (info[n] && info[n].f) totalRefs++; });
+        });
+        let doneRefs = 0;
+        ipUpdate(L('Đang mở báo cáo…', 'Opening report…'), 0);
+        const payload = await fsHydratePayload(rawMeta, meta._diskFolder, photosDir, () => {
+          doneRefs++;
+          ipUpdate(L('Đang mở báo cáo…', 'Opening report…'), totalRefs ? Math.round((doneRefs / totalRefs) * 100) : 100);
+        });
+        const missingFiles = payload.__missingArchiveFiles || [];
+        delete payload.__missingArchiveFiles;
+        payload._diskFolder = meta._diskFolder;
+        payload._diskName = fsDirHandle.name || '';
+        await dbPut(payload);
+        ipHide();
+        if (missingFiles.length) {
+          showToast(L(`${missingFiles.length} tệp ảnh bị thiếu trong thư mục — những ảnh đó sẽ trống`, `${missingFiles.length} photo file(s) are missing from the folder — those photos will be empty`), 6000);
+        }
+        await openReport(payload.id);
+      } catch (err) {
+        ipHide();
+        console.warn('[Disk] open failed', err);
+        showToast(L('Không mở được báo cáo từ đĩa', 'Could not open the report from disk'), 4000);
       }
     }
 
@@ -22290,6 +22491,14 @@
       ['Báo cáo lưu trên máy này', 'Local reports found'],
       ['Sao chép vào tài khoản của tôi', 'Copy to my account'],
       ['Bỏ qua', 'Skip'],
+      // DISK K1 (v4.9.0): folder connect + read-from-disk strings
+      ['Chọn thư mục', 'CHOOSE FOLDER'],
+      ['Mẹo: hãy tạo một thư mục riêng, ví dụ Documents\\FASREP', 'Tip: create a dedicated folder, e.g. Documents\\FASREP'],
+      ['Thư mục cần kết nối lại', 'Folder needs reconnecting'],
+      ['Kết nối', 'CONNECT'],
+      ['Báo cáo của bạn sẽ nằm trong thư mục này, chỉ trên máy tính này.', 'Your reports will live in this folder, on this computer only.'],
+      ['Kết nối lại thư mục để mở báo cáo', 'Reconnect the folder to open reports'],
+      ['Đang mở báo cáo…', 'Opening report…'],
       // POP-1 (v4.0.3): in-app dialogs for tab conflicts & the report limit
       ['Báo cáo đã bị thay đổi ở tab khác', 'Report changed in another tab'],
       ['Vẫn ghi đè', 'Overwrite anyway'],
