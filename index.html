@@ -22412,7 +22412,6 @@
     // ─── PHẠM VI DỮ LIỆU THEO TÀI KHOẢN ───
     const AUTH_LEGACY_DB_NAME = 'SofaCompanyPP_DB_Lite';
     const AUTH_FS_BASE_NAME = 'SofaCompanyPP_FS';
-    const AUTH_LEGACY_PROMPT_KEY = 'fasrep.legacyPrompted.v1';
 
     function scopedStorageKey(key) {
       return (currentUser && currentUser.id != null) ? key + '::' + currentUser.id : key;
@@ -22422,82 +22421,6 @@
       const suffix = (user && user.id != null) ? '::' + user.id : '';
       DB_NAME = AUTH_LEGACY_DB_NAME + suffix;
       FS_DB_NAME = AUTH_FS_BASE_NAME + suffix;
-    }
-
-    function openIdbByName(name) {
-      return new Promise((res, rej) => {
-        const req = indexedDB.open(name);
-        req.onsuccess = () => res(req.result);
-        req.onerror = () => rej(req.error);
-      });
-    }
-
-    function idbGetAll(dbRef, storeName) {
-      return new Promise((res, rej) => {
-        if (!dbRef.objectStoreNames.contains(storeName)) { res([]); return; }
-        const tx = dbRef.transaction(storeName, 'readonly');
-        const req = tx.objectStore(storeName).getAll();
-        req.onsuccess = () => res(req.result || []);
-        req.onerror = () => rej(req.error);
-      });
-    }
-
-    async function countLegacyReports() {
-      if (!('databases' in indexedDB)) return null;
-      try {
-        const dbs = await indexedDB.databases();
-        if (!dbs.some(d => d && d.name === AUTH_LEGACY_DB_NAME)) return 0;
-      } catch (err) {
-        return null;
-      }
-      let legacyDb = null;
-      try {
-        legacyDb = await openIdbByName(AUTH_LEGACY_DB_NAME);
-        const reports = await idbGetAll(legacyDb, STORE_NAME);
-        return reports.length;
-      } finally {
-        if (legacyDb) legacyDb.close();
-      }
-    }
-
-    // Chỉ hỏi một lần trên mỗi thiết bị; dữ liệu gốc không bị xoá.
-    async function maybeOfferLegacyMigration(user) {
-      if (!user || user.id == null) return;
-      try {
-        if (localStorage.getItem(AUTH_LEGACY_PROMPT_KEY)) return;
-      } catch (err) { return; }
-      const count = await countLegacyReports();
-      if (count == null) return;
-      try { localStorage.setItem(AUTH_LEGACY_PROMPT_KEY, '1'); } catch (err) { }
-      const copy = await appConfirm(
-        L(
-          'Máy này có ' + count + ' báo cáo được lưu trước khi bạn đăng nhập. Sao chép vào tài khoản của bạn?',
-          'This device has ' + count + ' report(s) saved before you signed in. Copy them into your account?'
-        ),
-        { title: 'Local reports found', confirmLabel: 'Copy to my account', cancelLabel: 'Skip' }
-      );
-      if (!copy) return;
-      let legacyDb = null;
-      let copied = 0;
-      try {
-        legacyDb = await openIdbByName(AUTH_LEGACY_DB_NAME);
-        const reports = await idbGetAll(legacyDb, STORE_NAME);
-        for (const report of reports) {
-          if (!report || report.id == null) continue;
-          const existing = await dbGet(report.id);
-          if (existing) continue;
-          await dbPut(report);
-          copied++;
-        }
-      } catch (err) {
-        console.error('Legacy report migration error:', err);
-        showToast('Could not copy all legacy data');
-        return;
-      } finally {
-        if (legacyDb) legacyDb.close();
-      }
-      if (copied > 0) showToast('Copied ' + copied + ' report(s) into this account');
-      else showToast('Old reports are already in this account');
     }
 
     // ── Device gate: phones & tablets are admin-only; other accounts are laptop/desktop only ──
@@ -22533,7 +22456,6 @@
       appInitialized = true;
       prepareUserStorage(currentUser);
       initDB().then(async () => {
-        try { await maybeOfferLegacyMigration(currentUser); } catch (err) { console.warn('Legacy migration skipped', err); }
         renderHome();
         // A-01: merge with the cloud copy for this account (best-effort).
         if (typeof cloudPullAndMerge === 'function') cloudPullAndMerge();
@@ -23256,8 +23178,6 @@
       ['Đang lưu…', 'Saving…'],
       ['Xoá ô ảnh?', 'Delete photo slot?'],
       ['Xoá ô ảnh này và nội dung bên trong?', 'Delete this photo slot and its contents?'],
-      ['Báo cáo lưu trên máy này', 'Local reports found'],
-      ['Sao chép vào tài khoản của tôi', 'Copy to my account'],
       ['Bỏ qua', 'Skip'],
       // DISK K1 (v4.9.0): folder connect + read-from-disk strings
       ['Chọn thư mục', 'CHOOSE FOLDER'],

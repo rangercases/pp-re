@@ -44,7 +44,7 @@ check('no Import Recent Dimensions button in bundle', !html.includes('btnCopyDim
 check('no drag-mode-segmented buttons in module headers', !html.includes('drag-mode-segmented'));
 check('single-file bundle has auth boot gate', html.includes('function bootAuth'));
 check('single-file bundle scopes storage per account', html.includes('prepareUserStorage'));
-check('single-file bundle offers legacy migration', html.includes('maybeOfferLegacyMigration'));
+check('no legacy migration prompt in bundle', !html.includes('maybeOfferLegacyMigration'));
 check('single-file bundle has two-step signup', html.includes('submitSignupVerify'));
 check('single-file bundle calls signup request API', html.includes('/api/auth/signup/request'));
 check('single-file bundle calls signup verify API', html.includes('/api/auth/signup/verify'));
