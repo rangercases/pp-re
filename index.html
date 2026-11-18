@@ -267,6 +267,14 @@
       display: none;
     }
 
+    /* DISK K2 (v4.10.0): the disk save state reuses the topbar save-state
+       slot; the failed state is a tappable retry. */
+    .disk-save-state.failed {
+      color: #d32f2f;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
     /* S1: the corner version mark must not paint over the editor or any
        open modal/overlay (it sits at z-index 900, above both).
        S3 (v4.3.0): same treatment while the batch bar is up — select
@@ -7247,6 +7255,7 @@
       <span class="file-dirty-dot" id="fileDirtyDot" style="display:none"
         title="Unsaved changes">●</span>
       <span class="save-state-text" id="saveStateText" aria-live="polite"></span>
+      <span class="save-state-text disk-save-state" id="diskSaveState" style="display:none" onclick="diskSaveStateClicked()"></span>
     </div>
 
     <div class="topbar-actions">
@@ -12358,8 +12367,16 @@
       let failedCount = 0;
       for (const id of selectedReportIds) {
         try {
-          await dbDelete(id);
-          if (typeof cloudDeleteReport === 'function') cloudDeleteReport(id);
+          // DISK K2: a selected disk report deletes by moving its folder
+          // to _Trash; the IDB-only path below would leave the folder (and
+          // the report) behind on the next disk scan.
+          const diskMeta = reports.find(x => x && String(x.id) === String(id) && x._diskFolder);
+          if (diskMeta) {
+            if (!(await diskTrashReport(diskMeta))) { failedCount++; continue; }
+          } else {
+            await dbDelete(id);
+            if (typeof cloudDeleteReport === 'function') cloudDeleteReport(id);
+          }
           deletedCount++;
         } catch (err) {
           failedCount++;
@@ -13050,6 +13067,10 @@
       delete cloned._fileDirty;
       delete cloned._fileSavedAt;
       delete cloned.archiveFolder;
+      // DISK K2: the copy starts life as an in-app report; it must never
+      // write back into the source report's disk folder.
+      delete cloned._diskFolder;
+      delete cloned._diskName;
 
       const allReports = await dbGetAllMetadata();
       const baseTitle = getReportTitle(cloned).trim();
@@ -13581,6 +13602,7 @@
       currentId = null; curSec = 0;
       D = {}; // Thu hồi toàn bộ bộ nhớ của báo cáo cũ khi ra trang chủ
       fileUpdateDot();
+      if (typeof diskRenderSaveState === 'function') diskRenderSaveState();
       document.body.classList.remove('in-editor');
       document.getElementById('homeScreen').classList.add('active');
       document.getElementById('editScreen').classList.remove('active');
@@ -14112,14 +14134,18 @@
           if (shareBtn) {
             shareBtn.onclick = (e) => {
               e.stopPropagation();
-              shareReportById(r.id);
+              // DISK K2: an unopened disk report hydrates into a working
+              // copy first, then the normal share flow runs on it.
+              if (r._diskFolder) diskHydrateThen(r, () => shareReportById(r.id));
+              else shareReportById(r.id);
             };
           }
           const dupBtn = d.querySelector('.btn-dup-report');
           if (dupBtn) {
             dupBtn.onclick = (e) => {
               e.stopPropagation();
-              duplicateReportById(r.id);
+              if (r._diskFolder) diskHydrateThen(r, () => duplicateReportById(r.id));
+              else duplicateReportById(r.id);
             };
           }
           const delBtn = d.querySelector('.btn-del-report');
@@ -14128,6 +14154,14 @@
               e.stopPropagation();
               const title = getReportTitle(r) || 'this report';
               if (!(await appConfirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`, { title: 'Delete report?' }))) return;
+              if (r._diskFolder) {
+                // DISK K2: deleting a disk report moves its folder into the
+                // _Trash subfolder (recoverable from Explorer), it does not
+                // just drop the IndexedDB working copy.
+                await diskTrashReport(r);
+                renderHome();
+                return;
+              }
               try {
                 await dbDelete(r.id);
                 if (typeof cloudDeleteReport === 'function') cloudDeleteReport(r.id);
@@ -18387,6 +18421,10 @@
       cancelTimerOnly();
       syncReportFieldsFromDOM();
       if (!currentId || !D || !D.id) return;
+      // DISK K2: flush any pending disk write too (leaving the editor,
+      // switching reports, signing out). Disk failures surface in the
+      // save-state text, never by blocking navigation.
+      try { await diskFlushSave(false); } catch (err) { }
       if (!hasUnsavedChanges()) return;
 
       // Synchronous safety net for tabs that are killed before IndexedDB commits.
@@ -18422,6 +18460,7 @@
       if (!currentId || !D || !D.id) return;
       saveReportSafe(D).catch(() => {});
       markFileDirty();
+      diskScheduleSave();
     }
 
     function as() {
@@ -18437,6 +18476,7 @@
         saveDraftSnapshot(D);
       }
 
+      diskScheduleSave();
       cancelTimerOnly();
       // Writing tens of MB while jsPDF/Safari is exporting can abort the
       // IndexedDB transaction, so hold autosave until the export finishes.
@@ -18449,6 +18489,7 @@
     function scheduleBlurSave() {
       if (!currentId || !D) return;
       if (isPdfExporting) return;
+      diskScheduleSave();
       if (blurSaveTimer) clearTimeout(blurSaveTimer);
       blurSaveTimer = setTimeout(() => {
         saveReportSafe().catch(() => {});
@@ -18556,6 +18597,7 @@
         if (wrapEl) wrapEl.scrollLeft = 0;
         document.getElementById('saveBar').style.display = 'flex'; updateTopbar(); initTouchSwipeNavigation(); window.scrollTo(0, 0);
         fileEnsureHandle().then(fileUpdateDot).catch(() => { });
+        if (typeof diskRenderSaveState === 'function') diskRenderSaveState();
       } catch (err) {
         alert("Error opening report: " + err.message);
       }
@@ -18599,7 +18641,14 @@
     async function newReport() {
       try {
         if (typeof flushReport === 'function') await flushReport();
-        if (!(await ensureLocalReportCapacity())) return;
+        if (diskK1Active()) {
+          // DISK K2: a disk user never creates an IDB-only report — the
+          // report folder must be creatable on disk first.
+          if (!fsDirHandle || !(await fsEnsurePermission(fsDirHandle, false))) {
+            showToast(L('Hãy kết nối thư mục trước khi tạo báo cáo', 'Connect a folder before creating a report'), 4000);
+            return;
+          }
+        } else if (!(await ensureLocalReportCapacity())) return;
         const id = Date.now().toString(), mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], now = new Date();
         const modKey = (currentActiveModule && MODULE_THEMES[currentActiveModule]) ? currentActiveModule : 'pre-production';
         const modCfg = MODULE_THEMES[modKey] || MODULE_THEMES['pre-production'];
@@ -18623,6 +18672,15 @@
           greenlabelPhotos: [], greenlabelNotes: '',
           modules: JSON.parse(JSON.stringify(modCfg.defaultModules))
         };
+
+        // DISK K2: create the report folder + initial report.json on disk
+        // before the editor opens, so autosave has a home from second one.
+        if (diskK1Active()) {
+          const createdFolder = await diskCreateReportFolder(r);
+          if (!createdFolder) return;
+          r._diskFolder = createdFolder;
+          r._diskName = fsDirHandle.name || '';
+        }
 
         await dbPut(r);
         await renderHome();
@@ -18806,6 +18864,8 @@
       const copy = Object.assign({}, rep);
       delete copy._fileDirty;
       delete copy._fileSavedAt;
+      delete copy._diskFolder;
+      delete copy._diskName;
       return new Blob([JSON.stringify(copy)], { type: 'application/json' });
     }
 
@@ -18883,6 +18943,9 @@
 
     function fileSaveShortcut() {
       if (!currentId || !D || !D.id) return;
+      // DISK K2: for a disk report, Ctrl+S / the save button flushes the
+      // report folder on disk, not a loose JSON file.
+      if (diskEditStateForCurrent()) { diskFlushSave(true); return; }
       return fileEnsureHandle().then(async (handle) => {
         if (!handle) { await fileSaveAs(); return; }
         const granted = await fsEnsurePermission(handle, true);
@@ -19102,6 +19165,7 @@
           const name = entry[0];
           const handle = entry[1];
           if (!handle || handle.kind !== 'directory') continue;
+          if (name === '_Trash') continue; // DISK K2: trashed reports stay hidden
           const meta = await fsReadReportJson(handle);
           if (!meta || !meta.id) continue;
           items.push({ name: name, meta: meta });
@@ -19366,11 +19430,17 @@
       const panel = document.getElementById('diskConnectPanel');
       const strip = document.getElementById('diskReconnectStrip');
       if (!panel || !strip) return;
+      const newBtn = document.getElementById('btnNewReport');
       if (!diskK1Active()) {
         panel.style.display = 'none';
         strip.style.display = 'none';
+        if (newBtn) newBtn.disabled = false;
         return;
       }
+      // DISK K2: without a connected folder a disk user cannot create a
+      // report (it would exist only in IndexedDB) — NEW REPORT stays
+      // disabled until the folder is connected; the panel/strip explains.
+      if (newBtn) newBtn.disabled = !connected;
       if (!fsDirHandle) {
         panel.style.display = 'block';
         strip.style.display = 'none';
@@ -19409,9 +19479,16 @@
       }
       let rawMeta = null;
       let photosDir = null;
+      let recoveredFromBak = false;
       try {
         const folder = await fsDirHandle.getDirectoryHandle(meta._diskFolder, { create: false });
         rawMeta = await fsReadReportJson(folder);
+        if (!rawMeta || !rawMeta.id) {
+          // DISK K2: a damaged report.json falls back to the .bak copy
+          // written before the last overwrite.
+          const bakMeta = await diskReadJsonFile(folder, 'report.json.bak');
+          if (bakMeta && bakMeta.id) { rawMeta = bakMeta; recoveredFromBak = true; }
+        }
         if (!rawMeta || !rawMeta.id) throw new Error('Invalid report.json');
         try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); } catch (err) { }
       } catch (err) {
@@ -19442,10 +19519,551 @@
         if (missingFiles.length) {
           showToast(L(`${missingFiles.length} tệp ảnh bị thiếu trong thư mục — những ảnh đó sẽ trống`, `${missingFiles.length} photo file(s) are missing from the folder — those photos will be empty`), 6000);
         }
+        const hadDraft = !!getDraftSnapshot(payload.id);
         await openReport(payload.id);
+        if (recoveredFromBak) {
+          showToast(L('Đã khôi phục từ bản dự phòng', 'Recovered from the backup copy'), 5000);
+        }
+        await diskInitEditState(payload, hadDraft);
       } catch (err) {
         ipHide();
         console.warn('[Disk] open failed', err);
+        showToast(L('Không mở được báo cáo từ đĩa', 'Could not open the report from disk'), 4000);
+      }
+    }
+
+    /* ============ DISK K2 (v4.10.0): WRITE REPORTS BACK TO THE DISK FOLDER ============ */
+    // The write side of the disk model, for the same gated audience as K1
+    // (non-admin + File System Access). A disk report's folder on disk is
+    // the source of truth; the IndexedDB working copy stays as the
+    // crash-safety layer underneath. Autosave debounces 3s behind the same
+    // change points that feed the draft snapshot; Ctrl+S / the save button
+    // flush immediately. Writes are guarded by report.json's mtime so an
+    // outside edit is never overwritten silently, keep one .bak generation,
+    // and deletes move the folder into a _Trash subfolder instead of
+    // removing it outright. Admins never enter this code path.
+
+    let diskEdit = null; // { reportId, folderName, mtime, savedRevision, timer, running, again, conflict, promise }
+    let diskSaveKind = '';
+
+    function diskEditStateForCurrent() {
+      if (!diskK1Active() || !D || !D.id || !D._diskFolder) return null;
+      if (!diskEdit || diskEdit.reportId !== D.id) {
+        diskEdit = {
+          reportId: D.id, folderName: D._diskFolder, mtime: 0, savedRevision: -1,
+          timer: null, running: false, again: false, conflict: false, promise: null
+        };
+      }
+      return diskEdit;
+    }
+
+    async function diskInitEditState(report, hadDraft) {
+      if (!report || !report._diskFolder || !fsDirHandle) return;
+      let mtime = 0;
+      try {
+        const folder = await fsDirHandle.getDirectoryHandle(report._diskFolder, { create: false });
+        mtime = await diskStatReportJson(folder);
+      } catch (err) { }
+      diskEdit = {
+        reportId: report.id, folderName: report._diskFolder, mtime: mtime,
+        savedRevision: hadDraft ? -1 : dataRevision,
+        timer: null, running: false, again: false, conflict: false, promise: null
+      };
+      diskSetSaveState('idle');
+    }
+
+    // ── Save-state text (topbar, next to the classic save state) ──
+    function diskRenderSaveState() {
+      const el = document.getElementById('diskSaveState');
+      const std = document.getElementById('saveStateText');
+      const show = !!(diskK1Active() && D && D.id && D._diskFolder &&
+        document.body.classList.contains('in-editor'));
+      if (el) el.style.display = show ? '' : 'none';
+      if (std) std.style.display = show ? 'none' : '';
+    }
+
+    function diskSetSaveState(kind, whenMs) {
+      diskSaveKind = kind;
+      const el = document.getElementById('diskSaveState');
+      if (el) {
+        el.classList.toggle('failed', kind === 'failed');
+        if (kind === 'saving') el.textContent = 'Saving…';
+        else if (kind === 'saved') {
+          const t = new Date(whenMs || Date.now());
+          el.textContent = L('Đã lưu ', 'Saved ') +
+            String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+        } else if (kind === 'failed') {
+          el.textContent = L('Lưu thất bại — chạm để thử lại', 'Save failed — tap to retry');
+        } else if (kind === 'conflict') {
+          el.textContent = L('Tệp đã bị thay đổi bên ngoài app', 'This file was changed outside the app');
+        } else {
+          el.textContent = '';
+        }
+      }
+      diskRenderSaveState();
+    }
+
+    function diskSaveStateClicked() {
+      if (diskSaveKind === 'failed') diskFlushSave(true);
+    }
+
+    // ── Pure naming / decision helpers (unit-tested in disk_k2.test.js) ──
+    function diskMimeOfDataUrl(dataUrl) {
+      const m = /^data:([^;,]+)/.exec(String(dataUrl || ''));
+      return m ? m[1] : '';
+    }
+
+    function diskExtForMime(mime) {
+      switch (String(mime || '').toLowerCase()) {
+        case 'image/jpeg': case 'image/jpg': return '.jpg';
+        case 'image/png': return '.png';
+        case 'image/webp': return '.webp';
+        case 'image/gif': return '.gif';
+        case 'application/pdf': return '.pdf';
+        default: return '.bin';
+      }
+    }
+
+    function diskPhotoFileName(slotKey, fieldName, dataUrl) {
+      const base = String(slotKey || 'photo').replace(/:/g, '-') + '-' + String(fieldName || 'img');
+      return base.replace(/[\\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-') + diskExtForMime(diskMimeOfDataUrl(dataUrl));
+    }
+
+    function diskSanitizeFolderName(name) {
+      return String(name || '').replace(/[\\\/:*?"<>|]+/g, '-').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+    }
+
+    function diskFolderNameForReport(rep, dateObj) {
+      const r = rep || {};
+      const prefix = getReportFilePrefix(r);
+      let base;
+      if ((r.model || '').trim()) {
+        base = [prefix, getReportDisplayName(r)].filter(Boolean).join(' ');
+      } else {
+        const d = dateObj || new Date();
+        const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        base = [prefix, 'Untitled · ' + iso].filter(Boolean).join(' ');
+      }
+      return diskSanitizeFolderName(base) || 'Untitled report';
+    }
+
+    function diskResolveFolderName(base, existingNames) {
+      const taken = (existingNames instanceof Set) ? existingNames : new Set(existingNames || []);
+      if (!taken.has(base)) return base;
+      let n = 2;
+      while (taken.has(base + ' (' + n + ')')) n++;
+      return base + ' (' + n + ')';
+    }
+
+    function diskFolderIsPlaceholder(folderName, prefix) {
+      if (!folderName) return false;
+      const head = (prefix ? prefix + ' ' : '') + 'Untitled · ';
+      if (!folderName.startsWith(head)) return false;
+      return /^\d{4}-\d{2}-\d{2}$/.test(folderName.slice(head.length));
+    }
+
+    function diskShouldRenameFolder(folderName, rep) {
+      if (!rep || !(rep.model || '').trim()) return false;
+      if (!diskFolderIsPlaceholder(folderName, getReportFilePrefix(rep))) return false;
+      return diskFolderNameForReport(rep) !== folderName;
+    }
+
+    function diskMtimeConflict(recorded, current) {
+      return !!(recorded > 0 && current > 0 && current !== recorded);
+    }
+
+    // Dehydrate a live report into the on-disk shape: photo data URLs become
+    // { f: 'file' } refs in the JSON, mirrored by the _archive.files
+    // manifest (with a content hash per file for change detection). Returns
+    // the write plan: which photo files to (re)write and which to delete.
+    // Pure — the reader side (fsHydratePayload) reverses exactly this.
+    function diskDehydrateReport(report, prevFiles) {
+      const prev = prevFiles || {};
+      const clone = JSON.parse(JSON.stringify(report || {}));
+      delete clone._diskFolder;
+      delete clone._diskName;
+      delete clone._fileDirty;
+      delete clone._fileSavedAt;
+      delete clone.__missingArchiveFiles;
+      const files = {};
+      const writes = [];
+      const referenced = new Set();
+      const slots = fsCollectSlots(clone).concat(fsCollectDocRecords(clone));
+      slots.forEach(slot => {
+        slot.names.forEach(name => {
+          const v = slot.rec[name];
+          if (typeof v === 'string' && v.startsWith('data:')) {
+            const h = photoStrongHash(v);
+            const fname = diskPhotoFileName(slot.key, name, v);
+            const prevEntry = (prev[slot.key] || {})[name];
+            if (!prevEntry || prevEntry.f !== fname || prevEntry.h !== h) {
+              writes.push({ name: fname, dataUrl: v });
+            }
+            if (!files[slot.key]) files[slot.key] = {};
+            files[slot.key][name] = { f: fname, h: h };
+            slot.rec[name] = { f: fname };
+            referenced.add(fname);
+          } else if (v && typeof v === 'object' && typeof v.f === 'string') {
+            const prevEntry = (prev[slot.key] || {})[name];
+            if (!files[slot.key]) files[slot.key] = {};
+            files[slot.key][name] = (prevEntry && prevEntry.f === v.f) ? prevEntry : { f: v.f };
+            referenced.add(v.f);
+          }
+        });
+      });
+      // fsCollectSlots wraps a bare-string cover value into a throwaway
+      // record; write the dehydrated record back into the clone.
+      Object.keys(clone.coverPhotos || {}).forEach(k => {
+        if (typeof (report.coverPhotos || {})[k] === 'string') {
+          const slot = slots.find(x => x.key === 'cover:' + k);
+          if (slot) clone.coverPhotos[k] = slot.rec;
+        }
+      });
+      const deletes = [];
+      Object.keys(prev).forEach(k => {
+        const info = prev[k] || {};
+        Object.keys(info).forEach(n => {
+          const f = info[n] && info[n].f;
+          if (f && !referenced.has(f)) deletes.push(f);
+        });
+      });
+      clone._archive = { savedAt: new Date().toISOString(), files: files };
+      return { json: clone, writes: writes, deletes: deletes, files: files };
+    }
+
+    // ── File System primitives ──
+    async function diskReadJsonFile(folder, name) {
+      try {
+        const handle = await folder.getFileHandle(name, { create: false });
+        const file = await handle.getFile();
+        return JSON.parse(await file.text());
+      } catch (err) { return null; }
+    }
+
+    async function diskStatReportJson(folder) {
+      try {
+        const handle = await folder.getFileHandle('report.json', { create: false });
+        const file = await handle.getFile();
+        return file.lastModified || 0;
+      } catch (err) { return 0; }
+    }
+
+    async function diskWriteFile(dirHandle, name, content) {
+      const handle = await dirHandle.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      try {
+        await writable.write(content);
+      } catch (err) {
+        try { await writable.abort(); } catch (e) { }
+        throw err;
+      }
+      await writable.close();
+    }
+
+    // Write one report folder: changed photo files first, report.json last
+    // (so the manifest never points at a photo that is not there yet), with
+    // the previous report.json preserved as report.json.bak (one generation).
+    async function diskWriteReport(report, folderHandle) {
+      const existing = await diskReadJsonFile(folderHandle, 'report.json');
+      const prevFiles = (existing && existing._archive && existing._archive.files) || {};
+      const plan = diskDehydrateReport(report, prevFiles);
+      const photosDir = await folderHandle.getDirectoryHandle('photos', { create: true });
+      for (const w of plan.writes) {
+        const conv = dataUrlToBytes(w.dataUrl);
+        if (!conv) continue;
+        await diskWriteFile(photosDir, w.name, new Blob([conv.bytes], { type: conv.mime }));
+      }
+      for (const name of plan.deletes) {
+        try { await photosDir.removeEntry(name); } catch (err) { }
+      }
+      if (existing) {
+        try {
+          const curHandle = await folderHandle.getFileHandle('report.json', { create: false });
+          const curFile = await curHandle.getFile();
+          await diskWriteFile(folderHandle, 'report.json.bak', await curFile.text());
+        } catch (err) { }
+      }
+      await diskWriteFile(folderHandle, 'report.json', JSON.stringify(plan.json));
+      const mtime = await diskStatReportJson(folderHandle);
+      return { files: plan.files, mtime: mtime };
+    }
+
+    async function diskListRootFolderNames() {
+      const names = new Set();
+      if (!fsDirHandle) return names;
+      try {
+        for await (const entry of fsDirHandle.entries()) {
+          if (entry[1] && entry[1].kind === 'directory') names.add(entry[0]);
+        }
+      } catch (err) { }
+      return names;
+    }
+
+    async function diskCopyFolderTree(srcDir, destDir) {
+      for await (const entry of srcDir.entries()) {
+        const name = entry[0];
+        const handle = entry[1];
+        if (!handle) continue;
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          await diskWriteFile(destDir, name, file);
+        } else if (handle.kind === 'directory') {
+          const sub = await destDir.getDirectoryHandle(name, { create: true });
+          await diskCopyFolderTree(handle, sub);
+        }
+      }
+    }
+
+    async function diskDeleteFolderTree(parentDir, name) {
+      const dir = await parentDir.getDirectoryHandle(name, { create: false });
+      for await (const entry of dir.entries()) {
+        const childName = entry[0];
+        const handle = entry[1];
+        if (!handle) continue;
+        if (handle.kind === 'directory') await diskDeleteFolderTree(dir, childName);
+        else await dir.removeEntry(childName);
+      }
+      await parentDir.removeEntry(name);
+    }
+
+    // ── Create on disk (NEW REPORT in disk mode) ──
+    async function diskCreateReportFolder(report) {
+      try {
+        const granted = await fsEnsurePermission(fsDirHandle, true);
+        if (!granted) {
+          showToast(L('Chưa được cấp quyền truy cập thư mục', 'Folder access was not granted'), 4000);
+          return null;
+        }
+        const base = diskFolderNameForReport(report);
+        const taken = await diskListRootFolderNames();
+        const name = diskResolveFolderName(base, taken);
+        const folder = await fsDirHandle.getDirectoryHandle(name, { create: true });
+        await folder.getDirectoryHandle('photos', { create: true });
+        const result = await diskWriteReport(report, folder);
+        diskEdit = {
+          reportId: report.id, folderName: name, mtime: result.mtime,
+          savedRevision: dataRevision,
+          timer: null, running: false, again: false, conflict: false, promise: null
+        };
+        return name;
+      } catch (err) {
+        console.warn('[Disk] create folder failed', err);
+        showToast(L('Không tạo được thư mục báo cáo trên đĩa', 'Could not create the report folder on disk'), 4000);
+        return null;
+      }
+    }
+
+    // ── Autosave engine: 3s debounce, single-flight, mtime-guarded ──
+    function diskScheduleSave() {
+      const st = diskEditStateForCurrent();
+      if (!st || st.conflict) return;
+      if (st.timer) clearTimeout(st.timer);
+      st.timer = setTimeout(() => { st.timer = null; diskRunSave(false); }, 3000);
+    }
+
+    async function diskFlushSave(interactive) {
+      const st = diskEditStateForCurrent();
+      if (!st || st.conflict) return;
+      if (st.timer) { clearTimeout(st.timer); st.timer = null; }
+      await diskRunSave(!!interactive);
+    }
+
+    async function diskRunSave(interactive) {
+      const st = diskEditStateForCurrent();
+      if (!st) return;
+      if (st.running) { st.again = true; return st.promise; }
+      st.running = true;
+      st.promise = (async () => {
+        try {
+          do {
+            st.again = false;
+            await diskSaveOnce(interactive);
+          } while (st.again && !st.conflict);
+        } finally {
+          st.running = false;
+        }
+      })();
+      return st.promise;
+    }
+
+    async function diskSaveOnce(interactive) {
+      const st = diskEdit;
+      if (!st || !D || D.id !== st.reportId) return;
+      if (dataRevision === st.savedRevision) return; // disk already holds this revision
+      const revAtStart = dataRevision;
+      diskSetSaveState('saving');
+      try {
+        const granted = await fsEnsurePermission(fsDirHandle, !!interactive);
+        if (!granted) { diskSetSaveState('failed'); return; }
+        let folder = await fsDirHandle.getDirectoryHandle(st.folderName, { create: false });
+        // Rename-once (design C2): the folder still carries its creation
+        // placeholder name and the report now has a Model — move it to the
+        // proper display-name folder, silently; any failure keeps the old
+        // folder and the save continues there.
+        if (diskShouldRenameFolder(st.folderName, D)) {
+          const renamed = await diskTryRenameFolder(st);
+          if (renamed) folder = await fsDirHandle.getDirectoryHandle(st.folderName, { create: false });
+        }
+        const cur = await diskStatReportJson(folder);
+        if (diskMtimeConflict(st.mtime, cur)) {
+          st.conflict = true;
+          diskSetSaveState('conflict');
+          const overwrite = await appConfirm(
+            L('Tệp này vừa bị thay đổi bên ngoài app. Ghi đè bằng phiên bản của bạn, hay tải lại từ đĩa?',
+              'This file was changed outside the app. Overwrite it with your version, or reload from disk?'),
+            {
+              title: L('Tệp đã bị thay đổi bên ngoài app', 'File changed outside the app'),
+              confirmLabel: L('Ghi đè bằng bản của tôi', 'Overwrite with my version'),
+              cancelLabel: L('Tải lại từ đĩa', 'Reload from disk')
+            }
+          );
+          st.conflict = false;
+          if (!overwrite) { await diskReloadFromDisk(); return; }
+          st.mtime = cur; // accepted: the outside version becomes the baseline
+        }
+        if (!D || D.id !== st.reportId) return;
+        const result = await diskWriteReport(D, folder);
+        if (!D || D.id !== st.reportId) return;
+        st.mtime = result.mtime;
+        st.savedRevision = revAtStart;
+        if (dataRevision === revAtStart) {
+          // Mirror executeSave: a fully-landed save clears the draft
+          // snapshot for the revision it covered.
+          clearDraftSnapshot(D.id, revAtStart);
+          diskSetSaveState('saved', Date.now());
+        } else {
+          st.again = true;
+        }
+      } catch (err) {
+        console.warn('[Disk] save failed', err);
+        diskSetSaveState('failed');
+      }
+    }
+
+    async function diskReloadFromDisk() {
+      const st = diskEdit;
+      if (!st || !D) return;
+      const meta = { id: st.reportId, _diskFolder: st.folderName };
+      try { clearDraftSnapshot(st.reportId); } catch (err) { }
+      // Drop any queued IDB save of the discarded edits, and keep the
+      // flushReport() inside openReport from resurrecting them.
+      pendingSavePayload = null;
+      diskEdit = null;
+      currentId = null;
+      await openDiskReport(meta);
+    }
+
+    async function diskTryRenameFolder(st) {
+      try {
+        const base = diskFolderNameForReport(D);
+        const taken = await diskListRootFolderNames();
+        taken.delete(st.folderName);
+        const target = diskResolveFolderName(base, taken);
+        if (!target || target === st.folderName) return false;
+        const src = await fsDirHandle.getDirectoryHandle(st.folderName, { create: false });
+        const dest = await fsDirHandle.getDirectoryHandle(target, { create: true });
+        await diskCopyFolderTree(src, dest);
+        await diskDeleteFolderTree(fsDirHandle, st.folderName);
+        st.folderName = target;
+        st.mtime = await diskStatReportJson(dest);
+        if (D) {
+          D._diskFolder = target;
+          try { await dbPut(D); } catch (err) { }
+        }
+        return true;
+      } catch (err) {
+        console.warn('[Disk] folder rename skipped', err);
+        return false;
+      }
+    }
+
+    // ── Delete: move the folder into _Trash (design §11.4) ──
+    async function diskTrashReport(meta) {
+      if (!meta || !meta._diskFolder || !fsDirHandle) return false;
+      try {
+        const granted = await fsEnsurePermission(fsDirHandle, true);
+        if (!granted) {
+          showToast(L('Chưa được cấp quyền truy cập thư mục', 'Folder access was not granted'), 4000);
+          return false;
+        }
+        const trash = await fsDirHandle.getDirectoryHandle('_Trash', { create: true });
+        const taken = new Set();
+        try {
+          for await (const entry of trash.entries()) { taken.add(entry[0]); }
+        } catch (err) { }
+        const target = diskResolveFolderName(meta._diskFolder, taken);
+        const src = await fsDirHandle.getDirectoryHandle(meta._diskFolder, { create: false });
+        const dest = await trash.getDirectoryHandle(target, { create: true });
+        await diskCopyFolderTree(src, dest);
+        await diskDeleteFolderTree(fsDirHandle, meta._diskFolder);
+        try { await dbDelete(meta.id); } catch (err) { }
+        if (diskEdit && diskEdit.reportId === meta.id) diskEdit = null;
+        showToast('✓ Report deleted');
+        return true;
+      } catch (err) {
+        console.warn('[Disk] trash failed', err);
+        showToast('⚠ Could not delete this report — please try again', 5000);
+        return false;
+      }
+    }
+
+    // ── Hydrate an unopened disk row into a working copy, then run the
+    // normal flow (share / duplicate) on it. Mirrors openDiskReport's read
+    // path (including the .bak fallback) without entering the editor. ──
+    async function diskHydrateThen(meta, after) {
+      if (!meta || !meta._diskFolder || !fsDirHandle) return;
+      const granted = await fsEnsurePermission(fsDirHandle, true);
+      if (!granted) {
+        showToast(L('Không có quyền truy cập thư mục', 'No permission to access the folder'), 4000);
+        return;
+      }
+      let rawMeta = null;
+      let photosDir = null;
+      let recoveredFromBak = false;
+      try {
+        const folder = await fsDirHandle.getDirectoryHandle(meta._diskFolder, { create: false });
+        rawMeta = await fsReadReportJson(folder);
+        if (!rawMeta || !rawMeta.id) {
+          const bakMeta = await diskReadJsonFile(folder, 'report.json.bak');
+          if (bakMeta && bakMeta.id) { rawMeta = bakMeta; recoveredFromBak = true; }
+        }
+        if (!rawMeta || !rawMeta.id) throw new Error('Invalid report.json');
+        try { photosDir = await folder.getDirectoryHandle('photos', { create: false }); } catch (err) { }
+      } catch (err) {
+        showToast(L('Không đọc được báo cáo từ đĩa', 'Could not read the report from disk'), 4000);
+        return;
+      }
+      const token = {};
+      ipShow(meta._diskFolder, token);
+      try {
+        const files = (rawMeta._archive && rawMeta._archive.files) || {};
+        let totalRefs = 0;
+        Object.keys(files).forEach(k => {
+          const info = files[k];
+          if (info) Object.keys(info).forEach(n => { if (info[n] && info[n].f) totalRefs++; });
+        });
+        let doneRefs = 0;
+        ipUpdate(L('Đang mở báo cáo…', 'Opening report…'), 0);
+        const payload = await fsHydratePayload(rawMeta, meta._diskFolder, photosDir, () => {
+          doneRefs++;
+          ipUpdate(L('Đang mở báo cáo…', 'Opening report…'), totalRefs ? Math.round((doneRefs / totalRefs) * 100) : 100);
+        });
+        const missingFiles = payload.__missingArchiveFiles || [];
+        delete payload.__missingArchiveFiles;
+        payload._diskFolder = meta._diskFolder;
+        payload._diskName = fsDirHandle.name || '';
+        await dbPut(payload);
+        ipHide();
+        if (recoveredFromBak) {
+          showToast(L('Đã khôi phục từ bản dự phòng', 'Recovered from the backup copy'), 5000);
+        }
+        if (missingFiles.length) {
+          showToast(L(`${missingFiles.length} tệp ảnh bị thiếu trong thư mục — những ảnh đó sẽ trống`, `${missingFiles.length} photo file(s) are missing from the folder — those photos will be empty`), 6000);
+        }
+        if (typeof after === 'function') await after();
+      } catch (err) {
+        ipHide();
+        console.warn('[Disk] hydrate failed', err);
         showToast(L('Không mở được báo cáo từ đĩa', 'Could not open the report from disk'), 4000);
       }
     }
@@ -22499,6 +23117,14 @@
       ['Báo cáo của bạn sẽ nằm trong thư mục này, chỉ trên máy tính này.', 'Your reports will live in this folder, on this computer only.'],
       ['Kết nối lại thư mục để mở báo cáo', 'Reconnect the folder to open reports'],
       ['Đang mở báo cáo…', 'Opening report…'],
+      // DISK K2 (v4.10.0): write-back to disk strings
+      ['Lưu thất bại — chạm để thử lại', 'Save failed — tap to retry'],
+      ['Đã khôi phục từ bản dự phòng', 'Recovered from the backup copy'],
+      ['Hãy kết nối thư mục trước khi tạo báo cáo', 'Connect a folder before creating a report'],
+      ['Không tạo được thư mục báo cáo trên đĩa', 'Could not create the report folder on disk'],
+      ['Tệp đã bị thay đổi bên ngoài app', 'File changed outside the app'],
+      ['Ghi đè bằng bản của tôi', 'Overwrite with my version'],
+      ['Tải lại từ đĩa', 'Reload from disk'],
       // POP-1 (v4.0.3): in-app dialogs for tab conflicts & the report limit
       ['Báo cáo đã bị thay đổi ở tab khác', 'Report changed in another tab'],
       ['Vẫn ghi đè', 'Overwrite anyway'],
