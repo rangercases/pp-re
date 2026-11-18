@@ -891,6 +891,16 @@
       border-color: rgba(0, 0, 0, 0.2);
     }
 
+    /* Compact auto-width variant: workspace action row sits left, not full-width */
+    .new-btn.compact {
+      width: auto;
+      flex: 0 0 auto;
+      height: 34px;
+      padding: 0 14px;
+      gap: 6px;
+      font-size: 10.5px;
+    }
+
     /* WORKSPACE DROPDOWN MENU */
     .workspace-dropdown-menu {
       position: absolute;
@@ -7356,14 +7366,14 @@
       <div class="workspace-body">
         <!-- Action Buttons (2 buttons on 1 row) -->
         <div class="workspace-actions-row" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:stretch;">
-          <button class="new-btn primary-cta" id="btnNewReport" onclick="newReport()" style="flex:1; min-width:140px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <button class="new-btn primary-cta compact" id="btnNewReport" onclick="newReport()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>NEW REPORT</span>
           </button>
-          <button class="new-btn sub-action-btn" id="btnImport" onclick="openReportFile()"
-            title="Open JSON file or press Ctrl+V" style="flex:1; min-width:140px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 14 12 17 15 14"></polyline><line x1="12" y1="10" x2="12" y2="17"></line></svg>
-            <span>Open JSON</span>
+          <button class="new-btn sub-action-btn compact" id="btnImport" onclick="openReportFile()"
+            title="Open JSON file or press Ctrl+V">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 14 12 17 15 14"></polyline><line x1="12" y1="10" x2="12" y2="17"></line></svg>
+            <span>Open</span>
           </button>
         </div>
         <div id="localReportLimitText" style="font-size:11px; color:var(--ink-soft); text-align:right; margin:-6px 2px 10px;"></div>
@@ -22267,7 +22277,7 @@
       ['Switch language', 'Đổi ngôn ngữ'],
       ['Language', 'Ngôn ngữ'],
       // S1 (v4.0.1): shorter labels, clearer save state & slot-delete copy
-      ['Mở JSON', 'Open JSON'],
+      ['Mở JSON', 'Open'],
       ['Sao lưu (JSON)', 'Backup (JSON)'],
       ['Khôi phục (JSON)', 'Restore (JSON)'],
       ['Khôi phục bản sao lưu cũ', 'Restore legacy backup'],
