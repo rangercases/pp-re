@@ -8976,10 +8976,18 @@
             return;
           }
 
+          // DISK K3: a disk user's restore lands on disk — without a
+          // connected folder there is nowhere for the reports to live.
+          if (diskK1Active() && !fsDirHandle) {
+            ipHide();
+            alert('Connect a folder before restoring a backup.\n\nYour reports live in the folder you connect, on this computer only.');
+            return;
+          }
+
           const existingMetas = await dbGetAllMetadata();
           const existingIds = new Set(existingMetas.map(r => String(r.id)));
           const newCount = reportsToRestore.filter(r => !r.id || !existingIds.has(String(r.id))).length;
-          if (existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
+          if (!diskK1Active() && existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
             ipHide();
             alert(
               `App limit is ${MAX_LOCAL_REPORTS} reports.\n\nThis backup would bring the app to ${existingMetas.length + newCount} reports.\nDelete some reports in the app or use a smaller backup and try again.`
@@ -9018,7 +9026,18 @@
                 onProgress: (done, total) => ipUpdate(`Report ${ri + 1}/${reportsToRestore.length} — photos ${done}/${total}…`, ipBase + (total ? (done / total) * (85 / reportsToRestore.length) : 0))
               });
               if (ipToken.cancelled) { restoreCancelled = true; break; }
-              await dbPut(normalizedRep);
+              if (diskK1Active()) {
+                // DISK K3: each report becomes its own disk folder (a
+                // folder already holding this report id is updated,
+                // mirroring the merge-by-id semantics); nothing is merged
+                // into IndexedDB — opening one later creates its working
+                // copy through openDiskReport as usual.
+                const restoreFolder = await diskFindFolderNameById(normalizedRep.id);
+                const writtenFolder = await diskPersistImportedReport(normalizedRep, restoreFolder);
+                if (!writtenFolder) throw new Error('could not write the report to disk');
+              } else {
+                await dbPut(normalizedRep);
+              }
               count++;
             } catch (writeErr) {
               console.error('Error writing report during restore:', writeErr);
@@ -12998,6 +13017,18 @@
         }
         if (isReplace && pendingExistingReport) {
           normalizedData.id = pendingExistingReport.id;
+          // DISK K3: replacing a disk report overwrites its folder.
+          if (diskK1Active() && pendingExistingReport._diskFolder) {
+            const replacedFolder = await diskPersistImportedReport(normalizedData, pendingExistingReport._diskFolder);
+            if (!replacedFolder) {
+              pendingIpToken = null;
+              ipHide();
+              closeImportConflictModal();
+              return;
+            }
+            normalizedData._diskFolder = replacedFolder;
+            normalizedData._diskName = fsDirHandle.name || '';
+          }
           await dbPut(normalizedData);
           showToast('✓ Report replaced successfully');
         } else {
@@ -13016,6 +13047,19 @@
             showToast(`✓ Created copy ${suffix}!`);
           } else {
             showToast('✓ Report imported successfully!');
+          }
+          // DISK K3: an imported copy of a disk-era report gets its own
+          // new disk folder (stamped on the working copy below).
+          if (diskK1Active()) {
+            const copiedFolder = await diskPersistImportedReport(normalizedData, null);
+            if (!copiedFolder) {
+              pendingIpToken = null;
+              ipHide();
+              closeImportConflictModal();
+              return;
+            }
+            normalizedData._diskFolder = copiedFolder;
+            normalizedData._diskName = fsDirHandle.name || '';
           }
           await dbPut(normalizedData);
         }
@@ -13090,6 +13134,15 @@
       }
 
       if (!(await ensureLocalReportCapacity())) return;
+      // DISK K3: duplicating a disk report creates a NEW disk folder for
+      // the copy — it appears in the disk list as a disk report, and the
+      // working copy below is stamped with the new folder.
+      if (diskK1Active() && source._diskFolder) {
+        const dupFolder = await diskPersistImportedReport(cloned, null);
+        if (!dupFolder) return;
+        cloned._diskFolder = dupFolder;
+        cloned._diskName = fsDirHandle.name || '';
+      }
       await dbPut(cloned);
       showToast(`✓ Duplicated report ${suffix}!`);
       await renderHome();
@@ -13101,12 +13154,15 @@
       }
       try {
         const ids = Array.from(selectedReportIds);
-        const metas = await dbGetAllMetadata();
-        const room = MAX_LOCAL_REPORTS - metas.length;
-        if (room <= 0) { await handleReportLimitReached(); return; }
-        if (ids.length > room) {
-          showToast(`Only ${room} slot(s) left (limit ${MAX_LOCAL_REPORTS}). Delete some or select fewer.`, 5000);
-          return;
+        // DISK K3: the local cap does not apply to disk-mode users.
+        if (!diskK1Active()) {
+          const metas = await dbGetAllMetadata();
+          const room = MAX_LOCAL_REPORTS - metas.length;
+          if (room <= 0) { await handleReportLimitReached(); return; }
+          if (ids.length > room) {
+            showToast(`Only ${room} slot(s) left (limit ${MAX_LOCAL_REPORTS}). Delete some or select fewer.`, 5000);
+            return;
+          }
         }
         for (const id of ids) {
           const source = await dbGet(id);
@@ -13355,7 +13411,19 @@
           showToast('This is a backup file — use Restore (JSON) in the ⚙ menu');
           return;
         }
-        const existingReports = await dbGetAllMetadata();
+        let existingReports = await dbGetAllMetadata();
+        // DISK K3: a disk user's import lands on disk. Without a connected
+        // folder there is nowhere for it to live — refuse up front (the
+        // same rule as NEW REPORT); with one, name conflicts are checked
+        // against the disk list, not the IDB working copies.
+        if (!openHandle && diskK1Active()) {
+          if (!fsDirHandle) {
+            ipHide();
+            showToast(L('Hãy kết nối thư mục trước khi nhập báo cáo', 'Connect a folder before importing a report'), 4000);
+            return;
+          }
+          existingReports = await diskListMetas();
+        }
 
         if (openHandle) {
           if (!data.id) data.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5);
@@ -13421,6 +13489,14 @@
         if (openHandle) {
           normalizedData._fileDirty = false;
           normalizedData._fileSavedAt = Date.now();
+        }
+        // DISK K3: write the new disk folder first; the IDB copy below is
+        // only the editor's working copy, stamped with its folder.
+        if (!openHandle && diskK1Active()) {
+          const importFolder = await diskPersistImportedReport(normalizedData, null);
+          if (!importFolder) { ipHide(); return; }
+          normalizedData._diskFolder = importFolder;
+          normalizedData._diskName = fsDirHandle.name || '';
         }
         try {
           await dbPut(normalizedData);
@@ -18627,6 +18703,9 @@
     }
 
     async function ensureLocalReportCapacity() {
+      // DISK K3: disk-mode users are bounded by their disk, not by the
+      // local report cap (design §5.10).
+      if (diskK1Active()) return true;
       try {
         const metas = await dbGetAllMetadata();
         if (!metas || metas.length < MAX_LOCAL_REPORTS) return true;
@@ -20066,6 +20145,60 @@
         console.warn('[Disk] hydrate failed', err);
         showToast(L('Không mở được báo cáo từ đĩa', 'Could not open the report from disk'), 4000);
       }
+    }
+
+    /* ============ DISK K3 (v4.11.0): IMPORT / RESTORE / DUPLICATE LAND ON DISK ============ */
+    // The cutover: for the same gated audience as K1/K2, the remaining
+    // report entry points stop treating IndexedDB as the store. An
+    // imported, restored or duplicated report becomes a disk folder via
+    // the K2 write machinery; IndexedDB only ever holds the editor's
+    // working copy of the currently open report (stamped _diskFolder).
+
+    // Persist a report as a disk folder. replaceFolderName overwrites
+    // that exact folder (import Replace; restore merge-by-id); null
+    // creates a fresh folder with the standard display name,
+    // collision-suffixed. Returns the folder name, or null after
+    // toasting the reason.
+    async function diskPersistImportedReport(report, replaceFolderName) {
+      if (!fsDirHandle) {
+        showToast(L('Hãy kết nối thư mục trước', 'Connect a folder first'), 4000);
+        return null;
+      }
+      try {
+        const granted = await fsEnsurePermission(fsDirHandle, true);
+        if (!granted) {
+          showToast(L('Chưa được cấp quyền truy cập thư mục', 'Folder access was not granted'), 4000);
+          return null;
+        }
+        let name = replaceFolderName || null;
+        let folder = null;
+        if (name) {
+          folder = await fsDirHandle.getDirectoryHandle(name, { create: false });
+        } else {
+          const base = diskFolderNameForReport(report);
+          const taken = await diskListRootFolderNames();
+          name = diskResolveFolderName(base, taken);
+          folder = await fsDirHandle.getDirectoryHandle(name, { create: true });
+          await folder.getDirectoryHandle('photos', { create: true });
+        }
+        await diskWriteReport(report, folder);
+        return name;
+      } catch (err) {
+        console.warn('[Disk] persist failed', err);
+        showToast(L('Không lưu được báo cáo xuống đĩa', 'Could not save the report to disk'), 4000);
+        return null;
+      }
+    }
+
+    // The folder currently holding a given report id (used by the
+    // restore merge-by-id), or null when the id is not on disk yet.
+    async function diskFindFolderNameById(id) {
+      if (!fsDirHandle || id == null) return null;
+      try {
+        const items = await fsListArchiveReports();
+        const hit = items.find(it => it && it.meta && String(it.meta.id) === String(id));
+        return hit ? hit.name : null;
+      } catch (err) { return null; }
     }
 
     // Pre-shrink embedded photos so jsPDF does not hold every full-size JPEG
@@ -21847,9 +21980,20 @@
       });
     }
 
+    /* ============ DISK K3 (v4.11.0): CLOUD IS ADMIN-ONLY ============ */
+    // Design §5.9: a non-admin user's data never leaves the device. Every
+    // cloud entry point checks this first; admins keep the exact pre-K3
+    // behavior. (Auth and admin APIs are not report data and stay open.)
+    function cloudSyncAllowed() {
+      return !!(currentUser && currentUser.role === 'admin');
+    }
+
     async function cloudUploadPhoto(dataUrl) {
       // Returns the fasrep-r2:// marker, or null when the photo must stay
       // inline (R2 not configured, upload failed, undecodable data URL).
+      // DISK K3: belt-and-braces — the only caller chain starts at the
+      // gated cloudPushReport, but a non-admin photo never uploads.
+      if (!cloudSyncAllowed()) return null;
       try {
         const decoded = dataUrlToBytes(dataUrl);
         if (!decoded) return null;
@@ -21901,6 +22045,9 @@
     }
 
     async function cloudFetchPhotoDataUrl(hash) {
+      // DISK K3: admin-only (callers treat a throw as "keep the local
+      // copy", which is exactly right for a non-admin device).
+      if (!cloudSyncAllowed()) throw new Error('Cloud photos are admin-only');
       const res = await fetch('/api/photos/' + hash, { credentials: 'same-origin' });
       if (!res.ok) throw new Error('photo download failed (HTTP ' + res.status + ')');
       const blob = await res.blob();
@@ -21964,6 +22111,7 @@
 
     async function cloudPushReport(report) {
       if (!currentUser || !report || !report.id) return;
+      if (!cloudSyncAllowed()) return; // DISK K3: cloud sync is admin-only
       const id = String(report.id);
       try {
         const body = await cloudSnapshotForPush(report);
@@ -22026,6 +22174,7 @@
 
     async function cloudDeleteReport(id) {
       if (!currentUser || !id) return;
+      if (!cloudSyncAllowed()) return; // DISK K3: cloud sync is admin-only
       try {
         await apiFetch('/api/reports/' + encodeURIComponent(id), { method: 'DELETE' });
         delete cloudRevisions[String(id)];
@@ -22036,6 +22185,7 @@
 
     async function cloudPullAndMerge() {
       if (!currentUser) return;
+      if (!cloudSyncAllowed()) return; // DISK K3: cloud sync is admin-only
       try {
         const listRes = await apiFetch('/api/reports?limit=100');
         if (!listRes.res.ok || !listRes.data || !listRes.data.success) return;
