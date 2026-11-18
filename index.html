@@ -16954,6 +16954,15 @@
     // (getReportQuickMetrics.pendingCriteria lumps failed into pending for
     // the badge strip; it is deliberately NOT reused here.)
     function buildRecapChecklistSummary(report) {
+      // The tally follows the report's tab list: removing the Check List
+      // module keeps its data in the report (re-adding the tab restores it)
+      // but must hide this line — in the editor and the PDF alike, since
+      // both read through this builder. Reports without a module list
+      // (legacy shapes) keep the plain data count.
+      if (report && Array.isArray(report.modules) && report.modules.length &&
+          !report.modules.some(m => m && (m.id === 'sec_checklist' || m.type === 'checklist'))) {
+        return { total: 0, passed: 0, failed: 0, pending: 0 };
+      }
       const groups = (report && Array.isArray(report.checklist)) ? report.checklist : [];
       let total = 0, passed = 0, failed = 0;
       groups.forEach(g => {

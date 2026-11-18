@@ -399,6 +399,46 @@ describe('TC-REC2.5: QUALITY SUMMARY gains a checklist tally line', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TC-REC2.6 — the tally follows the tab list (v4.11.2): removing the Check
+// List module hides the summary line even though the checklist data stays
+// in the report; re-adding the module brings the line back.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('TC-REC2.6: checklist tally hides when the Check List module is removed', () => {
+  const qs = makeQsApi((vi, en) => en);
+  const withChecklistTab = [
+    { id: 'sec_overview', type: 'overall' },
+    { id: 'sec_watchout', type: 'watchout' },
+    { id: 'sec_checklist', type: 'checklist' }
+  ];
+  const withoutChecklistTab = [
+    { id: 'sec_overview', type: 'overall' },
+    { id: 'sec_watchout', type: 'watchout' }
+  ];
+
+  it('TC-REC2.6.1: module present (by id) → counts as before', () => {
+    const s = qs.buildRecapChecklistSummary({ checklist: fixtureChecklist(30, 2, 2), modules: withChecklistTab });
+    assert.deepEqual(s, { total: 34, passed: 30, failed: 2, pending: 2 });
+  });
+
+  it('TC-REC2.6.2: module present (by type, other id) → counts as before', () => {
+    const mods = [{ id: 'sec_custom', type: 'checklist' }];
+    const s = qs.buildRecapChecklistSummary({ checklist: fixtureChecklist(34, 0, 0), modules: mods });
+    assert.equal(s.total, 34);
+  });
+
+  it('TC-REC2.6.3: module removed but data present → empty summary, no line', () => {
+    const s = qs.buildRecapChecklistSummary({ checklist: fixtureChecklist(30, 2, 2), modules: withoutChecklistTab });
+    assert.deepEqual(s, { total: 0, passed: 0, failed: 0, pending: 0 });
+    assert.equal(qs.recapChecklistTallyText(s, 'en'), '');
+  });
+
+  it('TC-REC2.6.4: empty module list (legacy shape) → plain data count kept', () => {
+    const s = qs.buildRecapChecklistSummary({ checklist: fixtureChecklist(30, 2, 2), modules: [] });
+    assert.equal(s.total, 34);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TC-REC2.6 — PDF path: the dispatcher renders Check List for Recap too
 // ─────────────────────────────────────────────────────────────────────────────
 describe('TC-REC2.6: PDF checklist rendering is module-driven, not Recap-gated', () => {
