@@ -66,7 +66,9 @@ describe('TC-PROG: import/restore progress card', () => {
   });
 
   it('TC-PROG.4: both file readers drive the card (progress + abort)', () => {
-    const imp = extractFnBody(indexHtml, 'function importReport(e)', 'importReport');
+    // Since v4.8.1 the import reader lives in the shared importFileWithProgress
+    // helper (file picker + drag-drop); importReport delegates to it.
+    const imp = extractFnBody(indexHtml, 'function importFileWithProgress(file)', 'importFileWithProgress');
     assert.ok(imp.includes('reader.onprogress'), 'import reader reports read progress');
     assert.ok(imp.includes('reader.onabort'), 'import reader handles abort');
     assert.ok(imp.includes('ipShow(file.name, ipToken)'), 'import shows the card with the file name');

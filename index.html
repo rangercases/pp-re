@@ -4906,6 +4906,44 @@
       color: #fff;
     }
 
+    .drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 18, 20, 0.55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      z-index: 205;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 22px;
+    }
+
+    .drop-overlay-card {
+      border: 2px dashed rgba(255, 255, 255, 0.7);
+      border-radius: 22px;
+      color: #ffffff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-body);
+    }
+
+    .drop-overlay-title {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .drop-overlay-sub {
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -8051,6 +8089,13 @@
     </div>
     <div class="ip-track"><div class="ip-fill" id="ipFill"></div></div>
     <div class="ip-meta"><span id="ipStage"></span><span id="ipPct">0%</span></div>
+  </div>
+  <div class="drop-overlay" id="dropOverlay" style="display:none">
+    <div class="drop-overlay-card">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="drop-overlay-title">Drop to import</div>
+      <div class="drop-overlay-sub">JSON report files</div>
+    </div>
   </div>
 
   <script>
@@ -13211,6 +13256,16 @@
         const ipToken = (opts && opts.ipToken) || { cancelled: false };
         if (!(opts && opts.ipToken)) ipShow((opts && opts.ipFileName) || 'JSON report', ipToken);
         ipUpdate('Processing…', 20);
+        // A full-backup envelope ({app, reports:[…]}) fed to this
+        // single-report door becomes a junk empty report (Hung hit this
+        // restoring his v3.2.0 backup, 2026-11-17). Refuse it here so
+        // EVERY single-report entry point (Open JSON, paste, drag-drop,
+        // file open) is protected, and point at the Restore door.
+        if (data && Array.isArray(data.reports)) {
+          ipHide();
+          showToast('This is a backup file — use Restore (JSON) in the ⚙ menu');
+          return;
+        }
         const existingReports = await dbGetAllMetadata();
 
         if (openHandle) {
@@ -13348,61 +13403,96 @@
     }
 
     function initHomeDragAndDrop() {
-      const home = document.getElementById('homeScreen');
-      if (!home) return;
-      home.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      // Drag a JSON report file anywhere over the home screen and drop it
+      // to import (v4.8.1: full-window overlay so the drop zone is
+      // discoverable, sequential imports with the progress card, and the
+      // batch stops if the name-conflict dialog opens). Active only while
+      // the home screen is showing — the editor keeps its photo drops.
+      const overlay = document.getElementById('dropOverlay');
+      let dragDepth = 0;
+      const homeActive = () => {
+        const home = document.getElementById('homeScreen');
+        return !!(home && home.classList.contains('active'));
+      };
+      const dragHasFiles = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
+      const showOverlay = () => { if (overlay) overlay.style.display = 'flex'; };
+      const hideOverlay = () => { dragDepth = 0; if (overlay) overlay.style.display = 'none'; };
+
+      window.addEventListener('dragenter', (e) => {
+        if (!homeActive() || !dragHasFiles(e)) return;
+        dragDepth++;
+        showOverlay();
       });
-      home.addEventListener('drop', async (e) => {
+      window.addEventListener('dragover', (e) => {
+        if (!homeActive() || !dragHasFiles(e)) return;
         e.preventDefault();
-        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        showOverlay();
+      });
+      window.addEventListener('dragleave', (e) => {
+        if (!homeActive()) return;
+        dragDepth--;
+        if (dragDepth <= 0 || !e.relatedTarget) hideOverlay();
+      });
+      window.addEventListener('drop', async (e) => {
+        if (!homeActive()) return;
+        e.preventDefault();
+        hideOverlay();
         const files = Array.from(e.dataTransfer.files || []);
         const jsonFiles = files.filter(f => (f.name && f.name.toLowerCase().endsWith('.json')) || f.type === 'application/json');
-        if (jsonFiles.length > 0) {
-          for (const file of jsonFiles) {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-              try {
-                const data = JSON.parse(ev.target.result);
-                await processJsonData(data);
-              } catch (err) {
-                console.error(err);
-                alert(`Error reading ${file.name}: Invalid JSON file format!`);
-              }
-            };
-            reader.readAsText(file);
+        if (!jsonFiles.length) return;
+        for (const file of jsonFiles) {
+          await importFileWithProgress(file);
+          const conflict = document.getElementById('importConflictModal');
+          if (conflict && !conflict.classList.contains('hidden')) {
+            if (jsonFiles.length > 1) showToast('Resolve this import first — remaining files were not imported');
+            break;
           }
         }
+      });
+    }
+
+    // Read + import one report file behind the progress card — shared by
+    // the file picker (importReport) and drag-drop.
+    function importFileWithProgress(file) {
+      return new Promise((resolve) => {
+        const ipToken = { cancelled: false };
+        ipShow(file.name, ipToken);
+        const reader = new FileReader();
+        ipToken.reader = reader;
+        reader.onprogress = (ev) => {
+          if (ev.lengthComputable) ipUpdate('Reading file…', (ev.loaded / ev.total) * 20);
+        };
+        reader.onabort = () => {
+          ipHide();
+          showToast('Import cancelled');
+          resolve();
+        };
+        reader.onerror = () => {
+          ipHide();
+          alert(`Error reading ${file.name}: could not read the file!`);
+          resolve();
+        };
+        reader.onload = async (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            ipUpdate('Processing…', 20);
+            await processJsonData(data, { ipToken: ipToken, ipFileName: file.name });
+          } catch (err) {
+            ipHide();
+            console.error(err);
+            alert(`Error reading ${file.name}: Invalid JSON file format!`);
+          }
+          resolve();
+        };
+        reader.readAsText(file);
       });
     }
 
     function importReport(e) {
       const file = e.target.files[0];
       if (!file) return;
-      const ipToken = { cancelled: false };
-      ipShow(file.name, ipToken);
-      const reader = new FileReader();
-      ipToken.reader = reader;
-      reader.onprogress = (ev) => {
-        if (ev.lengthComputable) ipUpdate('Reading file…', (ev.loaded / ev.total) * 20);
-      };
-      reader.onabort = () => {
-        ipHide();
-        showToast('Import cancelled');
-      };
-      reader.onload = async (ev) => {
-        try {
-          const data = JSON.parse(ev.target.result);
-          ipUpdate('Processing…', 20);
-          await processJsonData(data, { ipToken: ipToken, ipFileName: file.name });
-        } catch (err) {
-          ipHide();
-          console.error(err);
-          alert('Import error: Invalid JSON file format!');
-        }
-      };
-      reader.readAsText(file);
+      importFileWithProgress(file);
       e.target.value = '';
     }
 
