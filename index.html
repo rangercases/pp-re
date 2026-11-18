@@ -6493,6 +6493,41 @@
       background: radial-gradient(1100px 600px at 50% -10%, #ffffff 0%, var(--bg) 55%, #ECE8E3 100%);
     }
 
+    .device-gate-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 24px;
+      overflow: auto;
+      background: radial-gradient(1100px 600px at 50% -10%, #ffffff 0%, var(--bg) 55%, #ECE8E3 100%);
+    }
+
+    .device-gate-screen[hidden] {
+      display: none;
+    }
+
+    .device-gate-title {
+      font-size: 20px;
+      margin: 0 0 10px;
+    }
+
+    .device-gate-text {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 14px;
+    }
+
+    .device-gate-user {
+      font-weight: 600;
+      margin: 0 0 18px;
+      word-break: break-all;
+    }
+
     .auth-card {
       width: 100%;
       max-width: 420px;
@@ -7062,6 +7097,20 @@
 </head>
 
 <body>
+  <!-- DEVICE GATE: tài khoản thường chỉ dùng laptop/desktop; điện thoại & tablet dành cho admin -->
+  <div class="device-gate-screen" id="deviceGateScreen" hidden>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="FASREP_Black.png" alt="FASREP">
+        <span class="auth-brand-sub">Sofacompany</span>
+      </div>
+      <h1 class="device-gate-title">Laptop or desktop only</h1>
+      <p class="device-gate-text">Your account can use FASREP on a laptop or desktop computer. Phones and tablets are reserved for admin accounts.</p>
+      <p class="device-gate-user" id="deviceGateUser"></p>
+      <button class="auth-submit" type="button" onclick="doLogout()">SIGN OUT</button>
+    </div>
+  </div>
+
   <!-- AUTH GATE: ĐĂNG NHẬP / THIẾT LẬP ADMIN ĐẦU TIÊN -->
   <div class="auth-screen" id="authScreen">
     <div class="auth-card">
@@ -21472,8 +21521,36 @@
       else showToast('Old reports are already in this account');
     }
 
+    // ── Device gate: phones & tablets are admin-only; other accounts are laptop/desktop only ──
+    function fasrepIsMobileOrTablet(ua, platform, maxTouchPoints) {
+      const s = String(ua || '');
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(s)) return true;
+      // iPadOS 13+ sends a Macintosh UA; a real Mac reports at most 1 touch point.
+      if (platform === 'MacIntel' && (Number(maxTouchPoints) || 0) > 1) return true;
+      return false;
+    }
+
+    function deviceGateBlocks() {
+      if (!currentUser || currentUser.role === 'admin') return false;
+      return fasrepIsMobileOrTablet(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+    }
+
+    function applyDeviceGate() {
+      const blocked = deviceGateBlocks();
+      const el = document.getElementById('deviceGateScreen');
+      if (el) {
+        el.hidden = !blocked;
+        if (blocked) {
+          const userEl = document.getElementById('deviceGateUser');
+          if (userEl) userEl.textContent = 'Signed in as ' + (currentUser.email || currentUser.name || '');
+        }
+      }
+      return blocked;
+    }
+
     function startApp() {
       if (appInitialized) return;
+      if (applyDeviceGate()) return;
       appInitialized = true;
       prepareUserStorage(currentUser);
       initDB().then(async () => {
@@ -22051,6 +22128,7 @@
           currentUser = result.data.user;
           writeCachedSession(currentUser);
           updateAccountUI();
+          applyDeviceGate();
         }
       } catch (err) { }
     });
