@@ -129,14 +129,14 @@ describe('TC-DISK3.3: MAX_LOCAL_REPORTS exemptions for disk users', () => {
   it('the restore-path cap check is skipped for disk users', () => {
     const body = extractFnBody(indexHtml, 'async function restoreDatabase(event)', 'restoreDatabase');
     assert.ok(
-      body.includes('if (!diskK1Active() && existingMetas.length + newCount > MAX_LOCAL_REPORTS)'),
+      body.includes('if (!diskK1Active() && !cloudSyncAllowed() && existingMetas.length + newCount > MAX_LOCAL_REPORTS)'),
       'restore must not block a disk user at the local cap'
     );
   });
 
   it('the batch-duplicate room check is skipped for disk users', () => {
     const body = extractFnBody(indexHtml, 'async function duplicateSelectedReports()', 'duplicateSelectedReports');
-    const guardAt = body.indexOf('if (!diskK1Active()) {');
+    const guardAt = body.indexOf('if (!diskK1Active() && !cloudSyncAllowed()) {');
     const roomAt = body.indexOf('MAX_LOCAL_REPORTS - metas.length');
     assert.ok(guardAt >= 0, 'batch duplicate must guard its room check');
     assert.ok(roomAt > guardAt, 'the room computation must sit inside the non-disk guard');

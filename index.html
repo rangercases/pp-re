@@ -8987,7 +8987,7 @@
           const existingMetas = await dbGetAllMetadata();
           const existingIds = new Set(existingMetas.map(r => String(r.id)));
           const newCount = reportsToRestore.filter(r => !r.id || !existingIds.has(String(r.id))).length;
-          if (!diskK1Active() && existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
+          if (!diskK1Active() && !cloudSyncAllowed() && existingMetas.length + newCount > MAX_LOCAL_REPORTS) {
             ipHide();
             alert(
               `App limit is ${MAX_LOCAL_REPORTS} reports.\n\nThis backup would bring the app to ${existingMetas.length + newCount} reports.\nDelete some reports in the app or use a smaller backup and try again.`
@@ -13154,8 +13154,8 @@
       }
       try {
         const ids = Array.from(selectedReportIds);
-        // DISK K3: the local cap does not apply to disk-mode users.
-        if (!diskK1Active()) {
+        // DISK K3: the local cap does not apply to disk-mode users or admin.
+        if (!diskK1Active() && !cloudSyncAllowed()) {
           const metas = await dbGetAllMetadata();
           const room = MAX_LOCAL_REPORTS - metas.length;
           if (room <= 0) { await handleReportLimitReached(); return; }
@@ -14027,6 +14027,10 @@
           const total = reports.length;
           if (diskActive) {
             limitEl.textContent = L(`${total} trên đĩa`, `${total} on disk`);
+            limitEl.style.color = 'var(--ink-soft)';
+          } else if (cloudSyncAllowed()) {
+            // Admin has no local cap: plain count, no fraction, no warning.
+            limitEl.textContent = L(`${total} trên máy này`, `${total} on this device`);
             limitEl.style.color = 'var(--ink-soft)';
           } else {
             const over = total >= MAX_LOCAL_REPORTS;
@@ -18715,6 +18719,10 @@
       // DISK K3: disk-mode users are bounded by their disk, not by the
       // local report cap (design §5.10).
       if (diskK1Active()) return true;
+      // Admin is exempt too (Hung, 2026-11-19): the admin's real store is
+      // the cloud — cloudPullAndMerge already fills this device past the
+      // cap — so the cap only guards regular users' local storage.
+      if (cloudSyncAllowed()) return true;
       try {
         const metas = await dbGetAllMetadata();
         if (!metas || metas.length < MAX_LOCAL_REPORTS) return true;
