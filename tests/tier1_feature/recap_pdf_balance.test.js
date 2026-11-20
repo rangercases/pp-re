@@ -81,7 +81,7 @@ describe('TC-BAL1: addImg — default centering unchanged, opt-in top-align', ()
   it('TC-BAL1.5: non-cover addImg callers keep their exact old call shape (no opts)', () => {
     assert.ok(indexHtml.includes('addImg(displayImg, dx, dy, itemMainW, dimImgH);'), 'dimensions main image call unchanged');
     assert.ok(indexHtml.includes('addImg(displayImgSub, dx + itemMainW, dy, itemSubW, dimImgH);'), 'dimensions sub image call unchanged');
-    assert.ok(indexHtml.includes('addImg(pageImg, posX, y, drawW, drawH);'), 'documents image call unchanged');
+    assert.ok(indexHtml.includes('addImg(pageImg, posX, posY, drawW, drawH);'), 'documents image call: still no opts (ATTACH-MERGE centres it on the full page since 2026-11-20)');
   });
 });
 

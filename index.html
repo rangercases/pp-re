@@ -20436,6 +20436,11 @@
 
       const pdfImageMap = await preparePdfImageMap(D);
       const pdfFailedImages = [];
+      // ATTACH-MERGE: pages of attached files (Technical Documents / BV Test)
+      // are merged into the export as bare full pages — no section header,
+      // no footer bar (Hung, 2026-11-20). Their page numbers are collected
+      // here and the footer pass at the end skips them.
+      const bareAttachPages = new Set();
 
       const isRecap = (D && D.moduleType === 'sample-review-recap') || ((!D || !D.moduleType) && (D.reportTitle || '').toUpperCase().includes('RECAP'));
       const isProto = (D && D.moduleType === 'prototype') || ((!D || !D.moduleType) && ((((D.reportTitle || '') + ' ' + (D.desc || '') + ' ' + (D.model || '')).toUpperCase().includes('PROTOTYPE'))));
@@ -21868,18 +21873,19 @@
               const attName = att.name || (isBvTest ? `BV Test Report #${aIdx + 1}` : `Technical Drawing #${aIdx + 1}`);
               const pageImg = att.img || (att.data && att.data.startsWith('data:image/') ? att.data : null);
 
-              // Mỗi trang bản vẽ xuất thành 1 trang A4 chuyên nghiệp độc lập
-              addHeader(modTitle);
-
               if (pageImg) {
+                // ATTACH-MERGE: the file page becomes a page of the export
+                // as-is — a bare full A4 page, no header, no footer bar.
+                doc.addPage();
+                bareAttachPages.add(doc.getNumberOfPages());
                 try {
                   const imgProps = doc.getImageProperties(pageImg);
                   const aspect = (imgProps && imgProps.width && imgProps.height)
                     ? (imgProps.height / imgProps.width)
                     : ((att.height && att.width) ? (att.height / att.width) : 0.707);
 
-                  const maxDrawW = W - M * 2; // Chiều rộng tối đa (~182mm)
-                  const maxDrawH = BOTTOM_LIMIT - y - 6; // Chiều cao tối đa (~230mm)
+                  const maxDrawW = W; // Phủ đầy chiều ngang trang A4
+                  const maxDrawH = 297; // Phủ đầy chiều cao trang A4
 
                   let drawW = maxDrawW;
                   let drawH = drawW * aspect;
@@ -21890,14 +21896,16 @@
                     drawW = drawH / aspect;
                   }
 
-                  // Căn giữa theo chiều ngang trang giấy
-                  const posX = M + (maxDrawW - drawW) / 2;
-                  addImg(pageImg, posX, y, drawW, drawH);
-                  y += drawH + 6;
+                  // Căn giữa trang giấy theo cả hai chiều
+                  const posX = (W - drawW) / 2;
+                  const posY = (297 - drawH) / 2;
+                  addImg(pageImg, posX, posY, drawW, drawH);
                 } catch (e) {
                   console.warn('Drawing image insert error:', e);
                 }
+                y = 297; // Trang đã đầy — nội dung tiếp theo mở trang mới
               } else {
+                addHeader(modTitle);
                 // Thẻ thông tin dự phòng nếu không đọc được
                 doc.setFillColor(248, 246, 242);
                 doc.setDrawColor(220, 215, 210);
@@ -21930,10 +21938,12 @@
         renderPhotoSection(modTitle, photosData, notesData, `${modTitle} Notes`, (isRecap && photoKey === 'watchoutPhotos') ? { actionChips: true } : null);
       });
 
-      // Đánh số trang & Footer
+      // Đánh số trang & Footer — ATTACH-MERGE: bare merged attachment pages
+      // are skipped, they keep the file page exactly as attached.
       const totalPages = doc.getNumberOfPages();
       const reportName = getReportTitle(D);
       for (let p = 1; p <= totalPages; p++) {
+        if (bareAttachPages.has(p)) continue;
         doc.setPage(p);
         doc.setFillColor(...themeRgb);
         doc.rect(0, 285, W, 12, 'F');
