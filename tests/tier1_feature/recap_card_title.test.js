@@ -49,9 +49,9 @@ function cardBlock(cardId, nextCardId) {
   return hubHtml.slice(start, end);
 }
 
-const preProdBlock = cardBlock('cardModulePreProd', 'cardModulePrototype');
-const prototypeBlock = cardBlock('cardModulePrototype', 'cardModuleRecap');
-const recapBlock = cardBlock('cardModuleRecap', null);
+const recapBlock = cardBlock('cardModuleRecap', 'cardModulePrototype');
+const prototypeBlock = cardBlock('cardModulePrototype', 'cardModulePreProd');
+const preProdBlock = cardBlock('cardModulePreProd', null);
 
 function cardText(block, cls, label) {
   const match = block.match(new RegExp(`<div class="${cls}">([^<]*)</div>`));

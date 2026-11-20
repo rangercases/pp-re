@@ -13792,7 +13792,7 @@
         cover: { maxSlots: 4, defaultSlotKeys: null, defaultLabels: null, labelFallback: 'key', capacityModel: 'points', capAtRead: false, pdfCap: null },
         hub: {
           cardId: 'cardModulePreProd',
-          num: '01',
+          num: '03',
           title: 'Pre-Production',
           tagline: 'Sample Review Report',
           iconAlt: 'Pre-Production',
@@ -13832,7 +13832,7 @@
         cover: { maxSlots: 2, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 2 },
         hub: {
           cardId: 'cardModuleRecap',
-          num: '03',
+          num: '01',
           title: 'Recap',
           tagline: 'Sample Review Report',
           iconAlt: 'Sample Review Recap',
@@ -13855,7 +13855,12 @@
     function renderHubCards() {
       const grid = document.getElementById('hubModuleGrid');
       if (!grid) return;
-      grid.innerHTML = Object.values(MODULE_THEMES).map(cfg => {
+      // HUB-ORDER (v4.13.1, Hung 2026-11-20): Recap first, Pre-Production
+      // last. Display order only — MODULE_THEMES itself is untouched, so
+      // every key-based lookup elsewhere is unaffected; hub.num follows the
+      // position (Recap 01, Prototype 02, Pre-Production 03).
+      const hubOrder = ['sample-review-recap', 'prototype', 'pre-production'];
+      grid.innerHTML = hubOrder.map(key => MODULE_THEMES[key]).filter(Boolean).map(cfg => {
         const hub = cfg.hub || {};
         const badgeStyle = `background:${cfg.lightColor}; color:${cfg.themeColor}; border-color:${hexToRgba(cfg.themeColor, 0.25)};`;
         return `

@@ -109,16 +109,16 @@ describe('TC-INH2-F6: hub cards are generated from MODULE_THEMES.hub by one rend
     const cards = [...hub.matchAll(/<div class="craft-module-card" id="(cardModule\w+)" onclick="openModule\('([^']+)'\)"/g)]
       .map(m => ({ id: m[1], mod: m[2] }));
     assert.deepEqual(cards, [
-      { id: 'cardModulePreProd', mod: 'pre-production' },
+      { id: 'cardModuleRecap', mod: 'sample-review-recap' },
       { id: 'cardModulePrototype', mod: 'prototype' },
-      { id: 'cardModuleRecap', mod: 'sample-review-recap' }
+      { id: 'cardModulePreProd', mod: 'pre-production' }
     ]);
     const titles = [...hub.matchAll(/<div class="craft-card-title">([^<]*)<\/div>/g)].map(m => m[1]);
-    assert.deepEqual(titles, ['Pre-Production', 'Prototype', 'Recap'], 'card titles captured verbatim');
+    assert.deepEqual(titles, ['Recap', 'Prototype', 'Pre-Production'], 'card titles captured verbatim');
     const nums = [...hub.matchAll(/craft-card-num-box"[^>]*>(\d{2})</g)].map(m => m[1]);
     assert.deepEqual(nums, ['01', '02', '03']);
     const opens = [...hub.matchAll(/onclick="event\.stopPropagation\(\); openModule\('([^']+)'\)">OPEN</g)].map(m => m[1]);
-    assert.deepEqual(opens, ['pre-production', 'prototype', 'sample-review-recap'], 'OPEN buttons keep openModule wiring');
+    assert.deepEqual(opens, ['sample-review-recap', 'prototype', 'pre-production'], 'OPEN buttons keep openModule wiring');
   });
 
   it('TC-INH2-F6.3: badges come from config, colours stay per-module; [NEW] strips removed (Hung, 2026-11-17)', () => {
@@ -130,15 +130,15 @@ describe('TC-INH2-F6: hub cards are generated from MODULE_THEMES.hub by one rend
     assert.ok(hub.includes('style="background:#F7EFEA; color:#924D2C; border-color:rgba(146, 77, 44, 0.25);"'), 'prototype badge');
     assert.ok(hub.includes('style="background:#F4F4F5; color:#52525B; border-color:rgba(82, 82, 91, 0.25);"'), 'recap badge');
     assert.ok(hub.includes('style="background:#E8F6F0; color:#0A7E5C; border-color:rgba(10, 126, 92, 0.25);"'), 'pre-production badge');
-    assert.ok(hub.includes('style="background-color: #0A7E5C;">01<'), 'num box 01 uses the module theme colour');
+    assert.ok(hub.includes('style="background-color: #52525B;">01<'), 'num box 01 (Recap, since v4.13.1) uses the module theme colour');
     assert.ok(hub.includes('style="background-color: #924D2C;">02<'), 'num box 02 uses the module theme colour');
-    assert.ok(hub.includes('style="background-color: #52525B;">03<'), 'num box 03 uses the module theme colour');
+    assert.ok(hub.includes('style="background-color: #0A7E5C;">03<'), 'num box 03 (Pre-Production, since v4.13.1) uses the module theme colour');
   });
 
   it('TC-INH2-F6.4: renderHubCards runs once at startup so the hub is populated on load', () => {
     const body = extractFnBody(indexHtml, 'function renderHubCards()', 'renderHubCards');
     assert.ok(body.includes("document.getElementById('hubModuleGrid')"), 'renderer targets the container');
-    assert.ok(body.includes('Object.values(MODULE_THEMES).map'), 'cards iterate the module config');
+    assert.ok(body.includes("const hubOrder = ['sample-review-recap', 'prototype', 'pre-production'];"), 'cards follow the fixed hub order (v4.13.1)');
     const after = indexHtml.slice(indexHtml.indexOf('function renderHubCards()'));
     assert.ok(after.includes('\n    renderHubCards();'), 'the renderer must be invoked at startup');
   });

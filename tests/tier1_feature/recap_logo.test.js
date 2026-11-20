@@ -50,9 +50,9 @@ function cardBlock(cardId, nextCardId) {
   return hubHtml.slice(start, end);
 }
 
-const preProdBlock = cardBlock('cardModulePreProd', 'cardModulePrototype');
-const prototypeBlock = cardBlock('cardModulePrototype', 'cardModuleRecap');
-const recapBlock = cardBlock('cardModuleRecap', null);
+const recapBlock = cardBlock('cardModuleRecap', 'cardModulePrototype');
+const prototypeBlock = cardBlock('cardModulePrototype', 'cardModulePreProd');
+const preProdBlock = cardBlock('cardModulePreProd', null);
 
 function decodeIcon(block, label) {
   const match = block.match(/<img src="data:image\/png;base64,([A-Za-z0-9+/=]+)" alt="([^"]*)">/);
