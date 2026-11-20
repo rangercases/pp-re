@@ -9276,10 +9276,16 @@
       { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true }
     ];
 
-    // ═══════════════ DEFAULT 3 MODULES (SAMPLE REVIEW RECAP) ═══════════════
+    // ═══════════════ DEFAULT 4 MODULES (SAMPLE REVIEW RECAP) ═══════════════
+    // RT-1 (v4.13.0): Recap có thêm tab Testing — cùng khai báo hệt
+    // Prototype (canDelete: true, xoá được; dữ liệu bvRows / testingPhotos /
+    // testingNotes dùng chung như Prototype). Báo cáo Recap đã lưu được bổ
+    // sung tab này một lần trong ensureReportModules (cờ
+    // recapTestingBackfilled) — người dùng xoá thì không tự mọc lại.
     const DEFAULT_MODULES_RECAP = [
       { id: 'sec_overall', type: 'overall', name: 'OVERVIEW', canDelete: false, canDuplicate: false },
       { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: false, canDuplicate: true },
+      { id: 'sec_testing', type: 'testing', name: 'Testing', key: 'testingPhotos', notesKey: 'testingNotes', canDelete: true, canDuplicate: true },
       { id: 'sec_checklist', type: 'checklist', name: 'Check List', canDelete: true, canDuplicate: false }
     ];
 
@@ -14373,6 +14379,24 @@
               const woIdx = D.modules.findIndex(m => m && m.id === 'sec_watchout');
               D.modules.splice(woIdx >= 0 ? woIdx + 1 : D.modules.length, 0, JSON.parse(JSON.stringify(defChk)));
               D.recapChecklistBackfilled = true;
+            }
+          }
+        }
+        // RT-1 (v4.13.0): cùng cơ chế bổ sung một lần như Check List ở trên —
+        // báo cáo Recap đã lưu chưa có tab Testing thì chèn ngay sau Watch
+        // Out (trước Check List, đúng thứ tự của Prototype) ở lần mở tới.
+        // Cờ recapTestingBackfilled đóng dấu ngay khi báo cáo đã có tab, nên
+        // người dùng chủ động xoá Testing thì tab không tự mọc lại.
+        if (modKey === 'sample-review-recap') {
+          const tstIdx = D.modules.findIndex(m => m && (m.id === 'sec_testing' || m.type === 'testing'));
+          if (tstIdx !== -1) {
+            D.recapTestingBackfilled = true;
+          } else if (!D.recapTestingBackfilled) {
+            const defTst = defMods.find(m => m && m.id === 'sec_testing');
+            if (defTst) {
+              const woIdx = D.modules.findIndex(m => m && m.id === 'sec_watchout');
+              D.modules.splice(woIdx >= 0 ? woIdx + 1 : D.modules.length, 0, JSON.parse(JSON.stringify(defTst)));
+              D.recapTestingBackfilled = true;
             }
           }
         }

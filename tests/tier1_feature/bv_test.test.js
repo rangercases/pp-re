@@ -86,12 +86,13 @@ describe('TC-BVT.1: Pre-Production template — BV Test after Watch Out, Testing
     assert.equal(testing.key, 'testingPhotos', 'the standby def still points at the live data keys');
   });
 
-  it('TC-BVT.1.3: Prototype and Recap templates are untouched (Testing stays a normal default)', () => {
+  it('TC-BVT.1.3: Prototype template untouched; Recap has Testing but never BV Test', () => {
     const protoTesting = MODULES_PROTOTYPE.find(m => m.id === 'sec_testing');
     assert.ok(protoTesting, 'Prototype keeps Testing');
     assert.equal(protoTesting.standby, undefined, 'Prototype Testing is NOT standby');
     assert.ok(!MODULES_PROTOTYPE.some(m => m.id === 'sec_bvtest'), 'no BV Test in Prototype');
-    assert.ok(!MODULES_RECAP.some(m => m.id === 'sec_bvtest' || m.id === 'sec_testing'), 'Recap unchanged');
+    assert.ok(!MODULES_RECAP.some(m => m.id === 'sec_bvtest'), 'no BV Test in Recap (BV Test is Pre-Production only)');
+    assert.ok(MODULES_RECAP.some(m => m.id === 'sec_testing'), 'Recap has its own Testing tab since v4.13.0 (RT-1)');
   });
 });
 
