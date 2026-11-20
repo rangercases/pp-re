@@ -7664,6 +7664,39 @@
       </div>
     </div>
 
+    <!-- S5b: BV TEST (file báo cáo test BV — dùng chung cơ chế đính kèm với Technical Documents) -->
+    <div id="sec_bvtest" class="sec-block" style="display:none">
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="module-title-display" data-module-id="sec_bvtest">BV Test</span>
+        </div>
+        <div class="docs-dropzone-container" style="padding: 14px;">
+          <div class="doc-upload-box" id="bvUploadBox" onclick="document.getElementById('bvFileInput').click()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand-theme); margin-bottom:6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <line x1="9" y1="15" x2="15" y2="15" />
+            </svg>
+            <div style="font-family:var(--font-hud); font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-strong);">
+              Drop files here or click to browse
+            </div>
+            <div style="font-family:var(--font-hud); font-size:10px; color:var(--muted); margin-top:4px; letter-spacing:0.08em; text-transform:uppercase;">
+              PDF, PNG, JPG
+            </div>
+          </div>
+          <input type="file" id="bvFileInput" multiple accept=".pdf,image/png,image/jpeg,image/webp"
+            style="display:none" onchange="handleDocFilesSelected(event, 'bvtest')">
+
+          <div class="doc-files-list" id="bvFilesList"
+            style="margin-top:14px; display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+        <div class="note-area"><textarea id="bvNotes" placeholder="BV test report remarks..."
+            oninput="as()"></textarea></div>
+      </div>
+    </div>
+
     <!-- S6: CHECKLIST -->
     <div id="sec_checklist" class="sec-block" style="display:none">
       <div class="apple-checklist-container">
@@ -8889,7 +8922,7 @@
       });
     }
 
-    const APP_VERSION = 'v4.11.3';
+    const APP_VERSION = 'v4.12.0';
 
     // ── SAO LƯU TOÀN BỘ CƠ SỞ DỮ LIỆU (BACKUP ALL) ──
     async function backupDatabase() {
@@ -9212,13 +9245,19 @@
     ];
 
     // ═══════════════ DEFAULT FULL 10 MODULES (PRE-PRODUCTION) ═══════════════
+    // BVT-1 (v4.12.0): tab BV Test (sec_bvtest) thay vị trí của Testing trong
+    // bộ tab mặc định. Testing KHÔNG bị xoá khỏi template — nó chuyển sang
+    // trạng thái chờ (standby: true): báo cáo mới không seed tab này, nhưng
+    // Manage Modules / Add vẫn liệt kê nó để thêm lại khi cần (dữ liệu
+    // bvRows / testingPhotos / testingNotes luôn nằm trong report).
     const DEFAULT_MODULES_PREPROD = [
       { id: 'sec_overall', type: 'overall', name: 'OVERVIEW', canDelete: false, canDuplicate: false },
       { id: 'sec_photos', type: 'photos', name: 'Product Photos', key: 'prodPhotos', canDelete: true, canDuplicate: true },
       { id: 'sec_dimensions', type: 'dimensions', name: 'Product Dimension & Details', canDelete: true, canDuplicate: true },
       { id: 'sec_assembly', type: 'assembly', name: 'Product Assembly', key: 'assemblyPhotos', notesKey: 'assemblyNotes', canDelete: true, canDuplicate: true },
       { id: 'sec_watchout', type: 'watchout', name: 'Quality Watch Out', key: 'watchoutPhotos', notesKey: 'watchoutNotes', canDelete: true, canDuplicate: true },
-      { id: 'sec_testing', type: 'testing', name: 'Testing', key: 'testingPhotos', notesKey: 'testingNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_bvtest', type: 'bvtest', name: 'BV Test', key: 'bvAttachments', notesKey: 'bvNotes', canDelete: true, canDuplicate: true },
+      { id: 'sec_testing', type: 'testing', name: 'Testing', key: 'testingPhotos', notesKey: 'testingNotes', canDelete: true, canDuplicate: true, standby: true },
       { id: 'sec_checklist', type: 'checklist', name: 'Check List', canDelete: true, canDuplicate: false },
       { id: 'sec_comparison', type: 'comparison', name: 'Product Comparison', key: 'comparisonPhotos', notesKey: 'comparisonNotes', canDelete: true, canDuplicate: true },
       { id: 'sec_documents', type: 'documents', name: 'Technical Documents', key: 'docAttachments', canDelete: true, canDuplicate: true },
@@ -14302,7 +14341,11 @@
       const modKey = (D && D.moduleType && MODULE_THEMES[D.moduleType]) ? D.moduleType : 'pre-production';
       const defMods = (MODULE_THEMES[modKey] || MODULE_THEMES['pre-production']).defaultModules;
       if (!D.modules || !Array.isArray(D.modules) || D.modules.length === 0) {
-        D.modules = JSON.parse(JSON.stringify(defMods));
+        // BVT-1: entry standby (Testing ở Pre-Production) không được seed
+        // vào báo cáo mới — nó chỉ nằm trong template để thêm lại từ
+        // Manage Modules khi cần.
+        D.modules = JSON.parse(JSON.stringify(defMods)).filter(m => !m || !m.standby);
+        if (modKey === 'pre-production') D.preprodBvTestMigrated = true;
       } else {
         // Chuẩn hóa ID cũ nếu có trong các báo cáo đã lưu trước đó (sec0 -> sec_overall)
         D.modules.forEach(m => {
@@ -14332,6 +14375,29 @@
               D.recapChecklistBackfilled = true;
             }
           }
+        }
+        // BVT-1 (v4.12.0): báo cáo Pre-Production tạo trước v4.12.0 còn tab
+        // Testing trong danh sách module đã lưu — thay entry Testing TẠI CHỖ
+        // (đúng vị trí cũ) bằng tab BV Test, đúng MỘT lần. Cờ
+        // preprodBvTestMigrated được đóng dấu ngay khi đã xử lý, nên nếu
+        // người dùng chủ động thêm lại Testing (từ Manage Modules) hoặc xoá
+        // BV Test thì lần mở sau không tự đổi nữa. CHỈ đổi danh sách module:
+        // dữ liệu bvRows / testingPhotos / testingNotes giữ nguyên trong
+        // report, thêm lại Testing là khôi phục đầy đủ. Chỉ Pre-Production;
+        // Prototype giữ Testing như cũ.
+        if (modKey === 'pre-production' && !D.preprodBvTestMigrated) {
+          const bvDef = defMods.find(m => m && m.id === 'sec_bvtest');
+          if (bvDef) {
+            const tIdx = D.modules.findIndex(m => m && (m.id === 'sec_testing' || m.type === 'testing'));
+            const bIdx = D.modules.findIndex(m => m && (m.id === 'sec_bvtest' || m.type === 'bvtest'));
+            if (tIdx !== -1 && bIdx === -1) {
+              D.modules.splice(tIdx, 1, JSON.parse(JSON.stringify(bvDef)));
+            } else if (tIdx === -1 && bIdx === -1) {
+              const woIdx = D.modules.findIndex(m => m && m.id === 'sec_watchout');
+              D.modules.splice(woIdx >= 0 ? woIdx + 1 : D.modules.length, 0, JSON.parse(JSON.stringify(bvDef)));
+            }
+          }
+          D.preprodBvTestMigrated = true;
         }
       }
     }
@@ -14445,6 +14511,7 @@
       renderBVTable();
       FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
       renderDocAttachments();
+      renderDocAttachments('bvtest');
     }
 
     function renderAllModuleHeaders() {
@@ -14861,7 +14928,7 @@
 
       // Active modules are 100% hidden; only missing standard modules appear
       const missingStandardMods = defMods.filter(def => {
-        return !D.modules.some(m => m.id === def.id || (m.type === def.type && ['overall', 'dimensions', 'testing', 'checklist', 'documents'].includes(def.type)));
+        return !D.modules.some(m => m.id === def.id || (m.type === def.type && ['overall', 'dimensions', 'testing', 'checklist', 'documents', 'bvtest'].includes(def.type)));
       });
 
       let standardHtml = '';
@@ -14933,6 +15000,9 @@
       }
 
       const newMod = JSON.parse(JSON.stringify(defaultDef));
+      // Một entry được khôi phục từ template là module ĐANG active — bỏ cờ
+      // standby (chỉ có ý nghĩa khi seed báo cáo mới từ template).
+      delete newMod.standby;
       const defIdx = DEFAULT_MODULES.findIndex(m => m.id === defaultDef.id || m.type === defaultDef.type);
       let insertIdx = D.modules.length;
       for (let i = 0; i < D.modules.length; i++) {
@@ -14955,6 +15025,7 @@
       }
       if (modType === 'checklist' && !D.checklist) D.checklist = {};
       if (modType === 'documents' && !D.docAttachments) D.docAttachments = [];
+      if (modType === 'bvtest' && !D.bvAttachments) D.bvAttachments = [];
       if (newMod.key && !D[newMod.key]) D[newMod.key] = [];
 
       as();
@@ -15080,6 +15151,21 @@
     });
 
     // ═══════════════ TECHNICAL DOCUMENTS ATTACHMENTS CONTROLLER ═══════════════
+    // Attachment sections share ONE engine: Technical Documents (ô Drawing)
+    // and BV Test (báo cáo test BV) — same upload / PDF-page unpack /
+    // thumbnail / full-screen preview / delete flow, parameterized by
+    // section so both lists behave identically. Every documents function
+    // takes an optional section argument defaulting to 'documents', so the
+    // existing inline handlers (onchange / onclick in static markup) keep
+    // working unchanged.
+    const ATTACH_SECTIONS = {
+      documents: { key: 'docAttachments', listId: 'docFilesList', inputId: 'docFileInput', boxId: 'docUploadBox', cardPrefix: 'doc_card_', idPrefix: 'doc_', emptyText: 'No documents attached yet', pdfLabel: 'PDF Drawing', imgLabel: 'Technical Drawing', fallbackName: 'Drawing' },
+      bvtest: { key: 'bvAttachments', listId: 'bvFilesList', inputId: 'bvFileInput', boxId: 'bvUploadBox', cardPrefix: 'bv_card_', idPrefix: 'bv_', emptyText: 'No BV test files attached yet', pdfLabel: 'PDF Report', imgLabel: 'Test Report', fallbackName: 'BV Test Report' }
+    };
+    function attachSectionCfg(section) {
+      return ATTACH_SECTIONS[section] || ATTACH_SECTIONS.documents;
+    }
+
     async function ensureDocAttachmentRendered(doc) {
       if (!doc) return null;
       if (doc.img) return doc.img;
@@ -15111,33 +15197,34 @@
       return null;
     }
 
-    function renderDocAttachments() {
-      const container = document.getElementById('docFilesList');
+    function renderDocAttachments(section = 'documents') {
+      const cfg = attachSectionCfg(section);
+      const container = document.getElementById(cfg.listId);
       if (!container) return;
-      const list = D.docAttachments || [];
+      const list = D[cfg.key] || [];
       if (list.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1 / -1; font-family:var(--font-hud); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); text-align:center; padding:16px; border:1px dashed var(--line); border-radius:var(--rs, 12px); background:var(--sunken);">No documents attached yet</div>`;
+        container.innerHTML = `<div style="grid-column: 1 / -1; font-family:var(--font-hud); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); text-align:center; padding:16px; border:1px dashed var(--line); border-radius:var(--rs, 12px); background:var(--sunken);">${cfg.emptyText}</div>`;
         return;
       }
 
       container.innerHTML = list.map((doc, idx) => {
         const isPdf = doc.type === 'application/pdf' || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
         const sizeKb = doc.size ? `${(doc.size / 1024).toFixed(1)} KB` : '';
-        const pageText = (doc.totalPages && doc.totalPages > 1) ? `Page ${doc.pageNumber || 1}/${doc.totalPages}` : (isPdf ? 'PDF Drawing' : 'Technical Drawing');
+        const pageText = (doc.totalPages && doc.totalPages > 1) ? `Page ${doc.pageNumber || 1}/${doc.totalPages}` : (isPdf ? cfg.pdfLabel : cfg.imgLabel);
         const previewSrc = doc.img || (doc.data && doc.data.startsWith('data:image/') ? doc.data : '');
 
         return `
-          <div class="doc-item-card" id="doc_card_${doc.id || idx}">
+          <div class="doc-item-card" id="${cfg.cardPrefix}${doc.id || idx}">
             <div class="doc-item-top">
               <div class="doc-item-info">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${isPdf ? '#ef4444' : '#0284c7'}" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                <div class="doc-item-name" title="${escapeHtml(doc.docName || doc.name || 'Drawing')}">${escapeHtml(doc.docName || doc.name || 'Drawing')}</div>
+                <div class="doc-item-name" title="${escapeHtml(doc.docName || doc.name || cfg.fallbackName)}">${escapeHtml(doc.docName || doc.name || cfg.fallbackName)}</div>
               </div>
               <span class="doc-page-badge">${pageText}</span>
-              <button type="button" class="doc-item-del-btn" onclick="deleteDocAttachment(${idx})" title="Remove this document">✕</button>
+              <button type="button" class="doc-item-del-btn" onclick="deleteDocAttachment(${idx}, '${section}')" title="Remove this document">✕</button>
             </div>
 
-            <div class="doc-thumb-preview" onclick="openDocPreviewModal('${doc.id || idx}')" title="Click to view full screen">
+            <div class="doc-thumb-preview" onclick="openDocPreviewModal('${doc.id || idx}', '${section}')" title="Click to view full screen">
               ${previewSrc ? `<img loading="lazy" decoding="async" src="${previewSrc}" alt="${escapeHtml(doc.name || '')}">` : `<div style="color:var(--muted); font-size:11px; padding:10px; text-align:center;">Rendering drawing preview...</div>`}
               <div class="doc-thumb-overlay">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -15147,7 +15234,7 @@
 
             <div class="doc-item-foot">
               <span>${sizeKb}</span>
-              <span style="color:var(--accent); font-weight:600; cursor:pointer;" onclick="openDocPreviewModal('${doc.id || idx}')">🔍 Enlarge</span>
+              <span style="color:var(--accent); font-weight:600; cursor:pointer;" onclick="openDocPreviewModal('${doc.id || idx}', '${section}')">🔍 Enlarge</span>
             </div>
           </div>
         `;
@@ -15158,7 +15245,7 @@
         if (!doc.img && doc.data) {
           const renderedImg = await ensureDocAttachmentRendered(doc);
           if (renderedImg) {
-            const card = document.getElementById(`doc_card_${doc.id || idx}`);
+            const card = document.getElementById(`${cfg.cardPrefix}${doc.id || idx}`);
             if (card) {
               const prev = card.querySelector('.doc-thumb-preview');
               if (prev) {
@@ -15170,18 +15257,19 @@
       });
     }
 
-    async function handleDocFilesSelected(e) {
+    async function handleDocFilesSelected(e, section = 'documents') {
       const files = e.target.files;
       if (!files || files.length === 0) return;
-      await processDocFiles(Array.from(files));
+      await processDocFiles(Array.from(files), section);
       e.target.value = '';
     }
 
-    async function processDocFiles(fileList) {
+    async function processDocFiles(fileList, section = 'documents') {
       if (!fileList || fileList.length === 0) return;
+      const cfg = attachSectionCfg(section);
       // C-02: capture pre-mutation state; history is pushed only if pages were added.
       const preDocSnap = (typeof dehydrateReportForHistory === 'function') ? dehydrateReportForHistory(D) : null;
-      if (!D.docAttachments) D.docAttachments = [];
+      if (!D[cfg.key]) D[cfg.key] = [];
 
       showToast('Extracting document pages...', 3000);
       let addedPages = 0;
@@ -15211,8 +15299,8 @@
                 // TB-02: store the rendered page ONCE in `img`. Readers use
                 // img || data, and legacy records that only have `data`
                 // still work — no second full copy of the same data URL.
-                D.docAttachments.push({
-                  id: 'doc_' + Date.now() + '_' + p + '_' + Math.random().toString(36).substr(2, 4),
+                D[cfg.key].push({
+                  id: cfg.idPrefix + Date.now() + '_' + p + '_' + Math.random().toString(36).substr(2, 4),
                   name: totalPages > 1 ? `${f.name} (Page ${p}/${totalPages})` : f.name,
                   docName: f.name,
                   pageNumber: p,
@@ -15229,8 +15317,8 @@
               const dataUrl = await new Promise((res, rej) => {
                 const r = new FileReader(); r.onload = ev => res(ev.target.result); r.onerror = rej; r.readAsDataURL(f);
               });
-              D.docAttachments.push({
-                id: 'doc_' + Date.now(),
+              D[cfg.key].push({
+                id: cfg.idPrefix + Date.now(),
                 name: f.name,
                 docName: f.name,
                 pageNumber: 1,
@@ -15251,8 +15339,8 @@
               const r = new FileReader(); r.onload = ev => res(ev.target.result); r.onerror = rej; r.readAsDataURL(f);
             });
             // TB-02: single copy in `img` (see note above).
-            D.docAttachments.push({
-              id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            D[cfg.key].push({
+              id: cfg.idPrefix + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
               name: f.name,
               docName: f.name,
               pageNumber: 1,
@@ -15272,25 +15360,27 @@
         if (preDocSnap) { markDirty(); pushHistorySnapshot(preDocSnap, `Attached ${addedPages} document pages`); }
         else pushHistory(`Attached ${addedPages} document pages`);
         as();
-        renderDocAttachments();
+        renderDocAttachments(section);
         showToast(`✓ Successfully imported ${addedPages} document pages`);
       }
     }
 
-    async function deleteDocAttachment(index) {
-      if (!D.docAttachments || !D.docAttachments[index]) return;
-      const docItem = D.docAttachments[index];
+    async function deleteDocAttachment(index, section = 'documents') {
+      const cfg = attachSectionCfg(section);
+      if (!D[cfg.key] || !D[cfg.key][index]) return;
+      const docItem = D[cfg.key][index];
       const docName = docItem.name || 'document';
       if (!(await appConfirm(`Are you sure you want to remove "${docName}" from this report?`, { title: 'Remove document?', confirmLabel: 'Remove' }))) return;
       pushHistory(`Delete ${docName}`);
-      D.docAttachments.splice(index, 1);
+      D[cfg.key].splice(index, 1);
       as();
-      renderDocAttachments();
+      renderDocAttachments(section);
       showToast(`✓ Document page removed`);
     }
 
-    function openDocPreviewModal(docId) {
-      const doc = (D.docAttachments || []).find((d, idx) => (d.id === docId || String(idx) === String(docId)));
+    function openDocPreviewModal(docId, section = 'documents') {
+      const cfg = attachSectionCfg(section);
+      const doc = (D[cfg.key] || []).find((d, idx) => (d.id === docId || String(idx) === String(docId)));
       if (!doc) return;
       const imgSrc = doc.img || (doc.data && doc.data.startsWith('data:image/') ? doc.data : null);
       if (!imgSrc) return;
@@ -15325,8 +15415,9 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    function initDocDropZone() {
-      const dropBox = document.getElementById('docUploadBox');
+    function initDocDropZone(section = 'documents') {
+      const cfg = attachSectionCfg(section);
+      const dropBox = document.getElementById(cfg.boxId);
       if (!dropBox) return;
       ['dragenter', 'dragover'].forEach(name => {
         dropBox.addEventListener(name, e => {
@@ -15345,7 +15436,7 @@
       dropBox.addEventListener('drop', async e => {
         const dt = e.dataTransfer;
         if (dt && dt.files && dt.files.length > 0) {
-          await processDocFiles(Array.from(dt.files));
+          await processDocFiles(Array.from(dt.files), section);
         }
       });
     }
@@ -17809,8 +17900,8 @@
 
     function loadData() {
       try {
-        const fields = ['fReportTitle', 'fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'greenlabelNotes'];
-        const keys = ['reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'greenlabelNotes'];
+        const fields = ['fReportTitle', 'fModel', 'fDesc', 'fDim', 'fDate', 'fFactory', 'fReviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'bvNotes', 'greenlabelNotes'];
+        const keys = ['reportTitle', 'model', 'desc', 'dim', 'date', 'factory', 'reviewer', 'dimNotes', 'assemblyNotes', 'watchoutNotes', 'testingNotes', 'checklistNotes', 'comparisonNotes', 'docNotes', 'bvNotes', 'greenlabelNotes'];
         fields.forEach((id, i) => {
           const el = document.getElementById(id);
           if (el) {
@@ -17877,7 +17968,9 @@
         renderOverviewSummary();
         FREE_PHOTO_KEYS.forEach(k => renderFreePhotos(k));
         renderDocAttachments();
+        renderDocAttachments('bvtest');
         initDocDropZone();
+        initDocDropZone('bvtest');
         renderCoverSlots();
         refreshAllSlots();
       } catch (err) {
@@ -18089,7 +18182,7 @@
     const FIELD_KEY_MAP = {
       fReportTitle: 'reportTitle', fModel: 'model', fDesc: 'desc', fDim: 'dim', fDate: 'date', fFactory: 'factory', fReviewer: 'reviewer',
       dimNotes: 'dimNotes', assemblyNotes: 'assemblyNotes', watchoutNotes: 'watchoutNotes', testingNotes: 'testingNotes', checklistNotes: 'checklistNotes',
-      comparisonNotes: 'comparisonNotes', docNotes: 'docNotes', greenlabelNotes: 'greenlabelNotes'
+      comparisonNotes: 'comparisonNotes', docNotes: 'docNotes', bvNotes: 'bvNotes', greenlabelNotes: 'greenlabelNotes'
     };
 
     // ── TEXT & NON-PHOTO SNAPSHOT STORAGE (LOCALSTORAGE) ──
@@ -18765,8 +18858,9 @@
           checklistPhotos: [], checklistNotes: '',
           comparisonPhotos: [], comparisonNotes: '',
           docAttachments: [], docNotes: '',
+          bvAttachments: [], bvNotes: '',
           greenlabelPhotos: [], greenlabelNotes: '',
-          modules: JSON.parse(JSON.stringify(modCfg.defaultModules))
+          modules: JSON.parse(JSON.stringify(modCfg.defaultModules)).filter(m => !m.standby)
         };
 
         // DISK K2: create the report folder + initial report.json on disk
@@ -19183,6 +19277,13 @@
         if (!doc || typeof doc !== 'object') return;
         const id = doc.id || ('i' + i);
         out.push({ key: 'doc:' + id, rec: doc, names: ['img', 'data'] });
+      });
+      // BV Test attachments ride the same disk dehydrate/hydrate path under
+      // their own 'bv:' key prefix, so file names never collide with docs.
+      (Array.isArray(rep.bvAttachments) ? rep.bvAttachments : []).forEach((doc, i) => {
+        if (!doc || typeof doc !== 'object') return;
+        const id = doc.id || ('i' + i);
+        out.push({ key: 'bv:' + id, rec: doc, names: ['img', 'data'] });
       });
       return out;
     }
@@ -20241,7 +20342,7 @@
       FREE_PHOTO_KEYS.forEach(key => {
         if (Array.isArray(report[key])) report[key].forEach(walkPhoto);
       });
-      ['dimensions', 'docAttachments'].forEach(key => {
+      ['dimensions', 'docAttachments', 'bvAttachments'].forEach(key => {
         if (Array.isArray(report[key])) report[key].forEach(walkPhoto);
       });
       if (!sources.size) return null;
@@ -21274,6 +21375,13 @@
           }
         }
       }
+      if (D.bvAttachments && D.bvAttachments.length > 0) {
+        for (const att of D.bvAttachments) {
+          if (!att.img && att.data) {
+            await ensureDocAttachmentRendered(att);
+          }
+        }
+      }
 
       // ================= DYNAMIC MODULES DISPATCHER =================
       ensureReportModules();
@@ -21718,15 +21826,17 @@
           return;
         }
 
-        if (modType === 'documents') {
-          // ================= TECHNICAL DOCUMENTS (CAD / DRAWING / PDF) =================
-          const docsList = (D.docAttachments || []).filter(doc => doc && (doc.img || doc.data));
-          const hasDocNotes = !!(D.docNotes && D.docNotes.trim());
+        if (modType === 'documents' || modType === 'bvtest') {
+          // ================= TECHNICAL DOCUMENTS / BV TEST (CAD / DRAWING / PDF) =================
+          const isBvTest = modType === 'bvtest';
+          const docsList = ((isBvTest ? D.bvAttachments : D.docAttachments) || []).filter(doc => doc && (doc.img || doc.data));
+          const docNotesText = isBvTest ? D.bvNotes : D.docNotes;
+          const hasDocNotes = !!(docNotesText && docNotesText.trim());
 
           if (docsList.length > 0 || hasDocNotes) {
             // Duyệt qua từng bản vẽ / trang tài liệu đã được giải phóng
             docsList.forEach((att, aIdx) => {
-              const attName = att.name || `Technical Drawing #${aIdx + 1}`;
+              const attName = att.name || (isBvTest ? `BV Test Report #${aIdx + 1}` : `Technical Drawing #${aIdx + 1}`);
               const pageImg = att.img || (att.data && att.data.startsWith('data:image/') ? att.data : null);
 
               // Mỗi trang bản vẽ xuất thành 1 trang A4 chuyên nghiệp độc lập
@@ -21776,7 +21886,7 @@
               if (y + 30 > BOTTOM_LIMIT) {
                 addHeader(`${modTitle} Remarks`);
               }
-              y = addSafeTextBlock(`${modTitle} Remarks`, D.docNotes, y);
+              y = addSafeTextBlock(`${modTitle} Remarks`, docNotesText, y);
             }
           }
           return;
@@ -23375,7 +23485,7 @@
     initI18n();
     bootAuth();
   </script>
-  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.85);background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 7px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">[V4.11.3]</div>
+  <div id="appVersionMark" aria-hidden="true" style="position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:900;pointer-events:none;font-family:var(--font-body,-apple-system,sans-serif);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(95,105,100,.85);background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 7px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">[V4.12.0]</div>
 </body>
 
 </html>

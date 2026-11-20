@@ -63,15 +63,19 @@ describe('TC-REC2.1: DEFAULT_MODULES_RECAP includes sec_checklist; other templat
     assert.deepEqual(recapEntry, preprodEntry);
   });
 
-  it('TC-REC2.1.3: Prototype and Pre-Production defaults are unchanged', () => {
+  it('TC-REC2.1.3: Prototype defaults are unchanged (Pre-Production list updated by BVT-1, v4.12.0)', () => {
     assert.deepEqual(MODULES_PROTOTYPE.map(m => m.id), [
       'sec_overall', 'sec_photos', 'sec_dimensions', 'sec_assembly',
       'sec_watchout', 'sec_testing', 'sec_checklist', 'sec_documents'
     ]);
+    // BVT-1 (v4.12.0): BV Test (sec_bvtest) takes Testing's old slot in the
+    // Pre-Production template; Testing stays in the template right after
+    // it, marked standby (not seeded into new reports, still re-addable).
+    // The full BVT-1 contract lives in bv_test.test.js (TC-BVT).
     assert.deepEqual(MODULES_PREPROD.map(m => m.id), [
       'sec_overall', 'sec_photos', 'sec_dimensions', 'sec_assembly',
-      'sec_watchout', 'sec_testing', 'sec_checklist', 'sec_comparison',
-      'sec_documents', 'sec_greenlabel'
+      'sec_watchout', 'sec_bvtest', 'sec_testing', 'sec_checklist',
+      'sec_comparison', 'sec_documents', 'sec_greenlabel'
     ]);
   });
 });
@@ -444,7 +448,9 @@ describe('TC-REC2.6: checklist tally hides when the Check List module is removed
 describe('TC-REC2.6: PDF checklist rendering is module-driven, not Recap-gated', () => {
   const dispatcherIdx = indexHtml.indexOf('DYNAMIC MODULES DISPATCHER');
   const checklistIdx = indexHtml.indexOf("if (modType === 'checklist')", dispatcherIdx);
-  const documentsIdx = indexHtml.indexOf("if (modType === 'documents')", checklistIdx);
+  // BVT-1 (v4.12.0): the documents branch now also serves bvtest — the
+  // branch condition is the slice boundary this test looks for.
+  const documentsIdx = indexHtml.indexOf("if (modType === 'documents' || modType === 'bvtest')", checklistIdx);
 
   it('TC-REC2.6.1: the PDF dispatcher walks the report\'s own module list', () => {
     assert.ok(dispatcherIdx !== -1, 'dispatcher present');
