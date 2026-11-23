@@ -406,9 +406,11 @@ describe('TC-INH3-F5/F8: PDF + cover config reproduce today\u2019s constants (v4
     )(D, loadModuleThemes(), COVER_SLOTS, { warn: () => {} });
     const recapFresh = { moduleType: 'sample-review-recap', coverSlots: null };
     assert.deepEqual(make(recapFresh)(), ['FRONT_VIEW', 'DETAIL_VIEW'], 'Recap defaults to its 2 slots');
-    const recapLegacy = { moduleType: 'sample-review-recap', coverSlots: ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW'] };
-    assert.deepEqual(make(recapLegacy)(), ['FRONT_VIEW', 'DETAIL_VIEW'], 'legacy Recap data is still capped to 2 at read time (R-01)');
-    assert.equal(recapLegacy.coverSlots.length, 2, 'the stored array is capped, D.coverPhotos untouched');
+    const recapThree = { moduleType: 'sample-review-recap', coverSlots: ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW'] };
+    assert.deepEqual(make(recapThree)(), ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW'], 'Recap now keeps up to 4 slots (Hung, 2026-11-23)');
+    const recapLegacy = { moduleType: 'sample-review-recap', coverSlots: ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW', 'FOURTH_VIEW', 'FIFTH_VIEW'] };
+    assert.deepEqual(make(recapLegacy)(), ['FRONT_VIEW', 'DETAIL_VIEW', 'EXTRA_VIEW', 'FOURTH_VIEW'], 'legacy Recap data is still capped at read time — now to 4 (R-01)');
+    assert.equal(recapLegacy.coverSlots.length, 4, 'the stored array is capped, D.coverPhotos untouched');
     const protoFresh = { moduleType: 'prototype', coverSlots: null };
     assert.deepEqual(make(protoFresh)(), ['FRONT_VIEW', 'SIDE_VIEW', 'ANGLE_VIEW', 'BOTTOM_VIEW'], 'standard modules default to COVER_SLOTS');
     const protoMany = { moduleType: 'prototype', coverSlots: ['A', 'B', 'C', 'D', 'E'] };
