@@ -390,7 +390,7 @@ describe('TC-INH3-F5/F8: PDF + cover config reproduce today\u2019s constants (v4
     assert.deepEqual(themes['pre-production'].cover, std);
     assert.deepEqual(themes['prototype'].cover, std);
     assert.deepEqual(themes['sample-review-recap'].cover,
-      { maxSlots: 2, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 2 });
+      { maxSlots: 4, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 4 });
     const capBody = extractFnBody(indexHtml, 'function getMaxCoverCapacity()', 'getMaxCoverCapacity');
     assert.ok(capBody.includes('getCoverConfig().maxSlots'), 'capacity must come from config');
     assert.ok(indexHtml.includes('const ckeys = modConfig.cover.pdfCap ? ckeysRaw.slice(0, modConfig.cover.pdfCap) : ckeysRaw;'),

@@ -13829,7 +13829,7 @@
         defaultModules: DEFAULT_MODULES_RECAP,
         form: { hiddenIds: ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating'], span2Ids: ['fcellReviewer'], overallStacked: true, hideOverviewTitleBar: true },
         pdfLayout: { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true },
-        cover: { maxSlots: 2, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 2 },
+        cover: { maxSlots: 4, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 4 },
         hub: {
           cardId: 'cardModuleRecap',
           num: '01',
@@ -15497,9 +15497,10 @@
       if (!D.coverSlots || !Array.isArray(D.coverSlots) || D.coverSlots.length === 0) {
         D.coverSlots = defaultSlots.slice();
       }
-      // R-01: Recap is hard-capped at 2 cover slots at READ time as well, so
-      // legacy/imported data with extra slots can never render or export
-      // more than 2 overview photos. Extra photos stay in D.coverPhotos.
+      // R-01: Recap caps cover slots at READ time as well, so legacy/
+      // imported data with extra slots can never render or export more
+      // overview photos than cover.maxSlots (4 since 2026-11-23, was 2).
+      // Extra photos stay in D.coverPhotos.
       // (INH-3/F8: the cap is config now — modules with capAtRead.)
       if (cc.capAtRead && D.coverSlots.length > cc.maxSlots) {
         console.warn('[cover] coverSlots had ' + D.coverSlots.length + ' entries; capped to ' + cc.maxSlots);
@@ -15517,9 +15518,10 @@
 
     function getCoverCapacityUsage() {
       const keys = getCoverSlotKeys();
-      // R-05: Recap capacity is counted by NUMBER of photos (max 2), a
-      // full-width photo still counts as 1. The 'points' model counts a
-      // full-width photo as 2. (INH-3/F8: cover.capacityModel decides.)
+      // R-05: Recap capacity is counted by NUMBER of photos (max =
+      // cover.maxSlots), a full-width photo still counts as 1. The
+      // 'points' model counts a full-width photo as 2.
+      // (INH-3/F8: cover.capacityModel decides.)
       const cc = getCoverConfig();
       let usage = 0;
       keys.forEach(k => {
