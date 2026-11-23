@@ -50,8 +50,8 @@ const EXPECTED_CHECKLIST_ENTRY = { id: 'sec_checklist', type: 'checklist', name:
 // TC-REC2.1 — module defaults: Recap gains Check List; 01/02 unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 describe('TC-REC2.1: DEFAULT_MODULES_RECAP includes sec_checklist; other templates unchanged', () => {
-  it('TC-REC2.1.1: Recap has exactly 4 sections (Testing added in v4.13.0, between Watch Out and Check List)', () => {
-    assert.deepEqual(MODULES_RECAP.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing', 'sec_checklist']);
+  it('TC-REC2.1.1: Recap has exactly 5 sections (Product Photos added in v4.13.4, before Watch Out)', () => {
+    assert.deepEqual(MODULES_RECAP.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing', 'sec_checklist']);
   });
 
   it('TC-REC2.1.2: the Recap checklist entry mirrors the Prototype declaration exactly', () => {
@@ -165,13 +165,13 @@ describe('TC-REC2.3: ensureReportModules backfills Check List for Recap only, ex
     };
     const before = JSON.stringify({ w: D.watchoutPhotos, n: D.watchoutNotes, c: D.checklist });
     ensure(D);
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing', 'sec_checklist']);
-    assert.deepEqual(D.modules[3], EXPECTED_CHECKLIST_ENTRY);
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing', 'sec_checklist']);
+    assert.deepEqual(D.modules[4], EXPECTED_CHECKLIST_ENTRY);
     assert.equal(JSON.stringify({ w: D.watchoutPhotos, n: D.watchoutNotes, c: D.checklist }), before,
       'Overview/Watch Out data and any stored checklist data are preserved verbatim');
   });
 
-  it('TC-REC2.3.2: the backfill is idempotent — repeated calls keep exactly 4 sections', () => {
+  it('TC-REC2.3.2: the backfill is idempotent — repeated calls keep exactly 5 sections', () => {
     const D = {
       moduleType: 'sample-review-recap',
       modules: JSON.parse(JSON.stringify(LEGACY_RECAP_MODULES))
@@ -179,7 +179,7 @@ describe('TC-REC2.3: ensureReportModules backfills Check List for Recap only, ex
     ensure(D);
     ensure(D);
     ensure(D);
-    assert.equal(D.modules.length, 4);
+    assert.equal(D.modules.length, 5);
     assert.equal(D.modules.filter(m => m.type === 'checklist').length, 1);
     assert.equal(D.modules.filter(m => m.type === 'testing').length, 1);
   });
@@ -190,10 +190,10 @@ describe('TC-REC2.3: ensureReportModules backfills Check List for Recap only, ex
       modules: JSON.parse(JSON.stringify(LEGACY_RECAP_MODULES))
     };
     ensure(D);
-    assert.equal(D.modules.length, 4, 'first open backfills');
+    assert.equal(D.modules.length, 5, 'first open backfills');
     D.modules = D.modules.filter(m => m.id !== 'sec_checklist'); // user deletes the section
     ensure(D);
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing'],
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing'],
       'the marker left by the backfill keeps a user-deleted section deleted');
   });
 
@@ -204,7 +204,7 @@ describe('TC-REC2.3: ensureReportModules backfills Check List for Recap only, ex
     };
     ensure(D);
     assert.equal(D.moduleType, 'sample-review-recap');
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing', 'sec_checklist']);
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing', 'sec_checklist']);
   });
 
   it('TC-REC2.3.5: the backfill is Recap-scoped — Prototype/Pre-Production stored lists are left alone', () => {
@@ -218,10 +218,10 @@ describe('TC-REC2.3: ensureReportModules backfills Check List for Recap only, ex
       'a Prototype report whose user removed Check List keeps it removed (manual restore flow unchanged)');
   });
 
-  it('TC-REC2.3.6: a Recap report with no stored module list gets the full 4-section defaults', () => {
+  it('TC-REC2.3.6: a Recap report with no stored module list gets the full 5-section defaults', () => {
     const D = { moduleType: 'sample-review-recap', reportTitle: 'SAMPLE REVIEW RECAP' };
     ensure(D);
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing', 'sec_checklist']);
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing', 'sec_checklist']);
     assert.deepEqual(D.modules, MODULES_RECAP);
   });
 });

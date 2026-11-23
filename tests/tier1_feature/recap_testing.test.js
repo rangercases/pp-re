@@ -94,8 +94,8 @@ describe('TC-RT.2: stored Recap reports gain Testing once; a user deletion stick
     };
     const before = JSON.stringify({ b: D.bvRows, p: D.testingPhotos, n: D.testingNotes });
     ensure(D);
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_testing', 'sec_checklist']);
-    assert.deepEqual(D.modules[2], EXPECTED_TESTING_ENTRY);
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_testing', 'sec_checklist']);
+    assert.deepEqual(D.modules[3], EXPECTED_TESTING_ENTRY);
     assert.equal(D.recapTestingBackfilled, true);
     assert.equal(JSON.stringify({ b: D.bvRows, p: D.testingPhotos, n: D.testingNotes }), before,
       'existing Testing data is preserved verbatim');
@@ -108,7 +108,7 @@ describe('TC-RT.2: stored Recap reports gain Testing once; a user deletion stick
     };
     ensure(D); ensure(D); ensure(D);
     assert.equal(D.modules.filter(m => m.type === 'testing').length, 1);
-    assert.equal(D.modules.length, 4);
+    assert.equal(D.modules.length, 5);
   });
 
   it('TC-RT.2.3: a deliberately deleted Testing tab is NOT resurrected', () => {
@@ -117,10 +117,10 @@ describe('TC-RT.2: stored Recap reports gain Testing once; a user deletion stick
       modules: JSON.parse(JSON.stringify(CURRENT_RECAP_MODULES))
     };
     ensure(D);
-    assert.equal(D.modules.length, 4, 'first open backfills');
+    assert.equal(D.modules.length, 5, 'first open backfills');
     D.modules = D.modules.filter(m => m.id !== 'sec_testing'); // user deletes the tab
     ensure(D);
-    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_watchout', 'sec_checklist']);
+    assert.deepEqual(D.modules.map(m => m.id), ['sec_overall', 'sec_photos', 'sec_watchout', 'sec_checklist']);
   });
 
   it('TC-RT.2.4: a report that already has Testing just gets the marker — no duplicate', () => {
@@ -131,7 +131,7 @@ describe('TC-RT.2: stored Recap reports gain Testing once; a user deletion stick
     ensure(D);
     assert.equal(D.recapTestingBackfilled, true);
     assert.equal(D.modules.filter(m => m.type === 'testing').length, 1);
-    assert.equal(D.modules.length, 4);
+    assert.equal(D.modules.length, 5);
   });
 
   it('TC-RT.2.5: the backfill is Recap-scoped — a Prototype list without Testing is left alone', () => {
