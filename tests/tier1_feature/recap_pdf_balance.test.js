@@ -195,31 +195,31 @@ describe('TC-BAL4: estContentH predicts the drawn content height', () => {
   });
 });
 
-// ─── TC-BAL5: grid + renderCard top-alignment hooks ───
+// ─── TC-BAL5: grid + renderCard alignment hooks (2-col rows bottom-align since R-06/v4.13.5) ───
 const gridBody = extract(
   indexHtml,
   /const renderPhotoGrid = \(photos, headerTitle, customCardH, customGapY, gridOpts\) => \{([\s\S]*?)\n      \};/,
   'renderPhotoGrid'
 );
 
-describe('TC-BAL5: Watch Out grid top-alignment is gated on showActions', () => {
-  it('TC-BAL5.1: renderCard forwards topAlign to addImg and returns the drawn height (single mode)', () => {
+describe('TC-BAL5: Watch Out grid alignment is gated on showActions', () => {
+  it('TC-BAL5.1: renderCard forwards topAlign/bottomAlign to addImg and returns the drawn height (single mode)', () => {
     assert.ok(indexHtml.includes('const renderCard = (p, px, py, gw, cardH, opts) => {'));
-    assert.ok(indexHtml.includes("const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : undefined;"));
+    assert.ok(indexHtml.includes("const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : (opts && opts.bottomAlign) ? { alignBottom: true } : undefined;"));
     assert.ok(indexHtml.includes('return b.y + b.h - py;'), 'single-image cards report their real content height');
   });
 
-  it('TC-BAL5.2: both grid branches render Recap cards with topAlign and anchor per-card', () => {
+  it('TC-BAL5.2: full-width branch keeps topAlign; the 2-per-row branch bottom-aligns to one shared row line (R-06)', () => {
     assert.ok(gridBody.includes('renderCard(p0, px0, py, fullW, rowCardH, showActions ? { topAlign: true } : undefined)'), 'full-width branch');
-    assert.ok(gridBody.includes('renderCard(p0, px0, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined)'), '2-per-row branch, card 0');
-    assert.ok(gridBody.includes('renderCard(p1, px1, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined)'), '2-per-row branch, card 1');
-    assert.ok(gridBody.includes('const anch0 = showActions ? drawnH0 : rowMaxCardH;'), 'anchor falls back to box height off-Recap');
-    assert.ok(gridBody.includes('const anch1 = showActions ? drawnH1 : rowMaxCardH;'));
+    assert.ok(gridBody.includes('renderCard(p0, px0, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), '2-per-row branch, card 0');
+    assert.ok(gridBody.includes('renderCard(p1, px1, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), '2-per-row branch, card 1');
+    assert.ok(gridBody.includes('const anch0 = showActions ? rowContentH : rowMaxCardH;'), 'anchor = shared row height on Recap, box height off-Recap');
+    assert.ok(gridBody.includes('const anch1 = showActions ? rowContentH : rowMaxCardH;'));
     assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines.length)'), 'full-width chip hugs its own image');
-    assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines0.length)'), 'chip 0 hugs its own image');
-    assert.ok(gridBody.includes('actionChipTop(py, anch1, capLines1.length)'), 'chip 1 hugs its own image');
-    assert.ok(gridBody.includes('py + anch0 + 3.8'), 'caption 0 hugs its own image');
-    assert.ok(gridBody.includes('py + anch1 + 3.8'), 'caption 1 hugs its own image');
+    assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines0.length)'), 'chip 0 sits under the shared caption line');
+    assert.ok(gridBody.includes('actionChipTop(py, anch1, capLines1.length)'), 'chip 1 sits under the shared caption line');
+    assert.ok(gridBody.includes('py + anch0 + 3.8'), 'caption 0 starts at the shared row line');
+    assert.ok(gridBody.includes('py + anch1 + 3.8'), 'caption 1 starts at the shared row line');
   });
 
   it('TC-BAL5.3: the row total is the tallest card block + gapY (and reduces to the old formula off-Recap)', () => {

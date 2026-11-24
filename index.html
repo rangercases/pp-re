@@ -20571,7 +20571,7 @@
           if (imgRatio > boxRatio) {
             // Ảnh bè ngang hơn khung -> co theo chiều rộng
             renderH = iw / imgRatio;
-            offsetY = (opts && opts.alignTop) ? 0 : (ih - renderH) / 2;
+            offsetY = (opts && opts.alignTop) ? 0 : (opts && opts.alignBottom) ? (ih - renderH) : (ih - renderH) / 2;
           } else {
             // Ảnh cao hơn khung -> co theo chiều cao
             renderW = ih * imgRatio;
@@ -20628,9 +20628,10 @@
 
       const renderCard = (p, px, py, gw, cardH, opts) => {
         if (!p) return cardH;
-        // opts.topAlign (chỉ lưới Recap Watch Out truyền): chuyển tiếp xuống
-        // addImg để ảnh dính mép trên khung thay vì lơ lửng giữa khung.
-        const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : undefined;
+        // opts.topAlign / opts.bottomAlign (chỉ lưới Recap Watch Out
+        // truyền): chuyển tiếp xuống addImg để ảnh dính mép trên / mép
+        // dưới khung thay vì lơ lửng giữa khung.
+        const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : (opts && opts.bottomAlign) ? { alignBottom: true } : undefined;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
         let itemMainW = gw;
         let itemSubW = 0;
@@ -20831,16 +20832,20 @@
             const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
             const actA = actOf(p0);
             const actB = actOf(p1);
-            // Recap Watch Out (showActions): mỗi thẻ neo caption/chip theo
-            // chiều cao ảnh thật của chính nó — 2 ảnh cùng hàng chạm chung
-            // một đường trên, chiều cao hàng theo thẻ cao nhất (ảnh + caption
-            // + chip). Section khác: công thức cũ (captionH chung theo
-            // rowMaxCardH) — với showActions=false, estH* = rowMaxCardH nên
-            // rowTotalH rút gọn đúng bằng công thức cũ.
+            // Recap Watch Out (showActions): hai ảnh cùng hàng dùng CHUNG
+            // một chiều cao nội dung rowContentH (theo ảnh cao hơn) — ảnh
+            // nhỏ hơn được dời xuống (bottomAlign) cho đáy hai ảnh thẳng
+            // hàng, nên caption + chip của hai ảnh luôn bắt đầu cùng một
+            // hàng ngang (R-06, v4.13.5 — trước đây mỗi thẻ neo theo chiều
+            // cao ảnh của chính nó nên caption hai ảnh lệch hàng nhau).
+            // Section khác: công thức cũ — với showActions=false,
+            // rowContentH = estH* = rowMaxCardH nên mọi thứ rút gọn đúng
+            // bằng công thức cũ.
             const estH0 = showActions ? estContentH(p0, gw, rowMaxCardH) : rowMaxCardH;
             const estH1 = showActions && p1 ? estContentH(p1, gw, rowMaxCardH) : rowMaxCardH;
-            const blockH0 = estH0 + slotCapBlockH(capLines0.length, actA);
-            const blockH1 = p1 ? estH1 + slotCapBlockH(capLines1.length, actB) : 0;
+            const rowContentH = showActions ? Math.max(estH0, estH1) : rowMaxCardH;
+            const blockH0 = (showActions ? rowContentH : estH0) + slotCapBlockH(capLines0.length, actA);
+            const blockH1 = p1 ? (showActions ? rowContentH : estH1) + slotCapBlockH(capLines1.length, actB) : 0;
             const rowTotalH = Math.max(blockH0, blockH1) + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
@@ -20851,10 +20856,10 @@
             const px0 = M;
             const px1 = M + gw + gapX;
 
-            const drawnH0 = renderCard(p0, px0, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined);
-            const drawnH1 = p1 ? renderCard(p1, px1, py, gw, rowMaxCardH, showActions ? { topAlign: true } : undefined) : rowMaxCardH;
-            const anch0 = showActions ? drawnH0 : rowMaxCardH;
-            const anch1 = showActions ? drawnH1 : rowMaxCardH;
+            const drawnH0 = renderCard(p0, px0, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined);
+            const drawnH1 = p1 ? renderCard(p1, px1, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined) : rowMaxCardH;
+            const anch0 = showActions ? rowContentH : rowMaxCardH;
+            const anch1 = showActions ? rowContentH : rowMaxCardH;
 
             drawCaption(capLines0, px0, gw, py + anch0 + 3.8);
             if (p1) {
