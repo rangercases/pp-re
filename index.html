@@ -13833,7 +13833,7 @@
         pdfTitle: 'SAMPLE REVIEW RECAP',
         defaultModules: DEFAULT_MODULES_RECAP,
         form: { hiddenIds: ['fcellDim', 'fcellNumSample', 'row_stage', 'row_sample', 'row_comfort', 'row_rating'], span2Ids: ['fcellReviewer'], overallStacked: true, hideOverviewTitleBar: true },
-        pdfLayout: { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true },
+        pdfLayout: { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true, coverFullPairH: 96 },
         cover: { maxSlots: 4, defaultSlotKeys: ['FRONT_VIEW', 'DETAIL_VIEW'], defaultLabels: ['', ''], labelFallback: 'blank', capacityModel: 'count', capAtRead: true, pdfCap: 4 },
         hub: {
           cardId: 'cardModuleRecap',
@@ -21125,12 +21125,14 @@
 
           // Xác định kích thước động tối ưu cho từng tổ hợp:
           // 1) 1 ảnh lớn + ảnh nhỏ: Ảnh lớn bứt phá ph = 86mm, pw = 140mm (cao gần gấp đôi ảnh nhỏ)
-          // 2) 2 ảnh lớn: Cả 2 ảnh chia đều không gian ph = 68mm, pw = 125mm (vừa khít 1 trang)
+          // 2) 2+ ảnh lớn: pw = 125mm; ph = 68mm mặc định, riêng Recap
+          //    (pdfLayout.coverFullPairH = 96) để ảnh 4:3 vẽ đủ 125×94mm
+          //    như bản mẫu Hung duyệt 2026-11-25 — trang cân đối, hết lọt thỏm.
           // 3) 1 ảnh lớn đơn độc: ph = 96mm, pw = 145mm
           let largePw, largePh, smallPw, smallPh;
           if (numFull >= 2) {
             largePw = 125;
-            largePh = 68;
+            largePh = pdfLayout.coverFullPairH || 68;
             smallPw = (totalContentW - gapX) / 2;
             smallPh = 56;
           } else if (numNormal > 0) {
@@ -21152,6 +21154,10 @@
               // ẢNH FULL-WIDTH: CĂN GIỮA
               const pw = largePw;
               const ph = largePh;
+              // Recap (coverFullPairH): ảnh lớn cao 96mm có thể tràn cuối
+              // trang 1 khi có 3-4 ảnh — chảy sang trang OVERVIEW tiếp
+              // theo thay vì vẽ đè lên footer / bị cắt mất ảnh.
+              if (pdfLayout.coverFullPairH && y + ph > BOTTOM_LIMIT) addHeader('OVERVIEW');
               const px = (W - pw) / 2;
               const py = y;
               let barX = px, barY = py + ph, barW = pw;
@@ -21177,6 +21183,7 @@
               const c1 = (cIdx + 1 < validCovers.length && !validCovers[cIdx + 1].isFull) ? validCovers[cIdx + 1] : null;
               const pw = smallPw;
               const ph = smallPh;
+              if (pdfLayout.coverFullPairH && y + ph > BOTTOM_LIMIT) addHeader('OVERVIEW');
               let maxY = y;
 
               const items = [c0, c1].filter(Boolean);
@@ -21372,6 +21379,15 @@
       // qua addHeader/BOTTOM_LIMIT như mọi section khác.
       if (isRecap) {
         const recapSummary = buildRecapWatchoutSummary(D);
+        const mainText = recapSummary.total > 0 ? recapMainTallyText(recapSummary, 'en') : '';
+        const recapChecklist = buildRecapChecklistSummary(D);
+        // Ẩn cả khối khi không có nội dung nào (Hung, 2026-11-25): trước
+        // đây tiêu đề in vô điều kiện, nên báo cáo có watch-out nhưng chưa
+        // watch-out nào chọn quyết định (Paula) để lại tiêu đề trơ giữa
+        // nửa trang trắng. Nội dung = dòng ✓ khi 0 watch-out, hoặc tally +
+        // danh sách main watch-outs, hoặc dòng tổng kết checklist.
+        const qsHasContent = recapSummary.total === 0 || !!mainText || recapChecklist.total > 0;
+        if (qsHasContent) {
         if (y + 16 > BOTTOM_LIMIT) addHeader('QUALITY SUMMARY');
         doc.setFont(fontFam, 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40);
         doc.text("QUALITY SUMMARY", M, y); y += 6.5;
@@ -21380,9 +21396,7 @@
           doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
           doc.text('✓ No watch-outs recorded', M, y + 1);
           y += 6.5;
-        } else {
-          const mainText = recapMainTallyText(recapSummary, 'en');
-          if (mainText) {
+        } else if (mainText) {
             doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
             doc.text(mainText, M, y + 1);
             y += 6.5;
@@ -21415,20 +21429,20 @@
               y += rowH;
             });
             y += 6.5;
-          }
         }
 
         // REC-2 (v4.2.0): dòng tổng kết checklist ngay dưới phần watch-out,
         // cùng nhịp 6.5mm của trang Recap — khớp với khối QUALITY SUMMARY
         // trong editor. Chỉ hiện khi báo cáo có dữ liệu checklist (mọi báo
         // cáo Recap mở trong editor đều được seed 13 nhóm / 34 tiêu chí).
-        const recapChecklist = buildRecapChecklistSummary(D);
+        // (recapChecklist đã được tính ở đầu khối cho qsHasContent.)
         if (recapChecklist.total > 0) {
           if (y + 8 > BOTTOM_LIMIT) addHeader('QUALITY SUMMARY');
           doc.setFont(fontFam, 'normal'); doc.setFontSize(9); doc.setTextColor(80, 75, 70);
           doc.text(recapChecklistTallyText(recapChecklist, 'en'), M, y + 1);
           y += 6.5;
         }
+        } // end if (qsHasContent)
       }
 
       // Đảm bảo toàn bộ tài liệu kỹ thuật/PDF đã được giải phóng sang ảnh chất lượng cao trước khi in

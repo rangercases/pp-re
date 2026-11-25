@@ -252,8 +252,8 @@ describe('TC-BAL6: QUALITY SUMMARY bulleted rows have equal top/bottom padding',
     assert.ok(indexHtml.includes("doc.text('\u2022', M, rowBaseY);"), 'bullet shares the caption baseline');
     assert.ok(!indexHtml.includes('drawTableHead'), 'no QS table header since v4.6.4');
     assert.ok(!indexHtml.includes("doc.text('WATCH OUT', M + idxW, y + 3);"), 'no QS column headers since v4.6.4');
-    assert.ok(indexHtml.includes("const mainText = recapMainTallyText(recapSummary, 'en');"),
-      'PDF QS builds the main-watch-outs headline from the shared builder');
+    assert.ok(indexHtml.includes("const mainText = recapSummary.total > 0 ? recapMainTallyText(recapSummary, 'en') : '';"),
+      'PDF QS builds the main-watch-outs headline from the shared builder (v4.13.6: hoisted for the qsHasContent gate)');
   });
 
   it('TC-BAL6.2: top padding equals bottom padding for 1..4 caption lines', () => {

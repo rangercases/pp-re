@@ -356,7 +356,7 @@ describe('TC-INH3-F5/F8: PDF + cover config reproduce today\u2019s constants (v4
     assert.deepEqual(themes['pre-production'].pdfLayout, std);
     assert.deepEqual(themes['prototype'].pdfLayout, std);
     assert.deepEqual(themes['sample-review-recap'].pdfLayout,
-      { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true });
+      { textTitleGap: 6.5, textEndGap: 6.5, afterInfoGap: 6.5, infoFields: ['model', 'desc', 'date', 'factory', 'reviewer'], coverAlignTop: true, coverTrailGap: 6.5, singleCoverDrop: 0, coverTitlesBlank: true, coverFullPairH: 96 });
   });
 
   it('TC-INH3-F5.1b: the PDF info-field labels reproduce the old hardcoded row labels', () => {
