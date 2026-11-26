@@ -1,11 +1,12 @@
-// TC-R12 — PDF photo grids: 3 cards per row (Hung, 2026-11-26, on the
-// Enzo Structure Improvement export: 'tôi muốn 3 ảnh 1 hàng'). The grid
-// branch of renderPhotoGrid was hard-wired for 2 cards (p0/p1, px0/px1,
-// anch0/anch1); it now collects up to GRID_COLS=3 normal cards per row
-// into an array, keeping the R-06 shared-row-height behaviour for every
-// card. Full-width cards still take their own row. Applies to every
-// section rendered through renderPhotoGrid (Watch Out, Testing,
-// Assembly, photo sections) in all modules.
+// TC-R12 — PDF photo grids: rows are built from an array of up to
+// GRID_COLS normal cards. v4.13.11 first set GRID_COLS=3 (Hung: 'tôi
+// muốn 3 ảnh 1 hàng' on the Enzo export); v4.13.12 superseded it the
+// same morning with Hung's correction '2 cột 3 hàng' — GRID_COLS back
+// to 2 (88mm cards), and sections with >4 photos pack their card
+// heights so 3 ROWS fit one page (see TC-R13). The array row builder
+// and the R-06 shared-row-height behaviour stay. Full-width cards
+// still take their own row. Applies to every section rendered through
+// renderPhotoGrid (Watch Out, Testing, Assembly, photo sections).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -30,17 +31,16 @@ const gridBody = extract(
   'renderPhotoGrid body'
 );
 
-describe('TC-R12: three cards per row in PDF photo grids', () => {
-  it('TC-R12.1: the grid is 3 columns of 56.7mm', () => {
-    assert.ok(gridBody.includes('const GRID_COLS = 3;'), 'column count is 3');
+describe('TC-R12: array-built rows in PDF photo grids', () => {
+  it('TC-R12.1: the grid is 2 columns of 88mm (v4.13.12 correction)', () => {
+    assert.ok(gridBody.includes('const GRID_COLS = 2;'), 'column count is 2');
     assert.ok(gridBody.includes('const gw = (fullW - gapX * (GRID_COLS - 1)) / GRID_COLS;'),
       'card width derives from the column count');
-    const gw = (182 - 6 * (3 - 1)) / 3;
-    assert.ok(Math.abs(gw - 56.67) < 0.01, 'cards are 56.7mm wide on A4 (182mm printable)');
-    assert.ok(!gridBody.includes('const gw = (fullW - gapX) / 2;'), 'the 2-column width is gone');
+    const gw = (182 - 6 * (2 - 1)) / 2;
+    assert.equal(gw, 88, 'cards are 88mm wide on A4 (182mm printable)');
   });
 
-  it('TC-R12.2: a row collects up to 3 normal cards and stops before a full-width one', () => {
+  it('TC-R12.2: a row collects up to GRID_COLS normal cards and stops before a full-width one', () => {
     assert.ok(gridBody.includes('while (rowPhotos.length < GRID_COLS && i + rowPhotos.length < photos.length) {'),
       'row collection is capped at GRID_COLS');
     assert.ok(gridBody.includes("if (q && (q.fullWidth || q.photoSize === 'full')) break;"),

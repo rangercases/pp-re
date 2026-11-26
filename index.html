@@ -20865,12 +20865,16 @@
 
       const renderPhotoGrid = (photos, headerTitle, customCardH, customGapY, gridOpts) => {
         const gapX = 6;
-        const gapY = customGapY !== undefined ? customGapY : 6.5;
+        // v4.13.12: '2 cột 3 hàng' (Hung, 2026-11-26 — chốt lại thay cho
+        // '3 ảnh 1 hàng' của v4.13.11): khi section có >4 ảnh, ép thẻ
+        // thấp lại để 3 hàng vừa trọn một trang A4, cùng cách section
+        // Testing đã làm (isThreeRows). Caller truyền customCardH
+        // (Testing) tự quyết chiều cao nên không bị áp dụng.
+        const packThreeRows = !customCardH && photos.length > 4;
+        const gapY = customGapY !== undefined ? customGapY : (packThreeRows ? 4.5 : 6.5);
         const fullW = W - M * 2; // 182mm
-        // v4.13.11: 3 thẻ một hàng (Hung, 2026-11-26: 'tôi muốn 3 ảnh 1
-        // hàng') — trước đây 2 thẻ/hàng, mỗi thẻ 88mm.
-        const GRID_COLS = 3;
-        const gw = (fullW - gapX * (GRID_COLS - 1)) / GRID_COLS; // 56.7mm
+        const GRID_COLS = 2;
+        const gw = (fullW - gapX * (GRID_COLS - 1)) / GRID_COLS; // 88mm
 
         // REC-1: chỉ bật ở section Watch Out của Recap (gridOpts.actionChips) —
         // các section/module khác giữ nguyên bố cục như trước.
@@ -20925,6 +20929,11 @@
           if (isFull) {
             // Ảnh lớn: tối ưu 82mm để đảm bảo 1 ảnh lớn + 4 ảnh nhỏ vừa khít trọn vẹn trong 1 trang A4
             h = 82;
+          } else if (packThreeRows) {
+            // v4.13.12: trần 46mm — hàng cao nhất ≈ 46 + caption/chip
+            // ~21 + gap 4.5 ≈ 71.5mm, 3 hàng ≈ 215mm vừa thân trang.
+            if (h > 46) h = 46;
+            if (h < 36) h = 36;
           } else {
             // Ảnh nhỏ 2/hàng: tối ưu 58mm (vừa vặn 2 hàng 4 ảnh phía dưới trên cùng trang A4)
             if (h > 60) h = 60;
