@@ -20809,31 +20809,33 @@
         }
 
         if (itemSubW > 0) {
-          // Bố cục 2 ảnh (3:1 hoặc 1:1)
+          // Bố cục 2 ảnh (3:1 hoặc 1:1): vẽ viền ôm sát từng ảnh thật để không tạo khoảng trắng chết bên trong khung
+          let bMain = null;
           if (p.img) {
-            addImg(p.img, px, py, itemMainW, cardH, imgOpts);
+            bMain = addImg(p.img, px, py, itemMainW, cardH, imgOpts);
+            frameCoverImg(bMain);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px, py, itemMainW, cardH, 'F');
             doc.setFont(fontFam, 'normal'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 158);
             doc.text('Main View', px + itemMainW / 2, py + cardH / 2, { align: 'center' });
+            doc.setDrawColor(220, 217, 210); doc.setLineWidth(0.25);
+            doc.rect(px, py, itemMainW, cardH, 'S');
           }
 
           // Vùng ảnh phụ (đồng bộ với ảnh chính: chỉ vẽ nền chờ khi chưa có ảnh)
+          let bSub = null;
           if (p.imgSub) {
-            addImg(p.imgSub, px + itemMainW, py, itemSubW, cardH, imgOpts);
+            bSub = addImg(p.imgSub, px + itemMainW, py, itemSubW, cardH, imgOpts);
+            frameCoverImg(bSub);
           } else {
             doc.setFillColor(248, 245, 240);
             doc.rect(px + itemMainW, py, itemSubW, cardH, 'F');
             doc.setFont(fontFam, 'normal'); doc.setFontSize(7); doc.setTextColor(170, 165, 158);
             doc.text(layout === '1:1' ? 'Side View' : 'Detail', px + itemMainW + itemSubW / 2, py + cardH / 2, { align: 'center' });
+            doc.setDrawColor(220, 217, 210); doc.setLineWidth(0.25);
+            doc.rect(px + itemMainW, py, itemSubW, cardH, 'S');
           }
-
-          // Khung viền và đường kẻ phân cách
-          doc.setDrawColor(220, 217, 210);
-          doc.setLineWidth(0.25);
-          doc.rect(px, py, gw, cardH, 'S');
-          doc.line(px + itemMainW, py, px + itemMainW, py + cardH);
 
           return cardH;
         } else {
@@ -20942,7 +20944,7 @@
           return h;
         };
 
-        const padX = 2.5;
+        const padX = 0;
 
         const drawCaption = (lines, px, targetW, capY) => {
           if (!lines || lines.length === 0) return;
@@ -20950,7 +20952,7 @@
           doc.setTextColor(45, 40, 35);
           if (lines.length === 1) {
             doc.setFont(fontFam, 'bold');
-            doc.text(lines[0], px + targetW / 2, capY, { align: 'center' });
+            doc.text(lines[0], px + padX, capY);
           } else {
             doc.setFont(fontFam, 'normal');
             for (let i = 0; i < lines.length; i++) {
@@ -20991,7 +20993,7 @@
             drawCaption(capLines, px0, fullW, capY);
             if (act0) {
               const meta0 = actionChipMeta(act0);
-              drawActionChip(px0 + fullW / 2 - actionChipWidth(meta0) / 2, actionChipTop(py, anch0, capLines.length), meta0);
+              drawActionChip(px0, actionChipTop(py, anch0, capLines.length), meta0);
             }
 
             y += rowTotalH;
@@ -21037,7 +21039,7 @@
               drawCaption(capLinesArr[k], px, gw, py + anch + 3.8);
               if (actArr[k]) {
                 const meta = actionChipMeta(actArr[k]);
-                drawActionChip(px + gw / 2 - actionChipWidth(meta) / 2, actionChipTop(py, anch, capLinesArr[k].length), meta);
+                drawActionChip(px, actionChipTop(py, anch, capLinesArr[k].length), meta);
               }
             });
 
@@ -21102,7 +21104,8 @@
       for (let i = 0; i < visibleInfoRows.length; i += 2) {
         const [l1, v1] = visibleInfoRows[i];
         const secondRow = visibleInfoRows[i + 1] || null;
-        doc.setFillColor(248, 246, 242); doc.rect(M, y, hw, 9, 'FD');
+        const cellW = secondRow ? hw : (W - M * 2);
+        doc.setFillColor(248, 246, 242); doc.rect(M, y, cellW, 9, 'FD');
         doc.setFont(fontFam, 'bold'); doc.setFontSize(8.5); doc.setTextColor(100, 95, 90); doc.text(l1 + ':', M + 2, y + 5.9);
         doc.setFont(fontFam, 'normal'); doc.setTextColor(20, 20, 20); doc.text(String(v1 || '—'), M + 24, y + 5.9);
         if (secondRow) {
@@ -21590,7 +21593,7 @@
               doc.setFont(fontFam, 'normal'); doc.setTextColor(45, 40, 35);
               lines.forEach((ln, li) => { doc.text(ln, M + idxW, rowBaseY + li * 3.9); });
               const meta = actionChipMeta(it.action);
-              drawActionChip(W - M - actionChipWidth(meta), y + (rowZoneH - 4.8) / 2, meta);
+              drawActionChip(W - M - actionChipWidth(meta), rowBaseY - 3.45, meta);
               doc.setDrawColor(233, 229, 223); doc.setLineWidth(0.2);
               doc.line(M, y + rowH - 0.6, W - M, y + rowH - 0.6);
               y += rowH;
