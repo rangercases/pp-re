@@ -155,7 +155,7 @@ describe('TC-BAL3: Recap spacing rhythm (6.5mm), non-Recap untouched', () => {
 // ─── TC-BAL4: estContentH mirrors addImg's contain math ───
 const estBody = extract(
   indexHtml,
-  /const estContentH = \(p, boxW, boxH, cover\) => \{([\s\S]*?)\n        \};/,
+  /const estContentH = \(p, boxW, boxH\) => \{([\s\S]*?)\n        \};/,
   'estContentH helper'
 );
 
@@ -167,7 +167,7 @@ function makeEst() {
       return { width: Number(m[1]), height: Number(m[2]) };
     }
   };
-  return new Function('doc', `return ((p, boxW, boxH, cover) => {${estBody}\n  });`)(doc);
+  return new Function('doc', `return ((p, boxW, boxH) => {${estBody}\n  });`)(doc);
 }
 
 describe('TC-BAL4: estContentH predicts the drawn content height', () => {
@@ -214,7 +214,7 @@ describe('TC-BAL5: Watch Out grid alignment is gated on showActions', () => {
 
   it('TC-BAL5.2: full-width branch keeps topAlign; the per-row branch bottom-aligns to one shared row line (R-06)', () => {
     assert.ok(gridBody.includes('renderCard(p0, px0, py, fullW, rowCardH, showActions ? { topAlign: true } : undefined)'), 'full-width branch');
-    assert.ok(gridBody.includes('renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { cover: true, bottomAlign: true } : { cover: true })'), 'per-row branch, every card');
+    assert.ok(gridBody.includes('renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), 'per-row branch, every card');
     assert.ok(gridBody.includes('const anch = showActions ? rowContentH : rowMaxCardH;'), 'anchor = shared row height on Recap, box height off-Recap');
     assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines.length)'), 'full-width chip hugs its own image');
     assert.ok(gridBody.includes('actionChipTop(py, anch, capLinesArr[k].length)'), 'row chips sit under the shared caption line');
@@ -222,7 +222,7 @@ describe('TC-BAL5: Watch Out grid alignment is gated on showActions', () => {
   });
 
   it('TC-BAL5.3: the row total is the tallest card block + gapY (and reduces to the old formula off-Recap)', () => {
-    assert.ok(gridBody.includes('const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH, true) : rowMaxCardH);'));
+    assert.ok(gridBody.includes('const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH) : rowMaxCardH);'));
     assert.ok(gridBody.includes('const rowTotalH = Math.max(...rowPhotos.map((q, k) => (showActions ? rowContentH : estArr[k]) + slotCapBlockH(capLinesArr[k].length, actArr[k]))) + gapY;'));
   });
 });

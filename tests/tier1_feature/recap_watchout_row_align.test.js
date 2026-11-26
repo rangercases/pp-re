@@ -76,7 +76,7 @@ describe('TC-R06.2: the Watch Out row shares one content height and bottom-align
   });
 
   it('TC-R06.2.2: Watch Out cards render bottom-aligned inside the shared height', () => {
-    assert.ok(gridRegion.includes("renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { cover: true, bottomAlign: true } : { cover: true })"),
+    assert.ok(gridRegion.includes("renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)"),
       'every card in the row: shared box height + bottomAlign for Watch Out');
     assert.ok(!gridRegion.includes('renderCard(p0, px0, py, gw, rowMaxCardH, showActions ? { topAlign: true }'),
       'the old per-slot topAlign rendering of the row branch is gone');
