@@ -2146,6 +2146,31 @@
       transform: scale(1.08);
     }
 
+    /* v4.13.9: swap main/detail photo button — same circular chrome as the
+       delete button but ALWAYS visible (it is a primary action, and hover
+       does not exist on touch screens). */
+    .dim-swap-btn {
+      width: 22px;
+      height: 22px;
+      border: 0.5px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    }
+
+    .dim-swap-btn:hover {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      transform: scale(1.08);
+    }
+
     .dim-sub-photo .pactions {
       top: 3px;
       right: 3px;
@@ -16022,6 +16047,9 @@
               <button type="button" class="dim-pill-btn ${layout === 'single' ? 'active' : ''}" onclick="setDimPhotoLayout(${i}, 'single');event.stopPropagation()" title="Single layout (100% full width)">
                 <svg width="11" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="13" height="9" rx="1"/></svg>Single</button>
             </div>
+            ${(displayImg || displayImgSub) ? `<button type="button" class="dim-swap-btn ignore-drag" title="Swap main ↔ detail photo" onclick="swapDimPhotos(${i});event.stopPropagation()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </button>` : ''}
             <button type="button" class="dim-del-slot-btn ignore-drag" title="Delete this dimension" onclick="deleteDimSlot(${i});event.stopPropagation()">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
@@ -16191,6 +16219,19 @@
       D.dimensions[index].photoLayout = layout;
       as();
       buildDimGrid();
+    }
+
+    // v4.13.9: swap a dimension row's main/detail photos (same exchange as
+    // the dual-slot cards — swapDualPhotoFields lives with them).
+    function swapDimPhotos(index) {
+      const d = D.dimensions && D.dimensions[index];
+      if (!d || (!d.img && !d.imgSub)) return;
+      pushHistory('Swap main/detail photos');
+      swapDualPhotoFields(d);
+      as();
+      savePhotoChangeNow();
+      buildDimGrid();
+      showToast('✓ Photos swapped');
     }
 
     function removeDimSubPhoto(index) {
@@ -16742,6 +16783,14 @@
 
     // The delete-slot button differs per section (its own historical look);
     // both variants call the same shared delFreeSlot().
+    // v4.13.9: swap button for a dual-slot card topbar (Hung, 2026-11-26:
+    // 'tôi muốn có nút để đảo 2 ảnh qua lại').
+    function dualSlotSwapBtnHtml(key, i) {
+      return `<button type="button" class="dim-swap-btn ignore-drag" title="Swap main ↔ detail photo" onclick="swapDualPhotos('${key}', ${i});event.stopPropagation()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </button>`;
+    }
+
     function dualSlotDelBtnHtml(cfg, i) {
       if (cfg.key === 'testingPhotos') {
         return `<button type="button" class="pact del ignore-drag" style="position:static; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;" title="Delete slot" onclick="delFreeSlot('${cfg.key}', ${i});event.stopPropagation()">
@@ -16795,6 +16844,7 @@
               <span style="display:inline-block; width:1px; height:10px; background:#d0d7d2; margin:0 1px;"></span>
               ${getPhotoSizePillHtml(key, i, size)}
             </div>
+            ${(displayImg || displayImgSub) ? dualSlotSwapBtnHtml(key, i) : ''}
             ${dualSlotDelBtnHtml(cfg, i)}
           </div>
         </div>
@@ -16963,6 +17013,29 @@
       as();
       savePhotoChangeNow();
       renderDualSlotPhotos(cfg);
+    }
+
+    // v4.13.9: exchange the photo pairs of a dual-photo record in place.
+    // Only the photos change sides — caption, layout, size and (on Recap
+    // Watch Out) the disposition stay with the card/row.
+    function swapDualPhotoFields(p) {
+      const pairs = [['img', 'imgSub'], ['original', 'originalSub'], ['markupBase', 'markupBaseSub']];
+      pairs.forEach(([a, b]) => {
+        const t = p[a]; p[a] = p[b]; p[b] = t;
+      });
+    }
+
+    function swapDualPhotos(key, index) {
+      const cfg = DUAL_SLOT_CONFIGS[key];
+      if (!cfg) return;
+      const p = D[key] && D[key][index];
+      if (!p || (!p.img && !p.imgSub)) return;
+      pushHistory('Swap main/detail photos');
+      swapDualPhotoFields(p);
+      as();
+      savePhotoChangeNow();
+      renderDualSlotPhotos(cfg);
+      showToast('✓ Photos swapped');
     }
 
     function syncTestingPhotoCaption(index) {
