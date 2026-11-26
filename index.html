@@ -10882,6 +10882,33 @@
       return null;
     }
 
+    // v4.13.8: dấu vân tay của blob ảnh (kích thước + FNV-1a hai làn trên
+    // toàn bộ byte) — dùng để nhận biết nội dung clipboard là ảnh nào.
+    async function clipboardBlobFingerprint(blob) {
+      if (!blob) return null;
+      try {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let h1 = 0x811c9dc5, h2 = 0x9e3779b1;
+        for (let i = 0; i < buf.length; i++) {
+          h1 = Math.imul(h1 ^ buf[i], 0x01000193) >>> 0;
+          h2 = Math.imul(h2 ^ (buf[i] + i), 0x85ebca6b) >>> 0;
+        }
+        return { size: blob.size, hash: h1.toString(16) + '-' + h2.toString(16) };
+      } catch (e) { return null; }
+    }
+
+    // v4.13.8: chỉ coi lần dán là "chính ảnh vừa copy trong app" khi dấu vân
+    // tay của file dán vào khớp hệt blob đã ghi lên clipboard hệ thống lúc
+    // copy, và còn trong hạn 15 phút. Ngoài ra — copy ở bất cứ đâu khác
+    // trên máy (chụp màn hình, copy trong trình duyệt, copy file ngoài
+    // Explorer...) — nội dung vừa dán luôn thắng, không bao giờ bị thay
+    // bằng ảnh cũ đã copy trong app (Hung, 2026-11-26).
+    function isAppCopiedPaste(copied, fp, now) {
+      if (!copied || !copied.clipSize || !copied.clipHash || !fp) return false;
+      if ((now - (copied.timestamp || 0)) >= 15 * 60 * 1000) return false;
+      return copied.clipSize === fp.size && copied.clipHash === fp.hash;
+    }
+
     async function copyDataUrlToClipboard(dataUrl) {
       if (!navigator.clipboard || !navigator.clipboard.write) return false;
       try {
@@ -10906,7 +10933,8 @@
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': pngBlob })
         ]);
-        return true;
+        // v4.13.8: trả về dấu vân tay của blob vừa ghi (false nếu ghi hỏng).
+        return await clipboardBlobFingerprint(pngBlob);
       } catch (err) {
         console.warn('System clipboard image write error:', err);
         return false;
@@ -10929,8 +10957,19 @@
         sessionStorage.setItem('app_copied_photo', JSON.stringify(_appCopiedPhoto));
       } catch (e) { }
 
-      // Ghi ảnh gốc sang Clipboard hệ thống
-      copyDataUrlToClipboard(masterPhoto);
+      // Ghi ảnh gốc sang Clipboard hệ thống; ghi xong thì lưu dấu vân tay
+      // của blob đã ghi vào bản copy nội bộ (nếu vẫn là lần copy mới nhất)
+      // để lần dán sau phân biệt được "đúng ảnh này" với ảnh copy nơi khác.
+      const copiedAt = _appCopiedPhoto.timestamp;
+      copyDataUrlToClipboard(masterPhoto).then(fp => {
+        if (fp && _appCopiedPhoto && _appCopiedPhoto.timestamp === copiedAt) {
+          _appCopiedPhoto.clipSize = fp.size;
+          _appCopiedPhoto.clipHash = fp.hash;
+          try {
+            sessionStorage.setItem('app_copied_photo', JSON.stringify(_appCopiedPhoto));
+          } catch (e) { }
+        }
+      }).catch(() => { });
 
       highlightTarget(target, element);
       showToast('✓ Photo copied (Ctrl+C)');
@@ -10954,7 +10993,11 @@
         } catch (e) { }
       }
 
-      if (copied && copied.original && (Date.now() - (copied.timestamp || 0) < 15 * 60 * 1000)) {
+      // v4.13.8: chỉ dùng lại master gốc của lần copy trong app khi nội
+      // dung dán vào khớp dấu vân tay với blob đã ghi lúc copy. Mọi nội
+      // dung copy từ nơi khác trên máy luôn được dùng đúng như nó là.
+      const pasteFp = await clipboardBlobFingerprint(file);
+      if (copied && copied.original && isAppCopiedPaste(copied, pasteFp, Date.now())) {
         masterPhoto = copied.original;
         displayCropped = copied.img || (await resizeImage(masterPhoto, 1280, 0.88, true));
       } else {
