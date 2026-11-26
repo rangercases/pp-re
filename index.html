@@ -20578,6 +20578,55 @@
       return map;
     }
 
+    // v4.13.13: hình học crop-fill thuần — hình chữ nhật nguồn (căn giữa)
+    // lấp đầy một khung có tỉ lệ cho trước mà không méo ảnh.
+    function coverCropRect(imgW, imgH, boxRatio) {
+      if (!imgW || !imgH || !boxRatio) return null;
+      const r = imgW / imgH;
+      if (r > boxRatio) {
+        const sw = imgH * boxRatio;
+        return { sx: (imgW - sw) / 2, sy: 0, sw, sh: imgH };
+      }
+      const sh = imgW / boxRatio;
+      return { sx: 0, sy: (imgH - sh) / 2, sw: imgW, sh };
+    }
+
+    // v4.13.13: giải mã sẵn các ảnh lưới một lần cho mỗi lần xuất, để
+    // addImg cắt chúng theo tỉ lệ khung một cách đồng bộ (cover-fill).
+    // Khóa theo chuỗi nguồn ĐÃ qua pdfImageMap — đúng chuỗi addImg tra
+    // cứu. Ảnh nào giải mã lỗi thì bỏ qua; ảnh đó rơi về contain như cũ.
+    async function preparePdfDecodedImages(report, pdfImageMap) {
+      const map = new Map();
+      if (!report) return map;
+      const sources = new Set();
+      const consider = (value) => {
+        if (typeof value !== 'string' || !value.startsWith('data:image')) return;
+        sources.add((pdfImageMap && pdfImageMap.get(value)) || value);
+      };
+      FREE_PHOTO_KEYS.forEach(key => {
+        if (!Array.isArray(report[key])) return;
+        report[key].forEach(p => {
+          if (!p) return;
+          if (typeof p === 'string') { consider(p); return; }
+          consider(p.img);
+          consider(p.imgSub);
+        });
+      });
+      for (const src of sources) {
+        if (map.has(src)) continue;
+        try {
+          const img = await new Promise((resolve, reject) => {
+            const im = new Image();
+            im.onload = () => resolve(im);
+            im.onerror = reject;
+            im.src = src;
+          });
+          map.set(src, img);
+        } catch (e) { /* ảnh này dùng contain */ }
+      }
+      return map;
+    }
+
     // ═══════════════ PDF EXPORT (2 CỘT & ẢNH KÉP 3:1) ═══════════════
     async function exportPDF(options = {}) {
       isPdfExporting = true;
@@ -20617,6 +20666,31 @@
       }
 
       const pdfImageMap = await preparePdfImageMap(D);
+      // v4.13.13: cover-fill cho thẻ lưới — biến thể đã cắt theo tỉ lệ
+      // khung, tạo lười và cache theo (nguồn, tỉ lệ).
+      const pdfDecodedImages = await preparePdfDecodedImages(D, pdfImageMap);
+      const pdfCoverCache = new Map();
+      const coverVariantFor = (imgSrc, boxRatio) => {
+        const img = pdfDecodedImages && pdfDecodedImages.get(imgSrc);
+        if (!img || !img.naturalWidth) return null;
+        let byRatio = pdfCoverCache.get(imgSrc);
+        if (!byRatio) { byRatio = new Map(); pdfCoverCache.set(imgSrc, byRatio); }
+        const rk = boxRatio.toFixed(3);
+        if (byRatio.has(rk)) return byRatio.get(rk);
+        let out = null;
+        try {
+          const rect = coverCropRect(img.naturalWidth, img.naturalHeight, boxRatio);
+          if (rect) {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(rect.sw));
+            canvas.height = Math.max(1, Math.round(rect.sh));
+            canvas.getContext('2d').drawImage(img, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, canvas.width, canvas.height);
+            out = canvas.toDataURL('image/jpeg', 0.88);
+          }
+        } catch (e) { out = null; }
+        byRatio.set(rk, out);
+        return out;
+      };
       const pdfFailedImages = [];
       // ATTACH-MERGE: pages of attached files (Technical Documents / BV Test)
       // are merged into the export as bare full pages — no section header,
@@ -20714,6 +20788,18 @@
         const imgSrc = (pdfImageMap && pdfImageMap.get(src)) || src;
         // jsPDF không nhúng được WebP: phải chỉ đúng định dạng thật của chuỗi sau khi map
         const imgFormat = imgSrc.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        // v4.13.13: cover-fill (chỉ khi opts.cover — thẻ trong lưới): ảnh
+        // lấp đầy khung bằng biến thể đã cắt giữa theo đúng tỉ lệ khung;
+        // không có biến thể (giải mã lỗi) thì rơi xuống contain như cũ.
+        if (opts && opts.cover) {
+          const cropped = coverVariantFor(imgSrc, iw / ih);
+          if (cropped) {
+            try {
+              doc.addImage(cropped, 'JPEG', x, iy, iw, ih);
+              return { x, y: iy, w: iw, h: ih };
+            } catch (e) { /* rơi xuống contain */ }
+          }
+        }
         try {
           // Kiểm tra tỉ lệ ảnh gốc để hiển thị đúng chuẩn "contain" (không méo hình)
           const imgProps = doc.getImageProperties(imgSrc);
@@ -20795,6 +20881,7 @@
         // để thẳng lề với caption; topAlign/bottomAlign giữ nguyên vai trò
         // căn mép trên/dưới của v4.13.5.
         const imgOpts = { alignLeft: true };
+        if (opts && opts.cover) imgOpts.cover = true;
         if (opts && opts.topAlign) imgOpts.alignTop = true;
         else if (opts && opts.bottomAlign) imgOpts.alignBottom = true;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
@@ -20896,10 +20983,13 @@
         // 1 ảnh thì cao = boxW / tỉ lệ nếu ảnh bè ngang hơn khung, ngược lại
         // đầy boxH. Chỉ dùng cho Recap Watch Out (showActions) để tính trước
         // chiều cao hàng phục vụ kiểm tra ngắt trang BOTTOM_LIMIT.
-        const estContentH = (p, boxW, boxH) => {
+        const estContentH = (p, boxW, boxH, cover) => {
           if (!p || !p.img) return boxH;
           const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
           if (layout !== 'single') return boxH;
+          // v4.13.13: cover-fill — ảnh đơn cũng lấp đầy khung, chiều cao
+          // nội dung luôn bằng chiều cao khung.
+          if (cover) return boxH;
           try {
             const pr = doc.getImageProperties(p.img);
             if (pr && pr.width && pr.height) {
@@ -21021,7 +21111,7 @@
 
             const capLinesArr = rowPhotos.map(q => (q && q.caption && q.caption.trim()) ? doc.splitTextToSize(q.caption.trim(), textW) : []);
             const actArr = rowPhotos.map(q => actOf(q));
-            const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH) : rowMaxCardH);
+            const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH, true) : rowMaxCardH);
             const rowContentH = showActions ? Math.max(...estArr) : rowMaxCardH;
             const rowTotalH = Math.max(...rowPhotos.map((q, k) => (showActions ? rowContentH : estArr[k]) + slotCapBlockH(capLinesArr[k].length, actArr[k]))) + gapY;
 
@@ -21032,7 +21122,7 @@
             const py = y;
             rowPhotos.forEach((q, k) => {
               const px = M + k * (gw + gapX);
-              renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined);
+              renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { cover: true, bottomAlign: true } : { cover: true });
               const anch = showActions ? rowContentH : rowMaxCardH;
               drawCaption(capLinesArr[k], px, gw, py + anch + 3.8);
               if (actArr[k]) {
