@@ -20867,7 +20867,10 @@
         const gapX = 6;
         const gapY = customGapY !== undefined ? customGapY : 6.5;
         const fullW = W - M * 2; // 182mm
-        const gw = (fullW - gapX) / 2; // 88mm
+        // v4.13.11: 3 thẻ một hàng (Hung, 2026-11-26: 'tôi muốn 3 ảnh 1
+        // hàng') — trước đây 2 thẻ/hàng, mỗi thẻ 88mm.
+        const GRID_COLS = 3;
+        const gw = (fullW - gapX * (GRID_COLS - 1)) / GRID_COLS; // 56.7mm
 
         // REC-1: chỉ bật ở section Watch Out của Recap (gridOpts.actionChips) —
         // các section/module khác giữ nguyên bố cục như trước.
@@ -20985,62 +20988,52 @@
             y += rowTotalH;
             i++;
           } else {
-            // ══════════════ NHÁNH 2: NORMAL 50% (88mm) + 50% (88mm) ══════════════
-            const p1 = (i + 1 < photos.length && !(photos[i + 1] && (photos[i + 1].fullWidth || photos[i + 1].photoSize === 'full'))) ? photos[i + 1] : null;
+            // ══════════════ NHÁNH 2: GRID_COLS THẺ MỘT HÀNG (v4.13.11) ══════════════
+            // Gom tối đa GRID_COLS thẻ thường liên tiếp (dừng trước thẻ
+            // full-width). Trước v4.13.11 nhánh này viết cứng cho 2 thẻ
+            // (p0/p1, px0/px1, anch0/anch1); nay dùng mảng để mọi thẻ
+            // trong hàng dùng CHUNG rowContentH — giữ nguyên hành vi
+            // R-06 (v4.13.5): ảnh nhỏ hơn được dời xuống (bottomAlign)
+            // cho đáy các ảnh thẳng hàng, caption + chip của mọi thẻ
+            // bắt đầu cùng một hàng ngang. Section khác (showActions
+            // false): rowContentH = rowMaxCardH nên rút gọn đúng công
+            // thức cũ.
+            const rowPhotos = [];
+            while (rowPhotos.length < GRID_COLS && i + rowPhotos.length < photos.length) {
+              const q = photos[i + rowPhotos.length];
+              if (q && (q.fullWidth || q.photoSize === 'full')) break;
+              rowPhotos.push(q);
+            }
 
-            const rowMaxCardH = customCardH ? customCardH : Math.max(estimateCardH(p0, false), p1 ? estimateCardH(p1, false) : 0, 42);
+            const rowMaxCardH = customCardH ? customCardH : Math.max(42, ...rowPhotos.map(q => estimateCardH(q, false)));
             const textW = gw - padX * 2;
             doc.setFont(fontFam, 'normal');
             doc.setFontSize(8.5);
 
-            const capLines0 = (p0 && p0.caption && p0.caption.trim()) ? doc.splitTextToSize(p0.caption.trim(), textW) : [];
-            const capLines1 = (p1 && p1.caption && p1.caption.trim()) ? doc.splitTextToSize(p1.caption.trim(), textW) : [];
-            const actA = actOf(p0);
-            const actB = actOf(p1);
-            // Recap Watch Out (showActions): hai ảnh cùng hàng dùng CHUNG
-            // một chiều cao nội dung rowContentH (theo ảnh cao hơn) — ảnh
-            // nhỏ hơn được dời xuống (bottomAlign) cho đáy hai ảnh thẳng
-            // hàng, nên caption + chip của hai ảnh luôn bắt đầu cùng một
-            // hàng ngang (R-06, v4.13.5 — trước đây mỗi thẻ neo theo chiều
-            // cao ảnh của chính nó nên caption hai ảnh lệch hàng nhau).
-            // Section khác: công thức cũ — với showActions=false,
-            // rowContentH = estH* = rowMaxCardH nên mọi thứ rút gọn đúng
-            // bằng công thức cũ.
-            const estH0 = showActions ? estContentH(p0, gw, rowMaxCardH) : rowMaxCardH;
-            const estH1 = showActions && p1 ? estContentH(p1, gw, rowMaxCardH) : rowMaxCardH;
-            const rowContentH = showActions ? Math.max(estH0, estH1) : rowMaxCardH;
-            const blockH0 = (showActions ? rowContentH : estH0) + slotCapBlockH(capLines0.length, actA);
-            const blockH1 = p1 ? (showActions ? rowContentH : estH1) + slotCapBlockH(capLines1.length, actB) : 0;
-            const rowTotalH = Math.max(blockH0, blockH1) + gapY;
+            const capLinesArr = rowPhotos.map(q => (q && q.caption && q.caption.trim()) ? doc.splitTextToSize(q.caption.trim(), textW) : []);
+            const actArr = rowPhotos.map(q => actOf(q));
+            const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH) : rowMaxCardH);
+            const rowContentH = showActions ? Math.max(...estArr) : rowMaxCardH;
+            const rowTotalH = Math.max(...rowPhotos.map((q, k) => (showActions ? rowContentH : estArr[k]) + slotCapBlockH(capLinesArr[k].length, actArr[k]))) + gapY;
 
             if (y + rowTotalH > BOTTOM_LIMIT) {
               addHeader(headerTitle);
             }
 
             const py = y;
-            const px0 = M;
-            const px1 = M + gw + gapX;
-
-            const drawnH0 = renderCard(p0, px0, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined);
-            const drawnH1 = p1 ? renderCard(p1, px1, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined) : rowMaxCardH;
-            const anch0 = showActions ? rowContentH : rowMaxCardH;
-            const anch1 = showActions ? rowContentH : rowMaxCardH;
-
-            drawCaption(capLines0, px0, gw, py + anch0 + 3.8);
-            if (p1) {
-              drawCaption(capLines1, px1, gw, py + anch1 + 3.8);
-            }
-            if (actA) {
-              const metaA = actionChipMeta(actA);
-              drawActionChip(px0 + gw / 2 - actionChipWidth(metaA) / 2, actionChipTop(py, anch0, capLines0.length), metaA);
-            }
-            if (p1 && actB) {
-              const metaB = actionChipMeta(actB);
-              drawActionChip(px1 + gw / 2 - actionChipWidth(metaB) / 2, actionChipTop(py, anch1, capLines1.length), metaB);
-            }
+            rowPhotos.forEach((q, k) => {
+              const px = M + k * (gw + gapX);
+              renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined);
+              const anch = showActions ? rowContentH : rowMaxCardH;
+              drawCaption(capLinesArr[k], px, gw, py + anch + 3.8);
+              if (actArr[k]) {
+                const meta = actionChipMeta(actArr[k]);
+                drawActionChip(px + gw / 2 - actionChipWidth(meta) / 2, actionChipTop(py, anch, capLinesArr[k].length), meta);
+              }
+            });
 
             y += rowTotalH;
-            i += (p1 ? 2 : 1);
+            i += rowPhotos.length;
           }
         }
       };

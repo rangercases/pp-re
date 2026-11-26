@@ -70,27 +70,24 @@ describe('TC-R06.2: the Watch Out row shares one content height and bottom-align
     'renderPhotoGrid region'
   );
 
-  it('TC-R06.2.1: rowContentH is the max of the two slot heights, Watch Out only', () => {
-    assert.ok(gridRegion.includes('const rowContentH = showActions ? Math.max(estH0, estH1) : rowMaxCardH;'),
+  it('TC-R06.2.1: rowContentH is the max of the row slot heights, Watch Out only', () => {
+    assert.ok(gridRegion.includes('const rowContentH = showActions ? Math.max(...estArr) : rowMaxCardH;'),
       'one shared content height per row for showActions; other sections keep rowMaxCardH');
   });
 
   it('TC-R06.2.2: Watch Out cards render bottom-aligned inside the shared height', () => {
-    assert.ok(gridRegion.includes("renderCard(p0, px0, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)"),
-      'left card: shared box height + bottomAlign for Watch Out');
-    assert.ok(gridRegion.includes("renderCard(p1, px1, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)"),
-      'right card: shared box height + bottomAlign for Watch Out');
+    assert.ok(gridRegion.includes("renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)"),
+      'every card in the row: shared box height + bottomAlign for Watch Out');
     assert.ok(!gridRegion.includes('renderCard(p0, px0, py, gw, rowMaxCardH, showActions ? { topAlign: true }'),
-      'the old per-slot topAlign rendering of the 2-col branch is gone');
+      'the old per-slot topAlign rendering of the row branch is gone');
     assert.ok(!gridRegion.includes('const anch0 = showActions ? drawnH0 : rowMaxCardH;'),
-      'the old per-slot caption anchor of the 2-col branch is gone');
+      'the old per-slot caption anchor of the row branch is gone');
   });
 
-  it('TC-R06.2.3: both captions and chips anchor to the SAME rowContentH', () => {
-    assert.ok(gridRegion.includes('const anch0 = showActions ? rowContentH : rowMaxCardH;'), 'left anchor = shared height');
-    assert.ok(gridRegion.includes('const anch1 = showActions ? rowContentH : rowMaxCardH;'), 'right anchor = shared height');
-    assert.ok(gridRegion.includes('drawCaption(capLines0, px0, gw, py + anch0 + 3.8);'), 'left caption starts at the shared line');
-    assert.ok(gridRegion.includes('drawCaption(capLines1, px1, gw, py + anch1 + 3.8);'), 'right caption starts at the shared line');
+  it('TC-R06.2.3: all captions and chips anchor to the SAME rowContentH', () => {
+    assert.ok(gridRegion.includes('const anch = showActions ? rowContentH : rowMaxCardH;'), 'one shared anchor for every card in the row');
+    assert.ok(gridRegion.includes('drawCaption(capLinesArr[k], px, gw, py + anch + 3.8);'), 'every caption starts at the shared line');
+    assert.ok(gridRegion.includes('actionChipTop(py, anch, capLinesArr[k].length)'), 'every chip sits under the shared caption line');
   });
 
   it('TC-R06.2.4: renderCard forwards bottomAlign down to addImg', () => {

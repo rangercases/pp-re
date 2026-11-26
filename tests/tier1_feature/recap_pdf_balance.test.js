@@ -212,23 +212,18 @@ describe('TC-BAL5: Watch Out grid alignment is gated on showActions', () => {
     assert.ok(indexHtml.includes('return b.y + b.h - py;'), 'single-image cards report their real content height');
   });
 
-  it('TC-BAL5.2: full-width branch keeps topAlign; the 2-per-row branch bottom-aligns to one shared row line (R-06)', () => {
+  it('TC-BAL5.2: full-width branch keeps topAlign; the per-row branch bottom-aligns to one shared row line (R-06)', () => {
     assert.ok(gridBody.includes('renderCard(p0, px0, py, fullW, rowCardH, showActions ? { topAlign: true } : undefined)'), 'full-width branch');
-    assert.ok(gridBody.includes('renderCard(p0, px0, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), '2-per-row branch, card 0');
-    assert.ok(gridBody.includes('renderCard(p1, px1, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), '2-per-row branch, card 1');
-    assert.ok(gridBody.includes('const anch0 = showActions ? rowContentH : rowMaxCardH;'), 'anchor = shared row height on Recap, box height off-Recap');
-    assert.ok(gridBody.includes('const anch1 = showActions ? rowContentH : rowMaxCardH;'));
+    assert.ok(gridBody.includes('renderCard(q, px, py, gw, showActions ? rowContentH : rowMaxCardH, showActions ? { bottomAlign: true } : undefined)'), 'per-row branch, every card');
+    assert.ok(gridBody.includes('const anch = showActions ? rowContentH : rowMaxCardH;'), 'anchor = shared row height on Recap, box height off-Recap');
     assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines.length)'), 'full-width chip hugs its own image');
-    assert.ok(gridBody.includes('actionChipTop(py, anch0, capLines0.length)'), 'chip 0 sits under the shared caption line');
-    assert.ok(gridBody.includes('actionChipTop(py, anch1, capLines1.length)'), 'chip 1 sits under the shared caption line');
-    assert.ok(gridBody.includes('py + anch0 + 3.8'), 'caption 0 starts at the shared row line');
-    assert.ok(gridBody.includes('py + anch1 + 3.8'), 'caption 1 starts at the shared row line');
+    assert.ok(gridBody.includes('actionChipTop(py, anch, capLinesArr[k].length)'), 'row chips sit under the shared caption line');
+    assert.ok(gridBody.includes('py + anch + 3.8'), 'row captions start at the shared row line');
   });
 
   it('TC-BAL5.3: the row total is the tallest card block + gapY (and reduces to the old formula off-Recap)', () => {
-    assert.ok(gridBody.includes('const estH0 = showActions ? estContentH(p0, gw, rowMaxCardH) : rowMaxCardH;'));
-    assert.ok(gridBody.includes('const estH1 = showActions && p1 ? estContentH(p1, gw, rowMaxCardH) : rowMaxCardH;'));
-    assert.ok(gridBody.includes('const rowTotalH = Math.max(blockH0, blockH1) + gapY;'));
+    assert.ok(gridBody.includes('const estArr = rowPhotos.map(q => showActions ? estContentH(q, gw, rowMaxCardH) : rowMaxCardH);'));
+    assert.ok(gridBody.includes('const rowTotalH = Math.max(...rowPhotos.map((q, k) => (showActions ? rowContentH : estArr[k]) + slotCapBlockH(capLinesArr[k].length, actArr[k]))) + gapY;'));
   });
 });
 
