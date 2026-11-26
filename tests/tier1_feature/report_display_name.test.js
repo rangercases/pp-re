@@ -44,12 +44,16 @@ function makeNameApi() {
   // the same neighbours it has in the app.
   const prefixMapInner = extract(indexHtml, /const REPORT_FILE_PREFIXES = \{([\s\S]*?)\n    \};/, 'REPORT_FILE_PREFIXES');
   const prefixBody = extractFnBody(indexHtml, 'function getReportFilePrefix(rep)', 'getReportFilePrefix');
+  // v4.13.7: getReportFileBaseName also calls stripModuleTitleLead — inject
+  // it alongside the other neighbours.
+  const stripBody = extractFnBody(indexHtml, 'function stripModuleTitleLead(title, rep)', 'stripModuleTitleLead');
   const factory = new Function(
     'MODULE_THEMES', 'pdfConfig',
     `const REPORT_FILE_PREFIXES = {${prefixMapInner}};
      function isModuleDefaultTitle(title) {${isDefaultBody}}
      function getReportDisplayName(r) {${displayBody}}
      function getReportFilePrefix(rep) {${prefixBody}}
+     function stripModuleTitleLead(title, rep) {${stripBody}}
      function getReportFileBaseName(rep) {${baseBody}}
      return { isModuleDefaultTitle, getReportDisplayName, getReportFileBaseName };`
   );
@@ -215,7 +219,8 @@ describe('TC-NAME4: wiring — renderHome uses getReportDisplayName; getReportTi
 
   it('TC-NAME4.3: getReportFileBaseName applies the module-default check to the resolved title', () => {
     const body = extractFnBody(indexHtml, 'function getReportFileBaseName(rep)', 'getReportFileBaseName');
-    assert.ok(body.includes('isModuleDefaultTitle(repTitle)'), 'the default check must run on the resolved repTitle');
+    assert.ok(body.includes('isModuleDefaultTitle(cleanTitle)'), 'the default check must run on the resolved title after the v4.13.7 module-lead strip');
+    assert.ok(body.includes('stripModuleTitleLead(repTitle, r)'), 'the resolved repTitle passes through the module-lead strip first');
     assert.ok(body.includes("'PRE-PRODUCTION SAMPLE REVIEW REPORT'"), 'the literal fallback must stay in the chain');
     assert.ok(body.includes("|| 'report'"), 'the "report" fallback must stay');
   });

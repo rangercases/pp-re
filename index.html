@@ -8953,7 +8953,7 @@
         const blob = new Blob(parts, { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `PP_Review_Backup_FullDB_${dateStr}.json`;
+        a.download = `PP Review Backup FullDB ${dateStr}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -9362,8 +9362,44 @@
       const t = (title || '').trim().toLowerCase();
       if (!t) return false;
       if (typeof MODULE_THEMES === 'undefined' || !MODULE_THEMES) return false;
+      // v4.13.7: hub.tagline ('Sample Review Report') cũng là một tên mặc
+      // định của module — trước đây nó không nằm trong tập kiểm tra nên
+      // tiêu đề gõ đúng tagline vẫn lọt vào tên file cạnh tiền tố SRR.
       return Object.values(MODULE_THEMES).some(cfg => !!cfg &&
-        [cfg.pdfTitle, cfg.title].some(v => (v || '').trim().toLowerCase() === t));
+        [cfg.pdfTitle, cfg.title, cfg.hub && cfg.hub.tagline].some(v => (v || '').trim().toLowerCase() === t));
+    }
+
+    // v4.13.7: cắt phần tên dài của module ở ĐẦU tiêu đề riêng khi ghép tên
+    // file xuất. Người dùng hay đặt tiêu đề kiểu 'Sample Review Report-
+    // Structure Improvement' — tên module đã có tiền tố ngắn (SRR / PSR /
+    // PPSR) đứng đầu tên file rồi, giữ lại là trùng lặp (Hung, 2026-11-26).
+    // Chỉ cắt khi ngay sau tên module là dấu phân cách (-, –, —, :) hoặc
+    // hết chuỗi; tiêu đề không bắt đầu bằng tên module thì giữ nguyên.
+    function stripModuleTitleLead(title, rep) {
+      const t = (title || '').trim();
+      if (!t) return t;
+      if (typeof MODULE_THEMES === 'undefined' || !MODULE_THEMES) return t;
+      const own = rep && rep.moduleType && MODULE_THEMES[rep.moduleType];
+      const cfgs = own ? [own] : Object.values(MODULE_THEMES);
+      const names = [];
+      cfgs.forEach(cfg => {
+        if (!cfg) return;
+        [cfg.pdfTitle, cfg.hub && cfg.hub.tagline].forEach(v => {
+          const n = (v || '').trim();
+          if (n && !names.includes(n)) names.push(n);
+        });
+      });
+      names.sort((a, b) => b.length - a.length);
+      const lower = t.toLowerCase();
+      for (const name of names) {
+        if (!lower.startsWith(name.toLowerCase())) continue;
+        const rest = t.slice(name.length);
+        if (!rest.trim()) return '';
+        const m = rest.match(/^\s*[-–—:]\s*/);
+        if (m) return rest.slice(m[0].length).trim();
+        return t;
+      }
+      return t;
     }
 
     function getReportDisplayName(r) {
@@ -13234,14 +13270,15 @@
       // v4.4.1: tên file nối bằng khoảng trắng, không dấu '_' — tiền tố module
       // (PPSR / PSR / SRR) đứng đầu khi xác định được; không rõ module thì
       // không gắn token nào (bỏ hẳn tiền tố PP hai ký tự của bản trước).
-      const fileName = [rep.model, rep.desc].filter(Boolean).join(' ').replace(/_/g, ' ').replace(/\s+/g, ' ').trim() || 'report';
+      // v4.13.7: dùng chung getReportFileBaseName với bản PDF để cùng một
+      // báo cáo ra cùng một tên ở mọi định dạng (trước đây bản JSON bỏ mất
+      // tiêu đề riêng, bản PDF thì giữ).
       const data = JSON.stringify(rep, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const prefix = getReportFilePrefix(rep);
-      a.download = `${prefix ? prefix + ' ' : ''}${fileName} ${rep.date || 'draft'}.json`;
+      a.download = getReportFileBaseName(rep) + '.json';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
@@ -19283,7 +19320,11 @@
       // (PPSR / PSR / SRR) khi xác định được module, và mọi phần của tên file
       // nối bằng đúng một khoảng trắng — không còn dấu '_' (kể cả khi một
       // trường dữ liệu tự nó chứa '_', nó cũng bị đổi thành khoảng trắng).
-      const titlePart = isModuleDefaultTitle(repTitle) ? '' : repTitle;
+      // v4.13.7: cắt tên module ở đầu tiêu đề riêng trước khi xét tiêu đề
+      // mặc định ('Sample Review Report- Structure Improvement' →
+      // 'Structure Improvement'; đúng nguyên văn tên module → '').
+      const cleanTitle = stripModuleTitleLead(repTitle, r);
+      const titlePart = isModuleDefaultTitle(cleanTitle) ? '' : cleanTitle;
       const parts = [getReportFilePrefix(r), titlePart, r.model, r.desc, r.date].map(s => (s || '').trim()).filter(Boolean);
       const raw = parts.join(' ') || 'report';
       const safe = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();

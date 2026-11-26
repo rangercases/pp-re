@@ -39,6 +39,7 @@ const prefixMapInner = extract(indexHtml, /const REPORT_FILE_PREFIXES = \{([\s\S
 
 function makePrefixApi() {
   const isDefaultBody = extractFnBody(indexHtml, 'function isModuleDefaultTitle(title)', 'isModuleDefaultTitle');
+  const stripBody = extractFnBody(indexHtml, 'function stripModuleTitleLead(title, rep)', 'stripModuleTitleLead');
   const prefixBody = extractFnBody(indexHtml, 'function getReportFilePrefix(rep)', 'getReportFilePrefix');
   const baseBody = extractFnBody(indexHtml, 'function getReportFileBaseName(rep)', 'getReportFileBaseName');
   const suggestedBody = extractFnBody(indexHtml, 'function fileSuggestedName(rep)', 'fileSuggestedName');
@@ -46,6 +47,7 @@ function makePrefixApi() {
     'MODULE_THEMES', 'pdfConfig',
     `const REPORT_FILE_PREFIXES = {${prefixMapInner}};
      function isModuleDefaultTitle(title) {${isDefaultBody}}
+     function stripModuleTitleLead(title, rep) {${stripBody}}
      function getReportFilePrefix(rep) {${prefixBody}}
      function getReportFileBaseName(rep) {${baseBody}}
      function fileSuggestedName(rep) {${suggestedBody}}
@@ -176,11 +178,10 @@ describe('TC-PFX3: getReportFileBaseName — prefix first, module name gone, spa
 // TC-PFX4 — wiring: every exported file name is prefix-led; the list is not
 // ─────────────────────────────────────────────────────────────────────────────
 describe('TC-PFX4: wiring — JSON export + archive name use the prefix; display name does not (v4.4.1)', () => {
-  it('TC-PFX4.1: downloadReportJson builds its file name from getReportFilePrefix, space-joined', () => {
+  it('TC-PFX4.1: downloadReportJson shares getReportFileBaseName with the PDF (v4.13.7)', () => {
     const body = extractFnBody(indexHtml, 'function downloadReportJson(rep)', 'downloadReportJson');
-    assert.ok(body.includes('getReportFilePrefix(rep)'), 'downloadReportJson must resolve the module prefix');
-    assert.ok(body.includes("join(' ')"), 'the JSON file name parts must join with a single space');
-    assert.ok(body.includes("prefix ? prefix + ' ' : ''"), 'a known prefix leads with a space; an unknown module gets NO leading token');
+    assert.ok(body.includes("a.download = getReportFileBaseName(rep) + '.json';"),
+      'the JSON download name is the shared file base name + .json — same name as the PDF for the same report');
     assert.ok(!body.includes('PP_'), "the legacy 'PP_' prefix must be gone entirely");
     assert.ok(!body.includes("join('_')"), 'no underscore join may remain in the JSON file name');
   });
