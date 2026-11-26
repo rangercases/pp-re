@@ -20732,7 +20732,10 @@
           } else {
             // Ảnh cao hơn khung -> co theo chiều cao
             renderW = ih * imgRatio;
-            offsetX = (iw - renderW) / 2;
+            // v4.13.10: opts.alignLeft — ảnh dính mép trái khung thay vì
+            // căn giữa, để mép trái ảnh thẳng hàng với caption bên dưới
+            // (Hung, 2026-11-26: 'chữ và ảnh ko thẳng lề bên trái').
+            offsetX = (opts && opts.alignLeft) ? 0 : (iw - renderW) / 2;
           }
 
           doc.addImage(imgSrc, imgFormat, x + offsetX, iy + offsetY, renderW, renderH);
@@ -20788,7 +20791,12 @@
         // opts.topAlign / opts.bottomAlign (chỉ lưới Recap Watch Out
         // truyền): chuyển tiếp xuống addImg để ảnh dính mép trên / mép
         // dưới khung thay vì lơ lửng giữa khung.
-        const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : (opts && opts.bottomAlign) ? { alignBottom: true } : undefined;
+        // v4.13.10: ảnh trong thẻ lưới luôn dính mép trái khung (alignLeft)
+        // để thẳng lề với caption; topAlign/bottomAlign giữ nguyên vai trò
+        // căn mép trên/dưới của v4.13.5.
+        const imgOpts = { alignLeft: true };
+        if (opts && opts.topAlign) imgOpts.alignTop = true;
+        else if (opts && opts.bottomAlign) imgOpts.alignBottom = true;
         const layout = p.photoLayout || (p.imgSub ? '3:1' : 'single');
         let itemMainW = gw;
         let itemSubW = 0;

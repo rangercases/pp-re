@@ -94,7 +94,9 @@ describe('TC-R06.2: the Watch Out row shares one content height and bottom-align
   });
 
   it('TC-R06.2.4: renderCard forwards bottomAlign down to addImg', () => {
-    assert.ok(indexHtml.includes("const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : (opts && opts.bottomAlign) ? { alignBottom: true } : undefined;"),
+    assert.ok(indexHtml.includes('const imgOpts = { alignLeft: true };')
+      && indexHtml.includes('if (opts && opts.topAlign) imgOpts.alignTop = true;')
+      && indexHtml.includes('else if (opts && opts.bottomAlign) imgOpts.alignBottom = true;'),
       'renderCard must translate opts.bottomAlign into addImg opts');
   });
 });

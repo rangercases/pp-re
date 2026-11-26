@@ -205,7 +205,10 @@ const gridBody = extract(
 describe('TC-BAL5: Watch Out grid alignment is gated on showActions', () => {
   it('TC-BAL5.1: renderCard forwards topAlign/bottomAlign to addImg and returns the drawn height (single mode)', () => {
     assert.ok(indexHtml.includes('const renderCard = (p, px, py, gw, cardH, opts) => {'));
-    assert.ok(indexHtml.includes("const imgOpts = (opts && opts.topAlign) ? { alignTop: true } : (opts && opts.bottomAlign) ? { alignBottom: true } : undefined;"));
+    assert.ok(indexHtml.includes('const imgOpts = { alignLeft: true };')
+      && indexHtml.includes('if (opts && opts.topAlign) imgOpts.alignTop = true;')
+      && indexHtml.includes('else if (opts && opts.bottomAlign) imgOpts.alignBottom = true;'),
+      'renderCard forwards topAlign/bottomAlign (and, since v4.13.10, alignLeft) into addImg opts');
     assert.ok(indexHtml.includes('return b.y + b.h - py;'), 'single-image cards report their real content height');
   });
 
